@@ -82,7 +82,7 @@ function SportBadge({ sport }) {
 export default function HomePage({ onNavigate }) {
   const [coaches, setCoaches] = useState(DEMO_FEATURED_COACHES)
   const [teams, setTeams] = useState(DEMO_FEATURED_TEAMS)
-  const [posts, setPosts] = useState(DEMO_RECENT_POSTS)
+  const [posts, setPosts] = useState([])
 
   useEffect(() => {
     async function load() {
