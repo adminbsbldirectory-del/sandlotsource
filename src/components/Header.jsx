@@ -2,7 +2,7 @@ const NAV_TABS = [
   { id: 'home',    label: 'Home' },
   { id: 'coaches', label: 'Coaches' },
   { id: 'teams',   label: 'Teams' },
-  { id: 'board',   label: 'Player Needs' },
+  { id: 'board',   label: 'Find a Player · Find a Team' },
   { id: 'submit',  label: '+ Add Listing' },
 ]
 
