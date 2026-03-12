@@ -14,7 +14,7 @@ const POSITIONS_SB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield',
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','18U','Adult']
 
 export default function PlayerBoard() {
-  const [posts, setPosts] = useState(DEMO_POSTS)
+  const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')           // all | player_available | player_needed
   const [sportFilter, setSportFilter] = useState('Both')
