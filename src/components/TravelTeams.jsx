@@ -144,12 +144,21 @@ export default function TravelTeams() {
                 <div style={{ fontSize:13, color:'var(--gray)', marginTop:10, lineHeight:1.5 }}>{team.description}</div>
               )}
 
-              {(team.contact_name || team.contact_phone || team.contact_email) && (
-                <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--lgray)', fontSize:13 }}>
-                  {team.contact_name && <div style={{ fontWeight:600 }}>📞 {team.contact_name}</div>}
-                  {team.contact_phone && <div style={{ color:'var(--gray)', marginTop:2 }}>{team.contact_phone}</div>}
-                  {team.contact_email && <div style={{ color:'var(--gray)', marginTop:2 }}>{team.contact_email}</div>}
-                </div>
+           {(team.contact_name || team.contact_phone || team.contact_email) && (
+  <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--lgray)', fontSize:13 }}>
+    {team.contact_name && <div style={{ fontWeight:600 }}>📞 {team.contact_name}</div>}
+    {team.contact_phone && (
+      <div style={{ marginTop:2 }}>
+        <a href={`tel:${team.contact_phone.replace(/\D/g,'')}`} style={{ color:'var(--red)', textDecoration:'none', fontWeight:600 }}>{team.contact_phone}</a>
+      </div>
+    )}
+    {team.contact_email && (
+      <div style={{ marginTop:2 }}>
+        <a href={`mailto:${team.contact_email}`} style={{ color:'var(--red)', textDecoration:'none', fontWeight:600 }}>{team.contact_email}</a>
+      </div>
+    )}
+  </div>
+)}
               )}
             </div>
           )
