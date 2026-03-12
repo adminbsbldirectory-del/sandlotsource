@@ -180,7 +180,7 @@ export default function CoachDirectory() {
   }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 120px)' }}>
+    <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 108px)' }}>
       {/* Filter Bar */}
       <div style={{
         background:'var(--white)', borderBottom:'2px solid var(--lgray)',
@@ -209,7 +209,7 @@ export default function CoachDirectory() {
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
         {/* Left panel: list */}
         <div style={{
-          width:380, flexShrink:0,
+          width: 420, flexShrink:0,
           overflowY:'auto', padding:'16px',
           borderRight:'2px solid var(--lgray)',
           background:'var(--cream)',
