@@ -15,29 +15,51 @@ export default function Header({ activeTab, onTabChange }) {
           {/* Logo + tagline row */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 0 8px',
+            padding: '14px 0 10px',
           }}>
-            {/* Logo image */}
-            <img
-              src="/logo.png"
-              alt="Sandlot Source"
+            {/* Text logo */}
+            <div
               onClick={() => onTabChange('home')}
-              style={{
-                height: 52, width: 'auto',
-                cursor: 'pointer',
-                display: 'block',
-                // PNG is transparent — shows perfectly on navy
-              }}
-            />
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+            >
+              <div style={{
+                width: 38, height: 38, flexShrink: 0,
+                background: 'var(--red)',
+                clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16,
+              }}>⚾</div>
+              <div>
+                <div style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 28, fontWeight: 900,
+                  color: 'var(--white)',
+                  letterSpacing: '0.05em',
+                  lineHeight: 1,
+                  textTransform: 'uppercase',
+                }}>
+                  Sandlot Source
+                </div>
+                <div style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 11, color: 'var(--gold)',
+                  letterSpacing: '0.09em',
+                  textTransform: 'uppercase',
+                  marginTop: 3,
+                }}>
+                  Find coaches. Explore teams. Fill roster spots.
+                </div>
+              </div>
+            </div>
 
-            {/* Tagline — hidden on mobile via CSS class */}
+            {/* Right tagline — hidden on mobile */}
             <div className="header-tagline" style={{
               fontFamily: 'var(--font-body)',
-              fontSize: 12, color: 'rgba(255,255,255,0.45)',
+              fontSize: 11, color: 'rgba(255,255,255,0.35)',
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
               textAlign: 'right',
-              lineHeight: 1.5,
+              lineHeight: 1.6,
             }}>
               North Georgia<br />Baseball & Softball
             </div>
