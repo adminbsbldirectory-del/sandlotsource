@@ -15,10 +15,9 @@ export default function Header({ activeTab, onTabChange }) {
 
           {/* Logo + tagline row */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            display: 'flex', alignItems: 'center',
             padding: '14px 0 10px',
           }}>
-            {/* Text logo */}
             <div
               onClick={() => onTabChange('home')}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
@@ -52,6 +51,7 @@ export default function Header({ activeTab, onTabChange }) {
                 </div>
               </div>
             </div>
+          </div>
 
           {/* Nav tabs */}
           <div style={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
@@ -87,6 +87,7 @@ export default function Header({ activeTab, onTabChange }) {
               )
             })}
           </div>
+
         </div>
       </div>
     </header>
