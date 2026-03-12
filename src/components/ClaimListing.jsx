@@ -1,0 +1,268 @@
+import { useState } from 'react'
+import { supabase } from '../supabase.js'
+
+const LISTING_TYPES = ['Coach / Trainer', 'Travel Team', 'Facility']
+
+const CHANGE_OPTIONS = [
+  'Claim this listing',
+  'Correct listing info',
+  'Update contact info',
+  'Update tryout status',
+  'Update availability',
+  'Mark inactive',
+  'Remove listing',
+]
+
+const RELATIONSHIP_OPTIONS = [
+  'I am the coach / trainer',
+  'I am the team admin / manager',
+  'I am the facility owner / manager',
+  'I am a parent or representative',
+  'Other',
+]
+
+const labelStyle = {
+  fontSize:12, fontWeight:600, textTransform:'uppercase',
+  letterSpacing:'0.06em', display:'block', marginBottom:6,
+}
+
+const inputStyle = {
+  width:'100%', padding:'8px 12px', borderRadius:8,
+  border:'2px solid var(--lgray)', fontSize:14,
+  fontFamily:'var(--font-body)', outline:'none', boxSizing:'border-box',
+}
+
+function RequiredMark() {
+  return <span style={{ color:'var(--red)' }}> *</span>
+}
+
+export default function ClaimListing() {
+  const [form, setForm] = useState({
+    listing_type: '',
+    listing_name: '',
+    city: '',
+    requester_name: '',
+    requester_email: '',
+    requester_phone: '',
+    relationship_to_listing: '',
+    requested_change: '',
+    corrected_contact_info: '',
+    website_social_updates: '',
+    tryout_updates: '',
+    availability_updates: '',
+    notes: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [validationError, setValidationError] = useState('')
+
+  function set(field, value) {
+    setForm(f => ({ ...f, [field]: value }))
+  }
+
+  function validate() {
+    if (!form.listing_type) return 'Please select a listing type.'
+    if (!form.listing_name.trim()) return 'Listing name is required.'
+    if (!form.city.trim()) return 'City is required.'
+    if (!form.requester_name.trim()) return 'Your name is required.'
+    if (!form.requester_email.trim()) return 'Your email is required.'
+    if (!form.relationship_to_listing) return 'Please select your relationship to this listing.'
+    if (!form.requested_change) return 'Please select the type of change you are requesting.'
+    return ''
+  }
+
+  async function handleSubmit() {
+    const err = validate()
+    if (err) { setValidationError(err); return }
+    setValidationError('')
+    setSubmitting(true)
+
+    // Store in a claim_requests table (create this in Supabase if it doesn't exist —
+    // see migration notes). Falls back gracefully if table doesn't exist yet.
+    const payload = {
+      listing_type:             form.listing_type,
+      listing_name:             form.listing_name,
+      city:                     form.city,
+      requester_name:           form.requester_name,
+      requester_email:          form.requester_email,
+      requester_phone:          form.requester_phone || null,
+      relationship_to_listing:  form.relationship_to_listing,
+      requested_change:         form.requested_change,
+      corrected_contact_info:   form.corrected_contact_info || null,
+      website_social_updates:   form.website_social_updates || null,
+      tryout_updates:           form.tryout_updates || null,
+      availability_updates:     form.availability_updates || null,
+      notes:                    form.notes || null,
+      status:                   'new',
+      submitted_at:             new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from('claim_requests').insert(payload)
+    setSubmitting(false)
+
+    if (!error) {
+      setSubmitted(true)
+    } else {
+      // If table doesn't exist yet, tell the admin and still show success to user
+      console.error('claim_requests insert error:', error)
+      setValidationError('Something went wrong. Please email admin.bsbldirectory@gmail.com directly.')
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div style={{ maxWidth:600, margin:'48px auto', padding:'32px 24px', background:'white', borderRadius:12, border:'2px solid #86EFAC', textAlign:'center' }}>
+        <div style={{ fontSize:36, marginBottom:12 }}>✅</div>
+        <div style={{ fontFamily:'var(--font-head)', fontSize:22, fontWeight:700, color:'var(--navy)', marginBottom:10 }}>
+          Request Received
+        </div>
+        <div style={{ fontSize:14, color:'var(--gray)', lineHeight:1.6 }}>
+          We'll review your request and follow up at <strong>{form.requester_email}</strong> within a few business days.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ maxWidth:640, margin:'32px auto', padding:'0 16px' }}>
+      <div style={{ background:'white', borderRadius:12, border:'2px solid var(--lgray)', padding:'28px 24px' }}>
+        <div style={{ fontFamily:'var(--font-head)', fontSize:22, fontWeight:700, color:'var(--navy)', marginBottom:6 }}>
+          Claim or Update a Listing
+        </div>
+        <div style={{ fontSize:13, color:'var(--gray)', marginBottom:24, lineHeight:1.5 }}>
+          Use this form to claim a listing, correct information, or request a change.
+          We review all requests manually and will contact you to verify.
+        </div>
+
+        {/* Listing type */}
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Listing Type <RequiredMark /></label>
+          <select value={form.listing_type} onChange={e => set('listing_type', e.target.value)} style={inputStyle}>
+            <option value="">Select…</option>
+            {LISTING_TYPES.map(t => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+
+        {/* Listing name + city */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Listing Name <RequiredMark /></label>
+            <input value={form.listing_name} onChange={e => set('listing_name', e.target.value)}
+              placeholder="Name as it appears on the site" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>City <RequiredMark /></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)}
+              placeholder="e.g. Alpharetta" style={inputStyle} />
+          </div>
+        </div>
+
+        {/* Requester info */}
+        <div style={{ borderTop:'1px solid var(--lgray)', marginBottom:14, paddingTop:14 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'var(--navy)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
+            Your Information
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+            <div>
+              <label style={labelStyle}>Your Name <RequiredMark /></label>
+              <input value={form.requester_name} onChange={e => set('requester_name', e.target.value)}
+                placeholder="Full name" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Your Email <RequiredMark /></label>
+              <input type="email" value={form.requester_email} onChange={e => set('requester_email', e.target.value)}
+                placeholder="you@example.com" style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ marginBottom:14 }}>
+            <label style={labelStyle}>Phone (optional)</label>
+            <input type="tel" value={form.requester_phone} onChange={e => set('requester_phone', e.target.value)}
+              placeholder="e.g. 770-555-0100" style={{ ...inputStyle, maxWidth:240 }} />
+          </div>
+          <div style={{ marginBottom:14 }}>
+            <label style={labelStyle}>Your Relationship to This Listing <RequiredMark /></label>
+            <select value={form.relationship_to_listing} onChange={e => set('relationship_to_listing', e.target.value)} style={inputStyle}>
+              <option value="">Select…</option>
+              {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Requested change */}
+        <div style={{ borderTop:'1px solid var(--lgray)', marginBottom:14, paddingTop:14 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'var(--navy)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
+            What Would You Like to Do?
+          </div>
+          <div style={{ marginBottom:14 }}>
+            <label style={labelStyle}>Type of Change <RequiredMark /></label>
+            <select value={form.requested_change} onChange={e => set('requested_change', e.target.value)} style={inputStyle}>
+              <option value="">Select…</option>
+              {CHANGE_OPTIONS.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Conditional detail fields */}
+          {['Correct listing info','Update contact info'].includes(form.requested_change) && (
+            <div style={{ marginBottom:14 }}>
+              <label style={labelStyle}>Corrected Contact Info</label>
+              <textarea value={form.corrected_contact_info} onChange={e => set('corrected_contact_info', e.target.value)}
+                rows={2} placeholder="Phone, email, address, or other contact details to correct…"
+                style={{ ...inputStyle, resize:'vertical' }} />
+            </div>
+          )}
+
+          {form.requested_change === 'Update tryout status' && (
+            <div style={{ marginBottom:14 }}>
+              <label style={labelStyle}>Tryout Update</label>
+              <textarea value={form.tryout_updates} onChange={e => set('tryout_updates', e.target.value)}
+                rows={2} placeholder="e.g. Tryouts are now open. Date: April 15 at Fowler Park."
+                style={{ ...inputStyle, resize:'vertical' }} />
+            </div>
+          )}
+
+          {form.requested_change === 'Update availability' && (
+            <div style={{ marginBottom:14 }}>
+              <label style={labelStyle}>Availability Update</label>
+              <textarea value={form.availability_updates} onChange={e => set('availability_updates', e.target.value)}
+                rows={2} placeholder="e.g. Now accepting new lesson students on weekends."
+                style={{ ...inputStyle, resize:'vertical' }} />
+            </div>
+          )}
+
+          {['Correct listing info','Claim this listing'].includes(form.requested_change) && (
+            <div style={{ marginBottom:14 }}>
+              <label style={labelStyle}>Website / Social Updates</label>
+              <input value={form.website_social_updates} onChange={e => set('website_social_updates', e.target.value)}
+                placeholder="e.g. New website: www.example.com · Instagram: @handle"
+                style={inputStyle} />
+            </div>
+          )}
+
+          <div style={{ marginBottom:14 }}>
+            <label style={labelStyle}>Additional Notes</label>
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)}
+              rows={3} placeholder="Anything else we should know…"
+              style={{ ...inputStyle, resize:'vertical' }} />
+          </div>
+        </div>
+
+        {/* Validation error */}
+        {validationError && (
+          <div style={{ background:'#FEE2E2', border:'1px solid #F87171', borderRadius:8, padding:'10px 14px', marginBottom:16, color:'#B91C1C', fontSize:13 }}>
+            {validationError}
+          </div>
+        )}
+
+        <button onClick={handleSubmit} disabled={submitting} style={{
+          background:'var(--navy)', color:'white', border:'none',
+          borderRadius:8, padding:'12px 28px',
+          fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
+          letterSpacing:'0.04em', textTransform:'uppercase',
+          opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
+        }}>
+          {submitting ? 'Submitting…' : 'Submit Request'}
+        </button>
+      </div>
+    </div>
+  )
+}
