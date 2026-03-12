@@ -484,9 +484,16 @@ export default function PlayerBoard() {
                 </div>
               )}
 
-              <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--lgray)', fontSize:13 }}>
-                <span style={{ fontWeight:600, color:'var(--navy)' }}>📬 {post.contact_info}</span>
-              </div>
+             <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--lgray)', fontSize:13 }}>
+  <span style={{ fontWeight:600, color:'var(--navy)' }}>📬 </span>
+  {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(post.contact_info) ? (
+    <a href={`mailto:${post.contact_info}`} style={{ color:'var(--red)', textDecoration:'none', fontWeight:600 }}>{post.contact_info}</a>
+  ) : /^[\d\s\-\(\)\+\.]+$/.test(post.contact_info.replace(/^(dad:|mom:|coach:)/i,'').trim()) ? (
+    <a href={`tel:${post.contact_info.replace(/\D/g,'')}`} style={{ color:'var(--red)', textDecoration:'none', fontWeight:600 }}>{post.contact_info}</a>
+  ) : (
+    <span style={{ fontWeight:600, color:'var(--navy)' }}>{post.contact_info}</span>
+  )}
+</div>
 
               <div style={{ fontSize:11, color:'var(--gray)', marginTop:6 }}>
                 Posted {formatDate(post.created_at)}
