@@ -115,16 +115,40 @@ function CoachCard({ coach, selected, onClick }) {
       )}
 
       <div style={{ display:'flex', justifyContent:'space-between', marginTop:8, fontSize:12 }}>
-        {coach.price_per_session
-          ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>${coach.price_per_session}/session</span>
-          : coach.price_notes
-          ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>{coach.price_notes}</span>
-          : <span style={{ opacity:0.5 }}>Price TBD</span>
-        }
-        {coach.recommendation_count > 0 && (
-          <span style={{ opacity:0.6 }}>👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's':''}</span>
-        )}
-      </div>
+  {coach.price_per_session
+    ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>${coach.price_per_session}/session</span>
+    : coach.price_notes
+    ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>{coach.price_notes}</span>
+    : <span style={{ opacity:0.5 }}>Price TBD</span>
+  }
+  {coach.recommendation_count > 0 && (
+    <span style={{ opacity:0.6 }}>👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's':''}</span>
+  )}
+</div>
+
+{(coach.email || coach.phone || coach.website) && (
+  <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'}`, fontSize:12, display:'flex', flexDirection:'column', gap:3 }}>
+    {coach.email && (
+      <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()}
+        style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
+        📧 {coach.email}
+      </a>
+    )}
+    {coach.phone && (
+      <a href={`tel:${coach.phone.replace(/\D/g,'')}`} onClick={e => e.stopPropagation()}
+        style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
+        📞 {coach.phone}
+      </a>
+    )}
+    {coach.website && (
+      <a href={coach.website.startsWith('http') ? coach.website : `https://${coach.website}`}
+        target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+        style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
+        🌐 Website
+      </a>
+    )}
+  </div>
+)}
     </div>
   )
 }
