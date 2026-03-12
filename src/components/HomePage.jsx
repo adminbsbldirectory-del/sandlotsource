@@ -124,12 +124,24 @@ export default function HomePage({ onNavigate }) {
         }} />
 
         <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-          {/* Logo in hero */}
-          <img
-            src="/logo.png"
-            alt="Sandlot Source"
-            style={{ height: 72, width: 'auto', marginBottom: 24, display: 'inline-block' }}
-          />
+          {/* Brand badge in hero */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 40,
+            padding: '8px 20px',
+            marginBottom: 28,
+          }}>
+            <span style={{ fontSize: 20 }}>⚾</span>
+            <span style={{
+              fontFamily: 'var(--font-head)',
+              fontSize: 22, fontWeight: 900,
+              color: 'var(--white)',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}>Sandlot Source</span>
+          </div>
 
           <h1 style={{
             fontFamily: 'var(--font-head)',
