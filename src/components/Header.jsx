@@ -53,19 +53,6 @@ export default function Header({ activeTab, onTabChange }) {
               </div>
             </div>
 
-            {/* Right tagline — hidden on mobile */}
-            <div className="header-tagline" style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 11, color: 'rgba(255,255,255,0.35)',
-              letterSpacing: '0.07em',
-              textTransform: 'uppercase',
-              textAlign: 'right',
-              lineHeight: 1.6,
-            }}>
-              North Georgia<br />Baseball & Softball
-            </div>
-          </div>
-
           {/* Nav tabs */}
           <div style={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
             {NAV_TABS.map(tab => {
