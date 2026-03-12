@@ -5,6 +5,7 @@ import CoachDirectory from './components/CoachDirectory.jsx'
 import TravelTeams from './components/TravelTeams.jsx'
 import PlayerBoard from './components/PlayerBoard.jsx'
 import CoachSubmitForm from './components/CoachSubmitForm.jsx'
+import ClaimListing from './components/ClaimListing.jsx'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
@@ -18,6 +19,7 @@ export default function App() {
         {activeTab === 'teams'   && <TravelTeams />}
         {activeTab === 'board'   && <PlayerBoard />}
         {activeTab === 'submit'  && <CoachSubmitForm />}
+        {activeTab === 'claim'   && <ClaimListing />}
       </main>
       <footer style={{
         background: 'var(--navy)', color: 'rgba(255,255,255,0.45)',
