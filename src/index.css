@@ -32,3 +32,31 @@ input, select, textarea { font-family: var(--font-body); }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--lgray); }
 ::-webkit-scrollbar-thumb { background: var(--navy); border-radius: 3px; }
+
+/* ── Mobile-first responsive ─────────────────────────── */
+@media (max-width: 768px) {
+  /* Hide sidebar on mobile */
+  .sidebar { display: none !important; }
+
+  /* Stack hero CTAs */
+  .hero-ctas { flex-direction: column !important; align-items: stretch !important; }
+  .hero-ctas button { width: 100%; }
+
+  /* Map: full width on mobile */
+  .coach-layout { flex-direction: column !important; }
+  .coach-list { width: 100% !important; max-height: 340px; border-right: none !important; border-bottom: 2px solid var(--lgray) !important; }
+
+  /* Cards: single column */
+  .card-grid { grid-template-columns: 1fr !important; }
+
+  /* Bigger tap targets */
+  button { min-height: 44px; }
+
+  /* Header: compact tagline */
+  .header-tagline { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* Tighter padding on small phones */
+  .page-content { padding: 20px 12px !important; }
+}
