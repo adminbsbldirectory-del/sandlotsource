@@ -22,7 +22,7 @@ const REGIONS = {
   'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
   'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
   'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
-  'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
+  'Rabun','Stephens','Towns','Union','Walker','Walton','White',
   ],
   'Middle Georgia': [
     'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
