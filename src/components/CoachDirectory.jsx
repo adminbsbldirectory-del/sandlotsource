@@ -115,7 +115,17 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
         <div style={{ flex:1 }}>
           <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700, letterSpacing:'0.02em' }}>{coach.name}</div>
-          {coach.facility_name && <div style={{ fontSize:13, opacity:0.7, marginTop:2 }}>{coach.facility_name}</div>}
+          {(coach.verified_status || coach.featured_status) && (
+            <div style={{ display:'flex', gap:5, marginTop:4, flexWrap:'wrap' }}>
+              {coach.verified_status && (
+                <span style={{ background:'#DBEAFE', color:'#1D4ED8', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, fontFamily:'var(--font-head)', letterSpacing:'0.04em' }}>✓ Verified</span>
+              )}
+              {coach.featured_status && (
+                <span style={{ background:'#FEF3C7', color:'#92400E', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, fontFamily:'var(--font-head)', letterSpacing:'0.04em' }}>⭐ Featured</span>
+              )}
+            </div>
+          )}
+          {coach.facility_name && <div style={{ fontSize:13, opacity:0.7, marginTop:4 }}>{coach.facility_name}</div>}
           <div style={{ fontSize:13, marginTop:4, opacity:0.8 }}>
             📍 {[coach.city, coach.county ? coach.county+' Co.' : null].filter(Boolean).join(', ')}
           </div>
@@ -233,9 +243,9 @@ export default function CoachDirectory() {
     if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
     if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
     if (region !== 'All Regions' && county === 'All Counties') {
-      if (!REGIONS[region].includes(c.county)) return false
+      if (!REGIONS[region].map(r => r.toLowerCase()).includes((c.county||'').toLowerCase())) return false
     }
-    if (county !== 'All Counties' && c.county !== county) return false
+    if (county !== 'All Counties' && (c.county||'').toLowerCase() !== county.toLowerCase()) return false
     if (search) {
       const q = search.toLowerCase()
       if (!(c.name||'').toLowerCase().includes(q) &&
