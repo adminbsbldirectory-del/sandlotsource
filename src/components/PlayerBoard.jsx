@@ -4,7 +4,8 @@ import { supabase } from '../supabase.js'
 const POSITIONS_BB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const POSITIONS_SB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','18U','Adult']
-const COUNTIES = ['Barrow','Cherokee','Cobb','DeKalb','Forsyth','Fulton','Gwinnett','Hall','Oconee','Walton']
+const REGIONS = ['North Georgia','Middle Georgia','South Georgia']
+const DISTANCE_MARKS = [10, 25, 50, 75, 100]
 
 const labelStyle = {
   fontSize:12, fontWeight:600, textTransform:'uppercase',
@@ -36,11 +37,14 @@ const EMPTY_FORM = {
   age_group: '',
   position_needed: [],
   city: '',
-  county: '',
+  region: '',
   location_name: '',
   event_date: '',
-  contact_info: '',
   additional_notes: '',
+  distance_travel: 25,
+  contact_type: 'email',
+  contact_email: '',
+  contact_phone: '',
 }
 
 // ── Auth Modal ────────────────────────────────────────────────────────────────
@@ -163,6 +167,100 @@ function DeleteConfirm({ onConfirm, onCancel }) {
   )
 }
 
+// ── Contact Fields ────────────────────────────────────────────────────────────
+function ContactFields({ form, setForm }) {
+  return (
+    <div style={{ marginBottom:14 }}>
+      <label style={labelStyle}>Contact Info <RequiredMark /></label>
+      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+        {[
+          ['email', '📧 Email'],
+          ['phone', '📞 Phone'],
+          ['both',  '📧 + 📞 Both'],
+        ].map(([val, label]) => (
+          <button key={val} onClick={() => setForm(f => ({ ...f, contact_type: val }))} style={{
+            padding:'7px 14px', borderRadius:8, border:'2px solid', cursor:'pointer',
+            borderColor: form.contact_type === val ? 'var(--navy)' : 'var(--lgray)',
+            background:  form.contact_type === val ? 'var(--navy)' : 'white',
+            color:       form.contact_type === val ? 'white' : 'var(--navy)',
+            fontWeight:600, fontSize:12, fontFamily:'var(--font-body)',
+          }}>{label}</button>
+        ))}
+      </div>
+      {(form.contact_type === 'email' || form.contact_type === 'both') && (
+        <input
+          type="email"
+          value={form.contact_email}
+          onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))}
+          placeholder="your@email.com"
+          style={{ ...inputStyle, marginBottom: form.contact_type === 'both' ? 8 : 0 }}
+        />
+      )}
+      {(form.contact_type === 'phone' || form.contact_type === 'both') && (
+        <input
+          type="tel"
+          value={form.contact_phone}
+          onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))}
+          placeholder="678-555-0100"
+          style={inputStyle}
+        />
+      )}
+      <div style={{ fontSize:11, color:'var(--gray)', marginTop:6 }}>
+        Visible publicly. Listings expire after 4 days.
+      </div>
+    </div>
+  )
+}
+
+// ── Distance Slider ───────────────────────────────────────────────────────────
+function DistanceSlider({ value, onChange }) {
+  const idx = DISTANCE_MARKS.indexOf(value) >= 0 ? DISTANCE_MARKS.indexOf(value) : 1
+  return (
+    <div style={{ marginBottom:14 }}>
+      <label style={labelStyle}>
+        Willing to Travel
+        <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, marginLeft:8, color:'var(--navy)', fontSize:13 }}>
+          — up to <strong>{value === 100 ? '100+' : value} miles</strong>
+        </span>
+      </label>
+      <input
+        type="range"
+        min={0} max={4} step={1}
+        value={idx}
+        onChange={e => onChange(DISTANCE_MARKS[parseInt(e.target.value)])}
+        style={{ width:'100%', accentColor:'var(--navy)', cursor:'pointer' }}
+      />
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--gray)', marginTop:4 }}>
+        {DISTANCE_MARKS.map(m => <span key={m}>{m === 100 ? '100+' : m}mi</span>)}
+      </div>
+    </div>
+  )
+}
+
+// ── Build contact_info string from form ───────────────────────────────────────
+function buildContactInfo(form) {
+  if (form.contact_type === 'email') return form.contact_email.trim()
+  if (form.contact_type === 'phone') return form.contact_phone.trim()
+  const parts = []
+  if (form.contact_email.trim()) parts.push(form.contact_email.trim())
+  if (form.contact_phone.trim()) parts.push(form.contact_phone.trim())
+  return parts.join(' / ')
+}
+
+// ── Parse contact_info back into form fields (for editing) ───────────────────
+function parseContactInfo(contact_info) {
+  if (!contact_info) return { contact_type:'email', contact_email:'', contact_phone:'' }
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (contact_info.includes(' / ')) {
+    const [a, b] = contact_info.split(' / ')
+    const email = emailRe.test(a) ? a : b
+    const phone = emailRe.test(a) ? b : a
+    return { contact_type:'both', contact_email:email, contact_phone:phone }
+  }
+  if (emailRe.test(contact_info)) return { contact_type:'email', contact_email:contact_info, contact_phone:'' }
+  return { contact_type:'phone', contact_email:'', contact_phone:contact_info }
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PlayerBoard() {
   const [posts, setPosts] = useState([])
@@ -174,8 +272,8 @@ export default function PlayerBoard() {
   const [submitted, setSubmitted] = useState(false)
   const [validationError, setValidationError] = useState('')
   const [form, setForm] = useState(EMPTY_FORM)
-  const [editingId, setEditingId] = useState(null)      // id of post being edited
-  const [deleteTarget, setDeleteTarget] = useState(null) // post to confirm delete
+  const [editingId, setEditingId] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [user, setUser] = useState(null)
   const [showAuth, setShowAuth] = useState(false)
 
@@ -219,6 +317,8 @@ export default function PlayerBoard() {
   }
 
   function validate() {
+    const contactInfo = buildContactInfo(form)
+    if (!contactInfo) return 'Contact info is required.'
     if (form.post_type === 'player_needed') {
       if (!form.sport) return 'Sport is required.'
       if (!form.age_group) return 'Age group is required.'
@@ -226,13 +326,11 @@ export default function PlayerBoard() {
       if (!form.city.trim()) return 'City is required.'
       if (!form.location_name.trim()) return 'Location / facility name is required.'
       if (!form.event_date) return 'Event date is required.'
-      if (!form.contact_info.trim()) return 'Contact info is required.'
     } else {
       if (!form.sport) return 'Sport is required.'
       if (!form.player_age.toString().trim()) return 'Player age is required.'
       if (!form.player_position.length) return 'Select at least one position.'
       if (!form.city.trim()) return 'City is required.'
-      if (!form.contact_info.trim()) return 'Contact info is required.'
     }
     return ''
   }
@@ -244,13 +342,19 @@ export default function PlayerBoard() {
     setValidationError('')
     setSubmitting(true)
 
+    const contactInfo = buildContactInfo(form)
+    const travelNote = `Willing to travel: up to ${form.distance_travel === 100 ? '100+' : form.distance_travel} miles`
+    const notesWithTravel = form.post_type === 'player_available'
+      ? [travelNote, form.additional_notes].filter(Boolean).join('\n')
+      : form.additional_notes || null
+
     const payload = {
       post_type: form.post_type,
       sport: form.sport,
       city: form.city,
-      county: form.county || null,
-      contact_info: form.contact_info,
-      additional_notes: form.additional_notes || null,
+      county: form.region || null,
+      contact_info: contactInfo,
+      additional_notes: notesWithTravel || null,
       active: true,
       approval_status: 'pending',
       source: 'website_form',
@@ -284,6 +388,7 @@ export default function PlayerBoard() {
 
   // ── Start editing a post ──
   function startEdit(post) {
+    const contactParsed = parseContactInfo(post.contact_info)
     setForm({
       post_type: post.post_type,
       sport: post.sport,
@@ -294,11 +399,12 @@ export default function PlayerBoard() {
       age_group: post.age_group || '',
       position_needed: Array.isArray(post.position_needed) ? post.position_needed : [],
       city: post.city || '',
-      county: post.county || '',
+      region: post.county || '',
       location_name: post.location_name || '',
       event_date: post.event_date ? post.event_date.split('T')[0] : '',
-      contact_info: post.contact_info || '',
       additional_notes: post.additional_notes || '',
+      distance_travel: 25,
+      ...contactParsed,
     })
     setEditingId(post.id)
     setShowForm(true)
@@ -314,13 +420,19 @@ export default function PlayerBoard() {
     setValidationError('')
     setSubmitting(true)
 
+    const contactInfo = buildContactInfo(form)
+    const travelNote = `Willing to travel: up to ${form.distance_travel === 100 ? '100+' : form.distance_travel} miles`
+    const notesWithTravel = form.post_type === 'player_available'
+      ? [travelNote, form.additional_notes].filter(Boolean).join('\n')
+      : form.additional_notes || null
+
     const updates = {
       post_type: form.post_type,
       sport: form.sport,
       city: form.city,
-      county: form.county || null,
-      contact_info: form.contact_info,
-      additional_notes: form.additional_notes || null,
+      county: form.region || null,
+      contact_info: contactInfo,
+      additional_notes: notesWithTravel || null,
       ...(form.post_type === 'player_available' ? {
         player_age: form.player_age ? parseInt(form.player_age) : null,
         age_group: form.age_group || null,
@@ -360,9 +472,7 @@ export default function PlayerBoard() {
       .from('player_board')
       .update({ active: false })
       .eq('id', post.id)
-    if (!error) {
-      setPosts(prev => prev.filter(p => p.id !== post.id))
-    }
+    if (!error) setPosts(prev => prev.filter(p => p.id !== post.id))
     setDeleteTarget(null)
   }
 
@@ -416,12 +526,9 @@ export default function PlayerBoard() {
         </select>
         <div style={{ flex:1 }} />
 
-        {/* Auth widget */}
         {user ? (
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{ fontSize:12, color:'var(--gray)' }}>
-              ✅ {user.email}
-            </span>
+            <span style={{ fontSize:12, color:'var(--gray)' }}>✅ {user.email}</span>
             <button onClick={() => supabase.auth.signOut()} style={{
               ...filterStyle, fontSize:12, padding:'6px 12px', color:'#666',
             }}>Sign out</button>
@@ -513,7 +620,7 @@ export default function PlayerBoard() {
             </div>
           </div>
 
-          {/* player_needed fields */}
+          {/* ── player_needed fields ── */}
           {form.post_type === 'player_needed' && (
             <>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
@@ -553,10 +660,10 @@ export default function PlayerBoard() {
                     placeholder="e.g. Canton" style={inputStyle} />
                 </div>
                 <div>
-                  <label style={labelStyle}>County</label>
-                  <select value={form.county} onChange={e => setForm(f => ({...f, county:e.target.value}))} style={selectStyle}>
-                    <option value="">Select county</option>
-                    {COUNTIES.map(c => <option key={c}>{c}</option>)}
+                  <label style={labelStyle}>Region</label>
+                  <select value={form.region} onChange={e => setForm(f => ({...f, region:e.target.value}))} style={selectStyle}>
+                    <option value="">Select region</option>
+                    {REGIONS.map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
               </div>
@@ -581,7 +688,7 @@ export default function PlayerBoard() {
             </>
           )}
 
-          {/* player_available fields */}
+          {/* ── player_available fields ── */}
           {form.post_type === 'player_available' && (
             <>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
@@ -622,18 +729,23 @@ export default function PlayerBoard() {
                     placeholder="e.g. Alpharetta" style={inputStyle} />
                 </div>
                 <div>
-                  <label style={labelStyle}>County</label>
-                  <select value={form.county} onChange={e => setForm(f => ({...f, county:e.target.value}))} style={selectStyle}>
-                    <option value="">Select county</option>
-                    {COUNTIES.map(c => <option key={c}>{c}</option>)}
+                  <label style={labelStyle}>Region</label>
+                  <select value={form.region} onChange={e => setForm(f => ({...f, region:e.target.value}))} style={selectStyle}>
+                    <option value="">Select region</option>
+                    {REGIONS.map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
               </div>
 
+              <DistanceSlider
+                value={form.distance_travel}
+                onChange={v => setForm(f => ({...f, distance_travel: v}))}
+              />
+
               <div style={{ marginBottom:14 }}>
                 <label style={labelStyle}>Description</label>
                 <textarea value={form.player_description} onChange={e => setForm(f => ({...f, player_description:e.target.value}))}
-                  rows={3} placeholder="Age, skill level, what you're looking for in a team..."
+                  rows={3} placeholder="Skill level, what you're looking for in a team..."
                   style={{ ...inputStyle, resize:'vertical' }} />
               </div>
 
@@ -646,15 +758,7 @@ export default function PlayerBoard() {
             </>
           )}
 
-          {/* Contact — shared */}
-          <div style={{ marginBottom:8 }}>
-            <label style={labelStyle}>Contact Info <RequiredMark /></label>
-            <input value={form.contact_info} onChange={e => setForm(f => ({...f, contact_info:e.target.value}))}
-              placeholder="Email, phone, or Instagram handle" style={inputStyle} />
-            <div style={{ fontSize:11, color:'var(--gray)', marginTop:4 }}>
-              Visible publicly. Listings expire after 4 days.
-            </div>
-          </div>
+          <ContactFields form={form} setForm={setForm} />
 
           {validationError && (
             <div style={{ background:'#FEE2E2', border:'1px solid #F87171', borderRadius:8, padding:'10px 14px', margin:'12px 0', color:'#B91C1C', fontSize:13 }}>
@@ -711,7 +815,6 @@ export default function PlayerBoard() {
               boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
               position:'relative',
             }}>
-              {/* Owner indicator */}
               {isOwner && (
                 <div style={{
                   position:'absolute', top:-1, right:12,
@@ -744,12 +847,23 @@ export default function PlayerBoard() {
                 <div>
                   <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700 }}>
                     {post.player_age ? `Age ${post.player_age}` : post.age_group || 'Player'} — {post.city}
+                    {post.county ? <span style={{ fontWeight:400, fontSize:13, color:'var(--gray)' }}> · {post.county}</span> : null}
                   </div>
                   {post.player_description && (
                     <div style={{ fontSize:13, color:'var(--gray)', marginTop:6, lineHeight:1.5 }}>{post.player_description}</div>
                   )}
                   {post.additional_notes && (
-                    <div style={{ fontSize:13, color:'var(--gray)', marginTop:4, lineHeight:1.5 }}>{post.additional_notes}</div>
+                    <div style={{ marginTop:4 }}>
+                      {post.additional_notes.split('\n').map((line, i) => (
+                        <div key={i} style={{
+                          fontSize:13, lineHeight:1.5,
+                          color: line.startsWith('Willing to travel') ? '#2563EB' : 'var(--gray)',
+                          fontWeight: line.startsWith('Willing to travel') ? 600 : 400,
+                        }}>
+                          {line.startsWith('Willing to travel') ? '🚗 ' : ''}{line}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ) : (
@@ -758,7 +872,7 @@ export default function PlayerBoard() {
                     {post.team_name || 'Team'}{post.age_group ? ` · ${post.age_group}` : ''}
                   </div>
                   <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>
-                    📍 {[post.location_name, post.city, post.county ? `${post.county} Co.` : null].filter(Boolean).join(', ')}
+                    📍 {[post.location_name, post.city, post.county].filter(Boolean).join(', ')}
                   </div>
                   {post.event_date && (
                     <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>
@@ -784,7 +898,19 @@ export default function PlayerBoard() {
 
               <div style={{ marginTop:12, paddingTop:12, borderTop:'1px solid var(--lgray)', fontSize:13 }}>
                 <span style={{ fontWeight:600, color:'var(--navy)' }}>📬 </span>
-                {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(post.contact_info) ? (
+                {post.contact_info?.includes(' / ') ? (
+                  <span>
+                    {post.contact_info.split(' / ').map((c, i) => (
+                      <span key={i}>
+                        {i > 0 && <span style={{ color:'var(--lgray)' }}> · </span>}
+                        {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)
+                          ? <a href={`mailto:${c}`} style={{ color:'#1D4ED8', textDecoration:'none', fontWeight:600 }}>{c}</a>
+                          : <a href={`tel:${c.replace(/\D/g,'')}`} style={{ color:'var(--navy)', textDecoration:'none', fontWeight:600 }}>{c}</a>
+                        }
+                      </span>
+                    ))}
+                  </span>
+                ) : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(post.contact_info) ? (
                   <a href={`mailto:${post.contact_info}`} style={{ color:'#1D4ED8', textDecoration:'none', fontWeight:600 }}>{post.contact_info}</a>
                 ) : /^[\d\s\-\(\)\+\.]+$/.test(post.contact_info?.replace(/^(dad:|mom:|coach:)/i,'').trim()) ? (
                   <a href={`tel:${post.contact_info.replace(/\D/g,'')}`} style={{ color:'var(--navy)', textDecoration:'none', fontWeight:600 }}>{post.contact_info}</a>
@@ -797,7 +923,6 @@ export default function PlayerBoard() {
                 Posted {formatDate(post.created_at)}
               </div>
 
-              {/* Edit / Delete — only for post owner */}
               {isOwner && (
                 <div style={{ display:'flex', gap:8, marginTop:12, paddingTop:12, borderTop:'1px solid var(--lgray)' }}>
                   <button onClick={() => startEdit(post)} style={{
