@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase.js'
+import TeamProfile from './TeamProfile.jsx'
 
 const DEMO_TEAMS = [
   { id:1, name:'North Georgia Nationals', sport:'baseball', org_affiliation:'USSSA', age_group:'12U', city:'Alpharetta', county:'Fulton', tryout_status:'open', tryout_date:'2025-04-15', tryout_notes:'Tryouts at Wills Park', contact_name:'Coach Miller', contact_phone:'770-555-0101' },
@@ -22,6 +23,7 @@ export default function TravelTeams() {
   const [ageGroup, setAgeGroup] = useState('All Ages')
   const [tryoutFilter, setTryoutFilter] = useState('All')
   const [loading, setLoading] = useState(true)
+  const [profileTeam, setProfileTeam] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -48,6 +50,16 @@ export default function TravelTeams() {
 
   return (
     <div>
+      {profileTeam && (
+        <TeamProfile
+          team={profileTeam}
+          onClose={() => setProfileTeam(null)}
+          onClaim={(team) => {
+            // Future: navigate to claim flow with team pre-filled
+            window.location.href = `mailto:admin.bsbldirectory@gmail.com?subject=Claim Request: ${encodeURIComponent(team.name)}`
+          }}
+        />
+      )}
       {/* Filter bar */}
       <div style={{
         background:'var(--white)', borderBottom:'2px solid var(--lgray)',
@@ -88,11 +100,15 @@ export default function TravelTeams() {
         {filtered.map(team => {
           const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
           return (
-            <div key={team.id} style={{
+            <div key={team.id} onClick={() => setProfileTeam(team)} style={{
               background:'var(--white)', borderRadius:12,
               border:'2px solid var(--lgray)', padding:'18px',
               boxShadow:'0 1px 4px rgba(0,0,0,0.06)',
-            }}>
+              cursor:'pointer', transition:'box-shadow 0.15s, border-color 0.15s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor='var(--navy)' }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow='0 1px 4px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor='var(--lgray)' }}
+            >
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                 <div>
                   <div style={{
@@ -152,6 +168,7 @@ export default function TravelTeams() {
                   {team.contact_phone && (
                     <div style={{ marginTop:2 }}>
                       <a href={`tel:${team.contact_phone.replace(/\D/g,'')}`}
+                        onClick={e => e.stopPropagation()}
                         style={{ color:'var(--navy)', textDecoration:'none', fontWeight:600 }}>
                         {team.contact_phone}
                       </a>
@@ -160,6 +177,7 @@ export default function TravelTeams() {
                   {team.contact_email && (
                     <div style={{ marginTop:2 }}>
                       <a href={`mailto:${team.contact_email}`}
+                        onClick={e => e.stopPropagation()}
                         style={{ color:'#1D4ED8', textDecoration:'none', fontWeight:600 }}>
                         {team.contact_email}
                       </a>
@@ -167,6 +185,19 @@ export default function TravelTeams() {
                   )}
                 </div>
               )}
+
+              <button
+                onClick={e => { e.stopPropagation(); setProfileTeam(team) }}
+                style={{
+                  marginTop:12, width:'100%',
+                  background:'var(--navy)', color:'white',
+                  border:'none', borderRadius:7,
+                  padding:'8px 0', fontSize:13, fontWeight:700,
+                  cursor:'pointer', fontFamily:'var(--font-head)', letterSpacing:'0.04em',
+                }}
+              >
+                View Details & Claim
+              </button>
             </div>
           )
         })}
