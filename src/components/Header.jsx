@@ -58,7 +58,8 @@ export default function Header({ activeTab, onTabChange }) {
           <div style={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
             {NAV_TABS.map(tab => {
               const isActive = activeTab === tab.id
-              const isAdd = tab.id === 'submit'
+              const isAdd    = tab.id === 'submit'
+              const isRoster = tab.id === 'roster'
               return (
                 <button
                   key={tab.id}
