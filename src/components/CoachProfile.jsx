@@ -226,20 +226,20 @@ export default function CoachProfile({ coach, onClose }) {
             <div style={{ display:'flex', flexDirection:'column', gap:5, marginTop:8 }}>
               {coach.email && (
                 <a href={`mailto:${coach.email}`}
-                  style={{ color:'var(--red)', textDecoration:'none', fontSize:14, fontWeight:600 }}>
+                  style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}>
                   📧 {coach.email}
                 </a>
               )}
               {firstPhone && (
                 <a href={`tel:${firstPhone.replace(/\D/g,'')}`}
-                  style={{ color:'var(--red)', textDecoration:'none', fontSize:14, fontWeight:600 }}>
+                  style={{ color:'var(--navy)', textDecoration:'none', fontSize:14, fontWeight:600 }}>
                   📞 {firstPhone}
                 </a>
               )}
               {coach.website && (
                 <a href={coach.website.startsWith('http') ? coach.website : `https://${coach.website}`}
                   target="_blank" rel="noopener noreferrer"
-                  style={{ color:'var(--red)', textDecoration:'none', fontSize:14, fontWeight:600 }}>
+                  style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}>
                   🌐 {coach.website}
                 </a>
               )}
