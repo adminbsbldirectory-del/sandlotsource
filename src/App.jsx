@@ -4,6 +4,7 @@ import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
 import TravelTeams from './components/TravelTeams.jsx'
 import PlayerBoard from './components/PlayerBoard.jsx'
+import RosterSpots from './components/RosterSpots.jsx'
 import CoachSubmitForm from './components/CoachSubmitForm.jsx'
 import ClaimListing from './components/ClaimListing.jsx'
 
@@ -18,6 +19,7 @@ export default function App() {
         {activeTab === 'coaches' && <CoachDirectory />}
         {activeTab === 'teams'   && <TravelTeams />}
         {activeTab === 'board'   && <PlayerBoard />}
+        {activeTab === 'roster'  && <RosterSpots />}
         {activeTab === 'submit'  && <CoachSubmitForm />}
         {activeTab === 'claim'   && <ClaimListing />}
       </main>
