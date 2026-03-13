@@ -12,11 +12,11 @@ const DEMO_TEAMS = [
 
 const REGIONS = {
   'North Georgia': [
-    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth',
-    'Franklin','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson',
-    'Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns',
-    'Union','Walker','Walton','White','Whitfield','Fulton',
-  ],
+  'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
+  'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
+  'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
+  'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
+],
   'Middle Georgia': [
     'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
     'Douglas','Elbert','Fayette','Floyd','Greene','Haralson','Harris','Heard',
