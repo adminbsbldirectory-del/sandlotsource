@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { supabase } from '../supabase.js'
-import { useState } from 'react'
-import { supabase } from '../supabase.js'
 import { useNavigate } from 'react-router-dom'
 
 // ─── Shared style constants ───────────────────────────────────────────────────
@@ -758,22 +756,24 @@ export default function CoachSubmitForm() {
         </div>
       </div>
 
-      {/* Tab selector */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0 }}>
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => tab.id === 'roster' ? navigate('/roster') : setActiveTab(tab.id)}
-            padding: '10px 20px',
-            fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
-            letterSpacing: '0.04em', textTransform: 'uppercase',
-            border: 'none', borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
-            background: 'transparent',
-            color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
-            cursor: 'pointer', marginBottom: -2,
-          }}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+     {/* Tab selector */}
+<div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0 }}>
+  {TABS.map(tab => (
+    <button key={tab.id}
+      onClick={() => tab.id === 'roster' ? navigate('/roster') : setActiveTab(tab.id)}
+      style={{
+        padding: '10px 20px',
+        fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
+        letterSpacing: '0.04em', textTransform: 'uppercase',
+        border: 'none', borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
+        background: 'transparent',
+        color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
+        cursor: 'pointer', marginBottom: -2,
+      }}>
+      {tab.label}
+    </button>
+  ))}
+</div>
 
       {/* Active form */}
       <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '28px 24px' }}>
