@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase.js'
 
-const DEMO_POSTS = [
-  { id:1, post_type:'player_available', sport:'baseball', player_age:12, player_position:['pitcher','outfield'], city:'Alpharetta', county:'Fulton', player_description:'12U RHP/OF looking for competitive 12U or 13U team for spring season. Strong arm, 67mph off mound.', contact_info:'Contact via email', created_at:'2025-03-01', approval_status:'approved' },
-  { id:2, post_type:'player_needed', sport:'baseball', team_name:'Cherokee Nationals 10U', age_group:'10U', position_needed:['catcher','shortstop'], city:'Canton', county:'Cherokee', location_name:'Canton Recreation Complex', event_date:'2025-04-12', additional_notes:'Looking for 2 players to round out roster for spring USSSA season. Tryout required.', contact_info:'coach@cherokeenats.com', created_at:'2025-03-05', approval_status:'approved' },
-  { id:3, post_type:'player_available', sport:'softball', player_age:14, player_position:['pitcher','1B'], city:'Woodstock', county:'Cherokee', player_description:'14U pitcher with 3 years travel ball experience. 52mph. Looking for 14U PGF-affiliated team.', contact_info:'DM on Instagram @softballmom14', created_at:'2025-03-07', approval_status:'approved' },
-  { id:4, post_type:'player_needed', sport:'softball', team_name:'Forsyth Fire 12U', age_group:'12U', position_needed:['pitcher'], city:'Cumming', county:'Forsyth', location_name:'Fowler Park', event_date:'2025-04-20', additional_notes:'Need a pitcher for upcoming tournament season. Practice Tues/Thurs in Cumming.', contact_info:'770-555-0303', created_at:'2025-03-08', approval_status:'approved' },
-  { id:5, post_type:'player_available', sport:'baseball', player_age:10, player_position:['catcher','3B'], city:'Buford', county:'Gwinnett', player_description:'10U catcher/3B. Has worked with David Sopilka at El Dojo. Looking for USSSA 10U team.', contact_info:'Dad: 678-555-0404', created_at:'2025-03-09', approval_status:'approved' },
-]
-
 const POSITIONS_BB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const POSITIONS_SB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','18U','Adult']
@@ -208,7 +200,6 @@ export default function PlayerBoard() {
         .in('approval_status', ['pending', 'approved'])
         .order('created_at', { ascending: false })
       if (!error && data && data.length > 0) setPosts(data)
-      else if (!error && (!data || data.length === 0)) setPosts(DEMO_POSTS)
       setLoading(false)
     }
     load()
