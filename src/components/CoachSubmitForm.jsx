@@ -18,11 +18,11 @@ const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
 // ─── Region → County map ──────────────────────────────────────────────────────
 const REGIONS = {
-  'North Georgia': [
-    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth',
-    'Franklin','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson',
-    'Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns',
-    'Union','Walker','Walton','White','Whitfield','Fulton',
+ 'North Georgia': [
+  'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
+  'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
+  'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
+  'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
   ],
   'Middle Georgia': [
     'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
