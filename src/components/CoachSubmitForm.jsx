@@ -736,7 +736,7 @@ function PlayerForm() {
 const TABS = [
   { id: 'coach',  label: '⚾ Coach Profile' },
   { id: 'team',   label: '🏆 Travel Team' },
-  { id: 'player', label: '📋 Player Needed|Player Available' },
+  { id: 'player', label: '📋 Player Needed | Player Available' },
 ]
 
 export default function CoachSubmitForm() {
