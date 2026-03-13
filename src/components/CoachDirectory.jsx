@@ -166,16 +166,16 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
         <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'}`, fontSize:12, display:'flex', flexDirection:'column', gap:3 }}>
           {coach.email && (
             <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()}
-              style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>📧 {coach.email}</a>
+              style={{ color: selected ? 'var(--gold)' : '#1D4ED8', textDecoration:'none', fontWeight:600 }}>📧 {coach.email}</a>
           )}
           {firstPhone && (
             <a href={`tel:${firstPhone.replace(/\D/g,'')}`} onClick={e => e.stopPropagation()}
-              style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>📞 {firstPhone}</a>
+              style={{ color: selected ? 'var(--gold)' : 'var(--navy)', textDecoration:'none', fontWeight:600 }}>📞 {firstPhone}</a>
           )}
           {coach.website && (
             <a href={coach.website.startsWith('http') ? coach.website : `https://${coach.website}`}
               target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-              style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>🌐 Website</a>
+              style={{ color: selected ? 'var(--gold)' : '#1D4ED8', textDecoration:'none', fontWeight:600 }}>🌐 Website</a>
           )}
         </div>
       )}
