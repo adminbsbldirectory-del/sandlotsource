@@ -1,27 +1,31 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
 import TravelTeams from './components/TravelTeams.jsx'
 import PlayerBoard from './components/PlayerBoard.jsx'
-import RosterSpots from './components/RosterSpots.jsx'
 import CoachSubmitForm from './components/CoachSubmitForm.jsx'
 import ClaimListing from './components/ClaimListing.jsx'
+import RosterSpots from './components/RosterSpots.jsx'
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('home')
+// Inner component so useNavigate works inside BrowserRouter
+function AppRoutes() {
+  const navigate = useNavigate()
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh' }}>
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
-      <main style={{ flex:1 }}>
-        {activeTab === 'home'    && <HomePage onNavigate={setActiveTab} />}
-        {activeTab === 'coaches' && <CoachDirectory />}
-        {activeTab === 'teams'   && <TravelTeams />}
-        {activeTab === 'board'   && <PlayerBoard />}
-        {activeTab === 'roster'  && <RosterSpots />}
-        {activeTab === 'submit'  && <CoachSubmitForm />}
-        {activeTab === 'claim'   && <ClaimListing />}
+    <>
+      <Header />
+      <main style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/"          element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
+          <Route path="/coaches"   element={<CoachDirectory />} />
+          <Route path="/teams"     element={<TravelTeams />} />
+          <Route path="/find"      element={<PlayerBoard />} />
+          <Route path="/roster"    element={<RosterSpots />} />
+          <Route path="/submit"    element={<CoachSubmitForm />} />
+          <Route path="/claim"     element={<ClaimListing />} />
+          <Route path="*"          element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
       <footer style={{
         background: 'var(--navy)', color: 'rgba(255,255,255,0.45)',
@@ -32,6 +36,16 @@ export default function App() {
         © 2025 Sandlot Source · North Georgia Baseball & Softball Directory ·{' '}
         <span style={{ color: 'rgba(255,255,255,0.25)' }}>sandlotsource.com</span>
       </footer>
-    </div>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <AppRoutes />
+      </div>
+    </BrowserRouter>
   )
 }
