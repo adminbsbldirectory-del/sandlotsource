@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
+import CoachProfile from './CoachProfile.jsx'
 
 // Fix Leaflet default icon issue with Vite
 delete L.Icon.Default.prototype._getIconUrl
@@ -35,7 +36,6 @@ const COUNTIES = ['All Counties','Cherokee','Cobb','DeKalb','Forsyth','Fulton','
 const SPECIALTIES = ['All Specialties','pitching','hitting','catching','fielding','speed']
 const SPORTS = ['Both','baseball','softball']
 
-// Fallback demo data shown before DB is populated
 const DEMO_COACHES = [
   { id:1, name:'David Sopilka', sport:'baseball', specialty:['catching'], city:'Chamblee', county:'DeKalb', facility_name:'El Dojo', tier:'elite', lat:33.888, lng:-84.299, credentials:'Elite catching coach', price_notes:'1.5 hr sessions', recommendation_count:5 },
   { id:2, name:'Cristoforo Romano', sport:'baseball', specialty:['pitching'], city:'Marietta', county:'Cobb', facility_name:'Harrison Park', tier:'elite', lat:33.961, lng:-84.548, credentials:'Former Detroit Tigers & Brewers MiLB coach; Masters Biomechanics', price_per_session:70, price_notes:'$70 cash / $80 Venmo', recommendation_count:8 },
@@ -47,9 +47,37 @@ const DEMO_COACHES = [
   { id:8, name:'Aiden Berggren', sport:'baseball', specialty:['catching'], city:'Canton', county:'Cherokee', tier:'strong', lat:34.237, lng:-84.491, credentials:'10+ years; 4 years college baseball', recommendation_count:3 },
 ]
 
-function CoachCard({ coach, selected, onClick }) {
+// Parse phone field — return only first number if multiple separated by / or ,
+function parseFirstPhone(raw) {
+  if (!raw) return null
+  const first = raw.split(/[\/,]/)[0].trim()
+  return first || null
+}
+
+// Rating row using sport-themed icons
+function RatingRow({ coach, selected }) {
+  const avg = parseFloat(coach.rating_average) || 0
+  const count = parseInt(coach.review_count) || 0
+  if (count === 0) return null
+
+  const icon = coach.sport === 'softball' ? '🥎' : '⚾'
+  const full = Math.floor(avg)
+  const half = (avg - full) >= 0.3
+  const empty = 5 - full - (half ? 1 : 0)
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:6, fontSize:13 }}>
+      <span>{icon.repeat(Math.max(0,full))}{half ? '◐' : ''}{empty > 0 ? '○'.repeat(Math.max(0,empty)) : ''}</span>
+      <span style={{ fontWeight:700, color: selected ? 'var(--gold)' : 'var(--navy)' }}>{avg.toFixed(1)}</span>
+      <span style={{ opacity:0.6, fontSize:12 }}>({count} review{count !== 1 ? 's' : ''})</span>
+    </div>
+  )
+}
+
+function CoachCard({ coach, selected, onClick, onViewProfile }) {
   const tierColor = TIER_COLORS[coach.tier] || TIER_COLORS.local
   const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
+  const firstPhone = parseFirstPhone(coach.phone)
 
   return (
     <div
@@ -65,13 +93,12 @@ function CoachCard({ coach, selected, onClick }) {
         marginBottom: 10,
       }}
     >
+      {/* Name + badges row */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
         <div style={{ flex:1 }}>
-          <div style={{
-            fontFamily: 'var(--font-head)',
-            fontSize: 17, fontWeight: 700,
-            letterSpacing: '0.02em',
-          }}>{coach.name}</div>
+          <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700, letterSpacing:'0.02em' }}>
+            {coach.name}
+          </div>
           {coach.facility_name && (
             <div style={{ fontSize:13, opacity:0.7, marginTop:2 }}>{coach.facility_name}</div>
           )}
@@ -97,6 +124,10 @@ function CoachCard({ coach, selected, onClick }) {
         </div>
       </div>
 
+      {/* Rating row */}
+      <RatingRow coach={coach} selected={selected} />
+
+      {/* Specialty tags */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:8 }}>
         {specs.map(s => (
           <span key={s} style={{
@@ -114,41 +145,62 @@ function CoachCard({ coach, selected, onClick }) {
         </div>
       )}
 
+      {/* Price + recs */}
       <div style={{ display:'flex', justifyContent:'space-between', marginTop:8, fontSize:12 }}>
-  {coach.price_per_session
-    ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>${coach.price_per_session}/session</span>
-    : coach.price_notes
-    ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>{coach.price_notes}</span>
-    : <span style={{ opacity:0.5 }}>Price TBD</span>
-  }
-  {coach.recommendation_count > 0 && (
-    <span style={{ opacity:0.6 }}>👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's':''}</span>
-  )}
-</div>
+        {coach.price_per_session
+          ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>${coach.price_per_session}/session</span>
+          : coach.price_notes
+          ? <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>{coach.price_notes}</span>
+          : <span style={{ opacity:0.5 }}>Price TBD</span>
+        }
+        {coach.recommendation_count > 0 && (
+          <span style={{ opacity:0.6 }}>👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's':''}</span>
+        )}
+      </div>
 
-{(coach.email || coach.phone || coach.website) && (
-  <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'}`, fontSize:12, display:'flex', flexDirection:'column', gap:3 }}>
-    {coach.email && (
-      <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()}
-        style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
-        📧 {coach.email}
-      </a>
-    )}
-    {coach.phone && (
-      <a href={`tel:${coach.phone.replace(/\D/g,'')}`} onClick={e => e.stopPropagation()}
-        style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
-        📞 {coach.phone}
-      </a>
-    )}
-    {coach.website && (
-      <a href={coach.website.startsWith('http') ? coach.website : `https://${coach.website}`}
-        target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-        style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
-        🌐 Website
-      </a>
-    )}
-  </div>
-)}
+      {/* Contact info — phone shows first number only */}
+      {(coach.email || firstPhone || coach.website) && (
+        <div style={{
+          marginTop:10, paddingTop:10,
+          borderTop:`1px solid ${selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'}`,
+          fontSize:12, display:'flex', flexDirection:'column', gap:3,
+        }}>
+          {coach.email && (
+            <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()}
+              style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
+              📧 {coach.email}
+            </a>
+          )}
+          {firstPhone && (
+            <a href={`tel:${firstPhone.replace(/\D/g,'')}`} onClick={e => e.stopPropagation()}
+              style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
+              📞 {firstPhone}
+            </a>
+          )}
+          {coach.website && (
+            <a href={coach.website.startsWith('http') ? coach.website : `https://${coach.website}`}
+              target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+              style={{ color: selected ? 'var(--gold)' : 'var(--red)', textDecoration:'none', fontWeight:600 }}>
+              🌐 Website
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* View Profile CTA */}
+      <button
+        onClick={e => { e.stopPropagation(); onViewProfile(coach) }}
+        style={{
+          marginTop:12, width:'100%',
+          background: selected ? 'var(--gold)' : 'var(--navy)',
+          color: 'white', border:'none', borderRadius:7,
+          padding:'8px 0', fontSize:13, fontWeight:700,
+          cursor:'pointer', fontFamily:'var(--font-head)',
+          letterSpacing:'0.04em',
+        }}
+      >
+        View Profile & Reviews
+      </button>
     </div>
   )
 }
@@ -169,6 +221,15 @@ export default function CoachDirectory() {
   const [specialty, setSpecialty] = useState('All Specialties')
   const [county, setCounty] = useState('All Counties')
   const [search, setSearch] = useState('')
+  const [profileCoach, setProfileCoach] = useState(null)
+  const [showMap, setShowMap] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -203,113 +264,162 @@ export default function CoachDirectory() {
     outline:'none', cursor:'pointer',
   }
 
-  return (
-    <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 108px)' }}>
-      {/* Filter Bar */}
+  const mapPanel = (
+    <div style={{ position:'relative', height: isMobile ? 280 : '100%', width:'100%' }}>
+      {/* Legend */}
       <div style={{
-        background:'var(--white)', borderBottom:'2px solid var(--lgray)',
-        padding:'12px 24px', display:'flex', gap:10, flexWrap:'wrap', alignItems:'center',
+        position:'absolute', top:12, right:12, zIndex:1000,
+        background:'white', borderRadius:10, padding:'10px 14px',
+        boxShadow:'0 2px 12px rgba(0,0,0,0.12)',
+        fontSize:12, fontFamily:'var(--font-body)',
       }}>
-        <input
-          placeholder="🔍  Search coaches, facilities, cities..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...filterStyle, flex:1, minWidth:200 }}
-        />
-        <select value={sport} onChange={e => setSport(e.target.value)} style={filterStyle}>
-          {SPORTS.map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={filterStyle}>
-          {SPECIALTIES.map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select value={county} onChange={e => setCounty(e.target.value)} style={filterStyle}>
-          {COUNTIES.map(c => <option key={c}>{c}</option>)}
-        </select>
-        <span style={{ fontSize:13, color:'var(--gray)', whiteSpace:'nowrap' }}>
-          {filtered.length} coach{filtered.length !== 1 ? 'es':''}
-        </span>
-      </div>
-
-      {/* Main Layout */}
-      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-        {/* Left panel: list */}
-        <div style={{
-          width: 420, flexShrink:0,
-          overflowY:'auto', padding:'16px',
-          borderRight:'2px solid var(--lgray)',
-          background:'var(--cream)',
-        }}>
-          {loading && (
-            <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>
-              Loading coaches...
-            </div>
-          )}
-          {!loading && filtered.length === 0 && (
-            <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>
-              No coaches match your filters.
-            </div>
-          )}
-          {filtered.map(coach => (
-            <CoachCard
-              key={coach.id}
-              coach={coach}
-              selected={selected === coach.id}
-              onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-            />
-          ))}
-        </div>
-
-        {/* Right: map */}
-        <div style={{ flex:1, position:'relative' }}>
-          {/* Legend */}
-          <div style={{
-            position:'absolute', top:12, right:12, zIndex:1000,
-            background:'white', borderRadius:10, padding:'10px 14px',
-            boxShadow:'0 2px 12px rgba(0,0,0,0.12)',
-            fontSize:12, fontFamily:'var(--font-body)',
-          }}>
-            {Object.entries(TIER_COLORS).map(([tier, color]) => (
-              <div key={tier} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
-                <div style={{ width:12, height:12, borderRadius:'50%', background:color }} />
-                <span style={{ textTransform:'capitalize', color:'var(--navy)' }}>{tier}</span>
-              </div>
-            ))}
+        {Object.entries(TIER_COLORS).map(([tier, color]) => (
+          <div key={tier} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
+            <div style={{ width:12, height:12, borderRadius:'50%', background:color }} />
+            <span style={{ textTransform:'capitalize', color:'var(--navy)' }}>{tier}</span>
           </div>
-
-          <MapContainer
-            center={[34.05, -84.25]}
-            zoom={9}
-            style={{ height:'100%', width:'100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {sel && sel.lat && <FlyTo lat={sel.lat} lng={sel.lng} />}
-            {mappable.map(coach => {
-              const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
-              return (
-                <Marker
-                  key={coach.id}
-                  position={[coach.lat, coach.lng]}
-                  icon={makeIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)}
-                  eventHandlers={{ click: () => setSelected(coach.id) }}
-                >
-                  <Popup>
-                    <div style={{ fontFamily:'var(--font-body)', minWidth:180 }}>
-                      <strong style={{ fontFamily:'var(--font-head)', fontSize:15 }}>{coach.name}</strong>
-                      {coach.facility_name && <div style={{ fontSize:12, color:'#666' }}>{coach.facility_name}</div>}
-                      <div style={{ fontSize:12, marginTop:4 }}>📍 {coach.city}{coach.county ? `, ${coach.county}` : ''}</div>
-                      <div style={{ fontSize:12, marginTop:2 }}>🎯 {specs.join(', ')}</div>
-                      {coach.price_per_session && <div style={{ fontSize:12, color:'#16A34A', fontWeight:600, marginTop:2 }}>${coach.price_per_session}/session</div>}
-                      {coach.credentials && <div style={{ fontSize:11, color:'#666', marginTop:4 }}>{coach.credentials.slice(0,100)}</div>}
-                    </div>
-                  </Popup>
-                </Marker>
-              )
-            })}
-          </MapContainer>
-        </div>
+        ))}
       </div>
+
+      <MapContainer
+        center={[34.05, -84.25]}
+        zoom={9}
+        style={{ height:'100%', width:'100%' }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {sel && sel.lat && <FlyTo lat={sel.lat} lng={sel.lng} />}
+        {mappable.map(coach => {
+          const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
+          return (
+            <Marker
+              key={coach.id}
+              position={[coach.lat, coach.lng]}
+              icon={makeIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)}
+              eventHandlers={{ click: () => setSelected(coach.id) }}
+            >
+              <Popup>
+                <div style={{ fontFamily:'var(--font-body)', minWidth:180 }}>
+                  <strong style={{ fontFamily:'var(--font-head)', fontSize:15 }}>{coach.name}</strong>
+                  {coach.facility_name && <div style={{ fontSize:12, color:'#666' }}>{coach.facility_name}</div>}
+                  <div style={{ fontSize:12, marginTop:4 }}>📍 {coach.city}{coach.county ? `, ${coach.county}` : ''}</div>
+                  <div style={{ fontSize:12, marginTop:2 }}>🎯 {specs.join(', ')}</div>
+                  {coach.price_per_session && <div style={{ fontSize:12, color:'#16A34A', fontWeight:600, marginTop:2 }}>${coach.price_per_session}/session</div>}
+                  {coach.credentials && <div style={{ fontSize:11, color:'#666', marginTop:4 }}>{coach.credentials.slice(0,100)}</div>}
+                </div>
+              </Popup>
+            </Marker>
+          )
+        })}
+      </MapContainer>
     </div>
+  )
+
+  return (
+    <>
+      {/* Coach Profile Modal */}
+      {profileCoach && (
+        <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />
+      )}
+
+      <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 108px)' }}>
+
+        {/* ── Filter Bar — sticky ── */}
+        <div style={{
+          background:'var(--white)', borderBottom:'2px solid var(--lgray)',
+          padding:'12px 16px', display:'flex', gap:10, flexWrap:'wrap', alignItems:'center',
+          position:'sticky', top:0, zIndex:500,
+        }}>
+          <input
+            placeholder="🔍  Search coaches, facilities, cities..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...filterStyle, flex:1, minWidth:160 }}
+          />
+          <select value={sport} onChange={e => setSport(e.target.value)} style={filterStyle}>
+            {SPORTS.map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={filterStyle}>
+            {SPECIALTIES.map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select value={county} onChange={e => setCounty(e.target.value)} style={filterStyle}>
+            {COUNTIES.map(c => <option key={c}>{c}</option>)}
+          </select>
+          <span style={{ fontSize:13, color:'var(--gray)', whiteSpace:'nowrap' }}>
+            {filtered.length} coach{filtered.length !== 1 ? 'es':''}
+          </span>
+          {/* Mobile map toggle */}
+          {isMobile && (
+            <button
+              onClick={() => setShowMap(m => !m)}
+              style={{
+                padding:'8px 14px', borderRadius:8, border:'2px solid var(--navy)',
+                background: showMap ? 'var(--navy)' : 'white',
+                color: showMap ? 'white' : 'var(--navy)',
+                fontSize:13, fontWeight:700, cursor:'pointer',
+                fontFamily:'var(--font-head)', whiteSpace:'nowrap',
+              }}
+            >
+              {showMap ? '📋 List' : '🗺 Map'}
+            </button>
+          )}
+        </div>
+
+        {/* ── Desktop: side-by-side | Mobile: stacked ── */}
+        {isMobile ? (
+          <div style={{ flex:1, overflowY:'auto', background:'var(--cream)' }}>
+            {/* Mobile map toggle panel */}
+            {showMap && (
+              <div style={{ height:280, flexShrink:0 }}>
+                {mapPanel}
+              </div>
+            )}
+            {/* List */}
+            <div style={{ padding:'12px' }}>
+              {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
+              {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
+              {filtered.map(coach => (
+                <CoachCard
+                  key={coach.id}
+                  coach={coach}
+                  selected={selected === coach.id}
+                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onViewProfile={setProfileCoach}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Desktop layout */
+          <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+            {/* Left: list — fixed 380px */}
+            <div style={{
+              width:380, flexShrink:0,
+              overflowY:'auto', padding:'16px',
+              borderRight:'2px solid var(--lgray)',
+              background:'var(--cream)',
+            }}>
+              {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
+              {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
+              {filtered.map(coach => (
+                <CoachCard
+                  key={coach.id}
+                  coach={coach}
+                  selected={selected === coach.id}
+                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onViewProfile={setProfileCoach}
+                />
+              ))}
+            </div>
+
+            {/* Right: map — takes remaining space (~40% narrower than before) */}
+            <div style={{ flex:1, position:'relative', minWidth:0 }}>
+              {mapPanel}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
