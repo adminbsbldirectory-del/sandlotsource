@@ -1,26 +1,34 @@
+import { useNavigate, useLocation } from 'react-router-dom'
+
 const NAV_TABS = [
-  { id: 'home',    label: 'Home' },
-  { id: 'coaches', label: 'Coaches' },
-  { id: 'teams',   label: 'Teams' },
-  { id: 'board',   label: 'Find a Player · Find a Team' },
-  { id: 'claim',   label: 'Claim a Listing' },
-  { id: 'roster',  label: 'Roster Spots' },
-  { id: 'submit',  label: '+ Add Listing' },
+  { id: 'home',    label: 'Home',                        path: '/' },
+  { id: 'coaches', label: 'Coaches',                     path: '/coaches' },
+  { id: 'teams',   label: 'Teams',                       path: '/teams' },
+  { id: 'board',   label: 'Find a Player · Find a Team', path: '/find' },
+  { id: 'roster',  label: 'Roster Spots',                path: '/roster' },
+  { id: 'claim',   label: 'Claim a Listing',             path: '/claim' },
+  { id: 'submit',  label: '+ Add Listing',               path: '/submit' },
 ]
 
-export default function Header({ activeTab, onTabChange }) {
+export default function Header() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Determine active tab from current URL
+  const activeTab = NAV_TABS.find(t =>
+    t.path === '/'
+      ? location.pathname === '/'
+      : location.pathname.startsWith(t.path)
+  )?.id || 'home'
+
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 900 }}>
       <div style={{ background: 'var(--navy)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-
           {/* Logo + tagline row */}
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            padding: '14px 0 10px',
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 0 10px' }}>
             <div
-              onClick={() => onTabChange('home')}
+              onClick={() => navigate('/')}
               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
             >
               <div style={{
@@ -63,7 +71,7 @@ export default function Header({ activeTab, onTabChange }) {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => onTabChange(tab.id)}
+                  onClick={() => navigate(tab.path)}
                   style={{
                     padding: '9px 16px',
                     fontFamily: 'var(--font-head)',
@@ -75,19 +83,19 @@ export default function Header({ activeTab, onTabChange }) {
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
-                   background: isAdd
-  ? (isActive ? 'var(--gold)' : 'rgba(240,165,0,0.18)')
-  : isRoster
-  ? (isActive ? '#16A34A' : 'rgba(22,163,74,0.25)')
-  : (isActive ? 'var(--cream)' : 'rgba(255,255,255,0.08)'),
-color: isAdd
-  ? (isActive ? 'var(--navy)' : 'var(--gold)')
-  : isRoster
-  ? 'white'
-  : (isActive ? 'var(--navy)' : 'rgba(255,255,255,0.65)'),
-borderBottom: isActive
-  ? (isRoster ? '3px solid #15803D' : isAdd ? '3px solid var(--gold)' : '3px solid var(--gold)')
-  : '3px solid transparent',
+                    background: isAdd
+                      ? (isActive ? 'var(--gold)' : 'rgba(240,165,0,0.18)')
+                      : isRoster
+                      ? (isActive ? '#16A34A' : 'rgba(22,163,74,0.25)')
+                      : (isActive ? 'var(--cream)' : 'rgba(255,255,255,0.08)'),
+                    color: isAdd
+                      ? (isActive ? 'var(--navy)' : 'var(--gold)')
+                      : isRoster
+                      ? 'white'
+                      : (isActive ? 'var(--navy)' : 'rgba(255,255,255,0.65)'),
+                    borderBottom: isActive
+                      ? (isRoster ? '3px solid #15803D' : '3px solid var(--gold)')
+                      : '3px solid transparent',
                   }}
                 >
                   {tab.label}
@@ -95,7 +103,6 @@ borderBottom: isActive
               )
             })}
           </div>
-
         </div>
       </div>
     </header>
