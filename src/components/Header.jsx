@@ -75,17 +75,19 @@ export default function Header({ activeTab, onTabChange }) {
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
-                    background: isAdd
+                   background: isAdd
   ? (isActive ? 'var(--gold)' : 'rgba(240,165,0,0.18)')
   : isRoster
-  ? (isActive ? '#16A34A' : 'rgba(22,163,74,0.18)')
+  ? (isActive ? '#16A34A' : 'rgba(22,163,74,0.25)')
   : (isActive ? 'var(--cream)' : 'rgba(255,255,255,0.08)'),
 color: isAdd
   ? (isActive ? 'var(--navy)' : 'var(--gold)')
   : isRoster
-  ? (isActive ? 'white' : '#4ADE80')
+  ? 'white'
   : (isActive ? 'var(--navy)' : 'rgba(255,255,255,0.65)'),
-                    borderBottom: isActive ? '3px solid var(--gold)' : '3px solid transparent',
+borderBottom: isActive
+  ? (isRoster ? '3px solid #15803D' : isAdd ? '3px solid var(--gold)' : '3px solid var(--gold)')
+  : '3px solid transparent',
                   }}
                 >
                   {tab.label}
