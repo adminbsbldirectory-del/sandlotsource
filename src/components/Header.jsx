@@ -76,11 +76,15 @@ export default function Header({ activeTab, onTabChange }) {
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
                     background: isAdd
-                      ? (isActive ? 'var(--gold)' : 'rgba(240,165,0,0.18)')
-                      : (isActive ? 'var(--cream)' : 'rgba(255,255,255,0.08)'),
-                    color: isAdd
-                      ? (isActive ? 'var(--navy)' : 'var(--gold)')
-                      : (isActive ? 'var(--navy)' : 'rgba(255,255,255,0.65)'),
+  ? (isActive ? 'var(--gold)' : 'rgba(240,165,0,0.18)')
+  : isRoster
+  ? (isActive ? '#16A34A' : 'rgba(22,163,74,0.18)')
+  : (isActive ? 'var(--cream)' : 'rgba(255,255,255,0.08)'),
+color: isAdd
+  ? (isActive ? 'var(--navy)' : 'var(--gold)')
+  : isRoster
+  ? (isActive ? 'white' : '#4ADE80')
+  : (isActive ? 'var(--navy)' : 'rgba(255,255,255,0.65)'),
                     borderBottom: isActive ? '3px solid var(--gold)' : '3px solid transparent',
                   }}
                 >
