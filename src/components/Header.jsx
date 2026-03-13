@@ -3,8 +3,8 @@ const NAV_TABS = [
   { id: 'coaches', label: 'Coaches' },
   { id: 'teams',   label: 'Teams' },
   { id: 'board',   label: 'Find a Player · Find a Team' },
-  { id: 'roster',  label: 'Roster Spots' },
   { id: 'claim',   label: 'Claim a Listing' },
+  { id: 'roster',  label: 'Roster Spots' },
   { id: 'submit',  label: '+ Add Listing' },
 ]
 
