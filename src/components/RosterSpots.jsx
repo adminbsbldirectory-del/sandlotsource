@@ -1,12 +1,34 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase.js'
 
-const COUNTIES = [
-  'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth',
-  'Franklin','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson',
-  'Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns',
-  'Union','Walker','Walton','White','Whitfield',
-]
+const REGIONS = {
+  'North Georgia': [
+    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth',
+    'Franklin','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson',
+    'Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns',
+    'Union','Walker','Walton','White','Whitfield',
+  ],
+  'Middle Georgia': [
+    'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
+    'Douglas','Elbert','Fayette','Floyd','Greene','Haralson','Harris','Heard',
+    'Henry','Jasper','Jones','Lamar','Lincoln','McDuffie','Meriwether','Monroe',
+    'Morgan','Newton','Oglethorpe','Paulding','Pike','Putnam','Rockdale',
+    'Spalding','Taliaferro','Troup','Upson','Warren','Wilkes',
+  ],
+  'South Georgia': [
+    'Appling','Atkinson','Bacon','Baker','Ben Hill','Berrien','Brantley','Brooks',
+    'Bryan','Bulloch','Burke','Calhoun','Camden','Candler','Charlton','Chatham',
+    'Clay','Clinch','Coffee','Colquitt','Columbia','Cook','Crisp','Decatur',
+    'Dodge','Dooly','Dougherty','Early','Echols','Emanuel','Evans','Glynn',
+    'Grady','Irwin','Jeff Davis','Jefferson','Jenkins','Johnson','Lanier',
+    'Laurens','Lee','Liberty','Long','Lowndes','Macon','Marion','Miller',
+    'Mitchell','Montgomery','Pierce','Pulaski','Quitman','Randolph','Richmond',
+    'Schley','Screven','Seminole','Stewart','Sumter','Tattnall','Taylor',
+    'Telfair','Terrell','Thomas','Tift','Toombs','Treutlen','Turner','Twiggs',
+    'Ware','Washington','Wayne','Webster','Wheeler','Wilcox','Wilkinson','Worth',
+  ],
+}
+
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','17U','18U','High School','College','Adult']
 const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
@@ -23,6 +45,29 @@ const inputStyle = {
 }
 const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
+
+function RegionCountyPicker({ region, county, onRegionChange, onCountyChange }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+      <div>
+        <label style={labelStyle}>Region</label>
+        <select value={region} onChange={e => { onRegionChange(e.target.value); onCountyChange('') }} style={selectStyle}>
+          <option value="">Select region</option>
+          {Object.keys(REGIONS).map(r => <option key={r}>{r}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={labelStyle}>County</label>
+        <select value={county} onChange={e => onCountyChange(e.target.value)}
+          style={{ ...selectStyle, opacity: region ? 1 : 0.5 }}
+          disabled={!region}>
+          <option value="">Select county</option>
+          {region && REGIONS[region].sort().map(c => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+    </div>
+  )
+}
 
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
@@ -140,7 +185,7 @@ function RosterForm({ onSubmitted }) {
   const [form, setForm] = useState({
     sport: 'baseball', team_name: '', org_affiliation: '',
     age_group: '', positions_needed: [],
-    city: '', county: '', description: '',
+    city: '', region: '', county: '', description: '',
     contact_name: '', contact_info: '',
   })
   const [submitting, setSubmitting] = useState(false)
@@ -236,8 +281,8 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      {/* Age group + City + County */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+      {/* Age group + City */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
           <select value={form.age_group} onChange={e => set('age_group', e.target.value)} style={selectStyle}>
@@ -249,14 +294,13 @@ function RosterForm({ onSubmitted }) {
           <label style={labelStyle}>City <RequiredMark /></label>
           <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
         </div>
-        <div>
-          <label style={labelStyle}>County</label>
-          <select value={form.county} onChange={e => set('county', e.target.value)} style={selectStyle}>
-            <option value="">Select county</option>
-            {COUNTIES.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
       </div>
+
+      {/* Region + County */}
+      <RegionCountyPicker
+        region={form.region} county={form.county}
+        onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
+      />
 
       {/* Positions */}
       <div style={{ marginBottom: 14 }}>
