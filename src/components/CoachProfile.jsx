@@ -179,6 +179,12 @@ export default function CoachProfile({ coach, onClose }) {
                 textTransform:'capitalize',
               }}>{s}</span>
             ))}
+            {coach.verified_status && (
+              <span style={{ background:'#DBEAFE', color:'#1D4ED8', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, fontFamily:'var(--font-head)' }}>✓ Verified</span>
+            )}
+            {coach.featured_status && (
+              <span style={{ background:'#FEF3C7', color:'#92400E', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, fontFamily:'var(--font-head)' }}>⭐ Featured</span>
+            )}
           </div>
         </div>
 
