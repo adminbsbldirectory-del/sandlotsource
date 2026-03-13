@@ -85,13 +85,24 @@ function parseFirstPhone(raw) {
 function RatingRow({ coach, selected }) {
   const avg = parseFloat(coach.rating_average) || 0
   const count = parseInt(coach.review_count) || 0
-  if (count === 0) return null
   const icon = coach.sport === 'softball' ? '🥎' : '⚾'
+
+  if (count === 0) {
+    // Always show sport icon even without reviews
+    return (
+      <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:6, fontSize:13 }}>
+        <span>{icon}</span>
+        <span style={{ opacity:0.45, fontSize:12 }}>No reviews yet</span>
+      </div>
+    )
+  }
+
   const full = Math.floor(avg)
   const half = (avg - full) >= 0.3
   const empty = 5 - full - (half ? 1 : 0)
   return (
     <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:6, fontSize:13 }}>
+      <span>{icon}</span>
       <span>{icon.repeat(Math.max(0,full))}{half ? '◐' : ''}{empty > 0 ? '○'.repeat(Math.max(0,empty)) : ''}</span>
       <span style={{ fontWeight:700, color: selected ? 'var(--gold)' : 'var(--navy)' }}>{avg.toFixed(1)}</span>
       <span style={{ opacity:0.6, fontSize:12 }}>({count} review{count !== 1 ? 's' : ''})</span>
@@ -131,7 +142,6 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
           </div>
         </div>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-          <span style={{ background:tierColor, color:'white', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'var(--font-head)' }}>{coach.tier}</span>
           <span style={{ background: coach.sport==='softball' ? '#7C3AED' : '#1D4ED8', color:'white', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'var(--font-head)' }}>{coach.sport}</span>
         </div>
       </div>
@@ -267,20 +277,6 @@ export default function CoachDirectory() {
 
   const mapPanel = (
     <div style={{ position:'relative', height: isMobile ? 280 : '100%', width:'100%' }}>
-      <div style={{
-        position:'absolute', top:12, right:12, zIndex:1000,
-        background:'white', borderRadius:10, padding:'10px 14px',
-        boxShadow:'0 2px 12px rgba(0,0,0,0.12)',
-        fontSize:12, fontFamily:'var(--font-body)',
-      }}>
-        {Object.entries(TIER_COLORS).map(([tier, color]) => (
-          <div key={tier} style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
-            <div style={{ width:12, height:12, borderRadius:'50%', background:color }} />
-            <span style={{ textTransform:'capitalize', color:'var(--navy)' }}>{tier}</span>
-          </div>
-        ))}
-      </div>
-      {/* Default zoom to all GA when All Regions, zoom to North GA otherwise */}
       <MapContainer
         center={region === 'All Regions' ? [32.5, -83.5] : [34.05, -84.25]}
         zoom={region === 'All Regions' ? 7 : 9}
@@ -382,7 +378,8 @@ export default function CoachDirectory() {
           </div>
         ) : (
           <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-            <div style={{ width:380, flexShrink:0, overflowY:'auto', padding:'16px', borderRight:'2px solid var(--lgray)', background:'var(--cream)' }}>
+            {/* ── Coach list ── */}
+            <div style={{ width:320, flexShrink:0, overflowY:'auto', padding:'16px', borderRight:'2px solid var(--lgray)', background:'var(--cream)' }}>
               {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
               {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
               {filtered.map(coach => (
@@ -391,7 +388,48 @@ export default function CoachDirectory() {
                   onViewProfile={setProfileCoach} />
               ))}
             </div>
+
+            {/* ── Map ── */}
             <div style={{ flex:1, position:'relative', minWidth:0 }}>{mapPanel}</div>
+
+            {/* ── Ad column ── */}
+            <div style={{ width:220, flexShrink:0, borderLeft:'2px solid var(--lgray)', background:'var(--white)', display:'flex', flexDirection:'column', gap:16, padding:'16px', overflowY:'auto' }}>
+              {/* Ad slot 1 */}
+              <div style={{
+                border:'2px dashed var(--lgray)', borderRadius:10,
+                padding:'16px 12px', textAlign:'center',
+                background:'var(--cream)', minHeight:180,
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
+              }}>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
+                <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach North Georgia baseball & softball families</div>
+                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+              </div>
+
+              {/* Ad slot 2 */}
+              <div style={{
+                border:'2px dashed var(--lgray)', borderRadius:10,
+                padding:'16px 12px', textAlign:'center',
+                background:'var(--cream)', minHeight:180,
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
+              }}>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
+                <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach North Georgia baseball & softball families</div>
+                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+              </div>
+
+              {/* Ad slot 3 */}
+              <div style={{
+                border:'2px dashed var(--lgray)', borderRadius:10,
+                padding:'16px 12px', textAlign:'center',
+                background:'var(--cream)', minHeight:180,
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
+              }}>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
+                <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach North Georgia baseball & softball families</div>
+                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+              </div>
+            </div>
           </div>
         )}
       </div>
