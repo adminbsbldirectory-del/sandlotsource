@@ -13,13 +13,7 @@ function RatingDisplay({ coach }) {
   const count = parseInt(coach.review_count) || 0
   const icon = coach.sport === 'softball' ? '🥎' : '⚾'
 
-  if (count === 0) {
-    return (
-      <div style={{ fontSize:14, color:'#888', marginTop:4 }}>
-        No reviews yet — be the first!
-      </div>
-    )
-  }
+  if (count === 0) return null
 
   const full = Math.floor(avg)
   const half = (avg - full) >= 0.3
@@ -191,10 +185,12 @@ export default function CoachProfile({ coach, onClose }) {
         {/* Body */}
         <div style={{ padding:'24px' }}>
 
-          {/* Rating summary */}
-          <div style={{ marginBottom:20, paddingBottom:20, borderBottom:'2px solid var(--lgray)' }}>
-            <RatingDisplay coach={coach} />
-          </div>
+          {/* Rating summary — only shown when reviews exist */}
+          {(parseInt(coach.review_count) || 0) > 0 && (
+            <div style={{ marginBottom:20, paddingBottom:20, borderBottom:'2px solid var(--lgray)' }}>
+              <RatingDisplay coach={coach} />
+            </div>
+          )}
 
           {/* Location + contact */}
           <div style={{ marginBottom:20 }}>
