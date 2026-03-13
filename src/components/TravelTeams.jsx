@@ -10,6 +10,34 @@ const DEMO_TEAMS = [
   { id:5, name:'Gwinnett Grizzlies', sport:'baseball', org_affiliation:'USSSA', age_group:'10U', city:'Buford', county:'Gwinnett', tryout_status:'by_invite', description:'Elite travel program; players recommended by coaches only' },
 ]
 
+const REGIONS = {
+  'North Georgia': [
+    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth',
+    'Franklin','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson',
+    'Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns',
+    'Union','Walker','Walton','White','Whitfield',
+  ],
+  'Middle Georgia': [
+    'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
+    'Douglas','Elbert','Fayette','Floyd','Greene','Haralson','Harris','Heard',
+    'Henry','Jasper','Jones','Lamar','Lincoln','McDuffie','Meriwether','Monroe',
+    'Morgan','Newton','Oglethorpe','Paulding','Pike','Putnam','Rockdale',
+    'Spalding','Taliaferro','Troup','Upson','Warren','Wilkes',
+  ],
+  'South Georgia': [
+    'Appling','Atkinson','Bacon','Baker','Ben Hill','Berrien','Brantley','Brooks',
+    'Bryan','Bulloch','Burke','Calhoun','Camden','Candler','Charlton','Chatham',
+    'Clay','Clinch','Coffee','Colquitt','Columbia','Cook','Crisp','Decatur',
+    'Dodge','Dooly','Dougherty','Early','Echols','Emanuel','Evans','Glynn',
+    'Grady','Irwin','Jeff Davis','Jefferson','Jenkins','Johnson','Lanier',
+    'Laurens','Lee','Liberty','Long','Lowndes','Macon','Marion','Miller',
+    'Mitchell','Montgomery','Pierce','Pulaski','Quitman','Randolph','Richmond',
+    'Schley','Screven','Seminole','Stewart','Sumter','Tattnall','Taylor',
+    'Telfair','Terrell','Thomas','Tift','Toombs','Treutlen','Turner','Twiggs',
+    'Ware','Washington','Wayne','Webster','Wheeler','Wilcox','Wilkinson','Worth',
+  ],
+}
+
 const STATUS_STYLE = {
   open:       { bg:'#DCFCE7', color:'#16A34A', label:'Open Tryouts' },
   closed:     { bg:'#FEE2E2', color:'#DC2626', label:'Closed' },
@@ -22,6 +50,8 @@ export default function TravelTeams() {
   const [sport, setSport] = useState('Both')
   const [ageGroup, setAgeGroup] = useState('All Ages')
   const [tryoutFilter, setTryoutFilter] = useState('All')
+  const [region, setRegion] = useState('All Regions')
+  const [county, setCounty] = useState('All Counties')
   const [loading, setLoading] = useState(true)
   const [profileTeam, setProfileTeam] = useState(null)
 
@@ -38,8 +68,16 @@ export default function TravelTeams() {
     if (sport !== 'Both' && t.sport !== sport && t.sport !== 'both') return false
     if (ageGroup !== 'All Ages' && t.age_group !== ageGroup) return false
     if (tryoutFilter !== 'All' && t.tryout_status !== tryoutFilter) return false
+    if (region !== 'All Regions' && county === 'All Counties') {
+      if (!REGIONS[region].map(r => r.toLowerCase()).includes((t.county||'').toLowerCase())) return false
+    }
+    if (county !== 'All Counties' && (t.county||'').toLowerCase() !== county.toLowerCase()) return false
     return true
   })
+
+  const countyOptions = region === 'All Regions'
+    ? ['All Counties']
+    : ['All Counties', ...(REGIONS[region] || []).sort()]
 
   const filterStyle = {
     padding:'8px 12px', borderRadius:8,
@@ -77,6 +115,15 @@ export default function TravelTeams() {
           <option value="year_round">Year Round</option>
           <option value="by_invite">By Invite</option>
           <option value="closed">Closed</option>
+        </select>
+        <select value={region} onChange={e => { setRegion(e.target.value); setCounty('All Counties') }} style={filterStyle}>
+          <option>All Regions</option>
+          {Object.keys(REGIONS).map(r => <option key={r}>{r}</option>)}
+        </select>
+        <select value={county} onChange={e => setCounty(e.target.value)}
+          style={{ ...filterStyle, opacity: region === 'All Regions' ? 0.6 : 1 }}
+          disabled={region === 'All Regions'}>
+          {countyOptions.map(c => <option key={c}>{c}</option>)}
         </select>
         <span style={{ fontSize:13, color:'var(--gray)' }}>{filtered.length} team{filtered.length !== 1 ? 's':''}</span>
       </div>
