@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../supabase.js'
+import { useState } from 'react'
+import { supabase } from '../supabase.js'
+import { useNavigate } from 'react-router-dom'
 
 // ─── Shared style constants ───────────────────────────────────────────────────
 const labelStyle = {
@@ -741,6 +744,7 @@ const TABS = [
 ]
 
 export default function CoachSubmitForm() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('coach')
 
   return (
@@ -757,7 +761,7 @@ export default function CoachSubmitForm() {
       {/* Tab selector */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0 }}>
         {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+          <button key={tab.id} onClick={() => tab.id === 'roster' ? navigate('/roster') : setActiveTab(tab.id)}
             padding: '10px 20px',
             fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
             letterSpacing: '0.04em', textTransform: 'uppercase',
@@ -776,7 +780,6 @@ export default function CoachSubmitForm() {
         {activeTab === 'coach'  && <CoachForm />}
         {activeTab === 'team'   && <TeamForm />}
         {activeTab === 'player' && <PlayerForm />}
-        {activeTab === 'roster' && <RosterForm onSubmitted={() => setSubmitted(true)} />}
       </div>
     </div>
   )
