@@ -737,6 +737,7 @@ const TABS = [
   { id: 'coach',  label: '⚾ Coach Profile' },
   { id: 'team',   label: '🏆 Travel Team' },
   { id: 'player', label: '📋 Player Needed | Player Available' },
+  { id: 'roster', label: '🔖 Roster Spot' },
 ]
 
 export default function CoachSubmitForm() {
@@ -775,6 +776,7 @@ export default function CoachSubmitForm() {
         {activeTab === 'coach'  && <CoachForm />}
         {activeTab === 'team'   && <TeamForm />}
         {activeTab === 'player' && <PlayerForm />}
+        {activeTab === 'roster' && <RosterForm onSubmitted={() => setSubmitted(true)} />}
       </div>
     </div>
   )
