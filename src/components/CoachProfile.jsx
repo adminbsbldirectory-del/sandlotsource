@@ -200,9 +200,19 @@ export default function CoachProfile({ coach, onClose }) {
 
           {/* Location + contact */}
           <div style={{ marginBottom:20 }}>
-            <div style={{ fontSize:14, color:'var(--navy)', marginBottom:6 }}>
-              📍 {[coach.city, coach.county ? coach.county+' Co.' : null, 'GA'].filter(Boolean).join(', ')}
-            </div>
+            {coach.address ? (
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(coach.address)}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color:'var(--navy)', textDecoration:'none', fontSize:14, display:'block', marginBottom:6 }}
+              >
+                📍 {coach.address} <span style={{ fontSize:12, color:'var(--red)', fontWeight:600 }}>→ Map</span>
+              </a>
+            ) : (
+              <div style={{ fontSize:14, color:'var(--navy)', marginBottom:6 }}>
+                📍 {[coach.city, coach.county ? coach.county+' Co.' : null, 'GA'].filter(Boolean).join(', ')}
+              </div>
+            )}
             {coach.credentials && (
               <div style={{ fontSize:14, color:'#555', lineHeight:1.5, marginBottom:8 }}>
                 🏅 {coach.credentials}
