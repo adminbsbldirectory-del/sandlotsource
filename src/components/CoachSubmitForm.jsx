@@ -16,10 +16,62 @@ const inputStyle = {
 const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
-const COUNTIES = ['Barrow','Cherokee','Cobb','DeKalb','Forsyth','Fulton','Gwinnett','Hall','Oconee','Walton']
-const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','18U','Adult']
-const POSITIONS_BB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
-const POSITIONS_SB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
+// ─── Region → County map ──────────────────────────────────────────────────────
+const REGIONS = {
+  'North Georgia': [
+    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth',
+    'Franklin','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson',
+    'Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns',
+    'Union','Walker','Walton','White','Whitfield',
+  ],
+  'Middle Georgia': [
+    'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
+    'Douglas','Elbert','Fayette','Floyd','Greene','Haralson','Harris','Heard',
+    'Henry','Jasper','Jones','Lamar','Lincoln','McDuffie','Meriwether','Monroe',
+    'Morgan','Newton','Oglethorpe','Paulding','Pike','Putnam','Rockdale',
+    'Spalding','Taliaferro','Troup','Upson','Warren','Wilkes',
+  ],
+  'South Georgia': [
+    'Appling','Atkinson','Bacon','Baker','Ben Hill','Berrien','Brantley','Brooks',
+    'Bryan','Bulloch','Burke','Calhoun','Camden','Candler','Charlton','Chatham',
+    'Clay','Clinch','Coffee','Colquitt','Columbia','Cook','Crisp','Decatur',
+    'Dodge','Dooly','Dougherty','Early','Echols','Emanuel','Evans','Glynn',
+    'Grady','Irwin','Jeff Davis','Jefferson','Jenkins','Johnson','Lanier',
+    'Laurens','Lee','Liberty','Long','Lowndes','Macon','Marion','Miller',
+    'Mitchell','Montgomery','Pierce','Pulaski','Quitman','Randolph','Richmond',
+    'Schley','Screven','Seminole','Stewart','Sumter','Tattnall','Taylor',
+    'Telfair','Terrell','Thomas','Tift','Toombs','Treutlen','Turner','Twiggs',
+    'Ware','Washington','Wayne','Webster','Wheeler','Wilcox','Wilkinson','Worth',
+  ],
+}
+
+const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','17U','18U','High School','College','Adult']
+const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
+const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
+
+// ─── Reusable region/county picker ───────────────────────────────────────────
+function RegionCountyPicker({ region, county, onRegionChange, onCountyChange }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+      <div>
+        <label style={labelStyle}>Region</label>
+        <select value={region} onChange={e => { onRegionChange(e.target.value); onCountyChange('') }} style={selectStyle}>
+          <option value="">Select region</option>
+          {Object.keys(REGIONS).map(r => <option key={r}>{r}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={labelStyle}>County</label>
+        <select value={county} onChange={e => onCountyChange(e.target.value)}
+          style={{ ...selectStyle, opacity: region ? 1 : 0.5 }}
+          disabled={!region}>
+          <option value="">Select county</option>
+          {region && REGIONS[region].sort().map(c => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+    </div>
+  )
+}
 
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
@@ -53,7 +105,7 @@ function SuccessBanner({ message }) {
 // ─── COACH FORM ───────────────────────────────────────────────────────────────
 function CoachForm() {
   const [form, setForm] = useState({
-    name: '', sport: 'baseball', specialty: '', city: '', county: '',
+    name: '', sport: 'baseball', specialty: '', city: '', region: '', county: '',
     facility_name: '', phone: '', email: '', website: '', instagram: '', facebook: '',
     credentials: '', bio: '', age_groups: '', skill_level: '',
     price_per_session: '', price_notes: '',
@@ -111,7 +163,6 @@ function CoachForm() {
 
     const { error: sbError } = await supabase.from('coaches').insert(payload)
     setSubmitting(false)
-
     if (sbError) {
       console.error('Coach insert error:', sbError)
       setError('Something went wrong submitting your listing. Please try again.')
@@ -152,20 +203,17 @@ function CoachForm() {
         </div>
       </div>
 
-      {/* City + County */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>City <RequiredMark /></label>
-          <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>County</label>
-          <select value={form.county} onChange={e => set('county', e.target.value)} style={selectStyle}>
-            <option value="">Select county</option>
-            {COUNTIES.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
+      {/* City */}
+      <div style={{ marginBottom: 14 }}>
+        <label style={labelStyle}>City <RequiredMark /></label>
+        <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
       </div>
+
+      {/* Region + County */}
+      <RegionCountyPicker
+        region={form.region} county={form.county}
+        onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
+      />
 
       {/* Contact name + role */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -282,7 +330,8 @@ function CoachForm() {
 function TeamForm() {
   const [form, setForm] = useState({
     name: '', sport: 'baseball', org_affiliation: '', age_group: '',
-    city: '', county: '', contact_name: '', contact_email: '', contact_phone: '',
+    city: '', region: '', county: '',
+    contact_name: '', contact_email: '', contact_phone: '',
     website: '', tryout_status: 'unknown', tryout_date: '', tryout_notes: '',
     description: '', submission_notes: '',
   })
@@ -331,7 +380,6 @@ function TeamForm() {
 
     const { error: sbError } = await supabase.from('travel_teams').insert(payload)
     setSubmitting(false)
-
     if (sbError) {
       console.error('Team insert error:', sbError)
       setError('Something went wrong submitting your team. Please try again.')
@@ -372,8 +420,8 @@ function TeamForm() {
         </div>
       </div>
 
-      {/* Age group + City + County */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+      {/* Age group + City */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
           <select value={form.age_group} onChange={e => set('age_group', e.target.value)} style={selectStyle}>
@@ -385,14 +433,13 @@ function TeamForm() {
           <label style={labelStyle}>City <RequiredMark /></label>
           <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
         </div>
-        <div>
-          <label style={labelStyle}>County</label>
-          <select value={form.county} onChange={e => set('county', e.target.value)} style={selectStyle}>
-            <option value="">Select county</option>
-            {COUNTIES.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
       </div>
+
+      {/* Region + County */}
+      <RegionCountyPicker
+        region={form.region} county={form.county}
+        onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
+      />
 
       {/* Contact */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -470,7 +517,8 @@ function PlayerForm() {
   const [postType, setPostType] = useState('player_needed')
   const [form, setForm] = useState({
     sport: 'baseball', age_group: '', team_name: '',
-    position_needed: [], city: '', county: '', location_name: '', event_date: '',
+    position_needed: [], city: '', region: '', county: '',
+    location_name: '', event_date: '',
     player_age: '', player_position: [], player_description: '',
     contact_info: '', additional_notes: '',
   })
@@ -523,22 +571,21 @@ function PlayerForm() {
       source:           'website_form',
       last_confirmed_at: new Date().toISOString(),
       ...(postType === 'player_needed' ? {
-        age_group:     form.age_group,
-        team_name:     form.team_name.trim() || null,
+        age_group:       form.age_group,
+        team_name:       form.team_name.trim() || null,
         position_needed: form.position_needed,
-        location_name: form.location_name.trim(),
-        event_date:    form.event_date,
+        location_name:   form.location_name.trim(),
+        event_date:      form.event_date,
       } : {
-        player_age:      form.player_age ? parseInt(form.player_age) : null,
-        age_group:       form.age_group || null,
-        player_position: form.player_position,
+        player_age:         form.player_age ? parseInt(form.player_age) : null,
+        age_group:          form.age_group || null,
+        player_position:    form.player_position,
         player_description: form.player_description.trim() || null,
       }),
     }
 
     const { error: sbError } = await supabase.from('player_board').insert(payload)
     setSubmitting(false)
-
     if (sbError) {
       console.error('Player board insert error:', sbError)
       setError('Something went wrong. Please try again.')
@@ -556,8 +603,8 @@ function PlayerForm() {
       {/* Post type toggle */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[
-          ['player_needed',   '⚾ Player Needed'],
-          ['player_available','🧢 Player Available'],
+          ['player_needed',    '⚾ Player Needed'],
+          ['player_available', '🧢 Player Available'],
         ].map(([val, label]) => (
           <button key={val} onClick={() => {
             setPostType(val)
@@ -614,25 +661,21 @@ function PlayerForm() {
                   borderColor: form.position_needed.includes(pos) ? 'var(--navy)' : 'var(--lgray)',
                   background:  form.position_needed.includes(pos) ? 'var(--navy)' : 'white',
                   color:       form.position_needed.includes(pos) ? 'white' : 'var(--navy)',
-                  fontSize: 12, textTransform: 'capitalize', fontFamily: 'var(--font-body)',
+                  fontSize: 12, fontFamily: 'var(--font-body)',
                 }}>{pos}</button>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={labelStyle}>City <RequiredMark /></label>
-              <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>County</label>
-              <select value={form.county} onChange={e => set('county', e.target.value)} style={selectStyle}>
-                <option value="">Select county</option>
-                {COUNTIES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>City <RequiredMark /></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
           </div>
+
+          <RegionCountyPicker
+            region={form.region} county={form.county}
+            onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
+          />
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Location / Facility Name <RequiredMark /></label>
@@ -677,25 +720,21 @@ function PlayerForm() {
                   borderColor: form.player_position.includes(pos) ? 'var(--navy)' : 'var(--lgray)',
                   background:  form.player_position.includes(pos) ? 'var(--navy)' : 'white',
                   color:       form.player_position.includes(pos) ? 'white' : 'var(--navy)',
-                  fontSize: 12, textTransform: 'capitalize', fontFamily: 'var(--font-body)',
+                  fontSize: 12, fontFamily: 'var(--font-body)',
                 }}>{pos}</button>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={labelStyle}>City <RequiredMark /></label>
-              <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>County</label>
-              <select value={form.county} onChange={e => set('county', e.target.value)} style={selectStyle}>
-                <option value="">Select county</option>
-                {COUNTIES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>City <RequiredMark /></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
           </div>
+
+          <RegionCountyPicker
+            region={form.region} county={form.county}
+            onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
+          />
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Description</label>
@@ -737,7 +776,7 @@ function PlayerForm() {
 const TABS = [
   { id: 'coach',  label: '⚾ Coach Profile' },
   { id: 'team',   label: '🏆 Travel Team' },
-  { id: 'player', label: '📋 Player Needed | Player Available' },
+  { id: 'player', label: '📋 Player Board' },
   { id: 'roster', label: '🔖 Roster Spot' },
 ]
 
@@ -756,24 +795,25 @@ export default function CoachSubmitForm() {
         </div>
       </div>
 
-     {/* Tab selector */}
-<div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0 }}>
-  {TABS.map(tab => (
-    <button key={tab.id}
-      onClick={() => tab.id === 'roster' ? navigate('/roster') : setActiveTab(tab.id)}
-      style={{
-        padding: '10px 20px',
-        fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
-        letterSpacing: '0.04em', textTransform: 'uppercase',
-        border: 'none', borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
-        background: 'transparent',
-        color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
-        cursor: 'pointer', marginBottom: -2,
-      }}>
-      {tab.label}
-    </button>
-  ))}
-</div>
+      {/* Tab selector */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0 }}>
+        {TABS.map(tab => (
+          <button key={tab.id}
+            onClick={() => tab.id === 'roster' ? navigate('/roster') : setActiveTab(tab.id)}
+            style={{
+              padding: '10px 20px',
+              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
+              letterSpacing: '0.04em', textTransform: 'uppercase',
+              border: 'none',
+              borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
+              background: 'transparent',
+              color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
+              cursor: 'pointer', marginBottom: -2,
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       {/* Active form */}
       <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '28px 24px' }}>
