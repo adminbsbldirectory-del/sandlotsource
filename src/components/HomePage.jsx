@@ -13,12 +13,6 @@ const DEMO_FEATURED_TEAMS = [
   { id:3, name:'East Cobb Astros', sport:'baseball', age_group:'13U', city:'Marietta', org_affiliation:'Perfect Game', tryout_status:'closed' },
 ]
 
-const DEMO_RECENT_POSTS = [
-  { id:1, post_type:'team_need', sport:'baseball', team_name:'Cherokee Nationals 10U', age_group:'10U', position_needed:['catcher','shortstop'], city:'Canton', created_at:'2025-03-10' },
-  { id:2, post_type:'player_available', sport:'softball', player_age:14, player_position:['pitcher'], city:'Woodstock', created_at:'2025-03-09' },
-  { id:3, post_type:'team_need', sport:'softball', team_name:'Forsyth Fire 12U', age_group:'12U', position_needed:['pitcher'], city:'Cumming', created_at:'2025-03-08' },
-]
-
 const TIER_COLORS = { elite:'#D42B2B', strong:'#F0A500', local:'#0B1F3A', budget:'#6B7280' }
 const STATUS_STYLE = {
   open:       { bg:'#DCFCE7', color:'#16A34A', label:'Open Tryouts' },
@@ -36,6 +30,7 @@ function AdBanner({ label = 'Your Ad Here', height = 90 }) {
       borderRadius: 8,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       flexDirection: 'column', gap: 4,
+      boxSizing: 'border-box',
     }}>
       <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
         {label}
@@ -83,6 +78,13 @@ export default function HomePage({ onNavigate }) {
   const [coaches, setCoaches] = useState(DEMO_FEATURED_COACHES)
   const [teams, setTeams] = useState(DEMO_FEATURED_TEAMS)
   const [posts, setPosts] = useState([])
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -103,20 +105,21 @@ export default function HomePage({ onNavigate }) {
   return (
     <div style={{ background: 'var(--cream)', minHeight: '100vh' }}>
 
-      {/* ── TOP HORIZONTAL BANNER AD ─────────────────────── */}
-      <div style={{ background: 'var(--white)', borderBottom: '1px solid var(--lgray)', padding: '10px 20px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <AdBanner label="Top Banner — 728×90 Ad Space" height={72} />
+      {/* ── TOP BANNER AD — hidden on mobile to save space ── */}
+      {!isMobile && (
+        <div style={{ background: 'var(--white)', borderBottom: '1px solid var(--lgray)', padding: '10px 20px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <AdBanner label="Top Banner — 728×90 Ad Space" height={72} />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ── HERO SECTION ─────────────────────────────────── */}
+      {/* ── HERO ─────────────────────────────────────────── */}
       <div style={{
         background: 'linear-gradient(135deg, var(--navy) 0%, #162d52 60%, #1a3560 100%)',
-        padding: '52px 20px 48px',
+        padding: isMobile ? '36px 16px 32px' : '52px 20px 48px',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Subtle background texture */}
         <div style={{
           position: 'absolute', inset: 0, opacity: 0.04,
           backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
@@ -124,82 +127,67 @@ export default function HomePage({ onNavigate }) {
         }} />
 
         <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-          {/* Brand badge in hero */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             background: 'rgba(255,255,255,0.08)',
             border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 40,
-            padding: '8px 20px',
-            marginBottom: 28,
+            borderRadius: 40, padding: '8px 20px', marginBottom: 24,
           }}>
             <span style={{ fontSize: 20 }}>⚾</span>
             <span style={{
-              fontFamily: 'var(--font-head)',
-              fontSize: 22, fontWeight: 900,
-              color: 'var(--white)',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
+              fontFamily: 'var(--font-head)', fontSize: isMobile ? 18 : 22,
+              fontWeight: 900, color: 'var(--white)',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
             }}>Sandlot Source</span>
           </div>
 
           <h1 style={{
             fontFamily: 'var(--font-head)',
-            fontSize: 'clamp(32px, 6vw, 58px)',
+            fontSize: isMobile ? '28px' : 'clamp(32px, 6vw, 58px)',
             fontWeight: 900, color: 'var(--white)',
-            letterSpacing: '0.02em', lineHeight: 1.05,
-            marginBottom: 18,
+            letterSpacing: '0.02em', lineHeight: 1.1,
+            marginBottom: 16,
           }}>
             Your local baseball<br />& softball source.
           </h1>
 
           <p style={{
             fontFamily: 'var(--font-body)',
-            fontSize: 17, color: 'rgba(255,255,255,0.72)',
-            lineHeight: 1.6, maxWidth: 560, margin: '0 auto 32px',
+            fontSize: isMobile ? 15 : 17,
+            color: 'rgba(255,255,255,0.72)',
+            lineHeight: 1.6, maxWidth: 560, margin: '0 auto 28px',
           }}>
             Find coaches, explore travel teams, and connect players with roster spots —
             all in one place for North Georgia families.
           </p>
 
-          {/* CTA Buttons */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={() => onNavigate('coaches')} style={{
-              background: 'var(--red)', color: 'white',
-              border: 'none', borderRadius: 8,
-              padding: '13px 26px',
-              fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              cursor: 'pointer', transition: 'opacity 0.15s',
-            }}>
-              ⚾ Find Coaches
-            </button>
+              background: 'var(--red)', color: 'white', border: 'none', borderRadius: 8,
+              padding: isMobile ? '11px 20px' : '13px 26px',
+              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
+            }}>⚾ Find Coaches</button>
             <button onClick={() => onNavigate('teams')} style={{
               background: 'rgba(255,255,255,0.12)', color: 'white',
               border: '2px solid rgba(255,255,255,0.3)', borderRadius: 8,
-              padding: '13px 26px',
-              fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}>
-              Browse Teams
-            </button>
+              padding: isMobile ? '11px 20px' : '13px 26px',
+              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
+            }}>Browse Teams</button>
             <button onClick={() => onNavigate('board')} style={{
               background: 'rgba(240,165,0,0.15)', color: 'var(--gold)',
               border: '2px solid rgba(240,165,0,0.4)', borderRadius: 8,
-              padding: '13px 26px',
-              fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}>
-              Post Player Need
-            </button>
+              padding: isMobile ? '11px 20px' : '13px 26px',
+              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
+            }}>Post Player Need</button>
           </div>
 
-          {/* Quick trust stats */}
           <div style={{
-            display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap',
-            marginTop: 36, paddingTop: 32,
+            display: 'flex', gap: isMobile ? 20 : 32,
+            justifyContent: 'center', flexWrap: 'wrap',
+            marginTop: 32, paddingTop: 28,
             borderTop: '1px solid rgba(255,255,255,0.1)',
           }}>
             {[
@@ -208,8 +196,8 @@ export default function HomePage({ onNavigate }) {
               { n: openTryouts || '5+', label: 'Open Tryouts' },
             ].map(({ n, label }) => (
               <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 28, fontWeight: 800, color: 'var(--gold)', lineHeight: 1 }}>{n}</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 24 : 28, fontWeight: 800, color: 'var(--gold)', lineHeight: 1 }}>{n}</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
               </div>
             ))}
           </div>
@@ -218,14 +206,11 @@ export default function HomePage({ onNavigate }) {
 
       {/* ── OPEN TRYOUTS BANNER ───────────────────────────── */}
       {openTryouts > 0 && (
-        <div
-          onClick={() => onNavigate('teams')}
-          style={{
-            background: '#DCFCE7', borderBottom: '2px solid #16A34A',
-            padding: '10px 20px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-        >
+        <div onClick={() => onNavigate('teams')} style={{
+          background: '#DCFCE7', borderBottom: '2px solid #16A34A',
+          padding: '10px 20px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
           <span style={{ fontSize: 13, color: '#15803D', fontWeight: 700 }}>
             ✅ {openTryouts} team{openTryouts !== 1 ? 's' : ''} currently accepting tryouts
           </span>
@@ -234,13 +219,21 @@ export default function HomePage({ onNavigate }) {
       )}
 
       {/* ── MAIN CONTENT + SIDEBAR ───────────────────────── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 20px', display: 'flex', gap: 28, alignItems: 'flex-start' }}>
+      {/* On mobile: single column, sidebar content moves inline or to bottom */}
+      <div style={{
+        maxWidth: 1200, margin: '0 auto',
+        padding: isMobile ? '24px 14px' : '40px 20px',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? 0 : 28,
+        alignItems: 'flex-start',
+      }}>
 
-        {/* ── LEFT: 3 LANES ──────────────────────────────── */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* ── MAIN COLUMN ──────────────────────────────────── */}
+        <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
 
-          {/* ── LANE 1: Featured Coaches ──────────────────── */}
-          <section style={{ marginBottom: 48 }}>
+          {/* ── Featured Coaches ──────────────────────────── */}
+          <section style={{ marginBottom: 40 }}>
             <SectionLabel>Featured Coaches</SectionLabel>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
               <SectionHeading>Find a Coach</SectionHeading>
@@ -252,15 +245,14 @@ export default function HomePage({ onNavigate }) {
               }}>View All →</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
               {coaches.map(coach => {
                 const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
                 const tierColor = TIER_COLORS[coach.tier] || TIER_COLORS.local
                 return (
                   <div key={coach.id} onClick={() => onNavigate('coaches')} style={{
                     background: 'var(--white)', borderRadius: 10,
-                    border: '2px solid var(--lgray)',
-                    padding: '16px', cursor: 'pointer',
+                    border: '2px solid var(--lgray)', padding: '16px', cursor: 'pointer',
                     transition: 'border-color 0.15s, box-shadow 0.15s',
                     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
                   }}
@@ -273,7 +265,7 @@ export default function HomePage({ onNavigate }) {
                         {coach.facility_name && <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>{coach.facility_name}</div>}
                         <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>📍 {coach.city}{coach.county ? `, ${coach.county}` : ''}</div>
                       </div>
-                      <span style={{ background: tierColor, color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>{coach.tier}</span>
+                      <span style={{ background: tierColor, color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', marginLeft: 8 }}>{coach.tier}</span>
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
                       <SportBadge sport={coach.sport} />
@@ -294,31 +286,30 @@ export default function HomePage({ onNavigate }) {
               })}
             </div>
 
-            {/* Internal promo — placeholder for future featured listing upsell */}
             <div onClick={() => onNavigate('submit')} style={{
               marginTop: 14,
               background: 'linear-gradient(90deg, #0B1F3A 0%, #162d52 100%)',
               borderRadius: 10, padding: '14px 18px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer',
+              cursor: 'pointer', gap: 12,
             }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'white' }}>Are you a coach?</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Add your profile and get discovered by local families.</div>
               </div>
-              <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>
+              <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: '0.04em', flexShrink: 0 }}>
                 Get Listed →
               </span>
             </div>
           </section>
 
-          {/* ── MID-PAGE AD ───────────────────────────────── */}
-          <div style={{ marginBottom: 48 }}>
-            <AdBanner label="Mid-Page Banner — 728×90 Ad Space" height={90} />
+          {/* ── MID-PAGE AD — compressed on mobile ───────── */}
+          <div style={{ marginBottom: 40 }}>
+            <AdBanner label="Mid-Page Banner — Ad Space" height={isMobile ? 60 : 90} />
           </div>
 
-          {/* ── LANE 2: Travel Teams ──────────────────────── */}
-          <section style={{ marginBottom: 48 }}>
+          {/* ── Travel Teams ──────────────────────────────── */}
+          <section style={{ marginBottom: 40 }}>
             <SectionLabel>Travel Teams</SectionLabel>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
               <SectionHeading>Explore Teams</SectionHeading>
@@ -330,7 +321,7 @@ export default function HomePage({ onNavigate }) {
               }}>View All →</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
               {teams.map(team => {
                 const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
                 return (
@@ -362,19 +353,19 @@ export default function HomePage({ onNavigate }) {
               background: 'linear-gradient(90deg, #0B1F3A 0%, #162d52 100%)',
               borderRadius: 10, padding: '14px 18px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer',
+              cursor: 'pointer', gap: 12,
             }}>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'white' }}>Running a travel team?</div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Get your team in front of players looking for a spot.</div>
               </div>
-              <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>
+              <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: '0.04em', flexShrink: 0 }}>
                 List Your Team →
               </span>
             </div>
           </section>
 
-          {/* ── LANE 3: Player Needs ──────────────────────── */}
+          {/* ── Player Board ──────────────────────────────── */}
           <section style={{ marginBottom: 40 }}>
             <SectionLabel>Player Board</SectionLabel>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
@@ -388,7 +379,11 @@ export default function HomePage({ onNavigate }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {posts.map(post => {
+              {posts.length === 0 ? (
+                <div style={{ background: 'var(--white)', borderRadius: 10, border: '2px solid var(--lgray)', padding: '20px', textAlign: 'center', color: 'var(--gray)', fontSize: 14 }}>
+                  No active posts right now — check back soon or post a need.
+                </div>
+              ) : posts.map(post => {
                 const isPlayer = post.post_type === 'player_available'
                 const positions = isPlayer
                   ? (Array.isArray(post.player_position) ? post.player_position : [])
@@ -424,9 +419,7 @@ export default function HomePage({ onNavigate }) {
                         {positions.length > 0 && ` · ${positions.join(', ')}`}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      <SportBadge sport={post.sport} />
-                    </div>
+                    <SportBadge sport={post.sport} />
                   </div>
                 )
               })}
@@ -443,84 +436,102 @@ export default function HomePage({ onNavigate }) {
               + Post a Player Need
             </button>
           </section>
+
+          {/* ── MOBILE-ONLY: inline sidebar content ──────── */}
+          {isMobile && (
+            <div style={{ marginBottom: 32 }}>
+              {/* About blurb */}
+              <div style={{
+                background: 'var(--white)', border: '2px solid var(--lgray)',
+                borderRadius: 10, padding: '18px', marginBottom: 16,
+              }}>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, marginBottom: 10, color: 'var(--navy)' }}>
+                  About Sandlot Source
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.6, margin: 0 }}>
+                  Locally built for North Georgia baseball & softball families.
+                  Community-driven listings for coaches, travel teams, and player needs — no paywalls, no gatekeeping.
+                </p>
+              </div>
+              {/* Mobile ad — compact */}
+              <AdBanner label="Advertise Here — Local Sports Businesses" height={80} />
+            </div>
+          )}
         </div>
 
-        {/* ── RIGHT SIDEBAR ────────────────────────────────── */}
-        <div style={{ width: 260, flexShrink: 0 }}>
-
-          {/* Sidebar Ad */}
-          <div style={{
-            background: 'var(--white)', border: '1px solid var(--lgray)',
-            borderRadius: 10, overflow: 'hidden', marginBottom: 20,
-          }}>
-            <div style={{ padding: '10px 14px', background: 'var(--lgray)', fontSize: 10, fontWeight: 700, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              Featured Partner
+        {/* ── RIGHT SIDEBAR — desktop only ─────────────────── */}
+        {!isMobile && (
+          <div style={{ width: 260, flexShrink: 0 }}>
+            <div style={{
+              background: 'var(--white)', border: '1px solid var(--lgray)',
+              borderRadius: 10, overflow: 'hidden', marginBottom: 20,
+            }}>
+              <div style={{ padding: '10px 14px', background: 'var(--lgray)', fontSize: 10, fontWeight: 700, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Featured Partner
+              </div>
+              <div style={{ padding: 14 }}>
+                <AdBanner label="Sidebar — 300×250 Ad Space" height={200} />
+              </div>
             </div>
-            <div style={{ padding: 14 }}>
-              <AdBanner label="Sidebar — 300×250 Ad Space" height={200} />
+
+            <div style={{
+              background: 'var(--white)', border: '2px solid var(--lgray)',
+              borderRadius: 10, padding: '18px', marginBottom: 20,
+            }}>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, marginBottom: 10, color: 'var(--navy)' }}>
+                About Sandlot Source
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 0 }}>
+                Locally built for North Georgia baseball & softball families.
+                Community-driven listings for coaches, travel teams, and player needs — no paywalls, no gatekeeping.
+              </p>
+            </div>
+
+            <div style={{
+              background: 'var(--white)', border: '2px solid var(--lgray)',
+              borderRadius: 10, overflow: 'hidden', marginBottom: 20,
+            }}>
+              <div style={{ padding: '10px 14px', background: 'var(--navy)', fontSize: 11, fontWeight: 700, color: 'white', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Quick Links
+              </div>
+              {[
+                { label: '⚾ Find a Coach', tab: 'coaches' },
+                { label: '🏆 Browse Teams', tab: 'teams' },
+                { label: '📋 Player Board', tab: 'board' },
+                { label: '+ Add a Listing', tab: 'submit' },
+              ].map(({ label, tab }) => (
+                <button key={tab} onClick={() => onNavigate(tab)} style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '10px 14px', border: 'none',
+                  borderBottom: '1px solid var(--lgray)',
+                  background: 'white', cursor: 'pointer',
+                  fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--navy)',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseOver={e => e.currentTarget.style.background = 'var(--cream)'}
+                  onMouseOut={e => e.currentTarget.style.background = 'white'}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{
+              background: 'var(--white)', border: '1px solid var(--lgray)',
+              borderRadius: 10, overflow: 'hidden',
+            }}>
+              <div style={{ padding: '10px 14px', background: 'var(--lgray)', fontSize: 10, fontWeight: 700, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Sponsor This Spot
+              </div>
+              <div style={{ padding: 14 }}>
+                <AdBanner label="Sidebar — 300×250 Ad Space" height={180} />
+              </div>
             </div>
           </div>
-
-          {/* Trust box */}
-          <div style={{
-            background: 'var(--white)', border: '2px solid var(--lgray)',
-            borderRadius: 10, padding: '18px', marginBottom: 20,
-          }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, marginBottom: 10, color: 'var(--navy)' }}>
-              About Sandlot Source
-            </div>
-            <p style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 0 }}>
-              Locally built for North Georgia baseball & softball families.
-              Community-driven listings for coaches, travel teams, and player needs — no paywalls, no gatekeeping.
-            </p>
-          </div>
-
-          {/* Quick links */}
-          <div style={{
-            background: 'var(--white)', border: '2px solid var(--lgray)',
-            borderRadius: 10, overflow: 'hidden', marginBottom: 20,
-          }}>
-            <div style={{ padding: '10px 14px', background: 'var(--navy)', fontSize: 11, fontWeight: 700, color: 'white', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              Quick Links
-            </div>
-            {[
-              { label: '⚾ Find a Coach', tab: 'coaches' },
-              { label: '🏆 Browse Teams', tab: 'teams' },
-              { label: '📋 Player Board', tab: 'board' },
-              { label: '+ Add a Listing', tab: 'submit' },
-            ].map(({ label, tab }) => (
-              <button key={tab} onClick={() => onNavigate(tab)} style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                padding: '10px 14px', border: 'none',
-                borderBottom: '1px solid var(--lgray)',
-                background: 'white', cursor: 'pointer',
-                fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--navy)',
-                transition: 'background 0.1s',
-              }}
-                onMouseOver={e => e.currentTarget.style.background = 'var(--cream)'}
-                onMouseOut={e => e.currentTarget.style.background = 'white'}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Second sidebar ad */}
-          <div style={{
-            background: 'var(--white)', border: '1px solid var(--lgray)',
-            borderRadius: 10, overflow: 'hidden',
-          }}>
-            <div style={{ padding: '10px 14px', background: 'var(--lgray)', fontSize: 10, fontWeight: 700, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              Sponsor This Spot
-            </div>
-            <div style={{ padding: 14 }}>
-              <AdBanner label="Sidebar — 300×250 Ad Space" height={180} />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* ── FOOTER TRUST BAR ─────────────────────────────── */}
+      {/* ── FOOTER ───────────────────────────────────────── */}
       <div style={{
         background: 'var(--white)', borderTop: '2px solid var(--lgray)',
         padding: '20px', textAlign: 'center',
