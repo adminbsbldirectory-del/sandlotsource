@@ -186,14 +186,3 @@ export default function TeamProfile({ team, onClose, onClaim }) {
     </div>
   )
 }
-{team.claimed ? (
-  <div style={{
-    textAlign:'center', padding:'12px',
-    background:'var(--lgray)', borderRadius:8,
-    fontSize:13, color:'var(--gray)', fontWeight:600,
-  }}>
-    ✅ This listing has been claimed
-  </div>
-) : (
-  <button onClick={...}>✏️ Claim or Update This Listing</button>
-)}
