@@ -164,21 +164,33 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             marginTop:4, paddingTop:16, borderTop:'2px solid var(--lgray)',
             display:'flex', flexDirection:'column', gap:8,
           }}>
-            <div style={{ fontSize:12, color:'#888', textAlign:'center' }}>
-              Is this your team? Claim this listing to update contact info, tryout dates, and more.
-            </div>
-            <button
-              onClick={() => { onClose(); onClaim && onClaim(team) }}
-              style={{
-                width:'100%', padding:'12px',
-                background:'var(--red)', color:'white',
-                border:'none', borderRadius:8,
-                fontSize:15, fontWeight:700, cursor:'pointer',
-                fontFamily:'var(--font-head)',
-              }}
-            >
-              ✏️ Claim or Update This Listing
-            </button>
+            {team.claimed ? (
+  <div style={{
+    textAlign:'center', padding:'12px',
+    background:'var(--lgray)', borderRadius:8,
+    fontSize:13, color:'var(--gray)', fontWeight:600,
+  }}>
+    ✅ This listing has been claimed
+  </div>
+) : (
+  <>
+    <div style={{ fontSize:12, color:'#888', textAlign:'center' }}>
+      Is this your team? Claim this listing to update contact info, tryout dates, and more.
+    </div>
+    <button
+      onClick={() => { onClose(); onClaim && onClaim(team) }}
+      style={{
+        width:'100%', padding:'12px',
+        background:'var(--red)', color:'white',
+        border:'none', borderRadius:8,
+        fontSize:15, fontWeight:700, cursor:'pointer',
+        fontFamily:'var(--font-head)',
+      }}
+    >
+      ✏️ Claim or Update This Listing
+    </button>
+  </>
+)}
           </div>
 
         </div>
