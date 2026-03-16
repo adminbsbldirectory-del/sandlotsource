@@ -131,7 +131,6 @@ function RatingRow({ coach, selected }) {
 }
 
 function CoachCard({ coach, selected, onClick, onViewProfile }) {
-  const tierColor = TIER_COLORS[coach.tier] || TIER_COLORS.local
   const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
   const firstPhone = parseFirstPhone(coach.phone)
 
