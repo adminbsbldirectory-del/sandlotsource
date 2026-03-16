@@ -311,7 +311,7 @@ export default function HomePage() {
       </div>
 
       {/* ── CTA BLOCK ─────────────────────────────────────────────────────── */}
-      <section style={{ background: DARK, borderRadius: 14, padding: '26px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginTop: 24 }}>
+      <section style={{ background: DARK, borderRadius: 14, padding: '26px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginTop: 24, marginBottom: 8 }}>
         <div>
           <h2 style={{ fontSize: 18, fontWeight: 500, color: '#fff', marginBottom: 5 }}>Are you a coach or team?</h2>
           <p style={{ fontSize: 13, color: MUTED }}>Add a free listing or claim an existing one to manage your profile.</p>
@@ -325,37 +325,6 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-
-      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <footer style={{ marginTop: 30, borderTop: `1px solid ${BORDER}`, paddingTop: 24 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 24, paddingBottom: 20 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.07em', color: DARK, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
-              <span style={{ color: RED }}>◆</span> SANDLOT SOURCE
-            </div>
-            <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.65 }}>
-              Baseball &amp; softball coaches, teams, and roster connections — free to browse, anywhere in the country.
-            </p>
-          </div>
-          {[
-            { heading: 'Directory', links: [{ label: 'Coaches', to: '/coaches' }, { label: 'Teams', to: '/teams' }, { label: 'Open Rosters', to: '/roster' }, { label: 'Pickup Board', to: '/find' }] },
-            { heading: 'Listings',  links: [{ label: 'Add a Listing', to: '/submit' }, { label: 'Claim a Listing', to: '/claim' }, { label: 'About', to: '/about' }, { label: 'Contact', href: 'mailto:admin.bsbldirectory@gmail.com' }] },
-            { heading: 'Legal',     links: [{ label: 'Privacy Policy', to: '/privacy' }, { label: 'Terms of Use', to: '/terms' }, { label: 'Disclaimer', to: '/disclaimer' }] },
-          ].map(col => (
-            <div key={col.heading}>
-              <h5 style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', color: FAINT, marginBottom: 10 }}>{col.heading}</h5>
-              {col.links.map(l => l.href
-                ? <a key={l.label} href={l.href} style={{ display: 'block', fontSize: 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}>{l.label}</a>
-                : <Link key={l.label} to={l.to} style={{ display: 'block', fontSize: 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}>{l.label}</Link>
-              )}
-            </div>
-          ))}
-        </div>
-        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: FAINT }}>© {new Date().getFullYear()} Sandlot Source. All rights reserved.</span>
-          <span style={{ fontSize: 11, color: FAINT }}>Baseball &amp; Softball Directory</span>
-        </div>
-      </footer>
 
     </div>
   )
