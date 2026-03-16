@@ -121,8 +121,8 @@ function SuccessBanner({ message }) {
 }
 
 // ─── Zip field with geocode indicator ────────────────────────────────────────
-function ZipField({ value, onChange, onGeocode, label = 'Zip Code', hint = 'Used to place a map pin' }) {
-  const [status, setStatus] = useState('') // '' | 'loading' | 'ok' | 'error'
+function ZipField({ value, onChange, onGeocode, label = 'Zip Code', hint = 'Used to place a map pin', required = false }) {
+  const [status, setStatus] = useState('')
 
   async function handleBlur() {
     if (!value || value.length !== 5) return
@@ -140,7 +140,7 @@ function ZipField({ value, onChange, onGeocode, label = 'Zip Code', hint = 'Used
   return (
     <div>
       <label style={labelStyle}>
-        {label}
+        {label}{required && <span style={{ color: 'var(--red)' }}> *</span>}
         {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Checking…</span>}
         {status === 'ok'      && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Located</span>}
         {status === 'error'   && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--red)' }}>Zip not found</span>}
@@ -193,7 +193,7 @@ function CoachForm() {
   function validate() {
     if (!form.name.trim())          return 'Coach / trainer name is required.'
     if (!form.sport)                return 'Sport is required.'
-    if (!form.city.trim())          return 'City is required.'
+    if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.facility_name.trim()) return 'Facility name is required.'
     if (!form.contact_name.trim())  return 'Contact name is required.'
     if (!form.contact_role.trim())  return 'Contact role is required.'
@@ -282,13 +282,14 @@ function CoachForm() {
       {/* City + Zip */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
-          <label style={labelStyle}>City <RequiredMark /></label>
+          <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
           <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
         </div>
         <ZipField
           value={form.zip_code}
           onChange={v => set('zip_code', v)}
           onGeocode={handleGeocode}
+          required
         />
       </div>
 
@@ -431,7 +432,7 @@ function TeamForm() {
     if (!form.name.trim())         return 'Team name is required.'
     if (!form.sport)               return 'Sport is required.'
     if (!form.age_group)           return 'Age group is required.'
-    if (!form.city.trim())         return 'City is required.'
+    if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
     return ''
@@ -517,7 +518,7 @@ function TeamForm() {
           </select>
         </div>
         <div>
-          <label style={labelStyle}>City <RequiredMark /></label>
+          <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
           <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
         </div>
       </div>
@@ -528,6 +529,7 @@ function TeamForm() {
           value={form.zip_code}
           onChange={v => set('zip_code', v)}
           onGeocode={handleGeocode}
+          required
         />
       </div>
 
@@ -638,14 +640,14 @@ function PlayerForm() {
     if (postType === 'player_needed') {
       if (!form.age_group) return 'Age group is required.'
       if (form.position_needed.length === 0) return 'Select at least one position needed.'
-      if (!form.city.trim()) return 'City is required.'
-      if (!form.location_name.trim()) return 'Location / facility name is required.'
+      if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
+      if (!form.location_name.trim()) return 'Game / Tournament location is required.'
       if (!form.event_date) return 'Event date is required.'
       if (!form.contact_info.trim()) return 'Contact info is required.'
     } else {
       if (!form.player_age.toString().trim()) return 'Player age is required.'
       if (form.player_position.length === 0) return 'Select at least one position.'
-      if (!form.city.trim()) return 'City is required.'
+      if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
       if (!form.contact_info.trim()) return 'Contact info is required.'
     }
     return ''
@@ -765,17 +767,18 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={labelStyle}>City <RequiredMark /></label>
-              <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
-            </div>
-            <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
+            <input value={form.location_name} onChange={e => set('location_name', e.target.value)} placeholder="e.g. Seckinger High School, Fowler Park Field 3" style={inputStyle} />
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Location / Facility Name <RequiredMark /></label>
-            <input value={form.location_name} onChange={e => set('location_name', e.target.value)} placeholder="e.g. Seckinger High School, Fowler Park Field 3" style={inputStyle} />
+            <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -821,12 +824,13 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={labelStyle}>City <RequiredMark /></label>
-              <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
-            </div>
-            <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
+          <div style={{ marginBottom: 14 }}>
+            <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
           </div>
 
           <div style={{ marginBottom: 14 }}>
