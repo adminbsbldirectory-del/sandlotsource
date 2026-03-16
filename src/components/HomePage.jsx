@@ -1,545 +1,362 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../supabase.js'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import AdSlot from './AdSlot'
 
-const DEMO_FEATURED_COACHES = [
-  { id:1, name:'David Sopilka', sport:'baseball', specialty:['catching'], city:'Chamblee', county:'DeKalb', facility_name:'El Dojo', tier:'elite', credentials:'Elite catching development' },
-  { id:2, name:'Cristoforo Romano', sport:'baseball', specialty:['pitching'], city:'Marietta', county:'Cobb', facility_name:'Harrison Park', tier:'elite', credentials:'Former Detroit Tigers & Brewers MiLB, Masters Biomechanics', price_per_session:70 },
-  { id:3, name:'Hannah Lane Triplett', sport:'softball', specialty:['pitching'], city:'Watkinsville', county:'Oconee', facility_name:'Della Torre Softball', tier:'elite', credentials:'Top-tier softball pitching coach' },
+// ─── Sample data ──────────────────────────────────────────────────────────────
+// TODO: Replace with live Supabase queries once zip/radius search is wired up.
+
+const FEATURED_LISTINGS = [
+  { id: 1, type: 'coach', name: 'Mike Torres',           meta: 'Pitching · Baseball · Ages 10–18', location: 'Roswell, GA',    distance: '8 mi',  sport: 'baseball', badge: 'Coach',        badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' }, link: '/coaches' },
+  { id: 2, type: 'team',  name: 'North Georgia Elite 13U', meta: 'Travel Baseball · 13U',          location: 'Alpharetta, GA', distance: '12 mi', sport: 'baseball', badge: 'Open Roster',  badgeStyle: { background: '#fff3e0', color: '#7a4200' }, link: '/teams' },
+  { id: 3, type: 'coach', name: 'Sarah Kim',             meta: 'Hitting · Softball · All ages',    location: 'Marietta, GA',   distance: '14 mi', sport: 'softball', badge: 'Coach',        badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' }, link: '/coaches' },
+  { id: 4, type: 'team',  name: 'Cherokee 14U Gold',     meta: 'Travel Baseball · 14U',            location: 'Canton, GA',     distance: '18 mi', sport: 'baseball', badge: 'Tryouts Open', badgeStyle: { background: '#f0eefe', color: '#3d2fa0' }, link: '/teams' },
 ]
 
-const DEMO_FEATURED_TEAMS = [
-  { id:1, name:'North Georgia Nationals', sport:'baseball', age_group:'12U', city:'Alpharetta', org_affiliation:'USSSA', tryout_status:'open' },
-  { id:2, name:'Cherokee Crush', sport:'softball', age_group:'14U', city:'Canton', org_affiliation:'PGF', tryout_status:'open' },
-  { id:3, name:'East Cobb Astros', sport:'baseball', age_group:'13U', city:'Marietta', org_affiliation:'Perfect Game', tryout_status:'closed' },
+const URGENT_POSTS = [
+  { id: 1, postType: 'Need player', title: 'Catcher needed — Sun 3/17',   meta: '12U · Alpharetta · Baseball', expires: 'Expires in 18 hrs' },
+  { id: 2, postType: 'Need team',   title: 'Two 14U players available',   meta: 'P / OF · Marietta · Baseball', expires: 'Expires in 2 days' },
+  { id: 3, postType: 'Need player', title: 'Utility player needed ASAP',  meta: '10U · Kennesaw · Softball',   expires: 'Expires in 3 days' },
 ]
 
-const TIER_COLORS = { elite:'#D42B2B', strong:'#F0A500', local:'#0B1F3A', budget:'#6B7280' }
-const STATUS_STYLE = {
-  open:       { bg:'#DCFCE7', color:'#16A34A', label:'Open Tryouts' },
-  closed:     { bg:'#FEE2E2', color:'#DC2626', label:'Closed' },
-  by_invite:  { bg:'#FEF3C7', color:'#D97706', label:'By Invite' },
-  year_round: { bg:'#DBEAFE', color:'#2563EB', label:'Year Round' },
+const SPORT_ICON = { baseball: '⚾', softball: '🥎' }
+
+// ─── Shared style tokens ──────────────────────────────────────────────────────
+const RED    = '#e63329'
+const DARK   = '#1a1a1a'
+const LIGHT  = '#f5f5f2'
+const BORDER = '#eaeae6'
+const MUTED  = '#888'
+const FAINT  = '#bbb'
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Divider() {
+  return <hr style={{ border: 'none', borderTop: `1px solid ${BORDER}`, margin: '26px 0 0' }} />
 }
 
-function AdBanner({ label = 'Your Ad Here', height = 90 }) {
+function SectionHeader({ title, linkTo, linkLabel }) {
   return (
-    <div style={{
-      width: '100%', height,
-      background: 'repeating-linear-gradient(45deg, #f0f0f0 0px, #f0f0f0 10px, #fafafa 10px, #fafafa 20px)',
-      border: '2px dashed #d1d5db',
-      borderRadius: 8,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexDirection: 'column', gap: 4,
-      boxSizing: 'border-box',
-    }}>
-      <span style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-        {label}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#999' }}>
+        {title}
       </span>
-      <span style={{ fontSize: 10, color: '#9ca3af' }}>Advertise your baseball or softball business here</span>
+      {linkTo && (
+        <Link to={linkTo} style={{ fontSize: 12, fontWeight: 500, color: RED, textDecoration: 'none' }}>
+          {linkLabel || 'View all →'}
+        </Link>
+      )}
     </div>
   )
 }
 
-function SectionLabel({ children }) {
-  return (
-    <div style={{
-      fontFamily: 'var(--font-head)',
-      fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-      textTransform: 'uppercase', color: 'var(--gold)',
-      marginBottom: 6,
-    }}>{children}</div>
-  )
-}
+// ─── Main component ───────────────────────────────────────────────────────────
 
-function SectionHeading({ children }) {
-  return (
-    <div style={{
-      fontFamily: 'var(--font-head)',
-      fontSize: 26, fontWeight: 800, color: 'var(--navy)',
-      letterSpacing: '0.02em', lineHeight: 1.1,
-      marginBottom: 20,
-    }}>{children}</div>
-  )
-}
+export default function HomePage() {
+  const navigate = useNavigate()
 
-function SportBadge({ sport }) {
-  return (
-    <span style={{
-      background: sport === 'softball' ? '#7C3AED' : '#1D4ED8',
-      color: 'white', fontSize: 10, fontWeight: 700,
-      padding: '2px 7px', borderRadius: 20,
-      textTransform: 'uppercase', letterSpacing: '0.05em',
-      fontFamily: 'var(--font-head)',
-    }}>{sport}</span>
-  )
-}
+  const [query,       setQuery]       = useState('')
+  const [sport,       setSport]       = useState('')
+  const [zip,         setZip]         = useState('')
+  const [listingType, setListingType] = useState('')
+  const [ageGroup,    setAgeGroup]    = useState('')
+  const [radius,      setRadius]      = useState(25)
 
-export default function HomePage({ onNavigate }) {
-  const [coaches, setCoaches] = useState(DEMO_FEATURED_COACHES)
-  const [teams, setTeams] = useState(DEMO_FEATURED_TEAMS)
-  const [posts, setPosts] = useState([])
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  function handleSearch(e) {
+    e.preventDefault()
+    const params = new URLSearchParams()
+    if (query)       params.set('q',      query)
+    if (sport)       params.set('sport',  sport)
+    if (zip)         params.set('zip',    zip)
+    if (listingType) params.set('type',   listingType)
+    if (ageGroup)    params.set('age',    ageGroup)
+    if (radius !== 25) params.set('radius', radius)
+    navigate(`/coaches?${params.toString()}`)
+  }
 
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handler)
-    return () => window.removeEventListener('resize', handler)
-  }, [])
-
-  useEffect(() => {
-    async function load() {
-      const [coachRes, teamRes, postRes] = await Promise.all([
-        supabase.from('coaches').select('*').eq('active', true).eq('tier', 'elite').limit(3),
-        supabase.from('travel_teams').select('*').limit(3),
-        supabase.from('player_board').select('*').eq('active', true).order('created_at', { ascending: false }).limit(3),
-      ])
-      if (!coachRes.error && coachRes.data?.length) setCoaches(coachRes.data)
-      if (!teamRes.error && teamRes.data?.length) setTeams(teamRes.data)
-      if (!postRes.error && postRes.data?.length) setPosts(postRes.data)
-    }
-    load()
-  }, [])
-
-  const openTryouts = teams.filter(t => t.tryout_status === 'open').length
+  // ── Pill / filter styles
+  const pillStyle = {
+    display: 'flex', alignItems: 'center', gap: 5,
+    background: '#fff', border: `1px solid #ddddd8`, borderRadius: 7,
+    padding: '5px 11px', fontSize: 12, color: '#444',
+    whiteSpace: 'nowrap', cursor: 'pointer',
+  }
+  const selectStyle = { border: 'none', outline: 'none', background: 'none', fontSize: 12, color: '#444', cursor: 'pointer', padding: 0 }
+  const sepStyle = { color: '#ccc', fontSize: 12, flexShrink: 0 }
 
   return (
-    <div style={{ background: 'var(--cream)', minHeight: '100vh' }}>
+    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 20px 48px', background: '#fff', color: DARK }}>
 
-      {/* ── TOP BANNER AD — hidden on mobile to save space ── */}
-      {!isMobile && (
-        <div style={{ background: 'var(--white)', borderBottom: '1px solid var(--lgray)', padding: '10px 20px' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <AdBanner label="Top Banner — 728×90 Ad Space" height={72} />
+      {/* ── AD: Top leaderboard ───────────────────────────────────────────── */}
+      <div style={{ marginTop: 16 }}>
+        <AdSlot position="leaderboard-top" />
+      </div>
+
+      {/* ── SEARCH HERO ───────────────────────────────────────────────────── */}
+      <section style={{ background: LIGHT, borderRadius: 14, padding: '28px 28px 22px', marginTop: 16 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
+          Find{' '}
+          <span style={{ color: RED }}>coaches, teams</span>
+          {' '}&amp; roster openings.
+        </h1>
+        <p style={{ fontSize: 14, color: MUTED, marginBottom: 18, lineHeight: 1.5 }}>
+          Baseball and softball — coaches, travel teams, open rosters, and pickup help near you.
+        </p>
+
+        {/* Search bar */}
+        <form
+          onSubmit={handleSearch}
+          style={{ display: 'flex', alignItems: 'center', background: '#fff', border: `1.5px solid #d8d8d2`, borderRadius: 10, padding: '0 6px 0 14px', height: 48, gap: 8, marginBottom: 12 }}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.35 }}>
+            <circle cx="6.5" cy="6.5" r="4.5" stroke={DARK} strokeWidth="1.5" />
+            <path d="M10 10L14 14" stroke={DARK} strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search coaches, teams, positions, specialties…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: DARK, background: 'none', minWidth: 0 }}
+          />
+          <button
+            type="submit"
+            style={{ background: RED, color: '#fff', border: 'none', borderRadius: 7, height: 36, padding: '0 20px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}
+          >
+            Search
+          </button>
+        </form>
+
+        {/* Filter row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+          <div style={pillStyle}>
+            <select value={sport} onChange={e => setSport(e.target.value)} style={selectStyle}>
+              <option value="">All sports</option>
+              <option value="baseball">Baseball</option>
+              <option value="softball">Softball</option>
+            </select>
+          </div>
+          <span style={sepStyle}>·</span>
+          <div style={pillStyle}>
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1C4.067 1 2.5 2.567 2.5 4.5c0 2.776 3.5 6.5 3.5 6.5s3.5-3.724 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="#aaa" strokeWidth="1.2" fill="none" />
+              <circle cx="6" cy="4.5" r="1" fill="#aaa" />
+            </svg>
+            <input
+              type="text" inputMode="numeric" placeholder="Zip code" maxLength={5}
+              value={zip} onChange={e => setZip(e.target.value)}
+              style={{ ...selectStyle, width: 68 }}
+            />
+          </div>
+          <span style={sepStyle}>·</span>
+          <div style={pillStyle}>
+            <select value={listingType} onChange={e => setListingType(e.target.value)} style={selectStyle}>
+              <option value="">All types</option>
+              <option value="coach">Coach</option>
+              <option value="team">Team</option>
+              <option value="roster">Open Roster</option>
+              <option value="pickup">Pickup</option>
+            </select>
+          </div>
+          <span style={sepStyle}>·</span>
+          <div style={pillStyle}>
+            <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} style={selectStyle}>
+              <option value="">All ages</option>
+              {['8U','10U','12U','13U','14U','15U','16U','17U','18U'].map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+          <span style={sepStyle}>·</span>
+          <div style={{ ...pillStyle, gap: 6 }}>
+            <span style={{ fontSize: 12, color: '#444' }}>Within</span>
+            <input
+              type="range" min={5} max={100} step={5} value={radius}
+              onChange={e => setRadius(Number(e.target.value))}
+              style={{ width: 72, accentColor: RED, cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, fontWeight: 500, color: DARK, minWidth: 32 }}>{radius} mi</span>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* ── HERO ─────────────────────────────────────────── */}
-      <div style={{
-        background: 'linear-gradient(135deg, var(--navy) 0%, #162d52 60%, #1a3560 100%)',
-        padding: isMobile ? '36px 16px 32px' : '52px 20px 48px',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.04,
-          backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }} />
-
-        <div style={{ maxWidth: 860, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 10,
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 40, padding: '8px 20px', marginBottom: 24,
-          }}>
-            <span style={{ fontSize: 20 }}>⚾</span>
-            <span style={{
-              fontFamily: 'var(--font-head)', fontSize: isMobile ? 18 : 22,
-              fontWeight: 900, color: 'var(--white)',
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-            }}>Sandlot Source</span>
-          </div>
-
-          <h1 style={{
-            fontFamily: 'var(--font-head)',
-            fontSize: isMobile ? '28px' : 'clamp(32px, 6vw, 58px)',
-            fontWeight: 900, color: 'var(--white)',
-            letterSpacing: '0.02em', lineHeight: 1.1,
-            marginBottom: 16,
-          }}>
-            Your local baseball<br />& softball source.
-          </h1>
-
-          <p style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: isMobile ? 15 : 17,
-            color: 'rgba(255,255,255,0.72)',
-            lineHeight: 1.6, maxWidth: 560, margin: '0 auto 28px',
-          }}>
-            Find coaches, explore travel teams, and connect players with roster spots —
-            all in one place for North Georgia families.
-          </p>
-
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => onNavigate('coaches')} style={{
-              background: 'var(--red)', color: 'white', border: 'none', borderRadius: 8,
-              padding: isMobile ? '11px 20px' : '13px 26px',
-              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
-            }}>⚾ Find Coaches</button>
-            <button onClick={() => onNavigate('teams')} style={{
-              background: 'rgba(255,255,255,0.12)', color: 'white',
-              border: '2px solid rgba(255,255,255,0.3)', borderRadius: 8,
-              padding: isMobile ? '11px 20px' : '13px 26px',
-              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
-            }}>Browse Teams</button>
-            <button onClick={() => onNavigate('board')} style={{
-              background: 'rgba(240,165,0,0.15)', color: 'var(--gold)',
-              border: '2px solid rgba(240,165,0,0.4)', borderRadius: 8,
-              padding: isMobile ? '11px 20px' : '13px 26px',
-              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
-            }}>Post Player Need</button>
-          </div>
-
-          <div style={{
-            display: 'flex', gap: isMobile ? 20 : 32,
-            justifyContent: 'center', flexWrap: 'wrap',
-            marginTop: 32, paddingTop: 28,
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-          }}>
-            {[
-              { n: '33+', label: 'Coaches Listed' },
-              { n: '371+', label: 'Travel Teams' },
-              { n: openTryouts || '5+', label: 'Open Tryouts' },
-            ].map(({ n, label }) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 24 : 28, fontWeight: 800, color: 'var(--gold)', lineHeight: 1 }}>{n}</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+      {/* ── PATHWAYS ──────────────────────────────────────────────────────── */}
+      <section style={{ marginTop: 26 }}>
+        <SectionHeader title="What are you looking for?" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          {[
+            { to: '/coaches', icon: '🎯', iconBg: '#fef0ee', title: 'Find Instruction', body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.', cta: 'Browse coaches →' },
+            { to: '/teams',   icon: '🏆', iconBg: '#eaf3de', title: 'Find a Team',       body: 'Travel teams, open rosters, and tryout opportunities by age group and area.',                  cta: 'Browse teams →' },
+            { to: '/find',    icon: '⚡', iconBg: '#fef9ee', title: 'Pickup Help',       body: 'Need a player this weekend? Looking for a game? Post or browse urgent needs fast.',            cta: 'View pickup board →' },
+          ].map(card => (
+            <Link key={card.to} to={card.to} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '18px 16px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 9, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginBottom: 10 }}>
+                {card.icon}
               </div>
+              <h3 style={{ fontSize: 14, fontWeight: 500, color: DARK, marginBottom: 5 }}>{card.title}</h3>
+              <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.55, marginBottom: 10 }}>{card.body}</p>
+              <span style={{ fontSize: 12, fontWeight: 500, color: RED }}>{card.cta}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <Divider />
+
+      {/* ── TWO-COLUMN: listings + sidebar ads ────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 190px', gap: 22, alignItems: 'start', marginTop: 26 }}>
+
+        {/* Main column */}
+        <div style={{ minWidth: 0 }}>
+          <SectionHeader title="Featured near you" linkTo="/coaches" linkLabel="View all →" />
+
+          {/* Featured listing cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {FEATURED_LISTINGS.map(l => (
+              <Link key={l.id} to={l.link} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 15px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: DARK, lineHeight: 1.3 }}>{l.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 500, padding: '3px 8px', borderRadius: 5, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: 8, ...l.badgeStyle }}>{l.badge}</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#777', marginBottom: 3 }}>{l.meta}</div>
+                <div style={{ fontSize: 11, color: FAINT, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ddd', flexShrink: 0 }} />
+                  {l.location} · {l.distance}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid #f2f2ee`, paddingTop: 9 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: RED }}>{l.type === 'coach' ? 'View profile' : 'View team'} →</span>
+                  <span style={{ fontSize: 10, color: FAINT }}>{SPORT_ICON[l.sport]} {l.sport.charAt(0).toUpperCase() + l.sport.slice(1)}</span>
+                </div>
+              </Link>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* ── OPEN TRYOUTS BANNER ───────────────────────────── */}
-      {openTryouts > 0 && (
-        <div onClick={() => onNavigate('teams')} style={{
-          background: '#DCFCE7', borderBottom: '2px solid #16A34A',
-          padding: '10px 20px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}>
-          <span style={{ fontSize: 13, color: '#15803D', fontWeight: 700 }}>
-            ✅ {openTryouts} team{openTryouts !== 1 ? 's' : ''} currently accepting tryouts
-          </span>
-          <span style={{ fontSize: 12, color: '#15803D' }}>→ View open tryouts</span>
-        </div>
-      )}
-
-      {/* ── MAIN CONTENT + SIDEBAR ───────────────────────── */}
-      {/* On mobile: single column, sidebar content moves inline or to bottom */}
-      <div style={{
-        maxWidth: 1200, margin: '0 auto',
-        padding: isMobile ? '24px 14px' : '40px 20px',
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: isMobile ? 0 : 28,
-        alignItems: 'flex-start',
-      }}>
-
-        {/* ── MAIN COLUMN ──────────────────────────────────── */}
-        <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
-
-          {/* ── Featured Coaches ──────────────────────────── */}
-          <section style={{ marginBottom: 40 }}>
-            <SectionLabel>Featured Coaches</SectionLabel>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-              <SectionHeading>Find a Coach</SectionHeading>
-              <button onClick={() => onNavigate('coaches')} style={{
-                background: 'none', border: 'none', color: 'var(--red)',
-                fontFamily: 'var(--font-head)', fontSize: 13, fontWeight: 700,
-                letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer',
-                whiteSpace: 'nowrap', paddingBottom: 20,
-              }}>View All →</button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-              {coaches.map(coach => {
-                const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
-                const tierColor = TIER_COLORS[coach.tier] || TIER_COLORS.local
-                return (
-                  <div key={coach.id} onClick={() => onNavigate('coaches')} style={{
-                    background: 'var(--white)', borderRadius: 10,
-                    border: '2px solid var(--lgray)', padding: '16px', cursor: 'pointer',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                  }}
-                    onMouseOver={e => { e.currentTarget.style.borderColor = tierColor; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)' }}
-                    onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--lgray)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                      <div>
-                        <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700 }}>{coach.name}</div>
-                        {coach.facility_name && <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>{coach.facility_name}</div>}
-                        <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>📍 {coach.city}{coach.county ? `, ${coach.county}` : ''}</div>
-                      </div>
-                      <span style={{ background: tierColor, color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', marginLeft: 8 }}>{coach.tier}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
-                      <SportBadge sport={coach.sport} />
-                      {specs.map(s => (
-                        <span key={s} style={{ background: 'var(--lgray)', color: 'var(--gray)', fontSize: 10, padding: '2px 7px', borderRadius: 20, textTransform: 'capitalize' }}>{s}</span>
-                      ))}
-                    </div>
-                    {coach.credentials && (
-                      <div style={{ fontSize: 11, color: 'var(--gray)', lineHeight: 1.4 }}>
-                        {coach.credentials.length > 70 ? coach.credentials.slice(0, 70) + '…' : coach.credentials}
-                      </div>
-                    )}
-                    {coach.price_per_session && (
-                      <div style={{ marginTop: 8, fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>${coach.price_per_session}/session</div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            <div onClick={() => onNavigate('submit')} style={{
-              marginTop: 14,
-              background: 'linear-gradient(90deg, #0B1F3A 0%, #162d52 100%)',
-              borderRadius: 10, padding: '14px 18px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', gap: 12,
-            }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'white' }}>Are you a coach?</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Add your profile and get discovered by local families.</div>
-              </div>
-              <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: '0.04em', flexShrink: 0 }}>
-                Get Listed →
-              </span>
-            </div>
-          </section>
-
-          {/* ── MID-PAGE AD — compressed on mobile ───────── */}
-          <div style={{ marginBottom: 40 }}>
-            <AdBanner label="Mid-Page Banner — Ad Space" height={isMobile ? 60 : 90} />
+          {/* AD: Inline rectangle */}
+          <div style={{ marginTop: 16 }}>
+            <AdSlot position="inline-rectangle" />
           </div>
 
-          {/* ── Travel Teams ──────────────────────────────── */}
-          <section style={{ marginBottom: 40 }}>
-            <SectionLabel>Travel Teams</SectionLabel>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-              <SectionHeading>Explore Teams</SectionHeading>
-              <button onClick={() => onNavigate('teams')} style={{
-                background: 'none', border: 'none', color: 'var(--red)',
-                fontFamily: 'var(--font-head)', fontSize: 13, fontWeight: 700,
-                letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer',
-                whiteSpace: 'nowrap', paddingBottom: 20,
-              }}>View All →</button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-              {teams.map(team => {
-                const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
-                return (
-                  <div key={team.id} onClick={() => onNavigate('teams')} style={{
-                    background: 'var(--white)', borderRadius: 10,
-                    border: '2px solid var(--lgray)', padding: '16px', cursor: 'pointer',
-                    transition: 'all 0.15s', boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                  }}
-                    onMouseOver={e => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)' }}
-                    onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--lgray)'; e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, flex: 1 }}>{team.name}</div>
-                      <span style={{ background: statusInfo.bg, color: statusInfo.color, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, whiteSpace: 'nowrap', fontFamily: 'var(--font-head)', textTransform: 'uppercase', marginLeft: 8 }}>{statusInfo.label}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 8 }}>📍 {team.city}</div>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <SportBadge sport={team.sport} />
-                      {team.age_group && <span style={{ background: 'var(--navy)', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, fontFamily: 'var(--font-head)' }}>{team.age_group}</span>}
-                      {team.org_affiliation && <span style={{ background: 'var(--lgray)', color: 'var(--gray)', fontSize: 10, padding: '2px 7px', borderRadius: 20 }}>{team.org_affiliation}</span>}
-                    </div>
+          {/* Urgent pickup posts */}
+          <div style={{ marginTop: 20 }}>
+            <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {URGENT_POSTS.map(p => (
+                <Link key={p.id} to="/find" style={{ border: '1px solid #f5cfc9', borderRadius: 12, padding: '13px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: '#b93025', background: '#fdf0ee', padding: '2px 7px', borderRadius: 4, display: 'inline-block', marginBottom: 7 }}>
+                    {p.postType}
+                  </span>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 4, lineHeight: 1.3 }}>{p.title}</div>
+                  <div style={{ fontSize: 11, color: MUTED, marginBottom: 6 }}>{p.meta}</div>
+                  <div style={{ fontSize: 10, color: FAINT, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: RED, flexShrink: 0 }} />
+                    {p.expires}
                   </div>
-                )
-              })}
-            </div>
-
-            <div onClick={() => onNavigate('submit')} style={{
-              marginTop: 14,
-              background: 'linear-gradient(90deg, #0B1F3A 0%, #162d52 100%)',
-              borderRadius: 10, padding: '14px 18px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', gap: 12,
-            }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'white' }}>Running a travel team?</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Get your team in front of players looking for a spot.</div>
-              </div>
-              <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontFamily: 'var(--font-head)', fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 6, whiteSpace: 'nowrap', letterSpacing: '0.04em', flexShrink: 0 }}>
-                List Your Team →
-              </span>
-            </div>
-          </section>
-
-          {/* ── Player Board ──────────────────────────────── */}
-          <section style={{ marginBottom: 40 }}>
-            <SectionLabel>Player Board</SectionLabel>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-              <SectionHeading>Recent Player Needs</SectionHeading>
-              <button onClick={() => onNavigate('board')} style={{
-                background: 'none', border: 'none', color: 'var(--red)',
-                fontFamily: 'var(--font-head)', fontSize: 13, fontWeight: 700,
-                letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer',
-                whiteSpace: 'nowrap', paddingBottom: 20,
-              }}>View All →</button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {posts.length === 0 ? (
-                <div style={{ background: 'var(--white)', borderRadius: 10, border: '2px solid var(--lgray)', padding: '20px', textAlign: 'center', color: 'var(--gray)', fontSize: 14 }}>
-                  No active posts right now — check back soon or post a need.
-                </div>
-              ) : posts.map(post => {
-                const isPlayer = post.post_type === 'player_available'
-                const positions = isPlayer
-                  ? (Array.isArray(post.player_position) ? post.player_position : [])
-                  : (Array.isArray(post.position_needed) ? post.position_needed : [])
-                return (
-                  <div key={post.id} onClick={() => onNavigate('board')} style={{
-                    background: 'var(--white)', borderRadius: 10,
-                    border: `2px solid ${isPlayer ? '#DBEAFE' : '#FEF3C7'}`,
-                    padding: '14px 16px', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    transition: 'box-shadow 0.15s',
-                  }}
-                    onMouseOver={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
-                    onMouseOut={e => e.currentTarget.style.boxShadow = 'none'}
-                  >
-                    <div style={{
-                      width: 40, height: 40, flexShrink: 0, borderRadius: 8,
-                      background: isPlayer ? '#DBEAFE' : '#FEF3C7',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 18,
-                    }}>
-                      {isPlayer ? '🧢' : '⚾'}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700 }}>
-                        {isPlayer
-                          ? `${post.player_age ? post.player_age + 'U ' : ''}Player — ${post.city}`
-                          : `${post.team_name || 'Team'} ${post.age_group ? `· ${post.age_group}` : ''}`
-                        }
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>
-                        {isPlayer ? 'Looking for a team' : `📍 ${post.city} · Seeking player`}
-                        {positions.length > 0 && ` · ${positions.join(', ')}`}
-                      </div>
-                    </div>
-                    <SportBadge sport={post.sport} />
-                  </div>
-                )
-              })}
-            </div>
-
-            <button onClick={() => onNavigate('board')} style={{
-              marginTop: 14, width: '100%',
-              background: 'var(--red)', color: 'white',
-              border: 'none', borderRadius: 8,
-              padding: '12px', cursor: 'pointer',
-              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-            }}>
-              + Post a Player Need
-            </button>
-          </section>
-
-          {/* ── MOBILE-ONLY: inline sidebar content ──────── */}
-          {isMobile && (
-            <div style={{ marginBottom: 32 }}>
-              {/* About blurb */}
-              <div style={{
-                background: 'var(--white)', border: '2px solid var(--lgray)',
-                borderRadius: 10, padding: '18px', marginBottom: 16,
-              }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, marginBottom: 10, color: 'var(--navy)' }}>
-                  About Sandlot Source
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.6, margin: 0 }}>
-                  Locally built for North Georgia baseball & softball families.
-                  Community-driven listings for coaches, travel teams, and player needs — no paywalls, no gatekeeping.
-                </p>
-              </div>
-              {/* Mobile ad — compact */}
-              <AdBanner label="Advertise Here — Local Sports Businesses" height={80} />
-            </div>
-          )}
-        </div>
-
-        {/* ── RIGHT SIDEBAR — desktop only ─────────────────── */}
-        {!isMobile && (
-          <div style={{ width: 260, flexShrink: 0 }}>
-            <div style={{
-              background: 'var(--white)', border: '1px solid var(--lgray)',
-              borderRadius: 10, overflow: 'hidden', marginBottom: 20,
-            }}>
-              <div style={{ padding: '10px 14px', background: 'var(--lgray)', fontSize: 10, fontWeight: 700, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Featured Partner
-              </div>
-              <div style={{ padding: 14 }}>
-                <AdBanner label="Sidebar — 300×250 Ad Space" height={200} />
-              </div>
-            </div>
-
-            <div style={{
-              background: 'var(--white)', border: '2px solid var(--lgray)',
-              borderRadius: 10, padding: '18px', marginBottom: 20,
-            }}>
-              <div style={{ fontFamily: 'var(--font-head)', fontSize: 15, fontWeight: 700, marginBottom: 10, color: 'var(--navy)' }}>
-                About Sandlot Source
-              </div>
-              <p style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 0 }}>
-                Locally built for North Georgia baseball & softball families.
-                Community-driven listings for coaches, travel teams, and player needs — no paywalls, no gatekeeping.
-              </p>
-            </div>
-
-            <div style={{
-              background: 'var(--white)', border: '2px solid var(--lgray)',
-              borderRadius: 10, overflow: 'hidden', marginBottom: 20,
-            }}>
-              <div style={{ padding: '10px 14px', background: 'var(--navy)', fontSize: 11, fontWeight: 700, color: 'white', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Quick Links
-              </div>
-              {[
-                { label: '⚾ Find a Coach', tab: 'coaches' },
-                { label: '🏆 Browse Teams', tab: 'teams' },
-                { label: '📋 Player Board', tab: 'board' },
-                { label: '+ Add a Listing', tab: 'submit' },
-              ].map(({ label, tab }) => (
-                <button key={tab} onClick={() => onNavigate(tab)} style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '10px 14px', border: 'none',
-                  borderBottom: '1px solid var(--lgray)',
-                  background: 'white', cursor: 'pointer',
-                  fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--navy)',
-                  transition: 'background 0.1s',
-                }}
-                  onMouseOver={e => e.currentTarget.style.background = 'var(--cream)'}
-                  onMouseOut={e => e.currentTarget.style.background = 'white'}
-                >
-                  {label}
-                </button>
+                </Link>
               ))}
             </div>
-
-            <div style={{
-              background: 'var(--white)', border: '1px solid var(--lgray)',
-              borderRadius: 10, overflow: 'hidden',
-            }}>
-              <div style={{ padding: '10px 14px', background: 'var(--lgray)', fontSize: 10, fontWeight: 700, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                Sponsor This Spot
-              </div>
-              <div style={{ padding: 14 }}>
-                <AdBanner label="Sidebar — 300×250 Ad Space" height={180} />
-              </div>
-            </div>
           </div>
-        )}
+        </div>
+
+        {/* Sidebar ad column */}
+        <aside style={{ width: 190, flexShrink: 0 }}>
+          <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <AdSlot position="sidebar-half-page" />
+            <AdSlot position="sidebar-square" />
+          </div>
+        </aside>
       </div>
 
-      {/* ── FOOTER ───────────────────────────────────────── */}
-      <div style={{
-        background: 'var(--white)', borderTop: '2px solid var(--lgray)',
-        padding: '20px', textAlign: 'center',
-        fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--gray)',
-      }}>
-        Sandlot Source is a community directory for North Georgia baseball & softball —
-        built by local parents, for local families. Listings updated regularly.
+      <Divider />
+
+      {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
+      <section style={{ marginTop: 26 }}>
+        <SectionHeader title="How it works" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+          {[
+            { n: '01', title: 'Enter your zip',  body: 'Set your location and how far you're willing to travel.' },
+            { n: '02', title: 'Browse listings', body: 'Filter by sport, age group, listing type, and specialty.' },
+            { n: '03', title: 'Connect directly', body: 'Contact coaches, teams, or families through their listing.' },
+            { n: '04', title: 'Add your listing', body: 'Coaches and teams can submit a free listing in minutes.' },
+          ].map(s => (
+            <div key={s.n} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '15px 13px' }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: RED, letterSpacing: '0.05em', marginBottom: 7 }}>{s.n}</div>
+              <h4 style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 5 }}>{s.title}</h4>
+              <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.55 }}>{s.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Divider />
+
+      {/* ── TRUST BAR ─────────────────────────────────────────────────────── */}
+      <section style={{ marginTop: 26 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, background: LIGHT, borderRadius: 12, padding: '18px 20px' }}>
+          {[
+            { num: '200+', label: 'Coaches listed' },
+            { num: '80+',  label: 'Travel teams' },
+            { num: '15',   label: 'Counties covered' },
+            { num: 'Free', label: 'Always free to browse' },
+          ].map(s => (
+            <div key={s.label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 500, color: DARK }}>{s.num}</div>
+              <div style={{ fontSize: 11, color: MUTED, marginTop: 3 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── AD: Pre-footer leaderboard ────────────────────────────────────── */}
+      <div style={{ marginTop: 24 }}>
+        <AdSlot position="leaderboard-prefooter" />
       </div>
+
+      {/* ── CTA BLOCK ─────────────────────────────────────────────────────── */}
+      <section style={{ background: DARK, borderRadius: 14, padding: '26px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginTop: 24 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 500, color: '#fff', marginBottom: 5 }}>Are you a coach or team?</h2>
+          <p style={{ fontSize: 13, color: MUTED }}>Add a free listing or claim an existing one to manage your profile.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <Link to="/submit" style={{ background: RED, color: '#fff', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Add a listing
+          </Link>
+          <Link to="/claim" style={{ background: 'transparent', color: '#fff', border: '1px solid #444', borderRadius: 8, padding: '9px 20px', fontSize: 13, fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Claim a listing
+          </Link>
+        </div>
+      </section>
+
+      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
+      <footer style={{ marginTop: 30, borderTop: `1px solid ${BORDER}`, paddingTop: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 24, paddingBottom: 20 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.07em', color: DARK, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+              <span style={{ color: RED }}>◆</span> SANDLOT SOURCE
+            </div>
+            <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.65 }}>
+              Baseball &amp; softball coaches, teams, and roster connections — free to browse, anywhere in the country.
+            </p>
+          </div>
+          {[
+            { heading: 'Directory', links: [{ label: 'Coaches', to: '/coaches' }, { label: 'Teams', to: '/teams' }, { label: 'Open Rosters', to: '/roster' }, { label: 'Pickup Board', to: '/find' }] },
+            { heading: 'Listings',  links: [{ label: 'Add a Listing', to: '/submit' }, { label: 'Claim a Listing', to: '/claim' }, { label: 'About', to: '/about' }, { label: 'Contact', href: 'mailto:admin.bsbldirectory@gmail.com' }] },
+            { heading: 'Legal',     links: [{ label: 'Privacy Policy', to: '/privacy' }, { label: 'Terms of Use', to: '/terms' }, { label: 'Disclaimer', to: '/disclaimer' }] },
+          ].map(col => (
+            <div key={col.heading}>
+              <h5 style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', color: FAINT, marginBottom: 10 }}>{col.heading}</h5>
+              {col.links.map(l => l.href
+                ? <a key={l.label} href={l.href} style={{ display: 'block', fontSize: 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}>{l.label}</a>
+                : <Link key={l.label} to={l.to} style={{ display: 'block', fontSize: 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}>{l.label}</Link>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: FAINT }}>© {new Date().getFullYear()} Sandlot Source. All rights reserved.</span>
+          <span style={{ fontSize: 11, color: FAINT }}>Baseball &amp; Softball Directory</span>
+        </div>
+      </footer>
+
     </div>
   )
 }
