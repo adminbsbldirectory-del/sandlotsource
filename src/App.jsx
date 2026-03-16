@@ -9,6 +9,7 @@ import ClaimListing from './components/ClaimListing.jsx'
 import RosterSpots from './components/RosterSpots.jsx'
 import SearchResults from './components/SearchResults.jsx'
 import Facilities from './components/Facilities.jsx'
+import AdminGeocode from './components/AdminGeocode.jsx'
 
 const BORDER = '#eaeae6'
 const FAINT  = '#bbb'
@@ -85,6 +86,7 @@ function AppRoutes() {
           <Route path="/coaches"    element={<CoachDirectory />} />
           <Route path="/teams"      element={<TravelTeams />} />
           <Route path="/facilities" element={<Facilities />} />
+          <Route path="/admin/geocode" element={<AdminGeocode />} />
           <Route path="/find"       element={<PlayerBoard />} />
           <Route path="/roster"     element={<RosterSpots />} />
           <Route path="/submit"     element={<CoachSubmitForm />} />
