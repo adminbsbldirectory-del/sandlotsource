@@ -272,7 +272,7 @@ export default function HomePage() {
         <SectionHeader title="How it works" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {[
-            { n: '01', title: 'Enter your zip',  body: 'Set your location and how far you're willing to travel.' },
+            { n: '01', title: 'Enter your zip',  body: "Set your location and how far you're willing to travel." },
             { n: '02', title: 'Browse listings', body: 'Filter by sport, age group, listing type, and specialty.' },
             { n: '03', title: 'Connect directly', body: 'Contact coaches, teams, or families through their listing.' },
             { n: '04', title: 'Add your listing', body: 'Coaches and teams can submit a free listing in minutes.' },
