@@ -2,6 +2,24 @@ import { useState } from 'react'
 import { supabase } from '../supabase.js'
 import { useNavigate } from 'react-router-dom'
 
+// ─── Geocode utility ──────────────────────────────────────────────────────────
+async function geocodeZip(zip) {
+  if (!zip || zip.length !== 5) return null
+  try {
+    const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const place = data.places?.[0]
+    if (!place) return null
+    return {
+      lat:   parseFloat(place.latitude),
+      lng:   parseFloat(place.longitude),
+      city:  place['place name'],
+      state: place['state abbreviation'],
+    }
+  } catch { return null }
+}
+
 // ─── Shared style constants ───────────────────────────────────────────────────
 const labelStyle = {
   fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
@@ -18,11 +36,11 @@ const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
 // ─── Region → County map ──────────────────────────────────────────────────────
 const REGIONS = {
- 'North Georgia': [
-  'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
-  'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
-  'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
-  'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
+  'North Georgia': [
+    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
+    'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
+    'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
+    'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
   ],
   'Middle Georgia': [
     'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
@@ -102,10 +120,51 @@ function SuccessBanner({ message }) {
   )
 }
 
+// ─── Zip field with geocode indicator ────────────────────────────────────────
+function ZipField({ value, onChange, onGeocode, label = 'Zip Code', hint = 'Used to place a map pin' }) {
+  const [status, setStatus] = useState('') // '' | 'loading' | 'ok' | 'error'
+
+  async function handleBlur() {
+    if (!value || value.length !== 5) return
+    setStatus('loading')
+    const geo = await geocodeZip(value)
+    if (geo) {
+      setStatus('ok')
+      onGeocode(geo)
+    } else {
+      setStatus('error')
+      onGeocode(null)
+    }
+  }
+
+  return (
+    <div>
+      <label style={labelStyle}>
+        {label}
+        {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Checking…</span>}
+        {status === 'ok'      && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Located</span>}
+        {status === 'error'   && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--red)' }}>Zip not found</span>}
+      </label>
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={5}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onBlur={handleBlur}
+        placeholder="e.g. 30076"
+        style={inputStyle}
+      />
+      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>{hint}</div>
+    </div>
+  )
+}
+
 // ─── COACH FORM ───────────────────────────────────────────────────────────────
 function CoachForm() {
   const [form, setForm] = useState({
     name: '', sport: 'baseball', specialty: '', city: '', region: '', county: '',
+    zip_code: '', lat: null, lng: null,
     facility_name: '', phone: '', email: '', website: '', instagram: '', facebook: '',
     credentials: '', bio: '', age_groups: '', skill_level: '',
     price_per_session: '', price_notes: '',
@@ -116,6 +175,20 @@ function CoachForm() {
   const [error, setError] = useState('')
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
+
+  function handleGeocode(geo) {
+    if (geo) {
+      setForm(f => ({
+        ...f,
+        lat: geo.lat,
+        lng: geo.lng,
+        // Auto-fill city if empty
+        city: f.city || geo.city,
+      }))
+    } else {
+      setForm(f => ({ ...f, lat: null, lng: null }))
+    }
+  }
 
   function validate() {
     if (!form.name.trim())          return 'Coach / trainer name is required.'
@@ -140,6 +213,9 @@ function CoachForm() {
       specialty:        form.specialty ? form.specialty.split(',').map(s => s.trim()).filter(Boolean) : [],
       city:             form.city.trim(),
       county:           form.county || null,
+      zip_code:         form.zip_code || null,
+      lat:              form.lat || null,
+      lng:              form.lng || null,
       facility_name:    form.facility_name.trim(),
       phone:            form.phone.trim() || null,
       email:            form.email.trim() || null,
@@ -203,10 +279,17 @@ function CoachForm() {
         </div>
       </div>
 
-      {/* City */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>City <RequiredMark /></label>
-        <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+      {/* City + Zip */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+        <div>
+          <label style={labelStyle}>City <RequiredMark /></label>
+          <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+        </div>
+        <ZipField
+          value={form.zip_code}
+          onChange={v => set('zip_code', v)}
+          onGeocode={handleGeocode}
+        />
       </div>
 
       {/* Region + County */}
@@ -265,10 +348,8 @@ function CoachForm() {
           <label style={labelStyle}>Skill Level</label>
           <select value={form.skill_level} onChange={e => set('skill_level', e.target.value)} style={selectStyle}>
             <option value="">All levels</option>
-            <option>Beginner</option>
-            <option>Intermediate</option>
-            <option>Advanced</option>
-            <option>Elite / Travel</option>
+            <option>Beginner</option><option>Intermediate</option>
+            <option>Advanced</option><option>Elite / Travel</option>
           </select>
         </div>
       </div>
@@ -330,7 +411,7 @@ function CoachForm() {
 function TeamForm() {
   const [form, setForm] = useState({
     name: '', sport: 'baseball', org_affiliation: '', age_group: '',
-    city: '', region: '', county: '',
+    city: '', region: '', county: '', zip_code: '', lat: null, lng: null,
     contact_name: '', contact_email: '', contact_phone: '',
     website: '', tryout_status: 'closed', tryout_date: '', tryout_notes: '',
     description: '', submission_notes: '',
@@ -340,6 +421,17 @@ function TeamForm() {
   const [error, setError] = useState('')
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
+
+  function handleGeocode(geo) {
+    if (geo) {
+      setForm(f => ({
+        ...f, lat: geo.lat, lng: geo.lng,
+        city: f.city || geo.city,
+      }))
+    } else {
+      setForm(f => ({ ...f, lat: null, lng: null }))
+    }
+  }
 
   function validate() {
     if (!form.name.trim())         return 'Team name is required.'
@@ -364,6 +456,10 @@ function TeamForm() {
       age_group:        form.age_group,
       city:             form.city.trim(),
       county:           form.county || null,
+      zip_code:         form.zip_code || null,
+      lat:              form.lat || null,
+      lng:              form.lng || null,
+      state:            'GA', // default; will be overridden by geocode state once field added
       contact_name:     form.contact_name.trim(),
       contact_email:    form.contact_email.trim() || null,
       contact_phone:    form.contact_phone.trim() || null,
@@ -392,7 +488,6 @@ function TeamForm() {
 
   return (
     <div>
-      {/* Sport */}
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -408,7 +503,6 @@ function TeamForm() {
         </div>
       </div>
 
-      {/* Name + Org */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Team Name <RequiredMark /></label>
@@ -420,7 +514,6 @@ function TeamForm() {
         </div>
       </div>
 
-      {/* Age group + City */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
@@ -435,13 +528,20 @@ function TeamForm() {
         </div>
       </div>
 
-      {/* Region + County */}
+      {/* Zip field */}
+      <div style={{ marginBottom: 14 }}>
+        <ZipField
+          value={form.zip_code}
+          onChange={v => set('zip_code', v)}
+          onGeocode={handleGeocode}
+        />
+      </div>
+
       <RegionCountyPicker
         region={form.region} county={form.county}
         onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
       />
 
-      {/* Contact */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Contact Name <RequiredMark /></label>
@@ -457,15 +557,14 @@ function TeamForm() {
         </div>
       </div>
 
-      {/* Tryout status */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Tryout Status</label>
           <select value={form.tryout_status} onChange={e => set('tryout_status', e.target.value)} style={selectStyle}>
             <option value="closed">Closed / Unknown</option>
-<option value="open">Open</option>
-<option value="year_round">Year Round</option>
-<option value="by_invite">By Invite Only</option>
+            <option value="open">Open</option>
+            <option value="year_round">Year Round</option>
+            <option value="by_invite">By Invite Only</option>
           </select>
         </div>
         <div>
@@ -519,6 +618,7 @@ function PlayerForm() {
   const [form, setForm] = useState({
     sport: 'baseball', age_group: '', team_name: '',
     position_needed: [], city: '', region: '', county: '',
+    zip_code: '', lat: null, lng: null,
     location_name: '', event_date: '',
     player_age: '', player_position: [], player_description: '',
     contact_info: '', additional_notes: '',
@@ -534,6 +634,14 @@ function PlayerForm() {
       ...f,
       [field]: f[field].includes(pos) ? f[field].filter(p => p !== pos) : [...f[field], pos],
     }))
+  }
+
+  function handleGeocode(geo) {
+    if (geo) {
+      setForm(f => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
+    } else {
+      setForm(f => ({ ...f, lat: null, lng: null }))
+    }
   }
 
   function validate() {
@@ -565,6 +673,9 @@ function PlayerForm() {
       sport:            form.sport,
       city:             form.city.trim(),
       county:           form.county || null,
+      zip_code:         form.zip_code || null,
+      lat:              form.lat || null,
+      lng:              form.lng || null,
       contact_info:     form.contact_info.trim(),
       additional_notes: form.additional_notes.trim() || null,
       active:           true,
@@ -601,7 +712,6 @@ function PlayerForm() {
 
   return (
     <div>
-      {/* Post type toggle */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[
           ['player_needed',    '⚾ Player Needed'],
@@ -620,7 +730,6 @@ function PlayerForm() {
         ))}
       </div>
 
-      {/* Sport */}
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -636,7 +745,6 @@ function PlayerForm() {
         </div>
       </div>
 
-      {/* player_needed fields */}
       {postType === 'player_needed' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -668,9 +776,12 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>City <RequiredMark /></label>
-            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+            <div>
+              <label style={labelStyle}>City <RequiredMark /></label>
+              <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+            </div>
+            <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
           </div>
 
           <RegionCountyPicker
@@ -695,7 +806,6 @@ function PlayerForm() {
         </>
       )}
 
-      {/* player_available fields */}
       {postType === 'player_available' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -727,9 +837,12 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>City <RequiredMark /></label>
-            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+            <div>
+              <label style={labelStyle}>City <RequiredMark /></label>
+              <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+            </div>
+            <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
           </div>
 
           <RegionCountyPicker
@@ -749,7 +862,6 @@ function PlayerForm() {
         </>
       )}
 
-      {/* Contact — shared */}
       <div style={{ marginBottom: 8 }}>
         <label style={labelStyle}>Contact Info <RequiredMark /></label>
         <input value={form.contact_info} onChange={e => set('contact_info', e.target.value)} placeholder="Email, phone, or Instagram handle" style={inputStyle} />
@@ -796,7 +908,6 @@ export default function CoachSubmitForm() {
         </div>
       </div>
 
-      {/* Tab selector */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0 }}>
         {TABS.map(tab => (
           <button key={tab.id}
@@ -816,7 +927,6 @@ export default function CoachSubmitForm() {
         ))}
       </div>
 
-      {/* Active form */}
       <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '28px 24px' }}>
         {activeTab === 'coach'  && <CoachForm />}
         {activeTab === 'team'   && <TeamForm />}
