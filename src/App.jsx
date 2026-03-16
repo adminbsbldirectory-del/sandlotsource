@@ -8,6 +8,7 @@ import CoachSubmitForm from './components/CoachSubmitForm.jsx'
 import ClaimListing from './components/ClaimListing.jsx'
 import RosterSpots from './components/RosterSpots.jsx'
 import SearchResults from './components/SearchResults.jsx'
+import Facilities from './components/Facilities.jsx'
 
 const BORDER = '#eaeae6'
 const FAINT  = '#bbb'
@@ -36,6 +37,7 @@ function SiteFooter() {
             { heading: 'Directory', links: [
               { label: 'Coaches',      to: '/coaches' },
               { label: 'Teams',        to: '/teams' },
+              { label: 'Facilities',   to: '/facilities' },
               { label: 'Open Rosters', to: '/roster' },
               { label: 'Pickup Board', to: '/find' },
             ]},
@@ -78,15 +80,16 @@ function AppRoutes() {
       <Header />
       <main style={{ flex: 1 }}>
         <Routes>
-          <Route path="/"       element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
-          <Route path="/search" element={<SearchResults />} />
-          <Route path="/coaches"  element={<CoachDirectory />} />
-          <Route path="/teams"    element={<TravelTeams />} />
-          <Route path="/find"     element={<PlayerBoard />} />
-          <Route path="/roster"   element={<RosterSpots />} />
-          <Route path="/submit"   element={<CoachSubmitForm />} />
-          <Route path="/claim"    element={<ClaimListing />} />
-          <Route path="*"         element={<Navigate to="/" replace />} />
+          <Route path="/"          element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
+          <Route path="/search"     element={<SearchResults />} />
+          <Route path="/coaches"    element={<CoachDirectory />} />
+          <Route path="/teams"      element={<TravelTeams />} />
+          <Route path="/facilities" element={<Facilities />} />
+          <Route path="/find"       element={<PlayerBoard />} />
+          <Route path="/roster"     element={<RosterSpots />} />
+          <Route path="/submit"     element={<CoachSubmitForm />} />
+          <Route path="/claim"      element={<ClaimListing />} />
+          <Route path="*"           element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <SiteFooter />
