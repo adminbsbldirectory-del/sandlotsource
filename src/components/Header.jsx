@@ -1,20 +1,19 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const NAV_TABS = [
-  { id: 'home',    label: 'Home',                        path: '/' },
-  { id: 'coaches', label: 'Coaches',                     path: '/coaches' },
-  { id: 'teams',   label: 'Teams',                       path: '/teams' },
-  { id: 'board',   label: 'Pickup Needed · Pickup Wamted', path: '/find' },
-  { id: 'roster',  label: 'Open Roster Spots',           path: '/roster' },
-  { id: 'claim',   label: 'Claim a Listing',             path: '/claim' },
-  { id: 'submit',  label: '+ Add Listing',               path: '/submit' },
+  { id: 'home',    label: 'Home',                          path: '/' },
+  { id: 'coaches', label: 'Coaches',                       path: '/coaches' },
+  { id: 'teams',   label: 'Teams',                         path: '/teams' },
+  { id: 'board',   label: 'Pickup Needed · Pickup Wanted', path: '/find' },
+  { id: 'roster',  label: 'Open Roster Spots',             path: '/roster' },
+  { id: 'claim',   label: 'Claim a Listing',               path: '/claim' },
+  { id: 'submit',  label: '+ Add Listing',                 path: '/submit' },
 ]
 
 export default function Header() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate  = useNavigate()
+  const location  = useLocation()
 
-  // Determine active tab from current URL
   const activeTab = NAV_TABS.find(t =>
     t.path === '/'
       ? location.pathname === '/'
@@ -22,80 +21,77 @@ export default function Header() {
   )?.id || 'home'
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 900 }}>
-      <div style={{ background: 'var(--navy)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          {/* Logo + tagline row */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '14px 0 10px' }}>
-            <div
-              onClick={() => navigate('/')}
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
-            >
-              <div style={{
-                width: 38, height: 38, flexShrink: 0,
-                background: 'var(--red)',
-                clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16,
-              }}>⚾</div>
-              <div>
-                <div style={{
-                  fontFamily: 'var(--font-head)',
-                  fontSize: 28, fontWeight: 900,
-                  color: 'var(--white)',
-                  letterSpacing: '0.05em',
-                  lineHeight: 1,
-                  textTransform: 'uppercase',
-                }}>
-                  Sandlot Source
-                </div>
-                <div style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 11, color: 'var(--gold)',
-                  letterSpacing: '0.09em',
-                  textTransform: 'uppercase',
-                  marginTop: 3,
-                }}>
-                  Find coaches. Explore teams. Fill roster spots.
-                </div>
-              </div>
-            </div>
+    <header style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 900,
+      background: '#fff',
+      borderBottom: '3px solid #e63329',
+      boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
+
+        {/* ── Logo + nav row ──────────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0 0' }}>
+
+          {/* Logo */}
+          <div
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+          >
+            <img
+              src="/logo.png"
+              alt="Sandlot Source"
+              style={{
+                height: 52,
+                width: 'auto',
+                display: 'block',
+                objectFit: 'contain',
+              }}
+            />
           </div>
 
-          {/* Nav tabs */}
-          <div style={{ display: 'flex', gap: 2, overflowX: 'auto' }}>
+          {/* Right-side nav tabs */}
+          <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', overflowX: 'auto' }}>
             {NAV_TABS.map(tab => {
               const isActive = activeTab === tab.id
               const isAdd    = tab.id === 'submit'
               const isRoster = tab.id === 'roster'
+
+              let bg, color, borderBottom
+              if (isAdd) {
+                bg           = isActive ? '#b07d00' : 'rgba(240,165,0,0.12)'
+                color        = isActive ? '#fff'    : '#b07d00'
+                borderBottom = isActive ? '3px solid #b07d00' : '3px solid transparent'
+              } else if (isRoster) {
+                bg           = isActive ? '#15803d' : 'rgba(22,163,74,0.1)'
+                color        = '#15803d'
+                borderBottom = isActive ? '3px solid #15803d' : '3px solid transparent'
+              } else {
+                bg           = isActive ? '#1a1a1a' : 'transparent'
+                color        = isActive ? '#fff'    : '#555'
+                borderBottom = isActive ? '3px solid #1a1a1a' : '3px solid transparent'
+              }
+
               return (
                 <button
                   key={tab.id}
                   onClick={() => navigate(tab.path)}
                   style={{
-                    padding: '9px 16px',
-                    fontFamily: 'var(--font-head)',
-                    fontSize: 13, fontWeight: 700,
-                    letterSpacing: '0.06em',
+                    padding: '8px 14px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.05em',
                     textTransform: 'uppercase',
                     border: 'none',
                     borderRadius: '6px 6px 0 0',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s',
-                    background: isAdd
-                      ? (isActive ? 'var(--gold)' : 'rgba(240,165,0,0.18)')
-                      : isRoster
-                      ? (isActive ? '#16A34A' : 'rgba(22,163,74,0.25)')
-                      : (isActive ? 'var(--cream)' : 'rgba(255,255,255,0.08)'),
-                    color: isAdd
-                      ? (isActive ? 'var(--navy)' : 'var(--gold)')
-                      : isRoster
-                      ? 'white'
-                      : (isActive ? 'var(--navy)' : 'rgba(255,255,255,0.65)'),
-                    borderBottom: isActive
-                      ? (isRoster ? '3px solid #15803D' : '3px solid var(--gold)')
-                      : '3px solid transparent',
+                    background: bg,
+                    color: color,
+                    borderBottom: borderBottom,
                   }}
                 >
                   {tab.label}
@@ -104,6 +100,7 @@ export default function Header() {
             })}
           </div>
         </div>
+
       </div>
     </header>
   )
