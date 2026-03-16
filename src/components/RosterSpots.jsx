@@ -283,11 +283,6 @@ function RosterForm({ onSubmitted }) {
         <ZipFieldInline value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
       </div>
 
-      <RegionCountyPicker
-        region={form.region} county={form.county}
-        onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
-      />
-
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Position(s) Needed</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
