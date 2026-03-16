@@ -38,11 +38,19 @@ const makeSelectedIcon = (color) => L.divIcon({
   popupAnchor: [0, -40],
 })
 
-const TIER_COLORS = {
-  elite:  '#D42B2B',
-  strong: '#F0A500',
-  local:  '#0B1F3A',
-  budget: '#6B7280',
+// ── Pin colors by content type ────────────────────────────────────────────────
+const PIN_COLORS = {
+  coach:        '#e63329', // red    — coaches
+  facility:     '#1a1a1a', // black  — facilities/venues
+  team:         '#1d6fa4', // blue   — travel teams
+  open_roster:  '#16a34a', // green  — open roster spots
+  needs_player: '#ea580c', // orange — coach/team needs a player (urgent)
+  pickup:       '#0891b2', // teal   — player available / pickup
+}
+
+function coachPinColor(coach) {
+  if (coach.listing_type === 'facility') return PIN_COLORS.facility
+  return PIN_COLORS.coach
 }
 
 const REGIONS = {
@@ -80,14 +88,14 @@ const SPECIALTIES = ['All Specialties','pitching','hitting','catching','fielding
 const SPORTS = ['Both','baseball','softball']
 
 const DEMO_COACHES = [
-  { id:1, name:'David Sopilka', sport:'baseball', specialty:['catching'], city:'Chamblee', county:'DeKalb', facility_name:'El Dojo', tier:'elite', lat:33.888, lng:-84.299, credentials:'Elite catching coach', price_notes:'1.5 hr sessions', recommendation_count:5 },
-  { id:2, name:'Cristoforo Romano', sport:'baseball', specialty:['pitching'], city:'Marietta', county:'Cobb', facility_name:'Harrison Park', tier:'elite', lat:33.961, lng:-84.548, credentials:'Former Detroit Tigers & Brewers MiLB coach; Masters Biomechanics', price_per_session:70, price_notes:'$70 cash / $80 Venmo', recommendation_count:8 },
-  { id:3, name:'Chris Bootcheck', sport:'baseball', specialty:['pitching'], city:'Woodstock', county:'Cherokee', facility_name:'Auterson Baseball (The Hive)', tier:'elite', lat:34.101, lng:-84.519, credentials:'Former MLB pitcher', recommendation_count:6 },
-  { id:4, name:'Jagger Iovinelli', sport:'baseball', specialty:['pitching'], city:'Alpharetta', county:'Fulton', facility_name:'Grit Academy Athletics', tier:'strong', lat:34.075, lng:-84.294, recommendation_count:4 },
-  { id:5, name:'Willie Carter', sport:'baseball', specialty:['hitting'], city:'Buford', county:'Gwinnett', facility_name:'WC19 Pro Hit', tier:'elite', lat:34.119, lng:-83.991, credentials:'Former Atlanta Brave', recommendation_count:3 },
-  { id:6, name:'Hannah Lane Triplett', sport:'softball', specialty:['pitching'], city:'Watkinsville', county:'Oconee', facility_name:'Della Torre Softball', tier:'elite', lat:33.858, lng:-83.416, credentials:'Top-tier softball pitching', recommendation_count:7 },
-  { id:7, name:'Jody Wisdom', sport:'softball', specialty:['pitching','hitting'], city:'Loganville', county:'Walton', tier:'elite', lat:33.836, lng:-83.899, credentials:'Softball legend', recommendation_count:5 },
-  { id:8, name:'Aiden Berggren', sport:'baseball', specialty:['catching'], city:'Canton', county:'Cherokee', tier:'strong', lat:34.237, lng:-84.491, credentials:'10+ years; 4 years college baseball', recommendation_count:3 },
+  { id:1, name:'David Sopilka', sport:'baseball', specialty:['catching'], city:'Chamblee', county:'DeKalb', facility_name:'El Dojo', lat:33.888, lng:-84.299, credentials:'Elite catching coach', price_notes:'1.5 hr sessions', recommendation_count:5 },
+  { id:2, name:'Cristoforo Romano', sport:'baseball', specialty:['pitching'], city:'Marietta', county:'Cobb', facility_name:'Harrison Park', lat:33.961, lng:-84.548, credentials:'Former Detroit Tigers & Brewers MiLB coach; Masters Biomechanics', price_per_session:70, price_notes:'$70 cash / $80 Venmo', recommendation_count:8 },
+  { id:3, name:'Chris Bootcheck', sport:'baseball', specialty:['pitching'], city:'Woodstock', county:'Cherokee', facility_name:'Auterson Baseball (The Hive)', lat:34.101, lng:-84.519, credentials:'Former MLB pitcher', recommendation_count:6 },
+  { id:4, name:'Jagger Iovinelli', sport:'baseball', specialty:['pitching'], city:'Alpharetta', county:'Fulton', facility_name:'Grit Academy Athletics', lat:34.075, lng:-84.294, recommendation_count:4 },
+  { id:5, name:'Willie Carter', sport:'baseball', specialty:['hitting'], city:'Buford', county:'Gwinnett', facility_name:'WC19 Pro Hit', lat:34.119, lng:-83.991, credentials:'Former Atlanta Brave', recommendation_count:3 },
+  { id:6, name:'Hannah Lane Triplett', sport:'softball', specialty:['pitching'], city:'Watkinsville', county:'Oconee', facility_name:'Della Torre Softball', lat:33.858, lng:-83.416, credentials:'Top-tier softball pitching', recommendation_count:7 },
+  { id:7, name:'Jody Wisdom', sport:'softball', specialty:['pitching','hitting'], city:'Loganville', county:'Walton', lat:33.836, lng:-83.899, credentials:'Softball legend', recommendation_count:5 },
+  { id:8, name:'Aiden Berggren', sport:'baseball', specialty:['catching'], city:'Canton', county:'Cherokee', lat:34.237, lng:-84.491, credentials:'10+ years; 4 years college baseball', recommendation_count:3 },
 ]
 
 function parseFirstPhone(raw) {
@@ -310,7 +318,36 @@ export default function CoachDirectory() {
     outline:'none', cursor:'pointer',
   }
 
-  // ── Map panel — reduced height from full viewport to fixed 380px ──────────
+  // ── Map legend ────────────────────────────────────────────────────────────
+  const mapLegend = (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', gap: 14, padding: '8px 16px',
+      background: '#fff', borderBottom: '2px solid var(--lgray)',
+      alignItems: 'center',
+    }}>
+      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginRight: 4 }}>Map key</span>
+      {[
+        { color: PIN_COLORS.coach,        label: 'Coach' },
+        { color: PIN_COLORS.facility,     label: 'Facility' },
+        { color: PIN_COLORS.team,         label: 'Team' },
+        { color: PIN_COLORS.open_roster,  label: 'Open Roster' },
+        { color: PIN_COLORS.needs_player, label: 'Needs Player' },
+        { color: PIN_COLORS.pickup,       label: 'Player Available' },
+      ].map(item => (
+        <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{
+            width: 12, height: 12, borderRadius: '50% 50% 50% 0',
+            transform: 'rotate(-45deg)', background: item.color,
+            border: '2px solid rgba(255,255,255,0.8)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)', flexShrink: 0,
+          }} />
+          <span style={{ fontSize: 11, color: 'var(--gray)' }}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  )
+
+  // ── Map panel — fixed 380px height ───────────────────────────────────────
   const mapPanel = (
     <div style={{ position:'relative', height: isMobile ? 240 : 380, width:'100%' }}>
       <MapContainer
@@ -331,8 +368,8 @@ export default function CoachDirectory() {
               key={coach.id}
               position={[coach.lat, coach.lng]}
               icon={isSelected
-                ? makeSelectedIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)
-                : makeIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)
+                ? makeSelectedIcon(coachPinColor(coach))
+                : makeIcon(coachPinColor(coach))
               }
               zIndexOffset={isSelected ? 1000 : 0}
               eventHandlers={{ click: () => setSelected(coach.id) }}
@@ -423,6 +460,8 @@ export default function CoachDirectory() {
             <div style={{ width:'100%', borderBottom:'2px solid var(--lgray)' }}>
               {mapPanel}
             </div>
+            {/* ── Legend below map ── */}
+            {mapLegend}
 
             {/* ── Coach list + ad rail below map ── */}
             <div style={{ display:'flex', overflow:'hidden' }}>
