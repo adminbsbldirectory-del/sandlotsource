@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -24,6 +25,19 @@ const makeIcon = (color) => L.divIcon({
   popupAnchor: [0, -30],
 })
 
+const makeSelectedIcon = (color) => L.divIcon({
+  className: '',
+  html: `<div style="
+    width:38px;height:38px;border-radius:50% 50% 50% 0;
+    background:${color};border:4px solid #f0a500;
+    transform:rotate(-45deg);
+    box-shadow:0 3px 10px rgba(0,0,0,0.5);
+  "></div>`,
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -40],
+})
+
 const TIER_COLORS = {
   elite:  '#D42B2B',
   strong: '#F0A500',
@@ -31,13 +45,12 @@ const TIER_COLORS = {
   budget: '#6B7280',
 }
 
-// ── Region → County map covering all of Georgia ──────────────────────────────
 const REGIONS = {
   'North Georgia': [
-  'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
-  'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
-  'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
-  'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
+    'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
+    'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
+    'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
+    'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
   ],
   'Middle Georgia': [
     'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
@@ -88,7 +101,6 @@ function RatingRow({ coach, selected }) {
   const icon = coach.sport === 'softball' ? '🥎' : '⚾'
 
   if (count === 0) {
-    // Always show sport icon even without reviews
     return (
       <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:6, fontSize:13 }}>
         <span>{icon}</span>
@@ -206,15 +218,21 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
 function FlyTo({ lat, lng }) {
   const map = useMap()
   useEffect(() => {
-    if (lat && lng) map.flyTo([lat, lng], 14, { duration: 0.8 })
+    if (lat && lng) map.flyTo([lat, lng], 13, { duration: 0.8 })
   }, [lat, lng])
   return null
 }
 
 export default function CoachDirectory() {
+  const [searchParams] = useSearchParams()
+
   const [coaches, setCoaches] = useState(DEMO_COACHES)
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
+  // Pre-select coach from ?select=ID param (coming from search results)
+  const [selected, setSelected] = useState(() => {
+    const id = searchParams.get('select')
+    return id ? Number(id) : null
+  })
   const [sport, setSport] = useState('Both')
   const [specialty, setSpecialty] = useState('All Specialties')
   const [region, setRegion] = useState('All Regions')
@@ -232,8 +250,20 @@ export default function CoachDirectory() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('coaches').select('*').eq('active', true).in('approval_status', ['approved', 'seeded'])
-      if (!error && data && data.length > 0) setCoaches(data)
+      const { data, error } = await supabase
+        .from('coaches')
+        .select('*')
+        .eq('active', true)
+        .in('approval_status', ['approved', 'seeded'])
+      if (!error && data && data.length > 0) {
+        setCoaches(data)
+        // If a select param was passed, open that coach's profile automatically
+        const selectId = searchParams.get('select')
+        if (selectId) {
+          const match = data.find(c => String(c.id) === selectId)
+          if (match) setSelected(match.id)
+        }
+      }
       setLoading(false)
     }
     load()
@@ -263,6 +293,11 @@ export default function CoachDirectory() {
           !(c.facility_name||'').toLowerCase().includes(q)) return false
     }
     return true
+  }).sort((a, b) => {
+    // Selected coach always bubbles to top of the list
+    if (a.id === selected) return -1
+    if (b.id === selected) return 1
+    return 0
   })
 
   const mappable = filtered.filter(c => c.lat && c.lng)
@@ -275,11 +310,12 @@ export default function CoachDirectory() {
     outline:'none', cursor:'pointer',
   }
 
+  // ── Map panel — reduced height from full viewport to fixed 380px ──────────
   const mapPanel = (
-    <div style={{ position:'relative', height: isMobile ? 280 : '100%', width:'100%' }}>
+    <div style={{ position:'relative', height: isMobile ? 240 : 380, width:'100%' }}>
       <MapContainer
-        center={region === 'All Regions' ? [32.5, -83.5] : [34.05, -84.25]}
-        zoom={region === 'All Regions' ? 7 : 9}
+        center={sel?.lat ? [sel.lat, sel.lng] : [34.05, -84.25]}
+        zoom={sel?.lat ? 13 : 9}
         style={{ height:'100%', width:'100%' }}
       >
         <TileLayer
@@ -289,9 +325,16 @@ export default function CoachDirectory() {
         {sel && sel.lat && <FlyTo lat={sel.lat} lng={sel.lng} />}
         {mappable.map(coach => {
           const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
+          const isSelected = coach.id === selected
           return (
-            <Marker key={coach.id} position={[coach.lat, coach.lng]}
-              icon={makeIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)}
+            <Marker
+              key={coach.id}
+              position={[coach.lat, coach.lng]}
+              icon={isSelected
+                ? makeSelectedIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)
+                : makeIcon(TIER_COLORS[coach.tier] || TIER_COLORS.local)
+              }
+              zIndexOffset={isSelected ? 1000 : 0}
               eventHandlers={{ click: () => setSelected(coach.id) }}
             >
               <Popup>
@@ -317,7 +360,7 @@ export default function CoachDirectory() {
         <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />
       )}
 
-      <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 108px)' }}>
+      <div style={{ display:'flex', flexDirection:'column' }}>
 
         {/* ── Filter Bar ── */}
         <div style={{
@@ -336,8 +379,6 @@ export default function CoachDirectory() {
           <select value={specialty} onChange={e => setSpecialty(e.target.value)} style={filterStyle}>
             {SPECIALTIES.map(s => <option key={s}>{s}</option>)}
           </select>
-
-          {/* Region then County — county dims until region is picked */}
           <select value={region} onChange={e => handleRegionChange(e.target.value)} style={filterStyle}>
             {REGION_NAMES.map(r => <option key={r}>{r}</option>)}
           </select>
@@ -365,7 +406,7 @@ export default function CoachDirectory() {
 
         {isMobile ? (
           <div style={{ flex:1, overflowY:'auto', background:'var(--cream)' }}>
-            {showMap && <div style={{ height:280, flexShrink:0 }}>{mapPanel}</div>}
+            {showMap && <div style={{ height:240, flexShrink:0 }}>{mapPanel}</div>}
             <div style={{ padding:'12px' }}>
               {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
               {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
@@ -377,57 +418,38 @@ export default function CoachDirectory() {
             </div>
           </div>
         ) : (
-          <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-            {/* ── Coach list ── */}
-            <div style={{ width:320, flexShrink:0, overflowY:'auto', padding:'16px', borderRight:'2px solid var(--lgray)', background:'var(--cream)' }}>
-              {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
-              {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
-              {filtered.map(coach => (
-                <CoachCard key={coach.id} coach={coach} selected={selected === coach.id}
-                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-                  onViewProfile={setProfileCoach} />
-              ))}
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            {/* ── Map at top, fixed height ── */}
+            <div style={{ width:'100%', borderBottom:'2px solid var(--lgray)' }}>
+              {mapPanel}
             </div>
 
-            {/* ── Map ── */}
-            <div style={{ flex:1, position:'relative', minWidth:0 }}>{mapPanel}</div>
-
-            {/* ── Ad column ── */}
-            <div style={{ width:220, flexShrink:0, borderLeft:'2px solid var(--lgray)', background:'var(--white)', display:'flex', flexDirection:'column', gap:16, padding:'16px', overflowY:'auto' }}>
-              {/* Ad slot 1 */}
-              <div style={{
-                border:'2px dashed var(--lgray)', borderRadius:10,
-                padding:'16px 12px', textAlign:'center',
-                background:'var(--cream)', minHeight:180,
-                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
-              }}>
-                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
-                <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach North Georgia baseball & softball families</div>
-                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+            {/* ── Coach list + ad rail below map ── */}
+            <div style={{ display:'flex', overflow:'hidden' }}>
+              <div style={{ flex:1, overflowY:'auto', maxHeight:'calc(100vh - 380px - 108px)', padding:'16px', background:'var(--cream)' }}>
+                {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
+                {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
+                {filtered.map(coach => (
+                  <CoachCard key={coach.id} coach={coach} selected={selected === coach.id}
+                    onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                    onViewProfile={setProfileCoach} />
+                ))}
               </div>
 
-              {/* Ad slot 2 */}
-              <div style={{
-                border:'2px dashed var(--lgray)', borderRadius:10,
-                padding:'16px 12px', textAlign:'center',
-                background:'var(--cream)', minHeight:180,
-                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
-              }}>
-                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
-                <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach North Georgia baseball & softball families</div>
-                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
-              </div>
-
-              {/* Ad slot 3 */}
-              <div style={{
-                border:'2px dashed var(--lgray)', borderRadius:10,
-                padding:'16px 12px', textAlign:'center',
-                background:'var(--cream)', minHeight:180,
-                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
-              }}>
-                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
-                <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach North Georgia baseball & softball families</div>
-                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+              {/* ── Ad column ── */}
+              <div style={{ width:220, flexShrink:0, borderLeft:'2px solid var(--lgray)', background:'var(--white)', display:'flex', flexDirection:'column', gap:16, padding:'16px', overflowY:'auto', maxHeight:'calc(100vh - 380px - 108px)' }}>
+                {[1,2,3].map(i => (
+                  <div key={i} style={{
+                    border:'2px dashed var(--lgray)', borderRadius:10,
+                    padding:'16px 12px', textAlign:'center',
+                    background:'var(--cream)', minHeight:180,
+                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
+                  }}>
+                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
+                    <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach baseball &amp; softball families</div>
+                    <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
