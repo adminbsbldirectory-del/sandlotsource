@@ -233,18 +233,30 @@ export default function SearchResults() {
   const [showCoaches, setShowCoaches] = useState(false)
   const [showTeams,   setShowTeams]   = useState(false)
 
-  // ── Fetch all data on mount ─────────────────────────────────────────────────
+  // ── Fetch all data whenever URL params change ──────────────────────────────
   useEffect(() => {
+    // Sync local state from URL on every navigation
+    setQuery(searchParams.get('q') || '')
+    setSport(searchParams.get('sport') || '')
+    setZip(searchParams.get('zip') || '')
+    setListingType(searchParams.get('type') || '')
+    setAgeGroup(searchParams.get('age') || '')
+    setRadius(Number(searchParams.get('radius')) || 25)
+
+    const currentZip = searchParams.get('zip') || ''
+
     async function fetchAll() {
       setLoading(true)
       setGeoError('')
 
       // Geocode zip if provided
       let geo = null
-      if (zip && zip.length === 5) {
-        geo = await geocodeZip(zip)
-        if (!geo) setGeoError(`Couldn't find zip code "${zip}" — showing all results.`)
+      if (currentZip && currentZip.length === 5) {
+        geo = await geocodeZip(currentZip)
+        if (!geo) setGeoError(`Couldn't find zip code "${currentZip}" — showing all results.`)
         setGeoResult(geo)
+      } else {
+        setGeoResult(null)
       }
 
       // Fetch coaches
@@ -265,7 +277,7 @@ export default function SearchResults() {
       setLoading(false)
     }
     fetchAll()
-  }, []) // Only on mount — filtering is done client-side
+  }, [searchParams])
 
   // ── Apply filters ──────────────────────────────────────────────────────────
   function matchesKeyword(item) {
@@ -349,9 +361,7 @@ export default function SearchResults() {
     if (listingType)   params.set('type',   listingType)
     if (ageGroup)      params.set('age',    ageGroup)
     if (radius !== 25) params.set('radius', radius)
-    setSearchParams(params)
-    // Re-trigger fetch by reloading (simple approach — full re-fetch on new zip)
-    window.location.search = params.toString()
+    navigate(`/search?${params.toString()}`)
   }
 
   const pillStyle = {
