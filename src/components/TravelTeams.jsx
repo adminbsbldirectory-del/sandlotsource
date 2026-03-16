@@ -57,7 +57,7 @@ export default function TravelTeams() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('travel_teams').select('*').eq('active', true)
+      const { data, error } = await supabase.from('travel_teams').select('*').eq('active', true).in('approval_status', ['approved', 'seeded'])
       if (!error && data && data.length > 0) setTeams(data)
       setLoading(false)
     }
