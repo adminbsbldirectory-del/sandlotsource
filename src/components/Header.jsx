@@ -1,13 +1,14 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const NAV_TABS = [
-  { id: 'home',    label: 'Home',                          path: '/' },
-  { id: 'coaches', label: 'Coaches',                       path: '/coaches' },
-  { id: 'teams',   label: 'Teams',                         path: '/teams' },
-  { id: 'board',   label: 'Pickup Needed · Pickup Wanted', path: '/find' },
-  { id: 'roster',  label: 'Open Roster Spots',             path: '/roster' },
-  { id: 'claim',   label: 'Claim a Listing',               path: '/claim' },
-  { id: 'submit',  label: '+ Add Listing',                 path: '/submit' },
+  { id: 'home',       label: 'Home',                          path: '/' },
+  { id: 'coaches',    label: 'Coaches',                       path: '/coaches' },
+  { id: 'teams',      label: 'Teams',                         path: '/teams' },
+  { id: 'facilities', label: 'Facilities',                    path: '/facilities' },
+  { id: 'board',      label: 'Pickup Needed · Pickup Wanted', path: '/find' },
+  { id: 'roster',     label: 'Open Roster Spots',             path: '/roster' },
+  { id: 'claim',      label: 'Claim a Listing',               path: '/claim' },
+  { id: 'submit',     label: '+ Add Listing',                 path: '/submit' },
 ]
 
 export default function Header() {
@@ -43,11 +44,10 @@ export default function Header() {
               src="/logo.png"
               alt="Sandlot Source"
               style={{
-                height: 100,
-                width: 220,
+                height: 56,
+                width: 'auto',
                 display: 'block',
                 objectFit: 'contain',
-                objectPosition: 'center center',
               }}
             />
           </div>
