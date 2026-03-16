@@ -93,7 +93,7 @@ function CoachCard({ coach, distanceMi }) {
     : (coach.specialty || '').split('|').filter(Boolean)
 
   return (
-    <Link to="/coaches" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+    <Link to={`/coaches?select=${coach.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
       <div style={{
         border: `1px solid ${BORDER}`, borderRadius: 12,
         padding: '14px 16px', background: '#fff',
