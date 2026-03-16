@@ -1,48 +1,49 @@
 import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import L from 'leaflet'
 import { supabase } from '../supabase.js'
 
+// ── Leaflet icon fix ─────────────────────────────────────────────────────────
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
+
+const makeIcon = (color) => L.divIcon({
+  className: '',
+  html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+  iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -28],
+})
+
+const PIN_COLOR = '#16a34a' // green — open roster
+
+// ── Geocode ──────────────────────────────────────────────────────────────────
+async function geocodeZip(zip) {
+  if (!zip || zip.length !== 5) return null
+  try {
+    const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const place = data.places?.[0]
+    if (!place) return null
+    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude), city: place['place name'] }
+  } catch { return null }
+}
+
 const REGIONS = {
-  'North Georgia': [
-  'Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin',
-  'Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham',
-  'Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens',
-  'Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield',
-],
-  'Middle Georgia': [
-    'Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta',
-    'Douglas','Elbert','Fayette','Floyd','Greene','Haralson','Harris','Heard',
-    'Henry','Jasper','Jones','Lamar','Lincoln','McDuffie','Meriwether','Monroe',
-    'Morgan','Newton','Oglethorpe','Paulding','Pike','Putnam','Rockdale',
-    'Spalding','Taliaferro','Troup','Upson','Warren','Wilkes',
-  ],
-  'South Georgia': [
-    'Appling','Atkinson','Bacon','Baker','Ben Hill','Berrien','Brantley','Brooks',
-    'Bryan','Bulloch','Burke','Calhoun','Camden','Candler','Charlton','Chatham',
-    'Clay','Clinch','Coffee','Colquitt','Columbia','Cook','Crisp','Decatur',
-    'Dodge','Dooly','Dougherty','Early','Echols','Emanuel','Evans','Glynn',
-    'Grady','Irwin','Jeff Davis','Jefferson','Jenkins','Johnson','Lanier',
-    'Laurens','Lee','Liberty','Long','Lowndes','Macon','Marion','Miller',
-    'Mitchell','Montgomery','Pierce','Pulaski','Quitman','Randolph','Richmond',
-    'Schley','Screven','Seminole','Stewart','Sumter','Tattnall','Taylor',
-    'Telfair','Terrell','Thomas','Tift','Toombs','Treutlen','Turner','Twiggs',
-    'Ware','Washington','Wayne','Webster','Wheeler','Wilcox','Wilkinson','Worth',
-  ],
+  'North Georgia': ['Barrow','Banks','Cherokee','Clarke','Cobb','Dawson','DeKalb','Fannin','Forsyth','Franklin','Fulton','Gilmer','Gordon','Gwinnett','Habersham','Hall','Hart','Jackson','Lumpkin','Madison','Murray','Oconee','Pickens','Rabun','Stephens','Towns','Union','Walker','Walton','White','Whitfield'],
+  'Middle Georgia': ['Baldwin','Bibb','Butts','Carroll','Catoosa','Chattooga','Clayton','Coweta','Douglas','Elbert','Fayette','Floyd','Greene','Haralson','Harris','Heard','Henry','Jasper','Jones','Lamar','Lincoln','McDuffie','Meriwether','Monroe','Morgan','Newton','Oglethorpe','Paulding','Pike','Putnam','Rockdale','Spalding','Taliaferro','Troup','Upson','Warren','Wilkes'],
+  'South Georgia': ['Appling','Atkinson','Bacon','Baker','Ben Hill','Berrien','Brantley','Brooks','Bryan','Bulloch','Burke','Calhoun','Camden','Candler','Charlton','Chatham','Clay','Clinch','Coffee','Colquitt','Columbia','Cook','Crisp','Decatur','Dodge','Dooly','Dougherty','Early','Echols','Emanuel','Evans','Glynn','Grady','Irwin','Jeff Davis','Jefferson','Jenkins','Johnson','Lanier','Laurens','Lee','Liberty','Long','Lowndes','Macon','Marion','Miller','Mitchell','Montgomery','Pierce','Pulaski','Quitman','Randolph','Richmond','Schley','Screven','Seminole','Stewart','Sumter','Tattnall','Taylor','Telfair','Terrell','Thomas','Tift','Toombs','Treutlen','Turner','Twiggs','Ware','Washington','Wayne','Webster','Wheeler','Wilcox','Wilkinson','Worth'],
 }
 
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','17U','18U','High School','College','Adult']
 const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 
-const labelStyle = {
-  fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
-  letterSpacing: '0.06em', display: 'block', marginBottom: 6, color: '#444',
-}
-const inputStyle = {
-  width: '100%', padding: '9px 12px', borderRadius: 8,
-  border: '2px solid var(--lgray)', fontSize: 14,
-  fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box',
-  background: '#fff',
-}
+const labelStyle = { fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6, color: '#444' }
+const inputStyle = { width: '100%', padding: '9px 12px', borderRadius: 8, border: '2px solid var(--lgray)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box', background: '#fff' }
 const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
@@ -59,8 +60,7 @@ function RegionCountyPicker({ region, county, onRegionChange, onCountyChange }) 
       <div>
         <label style={labelStyle}>County</label>
         <select value={county} onChange={e => onCountyChange(e.target.value)}
-          style={{ ...selectStyle, opacity: region ? 1 : 0.5 }}
-          disabled={!region}>
+          style={{ ...selectStyle, opacity: region ? 1 : 0.5 }} disabled={!region}>
           <option value="">Select county</option>
           {region && REGIONS[region].sort().map(c => <option key={c}>{c}</option>)}
         </select>
@@ -69,29 +69,41 @@ function RegionCountyPicker({ region, county, onRegionChange, onCountyChange }) 
   )
 }
 
-function RequiredMark() {
-  return <span style={{ color: 'var(--red)' }}> *</span>
-}
+function RequiredMark() { return <span style={{ color: 'var(--red)' }}> *</span> }
 
 function FieldError({ msg }) {
   if (!msg) return null
-  return (
-    <div style={{
-      background: '#FEE2E2', border: '1px solid #F87171', borderRadius: 8,
-      padding: '10px 14px', margin: '12px 0', color: '#B91C1C', fontSize: 13,
-    }}>{msg}</div>
-  )
+  return <div style={{ background: '#FEE2E2', border: '1px solid #F87171', borderRadius: 8, padding: '10px 14px', margin: '12px 0', color: '#B91C1C', fontSize: 13 }}>{msg}</div>
 }
 
 function SportBadge({ sport }) {
   return (
-    <span style={{
-      background: sport === 'softball' ? '#7C3AED' : '#1D4ED8',
-      color: 'white', fontSize: 10, fontWeight: 700,
-      padding: '2px 8px', borderRadius: 20,
-      textTransform: 'uppercase', fontFamily: 'var(--font-head)',
-      letterSpacing: '0.06em',
-    }}>{sport}</span>
+    <span style={{ background: sport === 'softball' ? '#7C3AED' : '#1D4ED8', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', fontFamily: 'var(--font-head)', letterSpacing: '0.06em' }}>{sport}</span>
+  )
+}
+
+function ZipFieldInline({ value, onChange, onGeocode }) {
+  const [status, setStatus] = useState('')
+  async function handleBlur() {
+    if (!value || value.length !== 5) return
+    setStatus('loading')
+    const geo = await geocodeZip(value)
+    if (geo) { setStatus('ok'); onGeocode(geo) }
+    else { setStatus('error'); onGeocode(null) }
+  }
+  return (
+    <div>
+      <label style={labelStyle}>
+        Zip Code
+        {status === 'loading' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Checking…</span>}
+        {status === 'ok'      && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Located</span>}
+        {status === 'error'   && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'var(--red)' }}>Zip not found</span>}
+      </label>
+      <input type="text" inputMode="numeric" maxLength={5} value={value}
+        onChange={e => onChange(e.target.value)} onBlur={handleBlur}
+        placeholder="e.g. 30114" style={inputStyle} />
+      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Used to place a map pin</div>
+    </div>
   )
 }
 
@@ -102,11 +114,7 @@ function RosterCard({ spot }) {
     : null
 
   return (
-    <div style={{
-      background: 'var(--white)', borderRadius: 12,
-      border: '2px solid var(--lgray)', padding: '18px 20px',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    }}>
+    <div style={{ background: 'var(--white)', borderRadius: 12, border: '2px solid var(--lgray)', padding: '18px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, color: 'var(--navy)', marginBottom: 4 }}>
@@ -119,57 +127,31 @@ function RosterCard({ spot }) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <SportBadge sport={spot.sport} />
           {spot.age_group && (
-            <span style={{
-              background: 'var(--navy)', color: 'white',
-              fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-              fontFamily: 'var(--font-head)',
-            }}>{spot.age_group}</span>
+            <span style={{ background: 'var(--navy)', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, fontFamily: 'var(--font-head)' }}>{spot.age_group}</span>
           )}
         </div>
       </div>
 
-      {spot.org_affiliation && (
-        <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 8 }}>
-          🏆 {spot.org_affiliation}
-        </div>
-      )}
+      {spot.org_affiliation && <div style={{ fontSize: 12, color: 'var(--gray)', marginBottom: 8 }}>🏆 {spot.org_affiliation}</div>}
 
       {positions.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)', marginRight: 2 }}>Needs:</span>
           {positions.map(p => (
-            <span key={p} style={{
-              background: '#FEF3C7', color: '#92400E',
-              fontSize: 11, fontWeight: 600,
-              padding: '2px 8px', borderRadius: 20,
-              textTransform: 'capitalize',
-            }}>{p}</span>
+            <span key={p} style={{ background: '#FEF3C7', color: '#92400E', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{p}</span>
           ))}
         </div>
       )}
 
       <div style={{ marginBottom: 10 }}>
-        <span style={{
-          background: '#DCFCE7', color: '#15803D',
-          fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-        }}>📅 Full Season</span>
+        <span style={{ background: '#DCFCE7', color: '#15803D', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>📅 Full Season</span>
       </div>
 
-      {spot.description && (
-        <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 10 }}>
-          {spot.description}
-        </div>
-      )}
+      {spot.description && <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5, marginBottom: 10 }}>{spot.description}</div>}
 
       <div style={{ paddingTop: 12, borderTop: '1px solid var(--lgray)', fontSize: 13 }}>
-        {spot.contact_name && (
-          <div style={{ fontWeight: 600, color: 'var(--navy)', marginBottom: 3 }}>
-            👤 {spot.contact_name}
-          </div>
-        )}
-        <div style={{ color: '#1D4ED8', fontWeight: 600 }}>
-          📬 {spot.contact_info}
-        </div>
+        {spot.contact_name && <div style={{ fontWeight: 600, color: 'var(--navy)', marginBottom: 3 }}>👤 {spot.contact_name}</div>}
+        <div style={{ color: '#1D4ED8', fontWeight: 600 }}>📬 {spot.contact_info}</div>
       </div>
 
       {daysLeft !== null && (
@@ -185,8 +167,9 @@ function RosterForm({ onSubmitted }) {
   const [form, setForm] = useState({
     sport: 'baseball', team_name: '', org_affiliation: '',
     age_group: '', positions_needed: [],
-    city: '', region: '', county: '', description: '',
-    contact_name: '', contact_info: '',
+    city: '', region: '', county: '',
+    zip_code: '', lat: null, lng: null,
+    description: '', contact_name: '', contact_info: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -202,11 +185,16 @@ function RosterForm({ onSubmitted }) {
     }))
   }
 
+  function handleGeocode(geo) {
+    if (geo) setForm(f => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
+    else setForm(f => ({ ...f, lat: null, lng: null }))
+  }
+
   function validate() {
-    if (!form.sport)                  return 'Sport is required.'
-    if (!form.age_group)              return 'Age group is required.'
-    if (!form.city.trim())            return 'City is required.'
-    if (!form.contact_info.trim())    return 'Contact info is required.'
+    if (!form.sport)               return 'Sport is required.'
+    if (!form.age_group)           return 'Age group is required.'
+    if (!form.city.trim())         return 'City is required.'
+    if (!form.contact_info.trim()) return 'Contact info is required.'
     return ''
   }
 
@@ -224,6 +212,9 @@ function RosterForm({ onSubmitted }) {
       positions_needed: form.positions_needed,
       city:             form.city.trim(),
       county:           form.county || null,
+      zip_code:         form.zip_code || null,
+      lat:              form.lat || null,
+      lng:              form.lng || null,
       commitment:       'full_season',
       description:      form.description.trim() || null,
       contact_name:     form.contact_name.trim() || null,
@@ -236,13 +227,8 @@ function RosterForm({ onSubmitted }) {
 
     const { error: sbError } = await supabase.from('roster_spots').insert(payload)
     setSubmitting(false)
-
-    if (sbError) {
-      console.error('Roster spot insert error:', sbError)
-      setError('Something went wrong. Please try again.')
-    } else {
-      onSubmitted()
-    }
+    if (sbError) { console.error(sbError); setError('Something went wrong. Please try again.') }
+    else { onSubmitted() }
   }
 
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
@@ -253,7 +239,6 @@ function RosterForm({ onSubmitted }) {
         Post a Roster Spot
       </div>
 
-      {/* Sport */}
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -269,7 +254,6 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      {/* Team + Org */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Team Name</label>
@@ -281,7 +265,6 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      {/* Age group + City */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
@@ -296,13 +279,15 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      {/* Region + County */}
+      <div style={{ marginBottom: 14 }}>
+        <ZipFieldInline value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
+      </div>
+
       <RegionCountyPicker
         region={form.region} county={form.county}
         onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
       />
 
-      {/* Positions */}
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Position(s) Needed</label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -318,15 +303,13 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      {/* Description */}
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Description</label>
         <textarea value={form.description} onChange={e => set('description', e.target.value)}
-          rows={3} placeholder="Skill level expected, practice schedule, tournament schedule, what kind of player you're looking for..."
+          rows={3} placeholder="Skill level expected, practice schedule, tournament schedule..."
           style={textareaStyle} />
       </div>
 
-      {/* Contact */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
           <label style={labelStyle}>Contact Name</label>
@@ -360,9 +343,10 @@ function RosterForm({ onSubmitted }) {
 export default function RosterSpots() {
   const [spots, setSpots] = useState([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('browse') // 'browse' | 'post' | 'submitted'
+  const [view, setView] = useState('browse')
   const [sport, setSport] = useState('Both')
   const [ageGroup, setAgeGroup] = useState('All Ages')
+  const [showMap, setShowMap] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -385,6 +369,8 @@ export default function RosterSpots() {
     return true
   })
 
+  const mappable = filtered.filter(s => s.lat && s.lng)
+
   const filterStyle = {
     padding: '8px 12px', borderRadius: 8,
     border: '2px solid var(--lgray)', background: 'white',
@@ -397,17 +383,9 @@ export default function RosterSpots() {
       <div style={{ maxWidth: 680, margin: '60px auto', padding: '0 20px', textAlign: 'center' }}>
         <div style={{ background: '#DCFCE7', border: '2px solid #16A34A', borderRadius: 12, padding: '32px 24px' }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
-          <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: '#15803D', marginBottom: 8 }}>
-            Roster Spot Posted!
-          </div>
-          <div style={{ fontSize: 14, color: '#166534', marginBottom: 20 }}>
-            Your listing will appear here once reviewed. It will stay active for 15 days.
-          </div>
-          <button onClick={() => { setView('browse') }} style={{
-            background: 'var(--navy)', color: 'white', border: 'none',
-            borderRadius: 8, padding: '10px 24px',
-            fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-          }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: '#15803D', marginBottom: 8 }}>Roster Spot Posted!</div>
+          <div style={{ fontSize: 14, color: '#166534', marginBottom: 20 }}>Your listing will appear here once reviewed. It will stay active for 15 days.</div>
+          <button onClick={() => setView('browse')} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
             Back to Roster Spots
           </button>
         </div>
@@ -418,11 +396,7 @@ export default function RosterSpots() {
   if (view === 'post') {
     return (
       <div style={{ padding: '32px 20px' }}>
-        <button onClick={() => setView('browse')} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--navy)', fontWeight: 700, fontSize: 13,
-          fontFamily: 'var(--font-head)', marginBottom: 20, display: 'block',
-        }}>
+        <button onClick={() => setView('browse')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--navy)', fontWeight: 700, fontSize: 13, fontFamily: 'var(--font-head)', marginBottom: 20, display: 'block' }}>
           ← Back to Roster Spots
         </button>
         <RosterForm onSubmitted={() => setView('submitted')} />
@@ -433,14 +407,9 @@ export default function RosterSpots() {
   return (
     <div>
       {/* Filter bar */}
-      <div style={{
-        background: 'var(--white)', borderBottom: '2px solid var(--lgray)',
-        padding: '12px 24px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center',
-      }}>
+      <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '12px 24px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <select value={sport} onChange={e => setSport(e.target.value)} style={filterStyle}>
-          <option>Both</option>
-          <option>baseball</option>
-          <option>softball</option>
+          <option>Both</option><option>baseball</option><option>softball</option>
         </select>
         <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} style={filterStyle}>
           {['All Ages', ...AGE_GROUPS].map(a => <option key={a}>{a}</option>)}
@@ -448,41 +417,68 @@ export default function RosterSpots() {
         <span style={{ fontSize: 13, color: 'var(--gray)', flex: 1 }}>
           {loading ? 'Loading…' : `${filtered.length} roster spot${filtered.length !== 1 ? 's' : ''} open`}
         </span>
-        <button onClick={() => setView('post')} style={{
-          padding: '9px 18px', borderRadius: 8,
-          background: 'var(--red)', color: 'white',
-          border: 'none', cursor: 'pointer',
-          fontFamily: 'var(--font-head)', fontSize: 13, fontWeight: 700,
-          letterSpacing: '0.04em',
+        {/* Map toggle */}
+        <button onClick={() => setShowMap(m => !m)} style={{
+          padding: '8px 14px', borderRadius: 8,
+          border: '2px solid var(--navy)',
+          background: showMap ? 'var(--navy)' : 'white',
+          color: showMap ? 'white' : 'var(--navy)',
+          fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          fontFamily: 'var(--font-head)', whiteSpace: 'nowrap',
         }}>
+          {showMap ? '📋 List' : '🗺️ Map'}
+        </button>
+        <button onClick={() => setView('post')} style={{ padding: '9px 18px', borderRadius: 8, background: 'var(--red)', color: 'white', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-head)', fontSize: 13, fontWeight: 700, letterSpacing: '0.04em' }}>
           + Post a Roster Spot
         </button>
       </div>
 
+      {/* Map */}
+      {showMap && (
+        <div>
+          <div style={{ height: 320, width: '100%', borderBottom: '2px solid var(--lgray)' }}>
+            <MapContainer center={[33.75, -84.4]} zoom={8} style={{ height: '100%', width: '100%' }}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {mappable.map(spot => (
+                <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={makeIcon(PIN_COLOR)}>
+                  <Popup>
+                    <div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}>
+                      <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{spot.team_name || 'Open Roster'}</strong>
+                      <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[spot.city, spot.county].filter(Boolean).join(', ')}</div>
+                      {spot.age_group && <div style={{ fontSize: 12, marginTop: 2 }}>🎯 {spot.age_group} · {spot.sport}</div>}
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 12, padding: '7px 16px', background: '#fff', borderBottom: '2px solid var(--lgray)', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: PIN_COLOR, border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              <span style={{ fontSize: 11, color: 'var(--gray)' }}>Open Roster</span>
+            </div>
+            {mappable.length === 0 && <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>Map pins appear as listings add zip codes</span>}
+          </div>
+        </div>
+      )}
+
       {/* Page header */}
       <div style={{ background: 'var(--cream)', borderBottom: '2px solid var(--lgray)', padding: '20px 24px' }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)', marginBottom: 4 }}>
-          Roster Spots Open
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--gray)' }}>
-          Travel teams looking for full-season players. Posts expire after 15 days.
-        </div>
+        <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)', marginBottom: 4 }}>Roster Spots Open</div>
+        <div style={{ fontSize: 13, color: 'var(--gray)' }}>Travel teams looking for full-season players. Posts expire after 15 days.</div>
       </div>
 
       {/* Cards grid */}
-      <div style={{
-        padding: '24px', display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-        gap: 16, maxWidth: 1200, margin: '0 auto',
-      }}>
+      <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, maxWidth: 1200, margin: '0 auto' }}>
         {!loading && filtered.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 0', color: 'var(--gray)' }}>
             <div style={{ fontSize: 16, marginBottom: 12 }}>No roster spots open right now.</div>
-            <button onClick={() => setView('post')} style={{
-              background: 'var(--navy)', color: 'white', border: 'none',
-              borderRadius: 8, padding: '10px 24px',
-              fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-            }}>
+            <button onClick={() => setView('post')} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 24px', fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
               Post a Roster Spot
             </button>
           </div>
