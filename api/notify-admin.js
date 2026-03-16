@@ -61,12 +61,13 @@ export default async function handler(req, res) {
       : subject;
 
     await resend.emails.send({
-      from: 'Sandlot Source <onboarding@resend.dev>',
-      to: ADMIN_EMAIL,
-      subject: finalSubject,
-      html,
-    });
-
+  from: 'Sandlot Source <onboarding@resend.dev>',
+  to: ADMIN_EMAIL,
+  subject: finalSubject,
+  html,
+  click_tracking: false,
+});
+    
     return res.status(200).json({ ok: true, duplicatesFound: duplicates.length });
   } catch (err) {
     console.error('notify-admin error:', err);
