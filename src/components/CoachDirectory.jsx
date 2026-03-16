@@ -232,7 +232,7 @@ export default function CoachDirectory() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase.from('coaches').select('*').eq('active', true)
+      const { data, error } = await supabase.from('coaches').select('*').eq('active', true).in('approval_status', ['approved', 'seeded'])
       if (!error && data && data.length > 0) setCoaches(data)
       setLoading(false)
     }
