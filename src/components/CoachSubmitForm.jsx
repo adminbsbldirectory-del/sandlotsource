@@ -332,7 +332,7 @@ function TeamForm() {
     name: '', sport: 'baseball', org_affiliation: '', age_group: '',
     city: '', region: '', county: '',
     contact_name: '', contact_email: '', contact_phone: '',
-    website: '', tryout_status: 'unknown', tryout_date: '', tryout_notes: '',
+    website: '', tryout_status: 'closed', tryout_date: '', tryout_notes: '',
     description: '', submission_notes: '',
   })
   const [submitting, setSubmitting] = useState(false)
@@ -462,9 +462,10 @@ function TeamForm() {
         <div>
           <label style={labelStyle}>Tryout Status</label>
           <select value={form.tryout_status} onChange={e => set('tryout_status', e.target.value)} style={selectStyle}>
-            <option value="unknown">Unknown</option>
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
+            <option value="closed">Closed / Unknown</option>
+<option value="open">Open</option>
+<option value="year_round">Year Round</option>
+<option value="by_invite">By Invite Only</option>
           </select>
         </div>
         <div>
