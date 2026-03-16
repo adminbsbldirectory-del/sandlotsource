@@ -640,18 +640,9 @@ export default function PlayerBoard() {
                 </div>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
-                <div>
-                  <label style={labelStyle}>City <RequiredMark /></label>
-                  <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Canton" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Region</label>
-                  <select value={form.region} onChange={e => setForm(f => ({...f, region:e.target.value}))} style={selectStyle}>
-                    <option value="">Select region</option>
-                    {REGIONS.map(r => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={labelStyle}>City <RequiredMark /></label>
+                <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Canton" style={inputStyle} />
               </div>
 
               <div style={{ marginBottom:14 }}>
@@ -708,18 +699,9 @@ export default function PlayerBoard() {
                 </div>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
-                <div>
-                  <label style={labelStyle}>City <RequiredMark /></label>
-                  <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Alpharetta" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Region</label>
-                  <select value={form.region} onChange={e => setForm(f => ({...f, region:e.target.value}))} style={selectStyle}>
-                    <option value="">Select region</option>
-                    {REGIONS.map(r => <option key={r}>{r}</option>)}
-                  </select>
-                </div>
+              <div style={{ marginBottom:14 }}>
+                <label style={labelStyle}>City <RequiredMark /></label>
+                <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Alpharetta" style={inputStyle} />
               </div>
 
               <div style={{ marginBottom:14 }}>
@@ -796,7 +778,6 @@ export default function PlayerBoard() {
                 <div>
                   <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700 }}>
                     {post.player_age ? `Age ${post.player_age}` : post.age_group || 'Player'} — {post.city}
-                    {post.county ? <span style={{ fontWeight:400, fontSize:13, color:'var(--gray)' }}> · {post.county}</span> : null}
                   </div>
                   {post.player_description && <div style={{ fontSize:13, color:'var(--gray)', marginTop:6, lineHeight:1.5 }}>{post.player_description}</div>}
                   {post.additional_notes && (
@@ -815,7 +796,7 @@ export default function PlayerBoard() {
                     {post.team_name || 'Team'}{post.age_group ? ` · ${post.age_group}` : ''}
                   </div>
                   <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>
-                    📍 {[post.location_name, post.city, post.county].filter(Boolean).join(', ')}
+                    📍 {[post.location_name, post.city].filter(Boolean).join(', ')}
                   </div>
                   {post.event_date && <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>📅 {formatDate(post.event_date)}</div>}
                   {post.additional_notes && <div style={{ fontSize:13, color:'var(--gray)', marginTop:6, lineHeight:1.5 }}>{post.additional_notes}</div>}
