@@ -182,11 +182,12 @@ export default function HomePage() {
       {/* ── PATHWAYS ──────────────────────────────────────────────────────── */}
       <section style={{ marginTop: 26 }}>
         <SectionHeader title="What are you looking for?" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {[
-            { to: '/coaches', icon: '🎯', iconBg: '#fef0ee', title: 'Find Instruction', body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.', cta: 'Browse coaches →' },
-            { to: '/teams',   icon: '🏆', iconBg: '#eaf3de', title: 'Find a Team',       body: 'Travel teams, open rosters, and tryout opportunities by age group and area.',                  cta: 'Browse teams →' },
-            { to: '/find',    icon: '⚡', iconBg: '#fef9ee', title: 'Pickup Help',       body: 'Need a player this weekend? Looking for a game? Post or browse urgent needs fast.',            cta: 'View pickup board →' },
+            { to: '/coaches',    icon: '🎯', iconBg: '#fef0ee', title: 'Find Instruction',  body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.', cta: 'Browse coaches →' },
+            { to: '/teams',      icon: '🏆', iconBg: '#eaf3de', title: 'Find a Team',        body: 'Travel teams, open rosters, and tryout opportunities by age group and area.',                  cta: 'Browse teams →' },
+            { to: '/facilities', icon: '🏟️', iconBg: '#e8f4ff', title: 'Find a Facility',   body: 'Training facilities, batting cages, indoor complexes, and practice venues near you.',           cta: 'Browse facilities →' },
+            { to: '/find',       icon: '⚡', iconBg: '#fef9ee', title: 'Pickup Help',        body: 'Need a player this weekend? Looking for a game? Post or browse urgent needs fast.',            cta: 'View pickup board →' },
           ].map(card => (
             <Link key={card.to} to={card.to} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '18px 16px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
               <div style={{ width: 34, height: 34, borderRadius: 9, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginBottom: 10 }}>
