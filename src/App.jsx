@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom'
 import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
@@ -9,7 +9,68 @@ import ClaimListing from './components/ClaimListing.jsx'
 import RosterSpots from './components/RosterSpots.jsx'
 import SearchResults from './components/SearchResults.jsx'
 
-// Inner component so useNavigate works inside BrowserRouter
+const BORDER = '#eaeae6'
+const FAINT  = '#bbb'
+const RED    = '#e63329'
+const DARK   = '#1a1a1a'
+
+function SiteFooter() {
+  return (
+    <footer style={{
+      background: '#fff',
+      borderTop: `1px solid ${BORDER}`,
+      padding: '28px 20px 0',
+      marginTop: 'auto',
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 24, paddingBottom: 20 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.07em', color: DARK, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+              <span style={{ color: RED }}>◆</span> SANDLOT SOURCE
+            </div>
+            <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.65, margin: 0 }}>
+              Baseball &amp; softball coaches, teams, and roster connections — free to browse, anywhere in the country.
+            </p>
+          </div>
+          {[
+            { heading: 'Directory', links: [
+              { label: 'Coaches',      to: '/coaches' },
+              { label: 'Teams',        to: '/teams' },
+              { label: 'Open Rosters', to: '/roster' },
+              { label: 'Pickup Board', to: '/find' },
+            ]},
+            { heading: 'Listings', links: [
+              { label: 'Add a Listing',   to: '/submit' },
+              { label: 'Claim a Listing', to: '/claim' },
+              { label: 'About',           to: '/about' },
+              { label: 'Contact',         href: 'mailto:admin.bsbldirectory@gmail.com' },
+            ]},
+            { heading: 'Legal', links: [
+              { label: 'Privacy Policy', to: '/privacy' },
+              { label: 'Terms of Use',   to: '/terms' },
+              { label: 'Disclaimer',     to: '/disclaimer' },
+            ]},
+          ].map(col => (
+            <div key={col.heading}>
+              <h5 style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', color: FAINT, marginBottom: 10, margin: '0 0 10px' }}>
+                {col.heading}
+              </h5>
+              {col.links.map(l => l.href
+                ? <a key={l.label} href={l.href} style={{ display: 'block', fontSize: 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}>{l.label}</a>
+                : <Link key={l.label} to={l.to} style={{ display: 'block', fontSize: 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}>{l.label}</Link>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ borderTop: `1px solid ${BORDER}`, padding: '14px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: FAINT }}>© {new Date().getFullYear()} Sandlot Source. All rights reserved.</span>
+          <span style={{ fontSize: 11, color: FAINT }}>Baseball &amp; Softball Directory</span>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
 function AppRoutes() {
   const navigate = useNavigate()
   return (
@@ -17,26 +78,18 @@ function AppRoutes() {
       <Header />
       <main style={{ flex: 1 }}>
         <Routes>
-          <Route path="/"          element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
-          <Route path="/search"    element={<SearchResults />} />
-          <Route path="/coaches"   element={<CoachDirectory />} />
-          <Route path="/teams"     element={<TravelTeams />} />
-          <Route path="/find"      element={<PlayerBoard />} />
-          <Route path="/roster"    element={<RosterSpots />} />
-          <Route path="/submit"    element={<CoachSubmitForm />} />
-          <Route path="/claim"     element={<ClaimListing />} />
-          <Route path="*"          element={<Navigate to="/" replace />} />
+          <Route path="/"       element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
+          <Route path="/search" element={<SearchResults />} />
+          <Route path="/coaches"  element={<CoachDirectory />} />
+          <Route path="/teams"    element={<TravelTeams />} />
+          <Route path="/find"     element={<PlayerBoard />} />
+          <Route path="/roster"   element={<RosterSpots />} />
+          <Route path="/submit"   element={<CoachSubmitForm />} />
+          <Route path="/claim"    element={<ClaimListing />} />
+          <Route path="*"         element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <footer style={{
-        background: 'var(--navy)', color: 'rgba(255,255,255,0.45)',
-        textAlign: 'center', padding: '16px 20px',
-        fontFamily: 'var(--font-body)', fontSize: '13px',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        © 2025 Sandlot Source · Baseball &amp; Softball Directory ·{' '}
-        <span style={{ color: 'rgba(255,255,255,0.25)' }}>sandlotsource.com</span>
-      </footer>
+      <SiteFooter />
     </>
   )
 }
