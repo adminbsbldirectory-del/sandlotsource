@@ -43,10 +43,11 @@ export default function Header() {
               src="/logo.png"
               alt="Sandlot Source"
               style={{
-                height: 52,
-                width: 'auto',
+                height: 100,
+                width: 220,
                 display: 'block',
                 objectFit: 'contain',
+                objectPosition: 'center center',
               }}
             />
           </div>
