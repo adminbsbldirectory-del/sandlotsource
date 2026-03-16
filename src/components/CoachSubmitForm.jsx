@@ -292,12 +292,6 @@ function CoachForm() {
         />
       </div>
 
-      {/* Region + County */}
-      <RegionCountyPicker
-        region={form.region} county={form.county}
-        onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
-      />
-
       {/* Contact name + role */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
@@ -536,11 +530,6 @@ function TeamForm() {
           onGeocode={handleGeocode}
         />
       </div>
-
-      <RegionCountyPicker
-        region={form.region} county={form.county}
-        onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
-      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div>
@@ -784,11 +773,6 @@ function PlayerForm() {
             <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
           </div>
 
-          <RegionCountyPicker
-            region={form.region} county={form.county}
-            onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
-          />
-
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Location / Facility Name <RequiredMark /></label>
             <input value={form.location_name} onChange={e => set('location_name', e.target.value)} placeholder="e.g. Seckinger High School, Fowler Park Field 3" style={inputStyle} />
@@ -844,11 +828,6 @@ function PlayerForm() {
             </div>
             <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} />
           </div>
-
-          <RegionCountyPicker
-            region={form.region} county={form.county}
-            onRegionChange={v => set('region', v)} onCountyChange={v => set('county', v)}
-          />
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Description</label>
