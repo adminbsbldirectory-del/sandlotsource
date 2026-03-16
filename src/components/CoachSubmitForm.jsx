@@ -368,7 +368,7 @@ function TeamForm() {
       contact_email:    form.contact_email.trim() || null,
       contact_phone:    form.contact_phone.trim() || null,
       website:          form.website.trim() || null,
-      tryout_status:    form.tryout_status || 'unknown',
+      tryout_status:    form.tryout_status || 'closed',
       tryout_date:      form.tryout_date || null,
       tryout_notes:     form.tryout_notes.trim() || null,
       description:      form.description.trim() || null,
