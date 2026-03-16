@@ -7,17 +7,18 @@ import PlayerBoard from './components/PlayerBoard.jsx'
 import CoachSubmitForm from './components/CoachSubmitForm.jsx'
 import ClaimListing from './components/ClaimListing.jsx'
 import RosterSpots from './components/RosterSpots.jsx'
+import SearchResults from './components/SearchResults.jsx'
 
 // Inner component so useNavigate works inside BrowserRouter
 function AppRoutes() {
   const navigate = useNavigate()
-
   return (
     <>
       <Header />
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/"          element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
+          <Route path="/search"    element={<SearchResults />} />
           <Route path="/coaches"   element={<CoachDirectory />} />
           <Route path="/teams"     element={<TravelTeams />} />
           <Route path="/find"      element={<PlayerBoard />} />
@@ -33,7 +34,7 @@ function AppRoutes() {
         fontFamily: 'var(--font-body)', fontSize: '13px',
         borderTop: '1px solid rgba(255,255,255,0.08)',
       }}>
-        © 2025 Sandlot Source · North Georgia Baseball & Softball Directory ·{' '}
+        © 2025 Sandlot Source · Baseball &amp; Softball Directory ·{' '}
         <span style={{ color: 'rgba(255,255,255,0.25)' }}>sandlotsource.com</span>
       </footer>
     </>
