@@ -84,7 +84,7 @@ export default function HomePage() {
   const sepStyle = { color: '#ccc', fontSize: 12, flexShrink: 0 }
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 20px 48px', background: '#fff', color: DARK }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px 48px', background: '#fff', color: DARK }}>
 
       {/* ── AD: Top leaderboard ───────────────────────────────────────────── */}
       <div style={{ marginTop: 16 }}>
@@ -92,7 +92,7 @@ export default function HomePage() {
       </div>
 
       {/* ── SEARCH HERO ───────────────────────────────────────────────────── */}
-      <section style={{ background: LIGHT, borderRadius: 14, padding: '28px 28px 22px', marginTop: 16 }}>
+      <section style={{ background: '#fff', borderRadius: 14, padding: '28px 28px 22px', marginTop: 16, borderTop: `4px solid ${RED}`, border: `1px solid ${BORDER}`, borderTopWidth: 4, borderTopColor: RED }}>
         <h1 style={{ fontSize: 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
           Find{' '}
           <span style={{ color: RED }}>coaches, teams</span>
