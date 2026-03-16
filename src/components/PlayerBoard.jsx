@@ -54,7 +54,7 @@ function formatDate(d) {
 }
 
 // ── Zip field with geocode status ────────────────────────────────────────────
-function ZipFieldInline({ value, onChange, onGeocode }) {
+function ZipFieldInline({ value, onChange, onGeocode, required = false }) {
   const [status, setStatus] = useState('')
   async function handleBlur() {
     if (!value || value.length !== 5) return
@@ -66,7 +66,7 @@ function ZipFieldInline({ value, onChange, onGeocode }) {
   return (
     <div>
       <label style={labelStyle}>
-        Zip Code
+        Zip Code{required && <span style={{ color:'var(--red)' }}> *</span>}
         {status === 'loading' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Checking…</span>}
         {status === 'ok'      && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Located</span>}
         {status === 'error'   && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'var(--red)' }}>Zip not found</span>}
@@ -304,14 +304,14 @@ export default function PlayerBoard() {
       if (!form.sport) return 'Sport is required.'
       if (!form.age_group) return 'Age group is required.'
       if (!form.position_needed.length) return 'Select at least one position needed.'
-      if (!form.city.trim()) return 'City is required.'
-      if (!form.location_name.trim()) return 'Location / facility name is required.'
+      if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
+      if (!form.location_name.trim()) return 'Game/Tournament location is required.'
       if (!form.event_date) return 'Event date is required.'
     } else {
       if (!form.sport) return 'Sport is required.'
       if (!form.player_age.toString().trim()) return 'Player age is required.'
       if (!form.player_position.length) return 'Select at least one position.'
-      if (!form.city.trim()) return 'City is required.'
+      if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     }
     return ''
   }
@@ -641,17 +641,17 @@ export default function PlayerBoard() {
               </div>
 
               <div style={{ marginBottom:14 }}>
-                <label style={labelStyle}>City <RequiredMark /></label>
+                <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
+                <input value={form.location_name} onChange={e => setForm(f => ({...f, location_name:e.target.value}))} placeholder="e.g. Seckinger High School, Fowler Park Field 3" style={inputStyle} />
+              </div>
+
+              <div style={{ marginBottom:14 }}>
+                <label style={labelStyle}>City <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:11, color:'#999' }}>(optional if zip provided)</span></label>
                 <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Canton" style={inputStyle} />
               </div>
 
               <div style={{ marginBottom:14 }}>
-                <ZipFieldInline value={form.zip_code} onChange={v => setForm(f => ({...f, zip_code:v}))} onGeocode={handleGeocode} />
-              </div>
-
-              <div style={{ marginBottom:14 }}>
-                <label style={labelStyle}>Location / Facility Name <RequiredMark /></label>
-                <input value={form.location_name} onChange={e => setForm(f => ({...f, location_name:e.target.value}))} placeholder="e.g. Seckinger High School, Fowler Park Field 3" style={inputStyle} />
+                <ZipFieldInline value={form.zip_code} onChange={v => setForm(f => ({...f, zip_code:v}))} onGeocode={handleGeocode} required />
               </div>
 
               <div style={{ marginBottom:14 }}>
@@ -700,15 +700,15 @@ export default function PlayerBoard() {
               </div>
 
               <div style={{ marginBottom:14 }}>
-                <label style={labelStyle}>City <RequiredMark /></label>
-                <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Alpharetta" style={inputStyle} />
-              </div>
-
-              <div style={{ marginBottom:14 }}>
-                <ZipFieldInline value={form.zip_code} onChange={v => setForm(f => ({...f, zip_code:v}))} onGeocode={handleGeocode} />
+                <ZipFieldInline value={form.zip_code} onChange={v => setForm(f => ({...f, zip_code:v}))} onGeocode={handleGeocode} required />
               </div>
 
               <DistanceSlider value={form.distance_travel} onChange={v => setForm(f => ({...f, distance_travel: v}))} />
+
+              <div style={{ marginBottom:14 }}>
+                <label style={labelStyle}>City <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:11, color:'#999' }}>(optional if zip provided)</span></label>
+                <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Alpharetta" style={inputStyle} />
+              </div>
 
               <div style={{ marginBottom:14 }}>
                 <label style={labelStyle}>Description</label>
