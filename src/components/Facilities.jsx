@@ -126,7 +126,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
           </a>
         )}
         {facility.instagram && (
-          <a href={`https://instagram.com/${facility.instagram.replace('@','')}`}
+          <a href={facility.instagram.startsWith('http') ? facility.instagram : `https://instagram.com/${facility.instagram.replace('@','')}`}
             target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
             style={{ color: selected ? '#f0a500' : '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>
             📸 {facility.instagram}
