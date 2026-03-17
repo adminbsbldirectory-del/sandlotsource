@@ -64,13 +64,13 @@ export default function HomePage() {
   function handleSearch(e) {
     e.preventDefault()
     const params = new URLSearchParams()
-    if (query)       params.set('q',      query)
-    if (sport)       params.set('sport',  sport)
-    if (zip)         params.set('zip',    zip)
-    if (listingType) params.set('type',   listingType)
-    if (ageGroup)    params.set('age',    ageGroup)
+    if (query)         params.set('q',      query)
+    if (sport)         params.set('sport',  sport)
+    if (zip)           params.set('zip',    zip)
+    if (listingType)   params.set('type',   listingType)
+    if (ageGroup)      params.set('age',    ageGroup)
     if (radius !== 25) params.set('radius', radius)
-    navigate(`/coaches?${params.toString()}`)
+    navigate(`/search?${params.toString()}`)
   }
 
   // ── Pill / filter styles
@@ -95,11 +95,11 @@ export default function HomePage() {
       <section style={{ background: '#fff', borderRadius: 14, padding: '28px 28px 22px', marginTop: 16, borderTop: `4px solid ${RED}`, border: `1px solid ${BORDER}`, borderTopWidth: 4, borderTopColor: RED }}>
         <h1 style={{ fontSize: 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
           Find{' '}
-          <span style={{ color: RED }}>coaches, teams</span>
-          {' '}&amp; roster openings.
+          <span style={{ color: RED }}>coaches, teams & facilities</span>
+          {' '}near you.
         </h1>
         <p style={{ fontSize: 14, color: MUTED, marginBottom: 18, lineHeight: 1.5 }}>
-          Baseball and softball — coaches, travel teams, open rosters, and pickup help near you.
+          Baseball and softball — coaches, travel teams, training facilities, open rosters, and pickup help all in one place.
         </p>
 
         {/* Search bar */}
@@ -113,7 +113,7 @@ export default function HomePage() {
           </svg>
           <input
             type="text"
-            placeholder="Search coaches, teams, positions, specialties…"
+            placeholder="Search coaches, teams, facilities, positions…"
             value={query}
             onChange={e => setQuery(e.target.value)}
             style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: DARK, background: 'none', minWidth: 0 }}
@@ -153,6 +153,7 @@ export default function HomePage() {
               <option value="">All types</option>
               <option value="coach">Coach</option>
               <option value="team">Team</option>
+              <option value="facility">Facility</option>
               <option value="roster">Open Roster</option>
               <option value="pickup">Pickup</option>
             </select>
@@ -208,7 +209,7 @@ export default function HomePage() {
 
         {/* Main column */}
         <div style={{ minWidth: 0 }}>
-          <SectionHeader title="Featured near you" linkTo="/coaches" linkLabel="View all →" />
+          <SectionHeader title="Featured near you" linkTo="/search" linkLabel="View all →" />
 
           {/* Featured listing cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
