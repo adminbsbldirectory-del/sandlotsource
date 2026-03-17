@@ -65,8 +65,9 @@ export default function Header() {
                 color        = isActive ? '#fff'    : '#b07d00'
                 borderBottom = isActive ? '3px solid #b07d00' : '3px solid transparent'
               } else if (isRoster) {
+                // FIX: white text when active (on dark green bg), green text when inactive
                 bg           = isActive ? '#15803d' : 'rgba(22,163,74,0.1)'
-                color        = '#15803d'
+                color        = isActive ? '#fff'    : '#15803d'
                 borderBottom = isActive ? '3px solid #15803d' : '3px solid transparent'
               } else {
                 bg           = isActive ? '#1a1a1a' : 'transparent'
