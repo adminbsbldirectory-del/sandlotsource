@@ -141,9 +141,39 @@ function CoachForm() {
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
 
-  function handleGeocode(geo) {
-    if (geo) setForm(f => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
-    else setForm(f => ({ ...f, lat: null, lng: null }))
+  const [addrStatus, setAddrStatus] = useState('')
+
+  // Zip geocode — only fills lat/lng if address geocode hasn't already placed the pin
+  function handleZipGeocode(geo) {
+    if (geo) setForm(f => ({
+      ...f,
+      lat: f.lat || geo.lat,
+      lng: f.lng || geo.lng,
+      city: f.city || geo.city,
+    }))
+  }
+
+  // Address geocode via Nominatim — fires on Street Address blur for a precise pin
+  async function handleAddressBlur() {
+    const addr = form.address.trim()
+    if (!addr) return
+    setAddrStatus('locating')
+    try {
+      const q = encodeURIComponent(
+        `${addr}${form.city ? ', ' + form.city : ''}${form.zip_code ? ', ' + form.zip_code : ''}, Georgia, USA`
+      )
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,
+        { headers: { 'Accept-Language': 'en-US' } }
+      )
+      const data = await res.json()
+      if (data?.[0]) {
+        setForm(f => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }))
+        setAddrStatus('found')
+      } else {
+        setAddrStatus('fallback')
+      }
+    } catch { setAddrStatus('fallback') }
   }
 
   function validate() {
@@ -244,7 +274,7 @@ function CoachForm() {
           <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
           <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
         </div>
-        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
+        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Fallback pin location if no street address provided" />
       </div>
 
       {/* Your role — replaces the old redundant Contact Name + Contact Role pair */}
@@ -933,8 +963,16 @@ function FacilityForm() {
 
       {/* Address */}
       <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Street Address</label>
-        <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="e.g. 123 Main St, Suite 100" style={inputStyle} />
+        <label style={labelStyle}>
+          Street Address
+          {addrStatus === 'locating' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Locating…</span>}
+          {addrStatus === 'found'    && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Pin placed at address</span>}
+          {addrStatus === 'fallback' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#ea580c' }}>Address not found — using zip pin</span>}
+        </label>
+        <input value={form.address} onChange={e => set('address', e.target.value)}
+          onBlur={handleAddressBlur}
+          placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
       </div>
 
       {/* City + Zip */}
