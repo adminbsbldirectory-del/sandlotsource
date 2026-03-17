@@ -195,29 +195,30 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
 
         {/* Price row */}
 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8, fontSize:12 }}>
-  {coach.price_per_session ? (
-    <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>
-      ${coach.price_per_session}/session
-    </span>
-  ) : coach.price_notes ? (
-    <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>
-      {coach.price_notes}
-    </span>
-  ) : (
-    
-      href={'mailto:' + (coach.email || 'admin.bsbldirectory@gmail.com') + '?subject=Rate inquiry - ' + coach.name}
-      onClick={e => e.stopPropagation()}
-      style={{
-        fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99,
-        textDecoration:'none',
-        background: selected ? 'rgba(255,255,255,0.12)' : 'var(--lgray)',
-        color:       selected ? 'var(--gold)' : 'var(--navy)',
-        border:      `1px solid ${selected ? 'rgba(255,255,255,0.2)' : 'var(--lgray)'}`,
-      }}
-    >
-      Contact for rates
-    </a>
-  )}
+  {(() => {
+    if (coach.price_per_session) {
+      return <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>${coach.price_per_session}/session</span>
+    }
+    if (coach.price_notes) {
+      return <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>{coach.price_notes}</span>
+    }
+    const mailtoHref = 'mailto:' + (coach.email ? coach.email : 'admin.bsbldirectory@gmail.com') + '?subject=Rate inquiry - ' + (coach.name ? coach.name : 'Coach')
+    return (
+      
+        href={mailtoHref}
+        onClick={e => e.stopPropagation()}
+        style={{
+          fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99,
+          textDecoration:'none',
+          background: selected ? 'rgba(255,255,255,0.12)' : 'var(--lgray)',
+          color: selected ? 'var(--gold)' : 'var(--navy)',
+          border: '1px solid ' + (selected ? 'rgba(255,255,255,0.2)' : 'var(--lgray)'),
+        }}
+      >
+        Contact for rates
+      </a>
+    )
+  })()}
   {coach.recommendation_count > 0 && (
     <span style={{ opacity:0.6 }}>
       👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}
