@@ -401,7 +401,7 @@ export default function PlayerBoard() {
     setValidationError('')
     setSubmitting(true)
     const contactInfo = buildContactInfo(form)
-    const travelNote = 'Willing to travel: up to ' + (form.distance_travel === 100 ? '100+' : form.distance_travel) + ' miles'
+    const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
     const notesWithTravel = form.post_type === 'player_available'
       ? [travelNote, form.additional_notes].filter(Boolean).join('\n')
       : form.additional_notes || null
