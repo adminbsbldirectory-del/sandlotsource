@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -9,6 +9,8 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
+
+const HEADER_H = 72
 
 const makeIcon = (selected) =>
   L.divIcon({
@@ -35,7 +37,6 @@ function normalizeUrl(url) {
 
   const trimmed = String(url).trim()
   if (!trimmed) return null
-
   if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
   if (/^https?:\/\//i.test(trimmed)) return trimmed
 
@@ -44,24 +45,42 @@ function normalizeUrl(url) {
 
 function normalizeInstagramHandle(value) {
   if (!value) return null
+
   const trimmed = String(value).trim()
   if (!trimmed) return null
-
   if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
   if (/^https?:\/\//i.test(trimmed)) return trimmed
 
   return 'https://instagram.com/' + trimmed.replace(/^@/, '')
 }
 
+function getSportLabel(sport) {
+  if (sport === 'both') return 'Baseball & Softball'
+  if (sport === 'softball') return 'Softball'
+  if (sport === 'baseball') return 'Baseball'
+  return sport || ''
+}
+
+function getSportBadgeColor(sport) {
+  if (sport === 'softball') return '#7C3AED'
+  if (sport === 'both') return 'var(--navy)'
+  return '#1D4ED8'
+}
+
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
+
   try {
     const res = await fetch('https://api.zippopotam.us/us/' + zip)
     if (!res.ok) return null
     const data = await res.json()
     const place = data.places && data.places[0]
     if (!place) return null
-    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) }
+
+    return {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude),
+    }
   } catch {
     return null
   }
@@ -85,6 +104,7 @@ function FitBounds({ facilities }) {
   useEffect(() => {
     const pts = facilities.filter((f) => f.lat != null && f.lng != null)
     if (pts.length === 0) return
+
     const bounds = L.latLngBounds(pts.map((f) => [f.lat, f.lng]))
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
   }, [facilities, map])
@@ -97,13 +117,8 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
   const zip = getFacilityZip(facility)
   const cityState = [facility.city, facility.state].filter(Boolean).join(', ')
   const locationFull = zip ? cityState + ' ' + zip : cityState
-  const sportLabel = facility.sport === 'both' ? 'Baseball & Softball' : facility.sport || ''
-  const sportBg =
-    facility.sport === 'softball'
-      ? '#7C3AED'
-      : facility.sport === 'both'
-        ? 'var(--navy)'
-        : '#1D4ED8'
+  const sportLabel = getSportLabel(facility.sport)
+  const sportBg = getSportBadgeColor(facility.sport)
 
   const websiteUrl = normalizeUrl(facility.website)
   const instagramUrl = normalizeInstagramHandle(facility.instagram)
@@ -120,7 +135,10 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
         display: 'flex',
         flexDirection: 'column',
       }
-    : { marginBottom: 10, cursor: 'pointer' }
+    : {
+        marginBottom: 10,
+        cursor: 'pointer',
+      }
 
   const footerStyle = selected
     ? {
@@ -140,6 +158,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '0.02em' }}>
               {facility.name}
             </div>
+
             <div style={{ fontSize: 13, marginTop: 4, opacity: 0.8 }}>
               {'📍 ' + (locationFull || 'Location not listed')}
               {distanceMi != null && (
@@ -154,33 +173,36 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
                 </span>
               )}
             </div>
+
             {facility.address && (
               <div style={{ fontSize: 12, marginTop: 2, opacity: 0.6 }}>{facility.address}</div>
             )}
           </div>
 
-          <span
-            style={{
-              background: sportBg,
-              color: 'white',
-              fontSize: 10,
-              fontWeight: 700,
-              padding: '2px 7px',
-              borderRadius: 20,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              fontFamily: 'var(--font-head)',
-              flexShrink: 0,
-              marginLeft: 8,
-            }}
-          >
-            {sportLabel}
-          </span>
+          {sportLabel && (
+            <span
+              style={{
+                background: sportBg,
+                color: 'white',
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '2px 7px',
+                borderRadius: 20,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                fontFamily: 'var(--font-head)',
+                flexShrink: 0,
+                marginLeft: 8,
+              }}
+            >
+              {sportLabel}
+            </span>
+          )}
         </div>
 
         {amenities.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
-            {amenities.map((a) => (
+            {amenities.slice(0, 6).map((a) => (
               <span
                 key={a}
                 style={{
@@ -195,6 +217,19 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
                 {a}
               </span>
             ))}
+            {amenities.length > 6 && (
+              <span
+                style={{
+                  background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
+                  color: selected ? 'white' : 'var(--gray)',
+                  fontSize: 11,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                }}
+              >
+                +{amenities.length - 6} more
+              </span>
+            )}
           </div>
         )}
 
@@ -277,12 +312,10 @@ export default function Facilities() {
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   )
 
-  const HEADER_H = 64
-
   useEffect(() => {
-    const h = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
@@ -297,13 +330,16 @@ export default function Facilities() {
       if (!error && data) setFacilities(data)
       setLoading(false)
     }
+
     load()
   }, [])
 
   async function handleZipBlur() {
     if (!zip || zip.length !== 5) return
+
     setZipStatus('loading')
     const geo = await geocodeZip(zip)
+
     if (geo) {
       setGeoCenter(geo)
       setZipStatus('ok')
@@ -313,44 +349,59 @@ export default function Facilities() {
     }
   }
 
-  const filtered = facilities
-    .filter((f) => {
-      if (sport === 'baseball' && f.sport !== 'baseball' && f.sport !== 'both') return false
-      if (sport === 'softball' && f.sport !== 'softball' && f.sport !== 'both') return false
+  function clearZipFilter() {
+    setZip('')
+    setGeoCenter(null)
+    setZipStatus('')
+    setRadius(25)
+  }
 
-      if (search) {
-        const q = search.toLowerCase()
-        if (
-          !(f.name || '').toLowerCase().includes(q) &&
-          !(f.city || '').toLowerCase().includes(q) &&
-          !(f.address || '').toLowerCase().includes(q) &&
-          !(f.description || '').toLowerCase().includes(q)
-        ) {
-          return false
+  const filtered = useMemo(() => {
+    return facilities
+      .filter((f) => {
+        if (sport === 'baseball' && f.sport !== 'baseball' && f.sport !== 'both') return false
+        if (sport === 'softball' && f.sport !== 'softball' && f.sport !== 'both') return false
+
+        if (search) {
+          const q = search.toLowerCase()
+          if (
+            !(f.name || '').toLowerCase().includes(q) &&
+            !(f.city || '').toLowerCase().includes(q) &&
+            !(f.address || '').toLowerCase().includes(q) &&
+            !(f.description || '').toLowerCase().includes(q)
+          ) {
+            return false
+          }
         }
-      }
 
-      if (geoCenter && f.lat != null && f.lng != null) {
-        if (distanceMiles(geoCenter.lat, geoCenter.lng, f.lat, f.lng) > radius) return false
-      }
+        if (geoCenter && f.lat != null && f.lng != null) {
+          if (distanceMiles(geoCenter.lat, geoCenter.lng, f.lat, f.lng) > radius) return false
+        }
 
-      return true
-    })
-    .sort((a, b) => {
-      if (a.id === selected) return -1
-      if (b.id === selected) return 1
+        return true
+      })
+      .sort((a, b) => {
+        if (a.id === selected) return -1
+        if (b.id === selected) return 1
 
-      if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
-        return (
-          distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) -
-          distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
-        )
-      }
+        if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
+          return (
+            distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) -
+            distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+          )
+        }
 
-      return 0
-    })
+        return 0
+      })
+  }, [facilities, sport, search, geoCenter, radius, selected])
 
   const mappable = filtered.filter((f) => f.lat != null && f.lng != null)
+
+  useEffect(() => {
+    if (selected == null) return
+    const stillVisible = filtered.some((f) => f.id === selected)
+    if (!stillVisible) setSelected(null)
+  }, [filtered, selected])
 
   function getDistance(f) {
     if (!geoCenter || f.lat == null || f.lng == null) return null
@@ -380,7 +431,7 @@ export default function Facilities() {
   }
 
   function EmptyState() {
-    const hasFilters = sport !== 'Both' || search || (zip && geoCenter)
+    const hasFilters = sport !== 'Both' || search || zipStatus === 'ok'
 
     return (
       <div className="empty-state">
@@ -464,7 +515,14 @@ export default function Facilities() {
             placeholder="e.g. 30004"
             maxLength={5}
             value={zip}
-            onChange={(e) => setZip(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value
+              setZip(next)
+              if (next.length < 5) {
+                setGeoCenter(null)
+                setZipStatus('')
+              }
+            }}
             onBlur={handleZipBlur}
             style={{ ...inputStyle, flex: 1 }}
           />
@@ -487,6 +545,7 @@ export default function Facilities() {
               <span>Radius</span>
               <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span>
             </div>
+
             <input
               type="range"
               min={5}
@@ -496,6 +555,7 @@ export default function Facilities() {
               onChange={(e) => setRadius(Number(e.target.value))}
               style={{ width: '100%', accentColor: 'var(--red)' }}
             />
+
             <div
               style={{
                 display: 'flex',
@@ -509,6 +569,25 @@ export default function Facilities() {
               <span>50 mi</span>
               <span>100 mi</span>
             </div>
+
+            <button
+              type="button"
+              onClick={clearZipFilter}
+              style={{
+                marginTop: 10,
+                width: '100%',
+                background: 'white',
+                color: 'var(--navy)',
+                border: '2px solid var(--lgray)',
+                borderRadius: 8,
+                padding: '8px 10px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Clear zip filter
+            </button>
           </div>
         )}
       </div>
@@ -557,6 +636,7 @@ export default function Facilities() {
         onChange={(e) => setSearch(e.target.value)}
         style={{ ...inputStyle, flex: 1, minWidth: 120 }}
       />
+
       <button
         type="button"
         className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
@@ -564,6 +644,7 @@ export default function Facilities() {
       >
         ⚾
       </button>
+
       <button
         type="button"
         className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
@@ -571,6 +652,25 @@ export default function Facilities() {
       >
         🥎
       </button>
+
+      <input
+        type="text"
+        inputMode="numeric"
+        placeholder="Zip"
+        maxLength={5}
+        value={zip}
+        onChange={(e) => {
+          const next = e.target.value
+          setZip(next)
+          if (next.length < 5) {
+            setGeoCenter(null)
+            setZipStatus('')
+          }
+        }}
+        onBlur={handleZipBlur}
+        style={{ ...inputStyle, width: 84 }}
+      />
+
       <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
         {filtered.length} result{filtered.length !== 1 ? 's' : ''}
       </span>
@@ -608,7 +708,7 @@ export default function Facilities() {
                         {'📍 ' + [f.city, f.state].filter(Boolean).join(', ') + (zipValue ? ' ' + zipValue : '')}
                       </div>
                       {f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}
-                      {f.sport && <div style={{ fontSize: 12, marginTop: 2, textTransform: 'capitalize' }}>⚾ {f.sport}</div>}
+                      {f.sport && <div style={{ fontSize: 12, marginTop: 2 }}>{getSportLabel(f.sport)}</div>}
                     </div>
                   </Popup>
                 </Marker>
@@ -639,6 +739,7 @@ export default function Facilities() {
           >
             Map key
           </span>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div
               style={{
@@ -653,6 +754,7 @@ export default function Facilities() {
             />
             <span style={{ fontSize: 11, color: 'var(--gray)' }}>Facility</span>
           </div>
+
           {mappable.length === 0 && (
             <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
               Map pins appear as facilities add location data
@@ -666,7 +768,9 @@ export default function Facilities() {
               Loading facilities…
             </div>
           )}
+
           {!loading && filtered.length === 0 && <EmptyState />}
+
           {filtered.map((f) => (
             <FacilityCard
               key={f.id}
@@ -693,7 +797,7 @@ export default function Facilities() {
             overflowY: 'auto',
           }}
         >
-          {[1,2].map((i) => (
+          {[1, 2].map((i) => (
             <div
               key={i}
               style={{
