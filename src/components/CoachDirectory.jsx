@@ -205,7 +205,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             </span>
           ) : (
             
-              href={`mailto:${coach.email || 'admin.bsbldirectory@gmail.com'}?subject=Rate inquiry — ${coach.name}`}
+              href={`mailto:${coach.email || 'admin.bsbldirectory@gmail.com'}?subject=Rate inquiry - ${coach.name}`}
               onClick={e => e.stopPropagation()}
               style={{
                 fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99,
