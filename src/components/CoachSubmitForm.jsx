@@ -216,13 +216,14 @@ function CoachForm() {
     setError('')
     setSubmitting(true)
 
-    specialty: form.specialty
-  ? form.specialty.split(',').map(s => s.trim()).filter(Boolean)
-  : null,
+   const specialtyStr = form.specialty
+      ? form.specialty.split(',').map(s => s.trim()).filter(Boolean).join('|')
+      : null
 
     const payload = {
       name:             form.name.trim(),
       sport:            form.sport,
+      specialty:        specialtyStr,
       city:             form.city.trim() || null,
       state:            form.state || null,
       zip:              form.zip_code || null,
