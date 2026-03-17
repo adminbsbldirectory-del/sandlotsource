@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { supabase } from '../supabase.js'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
-// ─── Geocode utility ──────────────────────────────────────────────────────────
+// ── Geocode utility ───────────────────────────────────────
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
   try {
-    const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    const res = await fetch('https://api.zippopotam.us/us/' + zip)
     if (!res.ok) return null
     const data = await res.json()
-    const place = data.places?.[0]
+    const place = data.places && data.places[0]
     if (!place) return null
     return {
       lat:   parseFloat(place.latitude),
@@ -20,7 +20,7 @@ async function geocodeZip(zip) {
   } catch { return null }
 }
 
-// ─── Shared style constants ───────────────────────────────────────────────────
+// ── Shared styles ─────────────────────────────────────────
 const labelStyle = {
   fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
   letterSpacing: '0.06em', display: 'block', marginBottom: 6, color: '#444',
@@ -35,10 +35,16 @@ const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
 const DISTANCE_MARKS = [10, 25, 50, 75, 100]
-
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','17U','18U','High School','College','Adult']
 const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
+
+const US_STATE_ABBRS = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
+  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
+  'VA','WA','WV','WI','WY',
+]
 
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
@@ -69,105 +75,114 @@ function SuccessBanner({ message }) {
   )
 }
 
-// ─── Zip field with geocode indicator ────────────────────────────────────────
-function ZipField({ value, onChange, onGeocode, label = 'Zip Code', hint = 'Used to place a map pin', required = false }) {
+// ── Zip field with geocode indicator ──────────────────────
+function ZipField({ value, onChange, onGeocode, label, hint, required }) {
   const [status, setStatus] = useState('')
+  const displayLabel = label || 'Zip Code'
+  const displayHint  = hint  || 'Used to place a map pin'
 
   async function handleBlur() {
     if (!value || value.length !== 5) return
     setStatus('loading')
     const geo = await geocodeZip(value)
-    if (geo) {
-      setStatus('ok')
-      onGeocode(geo)
-    } else {
-      setStatus('error')
-      onGeocode(null)
-    }
+    if (geo) { setStatus('ok');    onGeocode(geo) }
+    else      { setStatus('error'); onGeocode(null) }
   }
 
   return (
     <div>
       <label style={labelStyle}>
-        {label}{required && <span style={{ color: 'var(--red)' }}> *</span>}
-        {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Checking…</span>}
-        {status === 'ok'      && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Located</span>}
-        {status === 'error'   && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--red)' }}>Zip not found</span>}
+        {displayLabel}{required && <span style={{ color: 'var(--red)' }}> *</span>}
+        {status === 'loading' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Checking…</span>}
+        {status === 'ok'      && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Located</span>}
+        {status === 'error'   && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'var(--red)' }}>Zip not found</span>}
       </label>
       <input
         type="text" inputMode="numeric" maxLength={5}
         value={value} onChange={e => onChange(e.target.value)} onBlur={handleBlur}
         placeholder="e.g. 30076" style={inputStyle}
       />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>{hint}</div>
+      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>{displayHint}</div>
     </div>
   )
 }
 
-// ─── Distance slider ──────────────────────────────────────────────────────────
+// ── Distance slider ───────────────────────────────────────
 function DistanceSlider({ value, onChange }) {
   const idx = DISTANCE_MARKS.indexOf(value) >= 0 ? DISTANCE_MARKS.indexOf(value) : 1
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={labelStyle}>
         Willing to Travel
-        <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: 'var(--navy)', fontSize: 13 }}>
+        <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, marginLeft:8, color:'var(--navy)', fontSize:13 }}>
           — up to <strong>{value === 100 ? '100+' : value} miles</strong>
         </span>
       </label>
       <input type="range" min={0} max={4} step={1} value={idx}
         onChange={e => onChange(DISTANCE_MARKS[parseInt(e.target.value)])}
-        style={{ width: '100%', accentColor: 'var(--navy)', cursor: 'pointer' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--gray)', marginTop: 4 }}>
+        style={{ width:'100%', accentColor:'var(--navy)', cursor:'pointer' }} />
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--gray)', marginTop:4 }}>
         {DISTANCE_MARKS.map(m => <span key={m}>{m === 100 ? '100+' : m}mi</span>)}
       </div>
     </div>
   )
 }
 
-// ─── COACH FORM ───────────────────────────────────────────────────────────────
+// ── Social input with prefix ──────────────────────────────
+function SocialInput({ prefix, value, onChange, placeholder }) {
+  return (
+    <div className="input-prefix-wrap">
+      <span className="input-prefix">{prefix}</span>
+      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+    </div>
+  )
+}
+
+// ── COACH FORM ────────────────────────────────────────────
 function CoachForm() {
   const [form, setForm] = useState({
-    name: '', sport: 'baseball', specialty: '', city: '',
-    county: '', zip_code: '', lat: null, lng: null,
-    facility_name: '', phone: '', email: '', website: '', instagram: '', facebook: '',
+    name: '', sport: 'baseball', specialty: '', city: '', state: 'GA',
+    zip_code: '', lat: null, lng: null,
+    facility_name: '', phone: '', email: '', website: '',
+    instagram: '', facebook: '',
     credentials: '', bio: '', age_groups: '', skill_level: '',
     price_per_session: '', price_notes: '',
     contact_role: '', submission_notes: '',
   })
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState('')
+  const [submitted,  setSubmitted]  = useState(false)
+  const [error,      setError]      = useState('')
+  const [addrStatus, setAddrStatus] = useState('')
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
 
-  const [addrStatus, setAddrStatus] = useState('')
-
-  // Zip geocode — only fills lat/lng if address geocode hasn't already placed the pin
   function handleZipGeocode(geo) {
     if (geo) setForm(f => ({
       ...f,
-      lat: f.lat || geo.lat,
-      lng: f.lng || geo.lng,
-      city: f.city || geo.city,
+      lat:   f.lat   || geo.lat,
+      lng:   f.lng   || geo.lng,
+      city:  f.city  || geo.city,
+      state: f.state || geo.state,
     }))
   }
 
-  // Address geocode via Nominatim — fires on Street Address blur for a precise pin
   async function handleAddressBlur() {
-    const addr = form.address.trim()
+    const addr = form.address ? form.address.trim() : ''
     if (!addr) return
     setAddrStatus('locating')
     try {
       const q = encodeURIComponent(
-        `${addr}${form.city ? ', ' + form.city : ''}${form.zip_code ? ', ' + form.zip_code : ''}, Georgia, USA`
+        addr +
+        (form.city    ? ', ' + form.city    : '') +
+        (form.zip_code ? ', ' + form.zip_code : '') +
+        ', USA'
       )
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,
+        'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
         { headers: { 'Accept-Language': 'en-US' } }
       )
       const data = await res.json()
-      if (data?.[0]) {
+      if (data && data[0]) {
         setForm(f => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }))
         setAddrStatus('found')
       } else {
@@ -179,9 +194,11 @@ function CoachForm() {
   function validate() {
     if (!form.name.trim())         return 'Coach / trainer name is required.'
     if (!form.sport)               return 'Sport is required.'
+    if (!form.city.trim())         return 'City is required.'
+    if (!form.state)               return 'State is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.facility_name.trim()) return 'Facility name is required.'
-    if (!form.contact_role.trim()) return 'Your role is required (e.g. Coach, Facility Owner, Parent).'
+    if (!form.contact_role.trim()) return 'Your role is required.'
     if (!form.email.trim() && !form.phone.trim()) return 'At least one of email or phone is required.'
     return ''
   }
@@ -192,7 +209,6 @@ function CoachForm() {
     setError('')
     setSubmitting(true)
 
-    // specialty stored as pipe-separated string (matches existing seeded data format)
     const specialtyStr = form.specialty
       ? form.specialty.split(',').map(s => s.trim()).filter(Boolean).join('|')
       : null
@@ -202,8 +218,8 @@ function CoachForm() {
       sport:            form.sport,
       specialty:        specialtyStr,
       city:             form.city.trim() || null,
-      county:           form.county || null,
-      zip_code:         form.zip_code || null,
+      state:            form.state || null,
+      zip:              form.zip_code || null,
       lat:              form.lat || null,
       lng:              form.lng || null,
       facility_name:    form.facility_name.trim(),
@@ -229,8 +245,7 @@ function CoachForm() {
     const { error: sbError } = await supabase.from('coaches').insert(payload)
     setSubmitting(false)
     if (sbError) {
-      console.error('Coach insert error:', sbError)
-      setError(`Submission error: ${sbError.message || 'Please try again.'}`)
+      setError('Submission error: ' + (sbError.message || 'Please try again.'))
     } else {
       setSubmitted(true)
     }
@@ -240,143 +255,162 @@ function CoachForm() {
 
   return (
     <div>
-      {/* Sport */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>Sport <RequiredMark /></label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {['baseball','softball','both'].map(s => (
-            <button key={s} onClick={() => set('sport', s)} style={{
-              padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer',
-              borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
-              background:  form.sport === s ? 'var(--navy)' : 'white',
-              color:       form.sport === s ? 'white' : 'var(--navy)',
-              fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)',
-            }}>{s}</button>
-          ))}
+
+      {/* ── Section 1: The Basics ── */}
+      <div className="form-section">
+        <div className="form-section-title">1. The Basics</div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>Sport <RequiredMark /></label>
+          <div style={{ display:'flex', gap:8 }}>
+            {['baseball','softball','both'].map(s => (
+              <button key={s} onClick={() => set('sport', s)} style={{
+                padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer',
+                borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
+                background:  form.sport === s ? 'var(--navy)' : 'white',
+                color:       form.sport === s ? 'white' : 'var(--navy)',
+                fontWeight:600, fontSize:13, textTransform:'capitalize', fontFamily:'var(--font-body)',
+              }}>{s}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Coach / Trainer Name <RequiredMark /></label>
+            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
+            <input value={form.facility_name} onChange={e => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>City <RequiredMark /></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>State <RequiredMark /></label>
+            <select value={form.state} onChange={e => set('state', e.target.value)} style={selectStyle}>
+              <option value="">Select</option>
+              {US_STATE_ABBRS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <ZipField
+            value={form.zip_code}
+            onChange={v => set('zip_code', v)}
+            onGeocode={handleZipGeocode}
+            required
+            hint="For map pin placement"
+          />
         </div>
       </div>
 
-      {/* Name + Facility */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Coach / Trainer Name <RequiredMark /></label>
-          <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Full name" style={inputStyle} />
+      {/* ── Section 2: Professional Specs ── */}
+      <div className="form-section">
+        <div className="form-section-title">2. Professional Specs</div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Specialty</label>
+          <input value={form.specialty} onChange={e => set('specialty', e.target.value)} placeholder="e.g. pitching, catching, hitting (comma-separated)" style={inputStyle} />
         </div>
-        <div>
-          <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
-          <input value={form.facility_name} onChange={e => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Credentials / Background</label>
+          <input value={form.credentials} onChange={e => set('credentials', e.target.value)} placeholder="e.g. Former MiLB pitcher, Masters in Biomechanics" style={inputStyle} />
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Bio / Description</label>
+          <textarea value={form.bio} onChange={e => set('bio', e.target.value)} rows={3} placeholder="Tell families about your coaching style, experience, and approach..." style={textareaStyle} />
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Age Groups Served</label>
+            <input value={form.age_groups} onChange={e => set('age_groups', e.target.value)} placeholder="e.g. 10U, 12U, 14U" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Skill Level</label>
+            <select value={form.skill_level} onChange={e => set('skill_level', e.target.value)} style={selectStyle}>
+              <option value="">All levels</option>
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+              <option>Elite / Travel</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:0 }}>
+          <div>
+            <label style={labelStyle}>Price Per Session ($)</label>
+            <input type="number" min="0" value={form.price_per_session} onChange={e => set('price_per_session', e.target.value)} placeholder="e.g. 70" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Price Notes</label>
+            <input value={form.price_notes} onChange={e => set('price_notes', e.target.value)} placeholder="e.g. Group rates available" style={inputStyle} />
+          </div>
         </div>
       </div>
 
-      {/* City + Zip */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
-          <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
-        </div>
-        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Fallback pin location if no street address provided" />
-      </div>
+      {/* ── Section 3: Contact & Social ── */}
+      <div className="form-section">
+        <div className="form-section-title">3. Contact &amp; Social</div>
 
-      {/* Your role — replaces the old redundant Contact Name + Contact Role pair */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Your Role <RequiredMark /></label>
-        <input value={form.contact_role} onChange={e => set('contact_role', e.target.value)}
-          placeholder="e.g. Coach (self), Facility Owner, Parent submitting for coach"
-          style={inputStyle} />
-        <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-          Helps us understand your relationship to this listing
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Your Role <RequiredMark /></label>
+          <input value={form.contact_role} onChange={e => set('contact_role', e.target.value)}
+            placeholder="e.g. Coach (self), Facility Owner, Parent submitting for coach"
+            style={inputStyle} />
+          <div style={{ fontSize:11, color:'#888', marginTop:3 }}>Helps us understand your relationship to this listing</div>
         </div>
-      </div>
 
-      {/* Email + Phone */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
-          <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="coach@example.com" style={inputStyle} />
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Email <RequiredMark /> <span style={{ fontWeight:400, textTransform:'none' }}>(or phone)</span></label>
+            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="coach@example.com" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Phone</label>
+            <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="e.g. 770-555-0100" style={inputStyle} />
+          </div>
         </div>
-        <div>
-          <label style={labelStyle}>Phone</label>
-          <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="e.g. 770-555-0100" style={inputStyle} />
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Website</label>
+            <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Instagram</label>
+            <SocialInput prefix="@" value={form.instagram} onChange={v => set('instagram', v)} placeholder="handle" />
+          </div>
+          <div>
+            <label style={labelStyle}>Facebook</label>
+            <SocialInput prefix="facebook.com/" value={form.facebook} onChange={v => set('facebook', v)} placeholder="page name" />
+          </div>
         </div>
-      </div>
 
-      {/* Specialty + Credentials */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Specialty</label>
-        <input value={form.specialty} onChange={e => set('specialty', e.target.value)} placeholder="e.g. pitching, catching, hitting (comma-separated)" style={inputStyle} />
-      </div>
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Credentials / Background</label>
-        <input value={form.credentials} onChange={e => set('credentials', e.target.value)} placeholder="e.g. Former MiLB pitcher, Masters in Biomechanics" style={inputStyle} />
-      </div>
-
-      {/* Bio */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Bio / Description</label>
-        <textarea value={form.bio} onChange={e => set('bio', e.target.value)} rows={3} placeholder="Tell families about your coaching style, experience, and approach..." style={textareaStyle} />
-      </div>
-
-      {/* Age groups + Skill level */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Age Groups Served</label>
-          <input value={form.age_groups} onChange={e => set('age_groups', e.target.value)} placeholder="e.g. 10U, 12U, 14U" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Skill Level</label>
-          <select value={form.skill_level} onChange={e => set('skill_level', e.target.value)} style={selectStyle}>
-            <option value="">All levels</option>
-            <option>Beginner</option><option>Intermediate</option>
-            <option>Advanced</option><option>Elite / Travel</option>
-          </select>
+        <div style={{ marginBottom:0 }}>
+          <label style={labelStyle}>Submission Notes</label>
+          <textarea value={form.submission_notes} onChange={e => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know when reviewing this listing?" style={textareaStyle} />
         </div>
       </div>
 
-      {/* Pricing */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Price Per Session ($)</label>
-          <input type="number" min="0" value={form.price_per_session} onChange={e => set('price_per_session', e.target.value)} placeholder="e.g. 70" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Price Notes</label>
-          <input value={form.price_notes} onChange={e => set('price_notes', e.target.value)} placeholder="e.g. Group rates available" style={inputStyle} />
-        </div>
-      </div>
-
-      {/* Website + Social */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Website</label>
-          <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Instagram</label>
-          <input value={form.instagram} onChange={e => set('instagram', e.target.value)} placeholder="@handle" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Facebook</label>
-          <input value={form.facebook} onChange={e => set('facebook', e.target.value)} placeholder="Page name or URL" style={inputStyle} />
-        </div>
-      </div>
-
-      {/* Submission notes */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>Submission Notes</label>
-        <textarea value={form.submission_notes} onChange={e => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know when reviewing this listing?" style={textareaStyle} />
-      </div>
-
-      <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
-        All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
+      <div style={{ fontSize:11, color:'var(--gray)', marginBottom:12 }}>
+        All listings are reviewed before going live. Fields marked <span style={{ color:'var(--red)' }}>*</span> are required.
       </div>
 
       <FieldError msg={error} />
 
       <button onClick={handleSubmit} disabled={submitting} style={{
-        background: 'var(--red)', color: 'white', border: 'none',
-        borderRadius: 8, padding: '12px 32px',
-        fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700,
-        letterSpacing: '0.04em', textTransform: 'uppercase',
+        background:'var(--red)', color:'white', border:'none',
+        borderRadius:8, padding:'12px 32px',
+        fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
+        letterSpacing:'0.04em', textTransform:'uppercase',
         opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
       }}>
         {submitting ? 'Submitting…' : 'Submit Coach Profile'}
@@ -385,23 +419,29 @@ function CoachForm() {
   )
 }
 
-// ─── TEAM FORM ────────────────────────────────────────────────────────────────
+// ── TEAM FORM ─────────────────────────────────────────────
 function TeamForm() {
   const [form, setForm] = useState({
     name: '', sport: 'baseball', org_affiliation: '', age_group: '',
-    city: '', county: '', zip_code: '', lat: null, lng: null,
+    city: '', state: 'GA', zip_code: '', lat: null, lng: null, address: '',
     contact_name: '', contact_email: '', contact_phone: '',
     website: '', tryout_status: 'closed', tryout_date: '', tryout_notes: '',
     description: '', submission_notes: '',
   })
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState('')
+  const [submitted,  setSubmitted]  = useState(false)
+  const [error,      setError]      = useState('')
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
 
   function handleGeocode(geo) {
-    if (geo) setForm(f => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
+    if (geo) setForm(f => ({
+      ...f,
+      lat:   geo.lat,
+      lng:   geo.lng,
+      city:  f.city  || geo.city,
+      state: f.state || geo.state,
+    }))
     else setForm(f => ({ ...f, lat: null, lng: null }))
   }
 
@@ -409,6 +449,8 @@ function TeamForm() {
     if (!form.name.trim())         return 'Team name is required.'
     if (!form.sport)               return 'Sport is required.'
     if (!form.age_group)           return 'Age group is required.'
+    if (!form.city.trim())         return 'City is required.'
+    if (!form.state)               return 'State is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
@@ -427,11 +469,11 @@ function TeamForm() {
       org_affiliation:  form.org_affiliation.trim() || null,
       age_group:        form.age_group,
       city:             form.city.trim(),
-      county:           form.county || null,
+      state:            form.state,
       zip_code:         form.zip_code || null,
       lat:              form.lat || null,
       lng:              form.lng || null,
-      state:            'GA',
+      address:          form.address.trim() || null,
       contact_name:     form.contact_name.trim(),
       contact_email:    form.contact_email.trim() || null,
       contact_phone:    form.contact_phone.trim() || null,
@@ -449,8 +491,7 @@ function TeamForm() {
     const { error: sbError } = await supabase.from('travel_teams').insert(payload)
     setSubmitting(false)
     if (sbError) {
-      console.error('Team insert error:', sbError)
-      setError(`Submission error: ${sbError.message || 'Please try again.'}`)
+      setError('Submission error: ' + (sbError.message || 'Please try again.'))
     } else {
       setSubmitted(true)
     }
@@ -460,112 +501,147 @@ function TeamForm() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>Sport <RequiredMark /></label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {['baseball','softball'].map(s => (
-            <button key={s} onClick={() => set('sport', s)} style={{
-              padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer',
-              borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'var(--lgray)',
-              background:  form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'white',
-              color:       form.sport === s ? 'white' : 'var(--navy)',
-              fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)',
-            }}>{s}</button>
-          ))}
+
+      {/* ── Section 1: The Basics ── */}
+      <div className="form-section">
+        <div className="form-section-title">1. The Basics</div>
+
+        <div style={{ marginBottom:16 }}>
+          <label style={labelStyle}>Sport <RequiredMark /></label>
+          <div style={{ display:'flex', gap:8 }}>
+            {['baseball','softball'].map(s => (
+              <button key={s} onClick={() => set('sport', s)} style={{
+                padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer',
+                borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'var(--lgray)',
+                background:  form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'white',
+                color:       form.sport === s ? 'white' : 'var(--navy)',
+                fontWeight:600, fontSize:13, textTransform:'capitalize', fontFamily:'var(--font-body)',
+              }}>{s}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Team Name <RequiredMark /></label>
+            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Cherokee Nationals 12U" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Org Affiliation</label>
+            <input value={form.org_affiliation} onChange={e => set('org_affiliation', e.target.value)} placeholder="e.g. USSSA, PGF, Perfect Game" style={inputStyle} />
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Age Group <RequiredMark /></label>
+            <select value={form.age_group} onChange={e => set('age_group', e.target.value)} style={selectStyle}>
+              <option value="">Select</option>
+              {AGE_GROUPS.map(a => <option key={a}>{a}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>City <RequiredMark /></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>State <RequiredMark /></label>
+            <select value={form.state} onChange={e => set('state', e.target.value)} style={selectStyle}>
+              <option value="">Select</option>
+              {US_STATE_ABBRS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <ZipField
+            value={form.zip_code}
+            onChange={v => set('zip_code', v)}
+            onGeocode={handleGeocode}
+            required
+            hint="For map pin placement"
+          />
+        </div>
+
+        <div style={{ marginBottom:0 }}>
+          <label style={labelStyle}>Street Address <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#999' }}>(optional — improves map accuracy)</span></label>
+          <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="e.g. 123 Main St" style={inputStyle} />
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Team Name <RequiredMark /></label>
-          <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Cherokee Nationals 12U" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Org Affiliation</label>
-          <input value={form.org_affiliation} onChange={e => set('org_affiliation', e.target.value)} placeholder="e.g. USSSA, PGF, Perfect Game" style={inputStyle} />
-        </div>
-      </div>
+      {/* ── Section 2: Tryout Info ── */}
+      <div className="form-section">
+        <div className="form-section-title">2. Tryout Info</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Age Group <RequiredMark /></label>
-          <select value={form.age_group} onChange={e => set('age_group', e.target.value)} style={selectStyle}>
-            <option value="">Select</option>
-            {AGE_GROUPS.map(a => <option key={a}>{a}</option>)}
-          </select>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Tryout Status</label>
+            <select value={form.tryout_status} onChange={e => set('tryout_status', e.target.value)} style={selectStyle}>
+              <option value="closed">Closed / Unknown</option>
+              <option value="open">Open</option>
+              <option value="year_round">Year Round</option>
+              <option value="by_invite">By Invite Only</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Tryout Date</label>
+            <input type="date" value={form.tryout_date} onChange={e => set('tryout_date', e.target.value)} style={inputStyle} />
+          </div>
         </div>
-        <div>
-          <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
-          <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
-        </div>
-      </div>
 
-      <div style={{ marginBottom: 14 }}>
-        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Fallback pin if no address provided" />
-      </div>
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Tryout Notes</label>
+          <input value={form.tryout_notes} onChange={e => set('tryout_notes', e.target.value)} placeholder="e.g. Bring your own helmet. Arrive 15 min early." style={inputStyle} />
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Contact Name <RequiredMark /></label>
-          <input value={form.contact_name} onChange={e => set('contact_name', e.target.value)} placeholder="Full name" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Contact Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
-          <input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} placeholder="coach@example.com" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Contact Phone</label>
-          <input type="tel" value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
+        <div style={{ marginBottom:0 }}>
+          <label style={labelStyle}>Team Description</label>
+          <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Tell players and families about your program..." style={textareaStyle} />
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Tryout Status</label>
-          <select value={form.tryout_status} onChange={e => set('tryout_status', e.target.value)} style={selectStyle}>
-            <option value="closed">Closed / Unknown</option>
-            <option value="open">Open</option>
-            <option value="year_round">Year Round</option>
-            <option value="by_invite">By Invite Only</option>
-          </select>
+      {/* ── Section 3: Contact ── */}
+      <div className="form-section">
+        <div className="form-section-title">3. Contact</div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Contact Name <RequiredMark /></label>
+            <input value={form.contact_name} onChange={e => set('contact_name', e.target.value)} placeholder="Full name" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Contact Email <RequiredMark /> <span style={{ fontWeight:400, textTransform:'none' }}>(or phone)</span></label>
+            <input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} placeholder="coach@example.com" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Contact Phone</label>
+            <input type="tel" value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
+          </div>
         </div>
-        <div>
-          <label style={labelStyle}>Tryout Date</label>
-          <input type="date" value={form.tryout_date} onChange={e => set('tryout_date', e.target.value)} style={inputStyle} />
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:0 }}>
+          <div>
+            <label style={labelStyle}>Website</label>
+            <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Submission Notes</label>
+            <input value={form.submission_notes} onChange={e => set('submission_notes', e.target.value)} placeholder="Anything else we should know?" style={inputStyle} />
+          </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Tryout Notes</label>
-        <input value={form.tryout_notes} onChange={e => set('tryout_notes', e.target.value)} placeholder="e.g. Bring your own helmet. Arrive 15 min early." style={inputStyle} />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Website</label>
-        <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Team Description</label>
-        <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Tell players and families about your program..." style={textareaStyle} />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>Submission Notes</label>
-        <textarea value={form.submission_notes} onChange={e => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know?" style={textareaStyle} />
-      </div>
-
-      <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
-        All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
+      <div style={{ fontSize:11, color:'var(--gray)', marginBottom:12 }}>
+        All listings are reviewed before going live. Fields marked <span style={{ color:'var(--red)' }}>*</span> are required.
       </div>
 
       <FieldError msg={error} />
 
       <button onClick={handleSubmit} disabled={submitting} style={{
-        background: 'var(--red)', color: 'white', border: 'none',
-        borderRadius: 8, padding: '12px 32px',
-        fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700,
-        letterSpacing: '0.04em', textTransform: 'uppercase',
+        background:'var(--red)', color:'white', border:'none',
+        borderRadius:8, padding:'12px 32px',
+        fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
+        letterSpacing:'0.04em', textTransform:'uppercase',
         opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
       }}>
         {submitting ? 'Submitting…' : 'Submit Travel Team'}
@@ -574,7 +650,7 @@ function TeamForm() {
   )
 }
 
-// ─── PLAYER BOARD FORM ────────────────────────────────────────────────────────
+// ── PLAYER FORM ───────────────────────────────────────────
 function PlayerForm() {
   const [postType, setPostType] = useState('player_needed')
   const [form, setForm] = useState({
@@ -587,8 +663,8 @@ function PlayerForm() {
     distance_travel: 25,
   })
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState('')
+  const [submitted,  setSubmitted]  = useState(false)
+  const [error,      setError]      = useState('')
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
 
@@ -628,7 +704,7 @@ function PlayerForm() {
     setError('')
     setSubmitting(true)
 
-    const travelNote = `Willing to travel: up to ${form.distance_travel === 100 ? '100+' : form.distance_travel} miles`
+    const travelNote = 'Willing to travel: up to ' + (form.distance_travel === 100 ? '100+' : form.distance_travel) + ' miles'
     const notesWithTravel = postType === 'player_available'
       ? [travelNote, form.additional_notes.trim()].filter(Boolean).join('\n')
       : form.additional_notes.trim() || null
@@ -663,8 +739,7 @@ function PlayerForm() {
     const { error: sbError } = await supabase.from('player_board').insert(payload)
     setSubmitting(false)
     if (sbError) {
-      console.error('Player board insert error:', sbError)
-      setError(`Submission error: ${sbError.message || 'Please try again.'}`)
+      setError('Submission error: ' + (sbError.message || 'Please try again.'))
     } else {
       setSubmitted(true)
     }
@@ -676,34 +751,34 @@ function PlayerForm() {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:16 }}>
         {[
           ['player_needed',    '⚾ Player Needed'],
           ['player_available', '🧢 Player Available'],
         ].map(([val, label]) => (
           <button key={val} onClick={() => {
             setPostType(val)
-            setForm(f => ({ ...f, age_group:'', team_name:'', position_needed:[], location_name:'', event_date:'', player_age:'', player_position:[], player_description:'', distance_travel: 25 }))
+            setForm(f => ({ ...f, age_group:'', team_name:'', position_needed:[], location_name:'', event_date:'', player_age:'', player_position:[], player_description:'', distance_travel:25 }))
           }} style={{
-            flex: 1, padding: '10px', borderRadius: 8, border: '2px solid', cursor: 'pointer',
+            flex:1, padding:'10px', borderRadius:8, border:'2px solid', cursor:'pointer',
             borderColor: postType === val ? 'var(--navy)' : 'var(--lgray)',
             background:  postType === val ? 'var(--navy)' : 'white',
             color:       postType === val ? 'white' : 'var(--navy)',
-            fontWeight: 600, fontSize: 14, fontFamily: 'var(--font-body)',
+            fontWeight:600, fontSize:14, fontFamily:'var(--font-body)',
           }}>{label}</button>
         ))}
       </div>
 
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom:14 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display:'flex', gap:8 }}>
           {['baseball','softball'].map(s => (
             <button key={s} onClick={() => set('sport', s)} style={{
-              padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer',
+              padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer',
               borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : '#1D4ED8') : 'var(--lgray)',
               background:  form.sport === s ? (s === 'softball' ? '#7C3AED' : '#1D4ED8') : 'white',
               color:       form.sport === s ? 'white' : 'var(--navy)',
-              fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)',
+              fontWeight:600, fontSize:13, textTransform:'capitalize', fontFamily:'var(--font-body)',
             }}>{s}</button>
           ))}
         </div>
@@ -711,7 +786,7 @@ function PlayerForm() {
 
       {postType === 'player_needed' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
             <div>
               <label style={labelStyle}>Age Group <RequiredMark /></label>
               <select value={form.age_group} onChange={e => set('age_group', e.target.value)} style={selectStyle}>
@@ -725,30 +800,30 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Position(s) Needed <RequiredMark /></label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
               {positions.map(pos => (
                 <button key={pos} onClick={() => togglePos(pos, 'position_needed')} style={{
-                  padding: '5px 12px', borderRadius: 20, border: '2px solid', cursor: 'pointer',
+                  padding:'5px 12px', borderRadius:20, border:'2px solid', cursor:'pointer',
                   borderColor: form.position_needed.includes(pos) ? 'var(--navy)' : 'var(--lgray)',
                   background:  form.position_needed.includes(pos) ? 'var(--navy)' : 'white',
                   color:       form.position_needed.includes(pos) ? 'white' : 'var(--navy)',
-                  fontSize: 12, fontFamily: 'var(--font-body)',
+                  fontSize:12, fontFamily:'var(--font-body)',
                 }}>{pos}</button>
               ))}
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
             <input value={form.location_name} onChange={e => set('location_name', e.target.value)} placeholder="e.g. Wills Park Field 3, Seckinger High School" style={inputStyle} />
-            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>This location name is used to place the map pin precisely</div>
+            <div style={{ fontSize:11, color:'#888', marginTop:3 }}>This location name is used to place the map pin precisely</div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
             <div>
-              <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
+              <label style={labelStyle}>City</label>
               <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
             </div>
             <div>
@@ -757,11 +832,11 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required hint="Area zip for search radius matching" />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Additional Notes</label>
             <textarea value={form.additional_notes} onChange={e => set('additional_notes', e.target.value)} rows={3} placeholder="Practice schedule, skill level expected, tryout info..." style={textareaStyle} />
           </div>
@@ -770,7 +845,7 @@ function PlayerForm() {
 
       {postType === 'player_available' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
             <div>
               <label style={labelStyle}>Player Age <RequiredMark /></label>
               <input type="number" min="6" max="99" value={form.player_age} onChange={e => set('player_age', e.target.value)} placeholder="e.g. 12" style={inputStyle} />
@@ -784,60 +859,57 @@ function PlayerForm() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Position(s) <RequiredMark /></label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
               {positions.map(pos => (
                 <button key={pos} onClick={() => togglePos(pos, 'player_position')} style={{
-                  padding: '5px 12px', borderRadius: 20, border: '2px solid', cursor: 'pointer',
+                  padding:'5px 12px', borderRadius:20, border:'2px solid', cursor:'pointer',
                   borderColor: form.player_position.includes(pos) ? 'var(--navy)' : 'var(--lgray)',
                   background:  form.player_position.includes(pos) ? 'var(--navy)' : 'white',
                   color:       form.player_position.includes(pos) ? 'white' : 'var(--navy)',
-                  fontSize: 12, fontFamily: 'var(--font-body)',
+                  fontSize:12, fontFamily:'var(--font-body)',
                 }}>{pos}</button>
               ))}
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
           </div>
 
-          {/* Distance slider — FIXED: was missing from this form */}
           <DistanceSlider value={form.distance_travel} onChange={v => set('distance_travel', v)} />
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
+          <div style={{ marginBottom:14 }}>
+            <label style={labelStyle}>City</label>
             <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Description</label>
             <textarea value={form.player_description} onChange={e => set('player_description', e.target.value)} rows={3} placeholder="Age, skill level, what you're looking for in a team..." style={textareaStyle} />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Additional Notes</label>
             <textarea value={form.additional_notes} onChange={e => set('additional_notes', e.target.value)} rows={2} placeholder="Any other details..." style={textareaStyle} />
           </div>
         </>
       )}
 
-      <div style={{ marginBottom: 8 }}>
+      <div style={{ marginBottom:8 }}>
         <label style={labelStyle}>Contact Info <RequiredMark /></label>
         <input value={form.contact_info} onChange={e => set('contact_info', e.target.value)} placeholder="Email, phone, or Instagram handle" style={inputStyle} />
-        <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 4 }}>
-          Visible publicly. Posts expire after 4 days.
-        </div>
+        <div style={{ fontSize:11, color:'var(--gray)', marginTop:4 }}>Visible publicly. Posts expire after 4 days.</div>
       </div>
 
       <FieldError msg={error} />
 
       <button onClick={handleSubmit} disabled={submitting} style={{
-        background: 'var(--red)', color: 'white', border: 'none',
-        borderRadius: 8, padding: '12px 32px', marginTop: 8,
-        fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700,
-        letterSpacing: '0.04em', textTransform: 'uppercase',
+        background:'var(--red)', color:'white', border:'none',
+        borderRadius:8, padding:'12px 32px', marginTop:8,
+        fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
+        letterSpacing:'0.04em', textTransform:'uppercase',
         opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
       }}>
         {submitting ? 'Posting…' : 'Submit Post'}
@@ -846,22 +918,23 @@ function PlayerForm() {
   )
 }
 
-// ─── FACILITY FORM ────────────────────────────────────────────────────────────
+// ── FACILITY FORM ─────────────────────────────────────────
 function FacilityForm() {
   const [form, setForm] = useState({
     name: '', facility_type: '', sport: 'both',
-    city: '', county: '', zip_code: '', lat: null, lng: null,
+    city: '', state: 'GA', zip_code: '', lat: null, lng: null,
     address: '', phone: '', email: '', website: '', instagram: '', facebook: '',
     amenities: [], description: '', hours: '',
     contact_name: '', contact_email: '', contact_phone: '',
     submission_notes: '',
   })
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [error, setError] = useState('')
+  const [submitted,  setSubmitted]  = useState(false)
+  const [error,      setError]      = useState('')
+  const [addrStatus, setAddrStatus] = useState('')
 
   const AMENITY_OPTIONS = ['Batting Cages','Pitching Mounds','Turf Infield','HitTrax','Rapsodo','Video Analysis','Weight Room','Bullpen','Indoor Facility','Outdoor Fields','Lights','Restrooms','Parking','Concessions']
-  const FACILITY_TYPES = ['Training Academy','Batting Cage Complex','Indoor Complex','Recreation Park','High School','College Facility','Tournament Venue','Other']
+  const FACILITY_TYPES  = ['Training Academy','Batting Cage Complex','Indoor Complex','Recreation Park','High School','College Facility','Tournament Venue','Other']
 
   function set(field, value) { setForm(f => ({ ...f, [field]: value })) }
   function toggleAmenity(a) {
@@ -870,33 +943,34 @@ function FacilityForm() {
       amenities: f.amenities.includes(a) ? f.amenities.filter(x => x !== a) : [...f.amenities, a],
     }))
   }
-  const [addrStatus, setAddrStatus] = useState('')
 
-  // Zip geocode — fallback if address geocode hasn't placed the pin yet
   function handleZipGeocode(geo) {
     if (geo) setForm(f => ({
       ...f,
-      lat: f.lat || geo.lat,
-      lng: f.lng || geo.lng,
-      city: f.city || geo.city,
+      lat:   f.lat   || geo.lat,
+      lng:   f.lng   || geo.lng,
+      city:  f.city  || geo.city,
+      state: f.state || geo.state,
     }))
   }
 
-  // Address geocode via Nominatim — fires on Street Address blur
   async function handleAddressBlur() {
     const addr = form.address.trim()
     if (!addr) return
     setAddrStatus('locating')
     try {
       const q = encodeURIComponent(
-        `${addr}${form.city ? ', ' + form.city : ''}${form.zip_code ? ', ' + form.zip_code : ''}, Georgia, USA`
+        addr +
+        (form.city     ? ', ' + form.city     : '') +
+        (form.zip_code ? ', ' + form.zip_code : '') +
+        ', USA'
       )
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,
+        'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
         { headers: { 'Accept-Language': 'en-US' } }
       )
       const data = await res.json()
-      if (data?.[0]) {
+      if (data && data[0]) {
         setForm(f => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }))
         setAddrStatus('found')
       } else {
@@ -906,7 +980,9 @@ function FacilityForm() {
   }
 
   function validate() {
-    if (!form.name.trim()) return 'Facility name is required.'
+    if (!form.name.trim())  return 'Facility name is required.'
+    if (!form.city.trim())  return 'City is required.'
+    if (!form.state)        return 'State is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
@@ -924,7 +1000,7 @@ function FacilityForm() {
       facility_type:    form.facility_type || null,
       sport:            form.sport,
       city:             form.city.trim() || null,
-      county:           form.county || null,
+      state:            form.state || null,
       zip_code:         form.zip_code || null,
       lat:              form.lat || null,
       lng:              form.lng || null,
@@ -949,8 +1025,7 @@ function FacilityForm() {
     const { error: sbError } = await supabase.from('facilities').insert(payload)
     setSubmitting(false)
     if (sbError) {
-      console.error('Facility insert error:', sbError)
-      setError(`Submission error: ${sbError.message || 'Please try again.'}`)
+      setError('Submission error: ' + (sbError.message || 'Please try again.'))
     } else {
       setSubmitted(true)
     }
@@ -960,149 +1035,172 @@ function FacilityForm() {
 
   return (
     <div>
-      {/* Sport */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={labelStyle}>Sport <RequiredMark /></label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {['baseball','softball','both'].map(s => (
-            <button key={s} onClick={() => set('sport', s)} style={{
-              padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer',
-              borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
-              background:  form.sport === s ? 'var(--navy)' : 'white',
-              color:       form.sport === s ? 'white' : 'var(--navy)',
-              fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)',
-            }}>{s}</button>
-          ))}
-        </div>
-      </div>
 
-      {/* Name + Type */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Facility Name <RequiredMark /></label>
-          <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Grit Academy Athletics" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Facility Type</label>
-          <select value={form.facility_type} onChange={e => set('facility_type', e.target.value)} style={selectStyle}>
-            <option value="">Select type</option>
-            {FACILITY_TYPES.map(t => <option key={t}>{t}</option>)}
-          </select>
-        </div>
-      </div>
+      {/* ── Section 1: The Basics ── */}
+      <div className="form-section">
+        <div className="form-section-title">1. The Basics</div>
 
-      {/* Address */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>
-          Street Address
-          {addrStatus === 'locating' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Locating…</span>}
-          {addrStatus === 'found'    && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Pin placed at address</span>}
-          {addrStatus === 'fallback' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#ea580c' }}>Address not found — using zip pin</span>}
-        </label>
-        <input value={form.address} onChange={e => set('address', e.target.value)}
-          onBlur={handleAddressBlur}
-          placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
-        <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
-      </div>
-
-      {/* City + Zip */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
-          <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Kennesaw" style={inputStyle} />
-        </div>
-        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
-      </div>
-
-      {/* Amenities */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Amenities / Features</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {AMENITY_OPTIONS.map(a => (
-            <button key={a} onClick={() => toggleAmenity(a)} style={{
-              padding: '5px 12px', borderRadius: 20, border: '2px solid', cursor: 'pointer',
-              borderColor: form.amenities.includes(a) ? 'var(--navy)' : 'var(--lgray)',
-              background:  form.amenities.includes(a) ? 'var(--navy)' : 'white',
-              color:       form.amenities.includes(a) ? 'white' : 'var(--navy)',
-              fontSize: 12, fontFamily: 'var(--font-body)',
-            }}>{a}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* Description + Hours */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Tell families what makes your facility special..." style={textareaStyle} />
-      </div>
-      <div style={{ marginBottom: 14 }}>
-        <label style={labelStyle}>Hours of Operation</label>
-        <input value={form.hours} onChange={e => set('hours', e.target.value)} placeholder="e.g. Mon–Fri 4–9pm, Sat 8am–5pm" style={inputStyle} />
-      </div>
-
-      {/* Public contact */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Facility Phone</label>
-          <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Facility Email</label>
-          <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="info@facility.com" style={inputStyle} />
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
-        <div>
-          <label style={labelStyle}>Website</label>
-          <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Instagram</label>
-          <input value={form.instagram} onChange={e => set('instagram', e.target.value)} placeholder="@handle" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Facebook</label>
-          <input value={form.facebook} onChange={e => set('facebook', e.target.value)} placeholder="Page or URL" style={inputStyle} />
-        </div>
-      </div>
-
-      {/* Submission contact block */}
-      <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '14px', marginBottom: 14, border: '1px solid var(--lgray)' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Your Contact Info (not public)
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-          <div>
-            <label style={labelStyle}>Your Name <RequiredMark /></label>
-            <input value={form.contact_name} onChange={e => set('contact_name', e.target.value)} placeholder="Full name" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Your Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
-            <input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} placeholder="you@example.com" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Your Phone</label>
-            <input type="tel" value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
+        <div style={{ marginBottom:16 }}>
+          <label style={labelStyle}>Sport <RequiredMark /></label>
+          <div style={{ display:'flex', gap:8 }}>
+            {['baseball','softball','both'].map(s => (
+              <button key={s} onClick={() => set('sport', s)} style={{
+                padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer',
+                borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
+                background:  form.sport === s ? 'var(--navy)' : 'white',
+                color:       form.sport === s ? 'white' : 'var(--navy)',
+                fontWeight:600, fontSize:13, textTransform:'capitalize', fontFamily:'var(--font-body)',
+              }}>{s}</button>
+            ))}
           </div>
         </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Facility Name <RequiredMark /></label>
+            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Grit Academy Athletics" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Facility Type</label>
+            <select value={form.facility_type} onChange={e => set('facility_type', e.target.value)} style={selectStyle}>
+              <option value="">Select type</option>
+              {FACILITY_TYPES.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>
+            Street Address
+            {addrStatus === 'locating' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Locating…</span>}
+            {addrStatus === 'found'    && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Pin placed at address</span>}
+            {addrStatus === 'fallback' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#ea580c' }}>Address not found — using zip pin</span>}
+          </label>
+          <input value={form.address} onChange={e => set('address', e.target.value)}
+            onBlur={handleAddressBlur}
+            placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
+          <div style={{ fontSize:11, color:'#888', marginTop:3 }}>Enter address then tab out to place an accurate map pin</div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:0 }}>
+          <div>
+            <label style={labelStyle}>City <RequiredMark /></label>
+            <input value={form.city} onChange={e => set('city', e.target.value)} placeholder="e.g. Kennesaw" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>State <RequiredMark /></label>
+            <select value={form.state} onChange={e => set('state', e.target.value)} style={selectStyle}>
+              <option value="">Select</option>
+              {US_STATE_ABBRS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <ZipField
+            value={form.zip_code}
+            onChange={v => set('zip_code', v)}
+            onGeocode={handleZipGeocode}
+            required
+            hint="For map pin placement"
+          />
+        </div>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      {/* ── Section 2: Amenities & Details ── */}
+      <div className="form-section">
+        <div className="form-section-title">2. Amenities &amp; Details</div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Amenities / Features</label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {AMENITY_OPTIONS.map(a => (
+              <button key={a} onClick={() => toggleAmenity(a)} style={{
+                padding:'5px 12px', borderRadius:20, border:'2px solid', cursor:'pointer',
+                borderColor: form.amenities.includes(a) ? 'var(--navy)' : 'var(--lgray)',
+                background:  form.amenities.includes(a) ? 'var(--navy)' : 'white',
+                color:       form.amenities.includes(a) ? 'white' : 'var(--navy)',
+                fontSize:12, fontFamily:'var(--font-body)',
+              }}>{a}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom:14 }}>
+          <label style={labelStyle}>Description</label>
+          <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Tell families what makes your facility special..." style={textareaStyle} />
+        </div>
+
+        <div style={{ marginBottom:0 }}>
+          <label style={labelStyle}>Hours of Operation</label>
+          <input value={form.hours} onChange={e => set('hours', e.target.value)} placeholder="e.g. Mon-Fri 4-9pm, Sat 8am-5pm" style={inputStyle} />
+        </div>
+      </div>
+
+      {/* ── Section 3: Contact ── */}
+      <div className="form-section">
+        <div className="form-section-title">3. Contact</div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Facility Phone</label>
+            <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Facility Email</label>
+            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="info@facility.com" style={inputStyle} />
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 }}>
+          <div>
+            <label style={labelStyle}>Website</label>
+            <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Instagram</label>
+            <SocialInput prefix="@" value={form.instagram} onChange={v => set('instagram', v)} placeholder="handle" />
+          </div>
+          <div>
+            <label style={labelStyle}>Facebook</label>
+            <SocialInput prefix="facebook.com/" value={form.facebook} onChange={v => set('facebook', v)} placeholder="page name" />
+          </div>
+        </div>
+
+        <div style={{ background:'#f8f9fa', borderRadius:8, padding:'14px', border:'1px solid var(--lgray)' }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'var(--navy)', marginBottom:10, textTransform:'uppercase', letterSpacing:'0.06em' }}>
+            Your Contact Info (not public)
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+            <div>
+              <label style={labelStyle}>Your Name <RequiredMark /></label>
+              <input value={form.contact_name} onChange={e => set('contact_name', e.target.value)} placeholder="Full name" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Your Email <RequiredMark /> <span style={{ fontWeight:400, textTransform:'none' }}>(or phone)</span></label>
+              <input type="email" value={form.contact_email} onChange={e => set('contact_email', e.target.value)} placeholder="you@example.com" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Your Phone</label>
+              <input type="tel" value={form.contact_phone} onChange={e => set('contact_phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom:16 }}>
         <label style={labelStyle}>Submission Notes</label>
         <textarea value={form.submission_notes} onChange={e => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know?" style={textareaStyle} />
       </div>
 
-      <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
-        All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
+      <div style={{ fontSize:11, color:'var(--gray)', marginBottom:12 }}>
+        All listings are reviewed before going live. Fields marked <span style={{ color:'var(--red)' }}>*</span> are required.
       </div>
 
       <FieldError msg={error} />
 
       <button onClick={handleSubmit} disabled={submitting} style={{
-        background: 'var(--red)', color: 'white', border: 'none',
-        borderRadius: 8, padding: '12px 32px',
-        fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700,
-        letterSpacing: '0.04em', textTransform: 'uppercase',
+        background:'var(--red)', color:'white', border:'none',
+        borderRadius:8, padding:'12px 32px',
+        fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
+        letterSpacing:'0.04em', textTransform:'uppercase',
         opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
       }}>
         {submitting ? 'Submitting…' : 'Submit Facility'}
@@ -1111,7 +1209,7 @@ function FacilityForm() {
   )
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+// ── MAIN COMPONENT ────────────────────────────────────────
 const TABS = [
   { id: 'coach',    label: '⚾ Coach Profile' },
   { id: 'team',     label: '🏆 Travel Team' },
@@ -1121,38 +1219,36 @@ const TABS = [
 ]
 
 export default function CoachSubmitForm() {
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('coach')
 
   return (
-    <div style={{ maxWidth: 820, margin: '0 auto', padding: '32px 20px' }}>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: 28, fontWeight: 800, color: 'var(--navy)', marginBottom: 6 }}>
+    <div style={{ maxWidth:820, margin:'0 auto', padding:'32px 20px' }}>
+      <div style={{ marginBottom:28 }}>
+        <div style={{ fontFamily:'var(--font-head)', fontSize:28, fontWeight:800, color:'var(--navy)', marginBottom:6 }}>
           Add a Listing
         </div>
-        <div style={{ fontSize: 14, color: 'var(--gray)' }}>
+        <div style={{ fontSize:14, color:'var(--gray)' }}>
           All submissions are reviewed before going live. Free to list.
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '2px solid var(--lgray)', paddingBottom: 0, flexWrap: 'wrap' }}>
+      <div style={{ display:'flex', gap:4, marginBottom:28, borderBottom:'2px solid var(--lgray)', paddingBottom:0, flexWrap:'wrap' }}>
         {TABS.map(tab => {
           const tabStyle = {
-            padding: '10px 16px',
-            fontFamily: 'var(--font-head)', fontSize: 13, fontWeight: 700,
-            letterSpacing: '0.04em', textTransform: 'uppercase',
-            border: 'none',
+            padding:'10px 16px',
+            fontFamily:'var(--font-head)', fontSize:13, fontWeight:700,
+            letterSpacing:'0.04em', textTransform:'uppercase',
+            border:'none',
             borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
-            background: 'transparent',
+            background:'transparent',
             color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
-            cursor: 'pointer', marginBottom: -2, textDecoration: 'none',
-            display: 'inline-block', lineHeight: 1.2,
+            cursor:'pointer', marginBottom:-2,
           }
           if (tab.id === 'roster') {
             return (
               <button key="roster"
                 onClick={() => { window.location.href = '/roster' }}
-                style={{ ...tabStyle, color: 'var(--gray)' }}>
+                style={{ ...tabStyle, color:'var(--gray)' }}>
                 {tab.label}
               </button>
             )
@@ -1165,7 +1261,7 @@ export default function CoachSubmitForm() {
         })}
       </div>
 
-      <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '28px 24px' }}>
+      <div style={{ background:'white', borderRadius:12, border:'2px solid var(--lgray)', padding:'28px 24px' }}>
         {activeTab === 'coach'    && <CoachForm />}
         {activeTab === 'team'     && <TeamForm />}
         {activeTab === 'player'   && <PlayerForm />}
