@@ -1082,9 +1082,11 @@ export default function CoachSubmitForm() {
           }
           if (tab.id === 'roster') {
             return (
-              <Link key="roster" to="/roster" style={tabStyle}>
+              <button key="roster"
+                onClick={() => { window.location.href = '/roster' }}
+                style={{ ...tabStyle, color: 'var(--gray)' }}>
                 {tab.label}
-              </Link>
+              </button>
             )
           }
           return (
