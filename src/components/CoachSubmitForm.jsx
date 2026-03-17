@@ -713,7 +713,7 @@ function PlayerForm() {
     setError('')
     setSubmitting(true)
 
-    const travelNote = 'Willing to travel: up to ' + (form.distance_travel === 100 ? '100+' : form.distance_travel) + ' miles'
+    const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
     const notesWithTravel = postType === 'player_available'
       ? [travelNote, form.additional_notes.trim()].filter(Boolean).join('\n')
       : form.additional_notes.trim() || null
