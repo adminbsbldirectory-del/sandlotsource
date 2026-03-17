@@ -195,30 +195,13 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
 
         {/* Price row */}
 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8, fontSize:12 }}>
-  {(() => {
-    if (coach.price_per_session) {
-      return <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>${coach.price_per_session}/session</span>
-    }
-    if (coach.price_notes) {
-      return <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>{coach.price_notes}</span>
-    }
-    const mailtoHref = 'mailto:' + (coach.email ? coach.email : 'admin.bsbldirectory@gmail.com') + '?subject=Rate inquiry - ' + (coach.name ? coach.name : 'Coach')
-    return (
-      
-        href={mailtoHref}
-        onClick={e => e.stopPropagation()}
-        style={{
-          fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99,
-          textDecoration:'none',
-          background: selected ? 'rgba(255,255,255,0.12)' : 'var(--lgray)',
-          color: selected ? 'var(--gold)' : 'var(--navy)',
-          border: '1px solid ' + (selected ? 'rgba(255,255,255,0.2)' : 'var(--lgray)'),
-        }}
-      >
-        Contact for rates
-      </a>
-    )
-  })()}
+  <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight:600 }}>
+    {coach.price_per_session
+      ? '$' + coach.price_per_session + '/session'
+      : coach.price_notes
+      ? coach.price_notes
+      : 'Contact for rates'}
+  </span>
   {coach.recommendation_count > 0 && (
     <span style={{ opacity:0.6 }}>
       👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}
@@ -226,29 +209,29 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
   )}
 </div>
 
-        {/* Contact links */}
+      {/* Contact links */}
         {(coach.email || firstPhone || coach.website) && (
           <div style={{
             marginTop:10, paddingTop:10,
-            borderTop:`1px solid ${selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'}`,
+            borderTop: '1px solid ' + (selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'),
             display:'flex', flexDirection:'column', gap:3,
           }}>
             {coach.email && (
-              <a href={`mailto:${coach.email}`} className="contact-link"
+              <a href={'mailto:' + coach.email} className="contact-link"
                 onClick={e => e.stopPropagation()}
                 style={{ color: selected ? 'var(--gold)' : '#1D4ED8' }}>
                 📧 {coach.email}
               </a>
             )}
             {firstPhone && (
-              <a href={`tel:${firstPhone.replace(/\D/g,'')}`} className="contact-link"
+              <a href={'tel:' + firstPhone.replace(/\D/g,'')} className="contact-link"
                 onClick={e => e.stopPropagation()}
                 style={{ color: selected ? 'var(--gold)' : 'var(--navy)' }}>
                 📞 {firstPhone}
               </a>
             )}
             {coach.website && (
-              <a href={coach.website.startsWith('http') ? coach.website : `https://${coach.website}`}
+              <a href={coach.website.startsWith('http') ? coach.website : 'https://' + coach.website}
                 target="_blank" rel="noopener noreferrer" className="contact-link"
                 onClick={e => e.stopPropagation()}
                 style={{ color: selected ? 'var(--gold)' : '#1D4ED8' }}>
@@ -256,7 +239,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
               </a>
             )}
           </div>
-        )}
+        )} 
       </div>
 
       {/* ── Card footer — button always pinned to bottom ── */}
