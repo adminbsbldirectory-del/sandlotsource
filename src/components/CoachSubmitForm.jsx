@@ -501,7 +501,7 @@ function TeamForm() {
       </div>
 
       <div style={{ marginBottom: 14 }}>
-        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
+        <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Fallback pin if no address provided" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
@@ -870,9 +870,39 @@ function FacilityForm() {
       amenities: f.amenities.includes(a) ? f.amenities.filter(x => x !== a) : [...f.amenities, a],
     }))
   }
-  function handleGeocode(geo) {
-    if (geo) setForm(f => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
-    else setForm(f => ({ ...f, lat: null, lng: null }))
+  const [addrStatus, setAddrStatus] = useState('')
+
+  // Zip geocode — fallback if address geocode hasn't placed the pin yet
+  function handleZipGeocode(geo) {
+    if (geo) setForm(f => ({
+      ...f,
+      lat: f.lat || geo.lat,
+      lng: f.lng || geo.lng,
+      city: f.city || geo.city,
+    }))
+  }
+
+  // Address geocode via Nominatim — fires on Street Address blur
+  async function handleAddressBlur() {
+    const addr = form.address.trim()
+    if (!addr) return
+    setAddrStatus('locating')
+    try {
+      const q = encodeURIComponent(
+        `${addr}${form.city ? ', ' + form.city : ''}${form.zip_code ? ', ' + form.zip_code : ''}, Georgia, USA`
+      )
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,
+        { headers: { 'Accept-Language': 'en-US' } }
+      )
+      const data = await res.json()
+      if (data?.[0]) {
+        setForm(f => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }))
+        setAddrStatus('found')
+      } else {
+        setAddrStatus('fallback')
+      }
+    } catch { setAddrStatus('fallback') }
   }
 
   function validate() {
