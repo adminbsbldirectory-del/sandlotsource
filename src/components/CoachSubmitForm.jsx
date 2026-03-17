@@ -39,6 +39,12 @@ const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U
 const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 
+const DISTANCE_MARKS = [...]
+const AGE_GROUPS = [...]
+const POSITIONS_BB = [...]
+const POSITIONS_SB = [...]
+const US_STATE_ABBRS = [...]
+
 const US_STATE_ABBRS = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
   'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
@@ -150,7 +156,7 @@ function CoachForm() {
   const [form, setForm] = useState({
     name: '',
     sport: 'baseball',
-    specialty: '',
+    specialty: [],
     city: '',
     state: 'GA',
     zip_code: '',
@@ -180,6 +186,15 @@ function CoachForm() {
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  function toggleSpecialty(value) {
+    setForm((f) => ({
+      ...f,
+      specialty: f.specialty.includes(value)
+        ? f.specialty.filter((s) => s !== value)
+        : [...f.specialty, value],
+    }))
   }
 
   function handleZipGeocode(geo) {
@@ -259,14 +274,10 @@ function CoachForm() {
     setSubmitting(true)
 
     try {
-      const specialtyList = form.specialty.trim()
-        ? form.specialty.split(',').map((s) => s.trim()).filter(Boolean)
-        : null
-
       const payload = {
         name: form.name.trim(),
         sport: form.sport,
-        specialty: specialtyList,
+        specialty: form.specialty.length ? form.specialty.join('|') : null,
         city: form.city.trim() || null,
         state: form.state || null,
         zip: form.zip_code || null,
@@ -306,7 +317,7 @@ function CoachForm() {
       setForm({
         name: '',
         sport: 'baseball',
-        specialty: '',
+        specialty: [],
         city: '',
         state: 'GA',
         zip_code: '',
@@ -460,12 +471,29 @@ function CoachForm() {
 
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Specialty</label>
-          <input
-            value={form.specialty}
-            onChange={(e) => set('specialty', e.target.value)}
-            placeholder="e.g. pitching, catching, hitting (comma-separated)"
-            style={inputStyle}
-          />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {COACH_SPECIALTIES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => toggleSpecialty(item)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  border: '2px solid',
+                  cursor: 'pointer',
+                  borderColor: form.specialty.includes(item) ? 'var(--navy)' : 'var(--lgray)',
+                  background: form.specialty.includes(item) ? 'var(--navy)' : 'white',
+                  color: form.specialty.includes(item) ? 'white' : 'var(--navy)',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 600,
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ marginBottom: 14 }}>
