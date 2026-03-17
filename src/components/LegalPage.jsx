@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom'
+import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
 import TravelTeams from './components/TravelTeams.jsx'
@@ -9,35 +10,12 @@ import RosterSpots from './components/RosterSpots.jsx'
 import SearchResults from './components/SearchResults.jsx'
 import Facilities from './components/Facilities.jsx'
 import AdminGeocode from './components/AdminGeocode.jsx'
+import LegalPage from './components/LegalPage.jsx'
 
 const BORDER = '#eaeae6'
 const FAINT = '#bbb'
 const RED = '#e63329'
 const DARK = '#1a1a1a'
-
-function FooterLink({ to, href, children }) {
-  const sharedStyle = {
-    display: 'block',
-    fontSize: 12,
-    color: '#777',
-    textDecoration: 'none',
-    marginBottom: 6,
-  }
-
-  if (href) {
-    return (
-      <a href={href} style={sharedStyle}>
-        {children}
-      </a>
-    )
-  }
-
-  return (
-    <Link to={to} style={sharedStyle}>
-      {children}
-    </Link>
-  )
-}
 
 function SiteFooter() {
   const footerColumns = [
@@ -56,15 +34,16 @@ function SiteFooter() {
       links: [
         { label: 'Add a Listing', to: '/submit' },
         { label: 'Claim a Listing', to: '/claim' },
+        { label: 'About', to: '/legal#about' },
         { label: 'Contact', href: 'mailto:admin.bsbldirectory@gmail.com' },
       ],
     },
     {
       heading: 'Legal',
       links: [
-        { label: 'Privacy Policy', href: 'mailto:admin.bsbldirectory@gmail.com?subject=Privacy%20Policy%20Request' },
-        { label: 'Terms of Use', href: 'mailto:admin.bsbldirectory@gmail.com?subject=Terms%20of%20Use%20Request' },
-        { label: 'Disclaimer', href: 'mailto:admin.bsbldirectory@gmail.com?subject=Disclaimer%20Request' },
+        { label: 'Privacy Policy', to: '/legal#privacy' },
+        { label: 'Terms of Use', to: '/legal#terms' },
+        { label: 'Disclaimer', to: '/legal#disclaimer' },
       ],
     },
   ]
@@ -129,15 +108,37 @@ function SiteFooter() {
                 {col.heading}
               </h5>
 
-              {col.links.map((link) => (
-                <FooterLink
-                  key={link.label}
-                  to={link.to}
-                  href={link.href}
-                >
-                  {link.label}
-                </FooterLink>
-              ))}
+              {col.links.map((link) =>
+                link.href ? (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    style={{
+                      display: 'block',
+                      fontSize: 12,
+                      color: '#777',
+                      textDecoration: 'none',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.label}
+                    to={link.to}
+                    style={{
+                      display: 'block',
+                      fontSize: 12,
+                      color: '#777',
+                      textDecoration: 'none',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
             </div>
           ))}
         </div>
@@ -175,9 +176,7 @@ function AppRoutes() {
           <Route
             path="/"
             element={
-              <HomePage
-                onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)}
-              />
+              <HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />
             }
           />
           <Route path="/search" element={<SearchResults />} />
@@ -188,6 +187,7 @@ function AppRoutes() {
           <Route path="/roster" element={<RosterSpots />} />
           <Route path="/submit" element={<CoachSubmitForm />} />
           <Route path="/claim" element={<ClaimListing />} />
+          <Route path="/legal" element={<LegalPage />} />
           <Route path="/admin/geocode" element={<AdminGeocode />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -201,13 +201,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <AppRoutes />
       </div>
     </BrowserRouter>
