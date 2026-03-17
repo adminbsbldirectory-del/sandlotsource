@@ -20,9 +20,7 @@ const makeIcon = (color) => L.divIcon({
     transform:rotate(-45deg);
     box-shadow:0 2px 6px rgba(0,0,0,0.3);
   "></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 28],
-  popupAnchor: [0, -30],
+  iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
 })
 
 const makeSelectedIcon = (color) => L.divIcon({
@@ -33,19 +31,16 @@ const makeSelectedIcon = (color) => L.divIcon({
     transform:rotate(-45deg);
     box-shadow:0 3px 10px rgba(0,0,0,0.5);
   "></div>`,
-  iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -40],
+  iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -40],
 })
 
-// ── Pin colors by content type ────────────────────────────────────────────────
 const PIN_COLORS = {
-  coach:        '#e63329', // red    — coaches
-  facility:     '#1a1a1a', // black  — facilities/venues
-  team:         '#1d6fa4', // blue   — travel teams
-  open_roster:  '#16a34a', // green  — open roster spots
-  needs_player: '#ea580c', // orange — coach/team needs a player (urgent)
-  pickup:       '#0891b2', // teal   — player available / pickup
+  coach:        '#e63329',
+  facility:     '#1a1a1a',
+  team:         '#1d6fa4',
+  open_roster:  '#16a34a',
+  needs_player: '#ea580c',
+  pickup:       '#0891b2',
 }
 
 function coachPinColor(coach) {
@@ -83,7 +78,6 @@ const REGIONS = {
 
 const REGION_NAMES = ['All Regions', ...Object.keys(REGIONS)]
 const ALL_COUNTIES_SORTED = Object.values(REGIONS).flat().sort()
-
 const SPECIALTIES = ['All Specialties','pitching','hitting','catching','fielding','speed']
 const SPORTS = ['Both','baseball','softball']
 
@@ -160,9 +154,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             📍 {[coach.city, coach.county ? coach.county+' Co.' : null].filter(Boolean).join(', ')}
           </div>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-          <span style={{ background: coach.sport==='softball' ? '#7C3AED' : '#1D4ED8', color:'white', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'var(--font-head)' }}>{coach.sport}</span>
-        </div>
+        <span style={{ background: coach.sport==='softball' ? '#7C3AED' : '#1D4ED8', color:'white', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, textTransform:'uppercase', letterSpacing:'0.06em', fontFamily:'var(--font-head)' }}>{coach.sport}</span>
       </div>
 
       <RatingRow coach={coach} selected={selected} />
@@ -235,7 +227,6 @@ export default function CoachDirectory() {
 
   const [coaches, setCoaches] = useState(DEMO_COACHES)
   const [loading, setLoading] = useState(true)
-  // Pre-select coach from ?select=ID param (coming from search results)
   const [selected, setSelected] = useState(() => {
     const id = searchParams.get('select')
     return id ? Number(id) : null
@@ -264,7 +255,6 @@ export default function CoachDirectory() {
         .in('approval_status', ['approved', 'seeded'])
       if (!error && data && data.length > 0) {
         setCoaches(data)
-        // If a select param was passed, open that coach's profile automatically
         const selectId = searchParams.get('select')
         if (selectId) {
           const match = data.find(c => String(c.id) === selectId)
@@ -301,7 +291,6 @@ export default function CoachDirectory() {
     }
     return true
   }).sort((a, b) => {
-    // Selected coach always bubbles to top of the list
     if (a.id === selected) return -1
     if (b.id === selected) return 1
     return 0
@@ -317,14 +306,14 @@ export default function CoachDirectory() {
     outline:'none', cursor:'pointer',
   }
 
-  // ── Map legend ────────────────────────────────────────────────────────────
+  // Map legend row
   const mapLegend = (
     <div style={{
-      display: 'flex', flexWrap: 'wrap', gap: 14, padding: '8px 16px',
+      display: 'flex', flexWrap: 'wrap', gap: 12, padding: '7px 14px',
       background: '#fff', borderBottom: '2px solid var(--lgray)',
       alignItems: 'center',
     }}>
-      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginRight: 4 }}>Map key</span>
+      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginRight: 2 }}>Map key</span>
       {[
         { color: PIN_COLORS.coach,        label: 'Coach' },
         { color: PIN_COLORS.facility,     label: 'Facility' },
@@ -335,7 +324,7 @@ export default function CoachDirectory() {
       ].map(item => (
         <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{
-            width: 12, height: 12, borderRadius: '50% 50% 50% 0',
+            width: 11, height: 11, borderRadius: '50% 50% 50% 0',
             transform: 'rotate(-45deg)', background: item.color,
             border: '2px solid rgba(255,255,255,0.8)',
             boxShadow: '0 1px 3px rgba(0,0,0,0.3)', flexShrink: 0,
@@ -346,49 +335,33 @@ export default function CoachDirectory() {
     </div>
   )
 
-  // ── Map panel — fixed 380px height ───────────────────────────────────────
-  const mapPanel = (
-    <div style={{ position:'relative', height: isMobile ? 240 : 380, width:'100%' }}>
-      <MapContainer
-        center={sel?.lat ? [sel.lat, sel.lng] : [34.05, -84.25]}
-        zoom={sel?.lat ? 13 : 9}
-        style={{ height:'100%', width:'100%' }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {sel && sel.lat && <FlyTo lat={sel.lat} lng={sel.lng} />}
-        {mappable.map(coach => {
-          const specs = Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)
-          const isSelected = coach.id === selected
-          return (
-            <Marker
-              key={coach.id}
-              position={[coach.lat, coach.lng]}
-              icon={isSelected
-                ? makeSelectedIcon(coachPinColor(coach))
-                : makeIcon(coachPinColor(coach))
-              }
-              zIndexOffset={isSelected ? 1000 : 0}
-              eventHandlers={{ click: () => setSelected(coach.id) }}
-            >
-              <Popup>
-                <div style={{ fontFamily:'var(--font-body)', minWidth:180 }}>
-                  <strong style={{ fontFamily:'var(--font-head)', fontSize:15 }}>{coach.name}</strong>
-                  {coach.facility_name && <div style={{ fontSize:12, color:'#666' }}>{coach.facility_name}</div>}
-                  <div style={{ fontSize:12, marginTop:4 }}>📍 {coach.city}{coach.county ? `, ${coach.county}` : ''}</div>
-                  <div style={{ fontSize:12, marginTop:2 }}>🎯 {specs.join(', ')}</div>
-                  {coach.price_per_session && <div style={{ fontSize:12, color:'#16A34A', fontWeight:600, marginTop:2 }}>${coach.price_per_session}/session</div>}
-                  {coach.credentials && <div style={{ fontSize:11, color:'#666', marginTop:4 }}>{coach.credentials.slice(0,100)}</div>}
-                </div>
-              </Popup>
-            </Marker>
-          )
-        })}
-      </MapContainer>
-    </div>
-  )
+  // Reusable map markers JSX
+  function MapMarkers() {
+    return mappable.map(coach => {
+      const isSelected = coach.id === selected
+      return (
+        <Marker
+          key={coach.id}
+          position={[coach.lat, coach.lng]}
+          icon={isSelected ? makeSelectedIcon(coachPinColor(coach)) : makeIcon(coachPinColor(coach))}
+          zIndexOffset={isSelected ? 1000 : 0}
+          eventHandlers={{ click: () => setSelected(coach.id) }}
+        >
+          <Popup>
+            <div style={{ fontFamily:'var(--font-body)', minWidth:180 }}>
+              <strong style={{ fontFamily:'var(--font-head)', fontSize:15 }}>{coach.name}</strong>
+              {coach.facility_name && <div style={{ fontSize:12, color:'#666' }}>{coach.facility_name}</div>}
+              <div style={{ fontSize:12, marginTop:4 }}>📍 {coach.city}{coach.county ? `, ${coach.county}` : ''}</div>
+              <div style={{ fontSize:12, marginTop:2 }}>
+                🎯 {(Array.isArray(coach.specialty) ? coach.specialty : (coach.specialty||'').split('|').filter(Boolean)).join(', ')}
+              </div>
+              {coach.price_per_session && <div style={{ fontSize:12, color:'#16A34A', fontWeight:600, marginTop:2 }}>${coach.price_per_session}/session</div>}
+            </div>
+          </Popup>
+        </Marker>
+      )
+    })
+  }
 
   return (
     <>
@@ -396,12 +369,12 @@ export default function CoachDirectory() {
         <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />
       )}
 
-      <div style={{ display:'flex', flexDirection:'column' }}>
+      <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
 
-        {/* ── Filter Bar ── */}
+        {/* ── Filter Bar (sticky) ── */}
         <div style={{
           background:'var(--white)', borderBottom:'2px solid var(--lgray)',
-          padding:'12px 16px', display:'flex', gap:10, flexWrap:'wrap', alignItems:'center',
+          padding:'10px 14px', display:'flex', gap:8, flexWrap:'wrap', alignItems:'center',
           position:'sticky', top:0, zIndex:500,
         }}>
           <input
@@ -422,11 +395,9 @@ export default function CoachDirectory() {
             style={{ ...filterStyle, opacity: region === 'All Regions' ? 0.6 : 1 }}>
             {countyOptions.map(c => <option key={c}>{c}</option>)}
           </select>
-
           <span style={{ fontSize:13, color:'var(--gray)', whiteSpace:'nowrap' }}>
             {filtered.length} coach{filtered.length !== 1 ? 'es':''}
           </span>
-
           {isMobile && (
             <button onClick={() => setShowMap(m => !m)} style={{
               padding:'8px 14px', borderRadius:8, border:'2px solid var(--navy)',
@@ -440,9 +411,25 @@ export default function CoachDirectory() {
           )}
         </div>
 
+        {/* ── Mobile layout ── */}
         {isMobile ? (
           <div style={{ flex:1, overflowY:'auto', background:'var(--cream)' }}>
-            {showMap && <div style={{ height:240, flexShrink:0 }}>{mapPanel}</div>}
+            {showMap && (
+              <div style={{ height:240, flexShrink:0 }}>
+                <MapContainer
+                  center={sel?.lat ? [sel.lat, sel.lng] : [34.05, -84.25]}
+                  zoom={sel?.lat ? 13 : 9}
+                  style={{ height:'100%', width:'100%' }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {sel && sel.lat && <FlyTo lat={sel.lat} lng={sel.lng} />}
+                  <MapMarkers />
+                </MapContainer>
+              </div>
+            )}
             <div style={{ padding:'12px' }}>
               {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
               {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
@@ -454,42 +441,67 @@ export default function CoachDirectory() {
             </div>
           </div>
         ) : (
-          <div style={{ display:'flex', flexDirection:'column' }}>
-            {/* ── Map at top, fixed height ── */}
-            <div style={{ width:'100%', borderBottom:'2px solid var(--lgray)' }}>
-              {mapPanel}
-            </div>
-            {/* ── Legend below map ── */}
-            {mapLegend}
+          /* ── Desktop: 3-column layout — list | map | ads ── */
+          <div style={{ display:'flex', flex:1, overflow:'hidden', height:'calc(100vh - 112px)' }}>
 
-            {/* ── Coach list + ad rail below map ── */}
-            <div style={{ display:'flex', overflow:'hidden' }}>
-              <div style={{ flex:1, overflowY:'auto', maxHeight:'calc(100vh - 380px - 108px)', padding:'16px', background:'var(--cream)' }}>
-                {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
-                {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
-                {filtered.map(coach => (
-                  <CoachCard key={coach.id} coach={coach} selected={selected === coach.id}
-                    onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-                    onViewProfile={setProfileCoach} />
-                ))}
-              </div>
+            {/* Left: coach list */}
+            <div style={{
+              width: 400, flexShrink: 0,
+              overflowY: 'auto', padding: '14px',
+              borderRight: '2px solid var(--lgray)',
+              background: 'var(--cream)',
+            }}>
+              {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>Loading coaches...</div>}
+              {!loading && filtered.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'var(--gray)', fontSize:14 }}>No coaches match your filters.</div>}
+              {filtered.map(coach => (
+                <CoachCard key={coach.id} coach={coach} selected={selected === coach.id}
+                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onViewProfile={setProfileCoach} />
+              ))}
+            </div>
 
-              {/* ── Ad column ── */}
-              <div style={{ width:220, flexShrink:0, borderLeft:'2px solid var(--lgray)', background:'var(--white)', display:'flex', flexDirection:'column', gap:16, padding:'16px', overflowY:'auto', maxHeight:'calc(100vh - 380px - 108px)' }}>
-                {[1,2,3].map(i => (
-                  <div key={i} style={{
-                    border:'2px dashed var(--lgray)', borderRadius:10,
-                    padding:'16px 12px', textAlign:'center',
-                    background:'var(--cream)', minHeight:180,
-                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
-                  }}>
-                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
-                    <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach baseball &amp; softball families</div>
-                    <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
-                  </div>
-                ))}
+            {/* Center: map + legend */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              {mapLegend}
+              <div style={{ flex: 1, position: 'relative' }}>
+                <MapContainer
+                  center={sel?.lat ? [sel.lat, sel.lng] : [34.05, -84.25]}
+                  zoom={sel?.lat ? 13 : 9}
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {sel && sel.lat && <FlyTo lat={sel.lat} lng={sel.lng} />}
+                  <MapMarkers />
+                </MapContainer>
               </div>
             </div>
+
+            {/* Right: ad column */}
+            <div style={{
+              width: 220, flexShrink: 0,
+              borderLeft: '2px solid var(--lgray)',
+              background: 'var(--white)',
+              display: 'flex', flexDirection: 'column',
+              gap: 16, padding: 16,
+              overflowY: 'auto',
+            }}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{
+                  border:'2px dashed var(--lgray)', borderRadius:10,
+                  padding:'16px 12px', textAlign:'center',
+                  background:'var(--cream)', minHeight:180,
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6,
+                }}>
+                  <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--gray)' }}>Advertise Here</div>
+                  <div style={{ fontSize:11, color:'#aaa', lineHeight:1.5 }}>Reach baseball &amp; softball families</div>
+                  <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize:11, color:'var(--red)', fontWeight:700, textDecoration:'none', marginTop:4 }}>Contact Us</a>
+                </div>
+              ))}
+            </div>
+
           </div>
         )}
       </div>
