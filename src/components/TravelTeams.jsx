@@ -4,7 +4,6 @@ import L from 'leaflet'
 import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
 
-// ── Leaflet icon fix ──────────────────────────────────────
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -14,11 +13,10 @@ L.Icon.Default.mergeOptions({
 
 const makeIcon = (color) => L.divIcon({
   className: '',
-  html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+  html: '<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:' + color + ';border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
   iconSize: [26,26], iconAnchor: [13,26], popupAnchor: [0,-28],
 })
 
-// ── Pin colors ────────────────────────────────────────────
 const PIN_COLORS = {
   team:        '#1d6fa4',
   open_roster: '#16a34a',
@@ -31,7 +29,6 @@ function teamPinColor(team) {
   return PIN_COLORS.team
 }
 
-// ── US states ─────────────────────────────────────────────
 const US_STATES = [
   { abbr:'AL', name:'Alabama' },    { abbr:'AK', name:'Alaska' },
   { abbr:'AZ', name:'Arizona' },    { abbr:'AR', name:'Arkansas' },
@@ -60,13 +57,12 @@ const US_STATES = [
   { abbr:'WI', name:'Wisconsin' },  { abbr:'WY', name:'Wyoming' },
 ]
 
-// ── Geocode zip ───────────────────────────────────────────
 async function geocodeZip(zip) {
   try {
-    const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    const res = await fetch('https://api.zippopotam.us/us/' + zip)
     if (!res.ok) return null
     const data = await res.json()
-    const place = data.places?.[0]
+    const place = data.places && data.places[0]
     if (!place) return null
     return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) }
   } catch { return null }
@@ -80,10 +76,8 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
 }
 
-// ── Status badge config ───────────────────────────────────
-// "closed" intentionally uses neutral gray — high-contrast reserved for open/urgent
 const STATUS_STYLE = {
-  open:       { bg:'var(--open-bg)',    color:'var(--open-text)',   label:'Open Tryouts' },
+  open:       { bg:'var(--open-bg)',   color:'var(--open-text)',   label:'Open Tryouts' },
   closed:     { bg:'var(--closed-bg)', color:'var(--closed-text)', label:'Closed' },
   by_invite:  { bg:'var(--urgent-bg)', color:'var(--urgent-text)', label:'By Invite' },
   year_round: { bg:'#DBEAFE',          color:'#2563EB',            label:'Year Round' },
@@ -91,7 +85,6 @@ const STATUS_STYLE = {
 
 const AGE_OPTIONS = ['All Ages','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','17U','18U']
 
-// ── Approximate state map centers ─────────────────────────
 const STATE_CENTERS = {
   AL:[32.8,-86.8], AK:[64.2,-153.0], AZ:[34.3,-111.1], AR:[34.8,-92.2],
   CA:[36.7,-119.7], CO:[39.0,-105.5], CT:[41.6,-72.7], DE:[39.0,-75.5],
@@ -108,7 +101,6 @@ const STATE_CENTERS = {
   WI:[44.3,-89.8], WY:[43.0,-107.6],
 }
 
-// ── FitBounds: auto-zoom map to visible pins ──────────────
 function FitBounds({ teams }) {
   const map = useMap()
   useEffect(() => {
@@ -120,7 +112,6 @@ function FitBounds({ teams }) {
   return null
 }
 
-// ── Main component ────────────────────────────────────────
 export default function TravelTeams() {
   const [teams,        setTeams]        = useState([])
   const [loading,      setLoading]      = useState(true)
@@ -129,7 +120,6 @@ export default function TravelTeams() {
   const [isMobile,     setIsMobile]     = useState(window.innerWidth < 768)
   const [detectingLoc, setDetectingLoc] = useState(true)
 
-  // Filters
   const [state,        setState]        = useState('')
   const [sport,        setSport]        = useState('Both')
   const [ageGroup,     setAgeGroup]     = useState('All Ages')
@@ -139,7 +129,6 @@ export default function TravelTeams() {
   const [geoCenter,    setGeoCenter]    = useState(null)
   const [zipError,     setZipError]     = useState('')
 
-  // Detect state from IP on load
   useEffect(() => {
     async function detectState() {
       try {
@@ -165,7 +154,6 @@ export default function TravelTeams() {
     return () => window.removeEventListener('resize', handler)
   }, [])
 
-  // Fetch teams
   useEffect(() => {
     async function load() {
       const { data, error } = await supabase
@@ -179,7 +167,6 @@ export default function TravelTeams() {
     load()
   }, [])
 
-  // Geocode zip when changed
   useEffect(() => {
     if (!zip || zip.length !== 5) { setGeoCenter(null); setZipError(''); return }
     geocodeZip(zip).then(geo => {
@@ -188,7 +175,6 @@ export default function TravelTeams() {
     })
   }, [zip])
 
-  // Filter logic
   const filtered = teams.filter(t => {
     const teamState = (t.state || 'GA').toUpperCase()
     if (state && teamState !== state.toUpperCase()) return false
@@ -196,18 +182,17 @@ export default function TravelTeams() {
     if (ageGroup !== 'All Ages' && t.age_group !== ageGroup) return false
     if (tryoutFilter !== 'All' && t.tryout_status !== tryoutFilter) return false
     if (geoCenter && t.lat && t.lng) {
-      const dist = distanceMiles(geoCenter.lat, geoCenter.lng, t.lat, t.lng)
-      if (dist > radius) return false
+      if (distanceMiles(geoCenter.lat, geoCenter.lng, t.lat, t.lng) > radius) return false
     }
     return true
   })
 
-  const mappable    = filtered.filter(t => t.lat && t.lng)
+  const mappable     = filtered.filter(t => t.lat && t.lng)
   const selectedState = US_STATES.find(s => s.abbr === state)
-  const mapCenter   = geoCenter
+  const mapCenter    = geoCenter
     ? [geoCenter.lat, geoCenter.lng]
     : (STATE_CENTERS[state] ? STATE_CENTERS[state] : [39.5, -98.35])
-  const mapZoom     = geoCenter ? 10 : (state ? 7 : 4)
+  const mapZoom      = geoCenter ? 10 : (state ? 7 : 4)
 
   const filterSelectStyle = {
     padding:'7px 11px', borderRadius:'var(--input-radius)',
@@ -216,7 +201,6 @@ export default function TravelTeams() {
     outline:'none', cursor:'pointer',
   }
 
-  // ── Map legend ────────────────────────────────────────
   function MapLegend() {
     return (
       <div style={{ display:'flex', flexWrap:'wrap', gap:12, padding:'7px 16px', background:'var(--white)', borderBottom:'2px solid var(--lgray)', alignItems:'center' }}>
@@ -238,46 +222,36 @@ export default function TravelTeams() {
     )
   }
 
-  // ── Team card ─────────────────────────────────────────
   function TeamCard({ team }) {
-    const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
-    const locationParts = [team.city, team.state].filter(Boolean).join(', ')
-    const locationFull  = team.zip_code ? `${locationParts} ${team.zip_code}` : locationParts
+    const statusInfo    = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
+    const cityState     = [team.city, team.state].filter(Boolean).join(', ')
+    const locationFull  = team.zip_code ? cityState + ' ' + team.zip_code : cityState
 
     return (
       <div className="card" onClick={() => setProfileTeam(team)} style={{ cursor:'pointer' }}>
-
-        {/* ── Card body ── */}
         <div className="card-body">
 
-          {/* Name + status badge */}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
             <div style={{ flex:1 }}>
               <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700, letterSpacing:'0.02em' }}>
                 {team.name}
               </div>
               <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>
-                📍 {locationFull || 'Location not listed'}
+                {locationFull ? '📍 ' + locationFull : '📍 Location not listed'}
               </div>
             </div>
-            <span className="badge" style={{
-              background: statusInfo.bg,
-              color:       statusInfo.color,
-              flexShrink:  0,
-              marginLeft:  8,
-            }}>
+            <span className="badge" style={{ background: statusInfo.bg, color: statusInfo.color, flexShrink:0, marginLeft:8 }}>
               {statusInfo.label}
             </span>
           </div>
 
-          {/* Age / sport / org pills */}
           <div style={{ display:'flex', gap:7, marginTop:10, flexWrap:'wrap' }}>
             {team.age_group && (
               <span style={{ background:'var(--navy)', color:'white', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20, fontFamily:'var(--font-head)' }}>
                 {team.age_group}
               </span>
             )}
-            <span className={`badge badge-sport-${team.sport}`}>
+            <span className={'badge badge-sport-' + (team.sport || 'baseball')}>
               {team.sport}
             </span>
             {team.org_affiliation && (
@@ -287,33 +261,28 @@ export default function TravelTeams() {
             )}
           </div>
 
-          {/* Tryout date block */}
           {team.tryout_status === 'open' && team.tryout_date && (
             <div style={{ marginTop:10, padding:'8px 12px', borderRadius:8, background:'var(--open-bg)', color:'var(--open-text)', fontSize:13, fontWeight:600 }}>
-              🗓️ Tryouts: {new Date(team.tryout_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}
+              {'🗓️ Tryouts: ' + new Date(team.tryout_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}
               {team.tryout_notes && (
                 <div style={{ fontWeight:400, marginTop:2 }}>{team.tryout_notes}</div>
               )}
             </div>
           )}
 
-          {/* Description */}
           {team.description && (
             <div style={{ fontSize:13, color:'var(--gray)', marginTop:8, lineHeight:1.5 }}>
-              {team.description.length > 120 ? team.description.slice(0,120)+'…' : team.description}
+              {team.description.length > 120 ? team.description.slice(0,120) + '…' : team.description}
             </div>
           )}
 
-          {/* Contact info */}
           {(team.contact_name || team.contact_phone || team.contact_email) && (
             <div style={{ marginTop:10, paddingTop:10, borderTop:'1px solid var(--lgray)', display:'flex', flexDirection:'column', gap:3 }}>
               {team.contact_name && (
-                <div style={{ fontWeight:600, color:'var(--navy)', fontSize:13 }}>
-                  {team.contact_name}
-                </div>
+                <div style={{ fontWeight:600, color:'var(--navy)', fontSize:13 }}>{team.contact_name}</div>
               )}
               {team.contact_phone && (
-                <a href={`tel:${team.contact_phone.replace(/\D/g,'')}`}
+                <a href={'tel:' + team.contact_phone.replace(/\D/g,'')}
                   className="contact-link"
                   onClick={e => e.stopPropagation()}
                   style={{ color:'var(--navy)' }}>
@@ -321,7 +290,7 @@ export default function TravelTeams() {
                 </a>
               )}
               {team.contact_email && (
-                <a href={`mailto:${team.contact_email}`}
+                <a href={'mailto:' + team.contact_email}
                   className="contact-link"
                   onClick={e => e.stopPropagation()}
                   style={{ color:'#1D4ED8' }}>
@@ -332,7 +301,6 @@ export default function TravelTeams() {
           )}
         </div>
 
-        {/* ── Card footer — button always pinned to bottom ── */}
         <div className="card-footer">
           <button
             onClick={e => { e.stopPropagation(); setProfileTeam(team) }}
@@ -350,15 +318,14 @@ export default function TravelTeams() {
     )
   }
 
-  // ── Empty state ───────────────────────────────────────
   function EmptyState() {
     const hasFilters = sport !== 'Both' || ageGroup !== 'All Ages' || tryoutFilter !== 'All' || zip
     return (
       <div className="empty-state" style={{ gridColumn:'1/-1' }}>
-        <h3>{hasFilters ? 'No teams match your filters' : `No teams listed yet${selectedState ? ` in ${selectedState.name}` : ''}`}</h3>
+        <h3>{hasFilters ? 'No teams match your filters' : 'No teams listed yet' + (selectedState ? ' in ' + selectedState.name : '')}</h3>
         <p>
           {geoCenter
-            ? `No teams within ${radius} miles. Try increasing the radius or removing the zip filter.`
+            ? 'No teams within ' + radius + ' miles. Try increasing the radius or removing the zip filter.'
             : hasFilters
             ? 'Try widening your search — remove a filter or select a different state.'
             : 'Know a travel team in this area? Help us grow the directory.'}
@@ -375,15 +342,14 @@ export default function TravelTeams() {
           team={profileTeam}
           onClose={() => setProfileTeam(null)}
           onClaim={(team) => {
-            window.location.href = `mailto:admin.bsbldirectory@gmail.com?subject=Claim Request: ${encodeURIComponent(team.name)}`
+            window.location.href = 'mailto:admin.bsbldirectory@gmail.com?subject=Claim Request: ' + encodeURIComponent(team.name)
           }}
         />
       )}
 
-      {/* ── Filter bar ── */}
+      {/* Filter bar */}
       <div className="filter-bar" style={{ zIndex:500 }}>
 
-        {/* State dropdown */}
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
           <label style={{ fontSize:12, fontWeight:600, color:'var(--navy)', whiteSpace:'nowrap' }}>State</label>
           <select
@@ -401,28 +367,25 @@ export default function TravelTeams() {
 
         <div style={{ width:1, height:28, background:'var(--lgray)', flexShrink:0 }} />
 
-        {/* Sport pill toggles */}
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
           <button
-            className={`pill-toggle ${sport === 'baseball' ? 'active-baseball' : ''}`}
+            className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
             onClick={() => setSport(s => s === 'baseball' ? 'Both' : 'baseball')}
           >
             ⚾ Baseball
           </button>
           <button
-            className={`pill-toggle ${sport === 'softball' ? 'active-softball' : ''}`}
+            className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
             onClick={() => setSport(s => s === 'softball' ? 'Both' : 'softball')}
           >
             🥎 Softball
           </button>
         </div>
 
-        {/* Age group */}
         <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} style={filterSelectStyle}>
           {AGE_OPTIONS.map(a => <option key={a}>{a}</option>)}
         </select>
 
-        {/* Tryout status */}
         <select value={tryoutFilter} onChange={e => setTryoutFilter(e.target.value)} style={filterSelectStyle}>
           <option value="All">All Tryout Status</option>
           <option value="open">Open Tryouts</option>
@@ -431,7 +394,6 @@ export default function TravelTeams() {
           <option value="closed">Closed</option>
         </select>
 
-        {/* Zip + radius */}
         <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--lgray)', borderRadius:'var(--input-radius)', padding:'5px 10px' }}>
           <input
             type="text" inputMode="numeric" placeholder="Zip" maxLength={5}
@@ -452,13 +414,11 @@ export default function TravelTeams() {
           {zipError && <span style={{ fontSize:11, color:'var(--red)' }}>{zipError}</span>}
         </div>
 
-        {/* Result count */}
         <span className="result-count">
           {filtered.length} team{filtered.length !== 1 ? 's' : ''}
-          {selectedState ? ` in ${selectedState.name}` : ''}
+          {selectedState ? ' in ' + selectedState.name : ''}
         </span>
 
-        {/* Map toggle */}
         <button
           onClick={() => setShowMap(m => !m)}
           style={{
@@ -474,7 +434,7 @@ export default function TravelTeams() {
         </button>
       </div>
 
-      {/* ── No state selected prompt ── */}
+      {/* No state selected */}
       {!state && !detectingLoc && (
         <div className="empty-state">
           <h3>Find teams near you</h3>
@@ -482,7 +442,7 @@ export default function TravelTeams() {
         </div>
       )}
 
-      {/* ── Map panel (when toggled on) ── */}
+      {/* Map panel */}
       {showMap && state && (
         <>
           <div style={{ height: isMobile ? 240 : 340, width:'100%' }}>
@@ -503,13 +463,13 @@ export default function TravelTeams() {
                     <div style={{ fontFamily:'var(--font-body)', minWidth:160 }}>
                       <strong style={{ fontFamily:'var(--font-head)', fontSize:14 }}>{team.name}</strong>
                       <div style={{ fontSize:12, color:'#666', marginTop:3 }}>
-                        📍 {[team.city, team.state].filter(Boolean).join(', ')}{team.zip_code ? ` ${team.zip_code}` : ''}
+                        {'📍 ' + [team.city, team.state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
                       </div>
                       {team.address && (
                         <div style={{ fontSize:12, color:'#888', marginTop:1 }}>{team.address}</div>
                       )}
                       {team.age_group && (
-                        <div style={{ fontSize:12, marginTop:2 }}>🎯 {team.age_group} · {team.sport}</div>
+                        <div style={{ fontSize:12, marginTop:2 }}>{'🎯 ' + team.age_group + ' · ' + team.sport}</div>
                       )}
                     </div>
                   </Popup>
@@ -521,24 +481,19 @@ export default function TravelTeams() {
         </>
       )}
 
-      {/* ── Open tryouts banner ── */}
+      {/* Open tryouts banner */}
       {state && filtered.some(t => t.tryout_status === 'open') && (
         <div style={{ background:'var(--open-bg)', borderBottom:'2px solid var(--open-text)', padding:'10px 20px', fontSize:13, color:'var(--open-text)', fontWeight:600 }}>
-          ✅ {filtered.filter(t => t.tryout_status === 'open').length} team{filtered.filter(t => t.tryout_status === 'open').length !== 1 ? 's' : ''} currently accepting tryouts
-          {selectedState ? ` in ${selectedState.name}` : ''}
+          {'✅ ' + filtered.filter(t => t.tryout_status === 'open').length + ' team' + (filtered.filter(t => t.tryout_status === 'open').length !== 1 ? 's' : '') + ' currently accepting tryouts' + (selectedState ? ' in ' + selectedState.name : '')}
         </div>
       )}
 
-      {/* ── Team grid ── */}
+      {/* Team grid */}
       {state && (
         <div style={{
-          padding:'20px',
-          display:'grid',
+          padding:'20px', display:'grid',
           gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))',
-          gap:14,
-          maxWidth:1200,
-          margin:'0 auto',
-          alignItems: 'stretch',
+          gap:14, maxWidth:1200, margin:'0 auto', alignItems:'stretch',
         }}>
           {loading && (
             <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'48px 0', color:'var(--gray)', fontSize:14 }}>
