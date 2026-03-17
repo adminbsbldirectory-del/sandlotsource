@@ -57,7 +57,7 @@ function buildLocationName(venue, address, fieldNum) {
 const POSITIONS_BB    = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const POSITIONS_SB    = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const AGE_GROUPS      = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','18U','Adult']
-const DISTANCE_MARKS  = [10, 25, 50, 75, 100]
+const DISTANCE_MARKS = [10, 25, 50, 75, 100, 150, 999]
 
 const labelStyle    = { fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:6 }
 const inputStyle    = { width:'100%', padding:'8px 12px', borderRadius:8, border:'2px solid var(--lgray)', fontSize:14, fontFamily:'var(--font-body)', outline:'none', boxSizing:'border-box' }
@@ -235,22 +235,29 @@ function ContactFields({ form, setForm }) {
   )
 }
 
+const TRAVEL_OPTIONS = [
+  { value: 10,  label: 'Up to 10 miles' },
+  { value: 25,  label: 'Up to 25 miles' },
+  { value: 50,  label: 'Up to 50 miles' },
+  { value: 75,  label: 'Up to 75 miles' },
+  { value: 100, label: 'Up to 100 miles' },
+  { value: 150, label: 'Up to 150 miles' },
+  { value: 999, label: 'Anywhere' },
+]
+
 function DistanceSlider({ value, onChange }) {
-  const idx = DISTANCE_MARKS.indexOf(value) >= 0 ? DISTANCE_MARKS.indexOf(value) : 1
   return (
-    <div style={{ marginBottom:14 }}>
-      <label style={labelStyle}>
-        Willing to Travel
-        <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, marginLeft:8, color:'var(--navy)', fontSize:13 }}>
-          — up to <strong>{value === 100 ? '100+' : value} miles</strong>
-        </span>
-      </label>
-      <input type="range" min={0} max={4} step={1} value={idx}
-        onChange={e => onChange(DISTANCE_MARKS[parseInt(e.target.value)])}
-        style={{ width:'100%', accentColor:'var(--navy)', cursor:'pointer' }} />
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--gray)', marginTop:4 }}>
-        {DISTANCE_MARKS.map(m => <span key={m}>{m === 100 ? '100+' : m}mi</span>)}
-      </div>
+    <div style={{ marginBottom: 14 }}>
+      <label style={labelStyle}>Willing to Travel</label>
+      <select
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ ...selectStyle }}
+      >
+        {TRAVEL_OPTIONS.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
     </div>
   )
 }
