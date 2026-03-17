@@ -199,55 +199,107 @@ function CoachForm() {
   }
 
   function validate() {
-    if (!form.name.trim())         return 'Coach / trainer name is required.'
-    if (!form.sport)               return 'Sport is required.'
-    if (!form.city.trim())         return 'City is required.'
-    if (!form.state)               return 'State is required.'
-    if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
-    if (!form.facility_name.trim()) return 'Facility name is required.'
-    if (!form.contact_role.trim()) return 'Your role is required.'
-    if (!form.email.trim() && !form.phone.trim()) return 'At least one of email or phone is required.'
-    return ''
+  if (!form.name.trim()) return 'Coach / trainer name is required.'
+  if (!form.sport) return 'Sport is required.'
+  if (!form.city.trim()) return 'City is required.'
+  if (!form.state) return 'State is required.'
+  if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
+  if (!form.facility_name.trim()) return 'Facility name is required.'
+  if (!form.contact_role.trim()) return 'Your role is required.'
+  if (!form.email.trim() && !form.phone.trim()) return 'At least one of email or phone is required.'
+  return ''
+}
+
+async function handleSubmit(e) {
+  if (e) e.preventDefault()
+
+  const err = validate()
+  if (err) {
+    setError(err)
+    return
   }
 
-  async function handleSubmit() {
-    const err = validate()
-    if (err) { setError(err); return }
-    setError('')
-    setSubmitting(true)
+  setError('')
+  setSubmitting(true)
 
-   specialty: form.specialty
-  ? form.specialty.split(',').map(s => s.trim()).filter(Boolean)
-  : null,
+  try {
+    const specialtyList = form.specialty.trim()
+      ? form.specialty
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : null
 
     const payload = {
-      name:             form.name.trim(),
-      sport:            form.sport,
-      specialty:        form.specialty.split(',').map(s => s.trim()).filter(Boolean)|| null,
-      city:             form.city.trim() || null,
-      state:            form.state || null,
-      zip:              form.zip_code || null,
-      lat:              form.lat || null,
-      lng:              form.lng || null,
-      facility_name:    form.facility_name.trim(),
-      phone:            form.phone.trim() || null,
-      email:            form.email.trim() || null,
-      website:          form.website.trim() || null,
-      instagram:        form.instagram.trim() || null,
-      facebook:         form.facebook.trim() || null,
-      credentials:      form.credentials.trim() || null,
-      bio:              form.bio.trim() || null,
-      age_groups:       form.age_groups.trim() || null,
-      skill_level:      form.skill_level || null,
-      price_per_session: form.price_per_session ? parseFloat(form.price_per_session) : null,
-      price_notes:      form.price_notes.trim() || null,
-      contact_role:     form.contact_role.trim(),
+      name: form.name.trim(),
+      sport: form.sport,
+      specialty: specialtyList,
+      city: form.city.trim() || null,
+      state: form.state || null,
+      zip: form.zip_code || null,
+      lat: form.lat ? parseFloat(form.lat) : null,
+      lng: form.lng ? parseFloat(form.lng) : null,
+      facility_name: form.facility_name.trim(),
+      phone: form.phone.trim() || null,
+      email: form.email.trim() || null,
+      website: form.website.trim() || null,
+      instagram: form.instagram.trim() || null,
+      facebook: form.facebook.trim() || null,
+      credentials: form.credentials.trim() || null,
+      bio: form.bio.trim() || null,
+      age_groups: form.age_groups.trim() || null,
+      skill_level: form.skill_level || null,
+      price_per_session: form.price_per_session
+        ? parseFloat(form.price_per_session)
+        : null,
+      price_notes: form.price_notes.trim() || null,
+      contact_role: form.contact_role.trim(),
       submission_notes: form.submission_notes.trim() || null,
-      approval_status:  'pending',
-      source:           'website_form',
-      active:           true,
-      verified:         false,
+      approval_status: 'pending',
+      source: 'website_form',
+      active: true,
+      verified: false,
     }
+
+    const { error } = await supabase
+      .from('coaches')
+      .insert([payload])
+
+    if (error) throw error
+
+    setSuccess(true)
+
+    setForm({
+      name: '',
+      sport: '',
+      specialty: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      lat: '',
+      lng: '',
+      facility_name: '',
+      phone: '',
+      email: '',
+      website: '',
+      instagram: '',
+      facebook: '',
+      credentials: '',
+      bio: '',
+      age_groups: '',
+      skill_level: '',
+      price_per_session: '',
+      price_notes: '',
+      contact_role: '',
+      submission_notes: '',
+    })
+  } catch (err) {
+    console.error('Submission error:', err)
+    setError(err.message || 'Something went wrong. Please try again.')
+  } finally {
+    setSubmitting(false)
+  }
+}
 
     const { error: sbError } = await supabase.from('coaches').insert(payload)
     setSubmitting(false)
