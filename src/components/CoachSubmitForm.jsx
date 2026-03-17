@@ -39,11 +39,13 @@ const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U
 const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 
-const DISTANCE_MARKS = [...]
-const AGE_GROUPS = [...]
-const POSITIONS_BB = [...]
-const POSITIONS_SB = [...]
-const US_STATE_ABBRS = [...]
+const COACH_SPECIALTIES = [
+  'Pitching',
+  'Hitting',
+  'Catching',
+  'Fielding',
+  'Strength / Conditioning',
+]
 
 const US_STATE_ABBRS = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
