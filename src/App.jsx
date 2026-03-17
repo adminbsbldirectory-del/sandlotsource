@@ -10,6 +10,7 @@ import RosterSpots from './components/RosterSpots.jsx'
 import SearchResults from './components/SearchResults.jsx'
 import Facilities from './components/Facilities.jsx'
 import AdminGeocode from './components/AdminGeocode.jsx'
+import LegalPage from './components/LegalPage.jsx'
 
 const BORDER = '#eaeae6'
 const FAINT  = '#bbb'
@@ -43,15 +44,16 @@ function SiteFooter() {
               { label: 'Pickup Board', to: '/find' },
             ]},
             { heading: 'Listings', links: [
-              { label: 'Add a Listing',   to: '/submit' },
-              { label: 'Claim a Listing', to: '/claim' },
-              { label: 'About',           to: '/about' },
-              { label: 'Contact',         href: 'mailto:admin.bsbldirectory@gmail.com' },
+             { label: 'Add a Listing', to: '/submit' },
+             { label: 'Claim a Listing', to: '/claim' },
+             { label: 'About', to: '/legal#about' },
+             { label: 'Contact', href: 'mailto:admin.bsbldirectory@gmail.com' },
             ]},
             { heading: 'Legal', links: [
-              { label: 'Privacy Policy', to: '/privacy' },
-              { label: 'Terms of Use',   to: '/terms' },
-              { label: 'Disclaimer',     to: '/disclaimer' },
+             { label: 'Privacy Policy', to: '/legal#privacy' },
+             { label: 'Terms of Use', to: '/legal#terms' },
+             { label: 'Disclaimer', to: '/legal#disclaimer' },
+            ]},
             ]},
           ].map(col => (
             <div key={col.heading}>
@@ -92,6 +94,7 @@ function AppRoutes() {
           <Route path="/submit"     element={<CoachSubmitForm />} />
           <Route path="/claim"      element={<ClaimListing />} />
           <Route path="*"           element={<Navigate to="/" replace />} />
+          <Route path="/legal" element={<LegalPage />} />
         </Routes>
       </main>
       <SiteFooter />
