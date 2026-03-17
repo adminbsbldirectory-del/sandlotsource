@@ -661,6 +661,8 @@ function PlayerForm() {
     player_age: '', player_position: [], player_description: '',
     contact_info: '', additional_notes: '',
     distance_travel: 25,
+    bats: '',
+    throws: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted,  setSubmitted]  = useState(false)
@@ -728,12 +730,14 @@ function PlayerForm() {
         position_needed: form.position_needed,
         location_name:   form.location_name.trim(),
         event_date:      form.event_date,
-      } : {
+     } : {
         player_age:         form.player_age ? parseInt(form.player_age) : null,
         age_group:          form.age_group || null,
         player_position:    form.player_position,
         player_description: form.player_description.trim() || null,
-      }),
+        bats:               form.bats || null,
+        throws:             form.throws || null,
+      }), 
     }
 
     const { error: sbError } = await supabase.from('player_board').insert(payload)
@@ -758,7 +762,7 @@ function PlayerForm() {
         ].map(([val, label]) => (
           <button key={val} onClick={() => {
             setPostType(val)
-            setForm(f => ({ ...f, age_group:'', team_name:'', position_needed:[], location_name:'', event_date:'', player_age:'', player_position:[], player_description:'', distance_travel:25 }))
+            setForm(f => ({ ...f, age_group:'', team_name:'', position_needed:[], location_name:'', event_date:'', player_age:'', player_position:[], player_description:'', distance_travel:25, bats:'', throws:'' }))
           }} style={{
             flex:1, padding:'10px', borderRadius:8, border:'2px solid', cursor:'pointer',
             borderColor: postType === val ? 'var(--navy)' : 'var(--lgray)',
