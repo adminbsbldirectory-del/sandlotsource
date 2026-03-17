@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom'
-import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
 import TravelTeams from './components/TravelTeams.jsx'
