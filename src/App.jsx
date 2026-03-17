@@ -13,9 +13,9 @@ import AdminGeocode from './components/AdminGeocode.jsx'
 import LegalPage from './components/LegalPage.jsx'
 
 const BORDER = '#eaeae6'
-const FAINT  = '#bbb'
-const RED    = '#e63329'
-const DARK   = '#1a1a1a'
+const FAINT = '#bbb'
+const RED = '#e63329'
+const DARK = '#1a1a1a'
 
 function SiteFooter() {
   const footerColumns = [
@@ -166,25 +166,33 @@ function SiteFooter() {
 
 function AppRoutes() {
   const navigate = useNavigate()
+
   return (
     <>
       <Header />
+
       <main style={{ flex: 1 }}>
         <Routes>
-          <Route path="/"          element={<HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />} />
-          <Route path="/search"     element={<SearchResults />} />
-          <Route path="/coaches"    element={<CoachDirectory />} />
-          <Route path="/teams"      element={<TravelTeams />} />
+          <Route
+            path="/"
+            element={
+              <HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />
+            }
+          />
+          <Route path="/search" element={<SearchResults />} />
+          <Route path="/coaches" element={<CoachDirectory />} />
+          <Route path="/teams" element={<TravelTeams />} />
           <Route path="/facilities" element={<Facilities />} />
-          <Route path="/admin/geocode" element={<AdminGeocode />} />
-          <Route path="/find"       element={<PlayerBoard />} />
-          <Route path="/roster"     element={<RosterSpots />} />
-          <Route path="/submit"     element={<CoachSubmitForm />} />
-          <Route path="/claim"      element={<ClaimListing />} />
-          <Route path="*"           element={<Navigate to="/" replace />} />
+          <Route path="/find" element={<PlayerBoard />} />
+          <Route path="/roster" element={<RosterSpots />} />
+          <Route path="/submit" element={<CoachSubmitForm />} />
+          <Route path="/claim" element={<ClaimListing />} />
           <Route path="/legal" element={<LegalPage />} />
+          <Route path="/admin/geocode" element={<AdminGeocode />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
       <SiteFooter />
     </>
   )
