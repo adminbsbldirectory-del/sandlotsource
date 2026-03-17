@@ -878,6 +878,37 @@ function PlayerForm() {
             </div>
           </div>
 
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+            <div>
+              <label style={labelStyle}>Bats</label>
+              <div style={{ display:'flex', gap:6 }}>
+                {['R','L','S'].map(v => (
+                  <button key={v} onClick={() => set('bats', form.bats === v ? '' : v)} style={{
+                    padding:'7px 16px', borderRadius:8, border:'2px solid', cursor:'pointer',
+                    borderColor: form.bats === v ? 'var(--navy)' : 'var(--lgray)',
+                    background:  form.bats === v ? 'var(--navy)' : 'white',
+                    color:       form.bats === v ? 'white' : 'var(--navy)',
+                    fontWeight:600, fontSize:13, fontFamily:'var(--font-body)',
+                  }}>{v === 'S' ? 'Switch' : v === 'R' ? 'Right' : 'Left'}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Throws</label>
+              <div style={{ display:'flex', gap:6 }}>
+                {['R','L'].map(v => (
+                  <button key={v} onClick={() => set('throws', form.throws === v ? '' : v)} style={{
+                    padding:'7px 16px', borderRadius:8, border:'2px solid', cursor:'pointer',
+                    borderColor: form.throws === v ? 'var(--navy)' : 'var(--lgray)',
+                    background:  form.throws === v ? 'var(--navy)' : 'white',
+                    color:       form.throws === v ? 'white' : 'var(--navy)',
+                    fontWeight:600, fontSize:13, fontFamily:'var(--font-body)',
+                  }}>{v === 'R' ? 'Right' : 'Left'}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div style={{ marginBottom:14 }}>
             <ZipField value={form.zip_code} onChange={v => set('zip_code', v)} onGeocode={handleGeocode} required />
           </div>
