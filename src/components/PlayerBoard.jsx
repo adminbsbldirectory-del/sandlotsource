@@ -17,13 +17,12 @@ const makeIcon = (color) => L.divIcon({
   iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -28],
 })
 
-// Pin colors from system
 const PIN_COLORS = {
   needs_player: '#ea580c', // orange — player needed
   pickup:       '#0891b2', // teal   — player available
 }
 
-// ── Geocode ──────────────────────────────────────────────────────────────────
+// ── Geocode by zip (for player_available / area reference) ───────────────────
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
   try {
@@ -36,10 +35,26 @@ async function geocodeZip(zip) {
   } catch { return null }
 }
 
+// ── Geocode by location name (for player_needed — pins exact field/venue) ────
+// Uses OpenStreetMap Nominatim (free, no API key required)
+async function geocodeLocationName(locationName, city = '') {
+  if (!locationName) return null
+  try {
+    const q = encodeURIComponent(`${locationName}${city ? ', ' + city : ''}, Georgia, USA`)
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,
+      { headers: { 'Accept-Language': 'en-US' } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data?.[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    return null
+  } catch { return null }
+}
+
 const POSITIONS_BB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const POSITIONS_SB = ['pitcher','catcher','1B','2B','3B','shortstop','outfield','utility']
 const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','18U','Adult']
-const REGIONS = ['North Georgia','Middle Georgia','South Georgia']
 const DISTANCE_MARKS = [10, 25, 50, 75, 100]
 
 const labelStyle = { fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:6 }
@@ -74,7 +89,7 @@ function ZipFieldInline({ value, onChange, onGeocode, required = false }) {
       <input type="text" inputMode="numeric" maxLength={5} value={value}
         onChange={e => onChange(e.target.value)} onBlur={handleBlur}
         placeholder="e.g. 30076" style={inputStyle} />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Used for map pin and distance search</div>
+      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Used for distance search matching</div>
     </div>
   )
 }
@@ -252,6 +267,7 @@ export default function PlayerBoard() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [user, setUser] = useState(null)
   const [showAuth, setShowAuth] = useState(false)
+  const [pinStatus, setPinStatus] = useState('') // '' | 'locating' | 'found' | 'fallback'
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
@@ -328,14 +344,34 @@ export default function PlayerBoard() {
       ? [travelNote, form.additional_notes].filter(Boolean).join('\n')
       : form.additional_notes || null
 
+    // ── Pin placement logic ──────────────────────────────────────────────────
+    // player_needed: try to geocode the specific game/tournament location name
+    //   → falls back to zip-based coords if Nominatim can't find it
+    // player_available: always uses zip-based coords (area pin is appropriate)
+    let pinLat = form.lat
+    let pinLng = form.lng
+
+    if (form.post_type === 'player_needed' && form.location_name.trim()) {
+      setPinStatus('locating')
+      const locGeo = await geocodeLocationName(form.location_name, form.city)
+      if (locGeo) {
+        pinLat = locGeo.lat
+        pinLng = locGeo.lng
+        setPinStatus('found')
+      } else {
+        // fall back to zip coords (already set via ZipFieldInline onGeocode)
+        setPinStatus('fallback')
+      }
+    }
+
     const payload = {
       post_type: form.post_type,
       sport: form.sport,
       city: form.city,
       county: form.region || null,
       zip_code: form.zip_code || null,
-      lat: form.lat || null,
-      lng: form.lng || null,
+      lat: pinLat || null,
+      lng: pinLng || null,
       contact_info: contactInfo,
       additional_notes: notesWithTravel || null,
       active: true,
@@ -359,6 +395,7 @@ export default function PlayerBoard() {
 
     const { error } = await supabase.from('player_board').insert(payload)
     setSubmitting(false)
+    setPinStatus('')
     if (!error) {
       setSubmitted(true)
       setShowForm(false)
@@ -410,10 +447,18 @@ export default function PlayerBoard() {
       ? [travelNote, form.additional_notes].filter(Boolean).join('\n')
       : form.additional_notes || null
 
+    // Re-geocode location_name when editing a player_needed post
+    let pinLat = form.lat
+    let pinLng = form.lng
+    if (form.post_type === 'player_needed' && form.location_name.trim()) {
+      const locGeo = await geocodeLocationName(form.location_name, form.city)
+      if (locGeo) { pinLat = locGeo.lat; pinLng = locGeo.lng }
+    }
+
     const updates = {
       post_type: form.post_type, sport: form.sport, city: form.city,
       county: form.region || null,
-      zip_code: form.zip_code || null, lat: form.lat || null, lng: form.lng || null,
+      zip_code: form.zip_code || null, lat: pinLat || null, lng: pinLng || null,
       contact_info: contactInfo, additional_notes: notesWithTravel || null,
       ...(form.post_type === 'player_available' ? {
         player_age: form.player_age ? parseInt(form.player_age) : null,
@@ -445,7 +490,7 @@ export default function PlayerBoard() {
   }
 
   function cancelForm() {
-    setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); setValidationError('')
+    setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); setValidationError(''); setPinStatus('')
   }
 
   const filterStyle = {
@@ -478,10 +523,8 @@ export default function PlayerBoard() {
         </select>
         <div style={{ flex:1 }} />
 
-        {/* Map toggle */}
         <button onClick={() => setShowMap(m => !m)} style={{
-          padding:'8px 14px', borderRadius:8,
-          border:'2px solid var(--navy)',
+          padding:'8px 14px', borderRadius:8, border:'2px solid var(--navy)',
           background: showMap ? 'var(--navy)' : 'white',
           color: showMap ? 'white' : 'var(--navy)',
           fontSize:13, fontWeight:700, cursor:'pointer',
@@ -527,9 +570,13 @@ export default function PlayerBoard() {
                           {isPlayer ? 'Player Available' : 'Player Needed'}
                         </strong>
                         <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                          📍 {[post.city, post.county].filter(Boolean).join(', ')}
+                          {!isPlayer && post.location_name
+                            ? `📍 ${post.location_name}`
+                            : `📍 ${[post.city, post.county].filter(Boolean).join(', ')}`
+                          }
                         </div>
                         {post.age_group && <div style={{ fontSize: 12, marginTop: 2 }}>🎯 {post.age_group} · {post.sport}</div>}
+                        {!isPlayer && post.event_date && <div style={{ fontSize: 12, marginTop: 2 }}>📅 {formatDate(post.event_date)}</div>}
                       </div>
                     </Popup>
                   </Marker>
@@ -537,19 +584,18 @@ export default function PlayerBoard() {
               })}
             </MapContainer>
           </div>
-          {/* Legend */}
           <div style={{ display: 'flex', gap: 14, padding: '7px 16px', background: '#fff', borderBottom: '2px solid var(--lgray)', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
             {[
-              { color: PIN_COLORS.needs_player, label: 'Player Needed' },
-              { color: PIN_COLORS.pickup,       label: 'Player Available' },
+              { color: PIN_COLORS.needs_player, label: 'Player Needed (pinned to game location)' },
+              { color: PIN_COLORS.pickup,       label: 'Player Available (home area)' },
             ].map(item => (
               <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: item.color, border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
                 <span style={{ fontSize: 11, color: 'var(--gray)' }}>{item.label}</span>
               </div>
             ))}
-            {mappable.length === 0 && <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>Map pins appear as listings add zip codes</span>}
+            {mappable.length === 0 && <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>Map pins appear once listings include a zip code</span>}
           </div>
         </div>
       )}
@@ -580,7 +626,7 @@ export default function PlayerBoard() {
                 ...f, post_type: val,
                 player_age:'', player_position:[], player_description:'',
                 team_name:'', age_group:'', position_needed:[],
-                location_name:'', event_date:'',
+                location_name:'', event_date:'', distance_travel: 25,
               }))} style={{
                 flex:1, padding:'10px', borderRadius:8, border:'2px solid',
                 borderColor: form.post_type === val ? 'var(--navy)' : 'var(--lgray)',
@@ -640,23 +686,32 @@ export default function PlayerBoard() {
                 </div>
               </div>
 
+              {/* Game location — geocoded for accurate pin placement */}
               <div style={{ marginBottom:14 }}>
-                <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
-                <input value={form.location_name} onChange={e => setForm(f => ({...f, location_name:e.target.value}))} placeholder="e.g. Seckinger High School, Fowler Park Field 3" style={inputStyle} />
+                <label style={labelStyle}>
+                  Game / Tournament Location <RequiredMark />
+                  {pinStatus === 'locating' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Locating…</span>}
+                  {pinStatus === 'found'    && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Pin placed at venue</span>}
+                  {pinStatus === 'fallback' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#ea580c' }}>Using zip area pin</span>}
+                </label>
+                <input value={form.location_name} onChange={e => setForm(f => ({...f, location_name:e.target.value}))}
+                  placeholder="e.g. Wills Park Field 3, Alpharetta" style={inputStyle} />
+                <div style={{ fontSize:11, color:'#888', marginTop:3 }}>Pin placed at this specific venue on the map</div>
               </div>
 
-              <div style={{ marginBottom:14 }}>
-                <label style={labelStyle}>City <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:11, color:'#999' }}>(optional if zip provided)</span></label>
-                <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Canton" style={inputStyle} />
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+                <div>
+                  <label style={labelStyle}>City <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:11, color:'#999' }}>(helps locate venue)</span></label>
+                  <input value={form.city} onChange={e => setForm(f => ({...f, city:e.target.value}))} placeholder="e.g. Alpharetta" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Event Date <RequiredMark /></label>
+                  <input type="date" value={form.event_date} onChange={e => setForm(f => ({...f, event_date:e.target.value}))} style={inputStyle} />
+                </div>
               </div>
 
               <div style={{ marginBottom:14 }}>
                 <ZipFieldInline value={form.zip_code} onChange={v => setForm(f => ({...f, zip_code:v}))} onGeocode={handleGeocode} required />
-              </div>
-
-              <div style={{ marginBottom:14 }}>
-                <label style={labelStyle}>Event Date <RequiredMark /></label>
-                <input type="date" value={form.event_date} onChange={e => setForm(f => ({...f, event_date:e.target.value}))} style={inputStyle} />
               </div>
 
               <div style={{ marginBottom:14 }}>
@@ -739,7 +794,7 @@ export default function PlayerBoard() {
               letterSpacing:'0.04em', textTransform:'uppercase',
               opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
             }}>
-              {submitting ? 'Saving…' : isEditing ? '💾 Save Changes' : 'Submit Listing'}
+              {submitting ? (pinStatus === 'locating' ? 'Locating venue…' : 'Saving…') : isEditing ? '💾 Save Changes' : 'Submit Listing'}
             </button>
             {isEditing && (
               <button onClick={cancelForm} style={{ background:'white', color:'var(--navy)', border:'2px solid var(--lgray)', borderRadius:8, padding:'12px 20px', fontSize:14, fontWeight:700, cursor:'pointer' }}>Cancel</button>
@@ -795,9 +850,12 @@ export default function PlayerBoard() {
                   <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700 }}>
                     {post.team_name || 'Team'}{post.age_group ? ` · ${post.age_group}` : ''}
                   </div>
-                  <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>
-                    📍 {[post.location_name, post.city].filter(Boolean).join(', ')}
-                  </div>
+                  {post.location_name && (
+                    <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>📍 {post.location_name}</div>
+                  )}
+                  {post.city && !post.location_name && (
+                    <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>📍 {post.city}</div>
+                  )}
                   {post.event_date && <div style={{ fontSize:13, color:'var(--gray)', marginTop:2 }}>📅 {formatDate(post.event_date)}</div>}
                   {post.additional_notes && <div style={{ fontSize:13, color:'var(--gray)', marginTop:6, lineHeight:1.5 }}>{post.additional_notes}</div>}
                 </div>
