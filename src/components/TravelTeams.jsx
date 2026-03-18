@@ -568,7 +568,7 @@ export default function TravelTeams() {
       ? STATE_CENTERS[state]
       : [39.5, -98.35]
 
-  const mapZoom = geoCenter ? 10 : state ? 6 : 4
+  const mapZoom = geoCenter ? 10 : state ? 7 : 4
 
   const filterSelectStyle = {
     width: '100%',
@@ -608,7 +608,7 @@ export default function TravelTeams() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '340px minmax(0, 1fr) 230px',
+          gridTemplateColumns: isMobile ? '1fr' : '340px minmax(0, 860px) 300px',
           gap: isMobile ? 0 : 14,
           alignItems: 'start',
           width: '100%',
@@ -896,14 +896,15 @@ export default function TravelTeams() {
               }}
             >
               <div
-                style={{
-                  height: isMobile ? 260 : 380,
-                  width: '100%',
-                  overflow: 'hidden',
-                  borderRadius: isMobile ? 0 : 14,
-                  border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-                }}
-              >
+        style={{
+        height: isMobile ? 260 : 340,
+        width: '100%',
+        maxWidth: '920px',
+        overflow: 'hidden',
+        borderRadius: isMobile ? 0 : 14,
+        border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+       }}
+      >
                 <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -1003,13 +1004,14 @@ export default function TravelTeams() {
 
         {!isMobile && (
           <aside
-            style={{
-              position: 'sticky',
-              top: 86,
-              alignSelf: 'start',
-              padding: '10px 14px 0 0',
-            }}
-          >
+  style={{
+    position: 'sticky',
+    top: 86,
+    alignSelf: 'start',
+    padding: '10px 14px 0 0',
+    width: '280px',
+  }}
+>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <AdBox />
               <AdBox />
