@@ -9,12 +9,128 @@ async function geocodeZip(zip) {
     const data = await res.json()
     const place = data.places && data.places[0]
     if (!place) return null
-    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude), city: place['place name'], state: place['state abbreviation'] }
-  } catch { return null }
+    return {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude),
+      city: place['place name'],
+      state: place['state abbreviation'],
+    }
+  } catch {
+    return null
+  }
 }
 
-const labelStyle = { fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6, color: '#444' }
-const inputStyle = { width: '100%', padding: '9px 12px', borderRadius: 8, border: '2px solid var(--lgray)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box', background: '#fff' }
+function normalizeFacilityName(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+async function findMatchingFacility({ facilityName, city, state, zipCode }) {
+  const trimmedName = String(facilityName || '').trim()
+  const normalized = normalizeFacilityName(trimmedName)
+  if (!normalized) return null
+
+  const { data, error } = await supabase
+    .from('facilities')
+    .select('id, name, city, state, zip_code')
+    .ilike('name', `%${trimmedName}%`)
+
+  if (error) throw error
+  if (!data || data.length === 0) return null
+
+  const cityNorm = String(city || '').trim().toLowerCase()
+  const stateNorm = String(state || '').trim().toLowerCase()
+  const zipNorm = String(zipCode || '').trim()
+
+  const match = data.find((row) => {
+    const rowNameNorm = normalizeFacilityName(row.name)
+    const sameName =
+      rowNameNorm === normalized ||
+      rowNameNorm.includes(normalized) ||
+      normalized.includes(rowNameNorm)
+
+    const sameCity = !cityNorm || String(row.city || '').trim().toLowerCase() === cityNorm
+    const sameState = !stateNorm || String(row.state || '').trim().toLowerCase() === stateNorm
+    const sameZip = !zipNorm || String(row.zip_code || '').trim() === zipNorm
+
+    return sameName && sameState && (sameZip || sameCity)
+  })
+
+  return match || null
+}
+
+async function findOrCreateFacilityFromCoach(form) {
+  const facilityName = form.facility_name.trim()
+  if (!facilityName) return null
+
+  const existing = await findMatchingFacility({
+    facilityName,
+    city: form.city,
+    state: form.state,
+    zipCode: form.zip_code,
+  })
+
+  if (existing) return existing.id
+
+  const facilityPayload = {
+    name: facilityName,
+    sport: form.sport || null,
+    city: form.city.trim() || null,
+    state: form.state || null,
+    zip_code: form.zip_code || null,
+    lat: form.lat != null ? parseFloat(form.lat) : null,
+    lng: form.lng != null ? parseFloat(form.lng) : null,
+    address: form.address.trim() || null,
+    website: form.website.trim() || null,
+    instagram: form.instagram.trim() || null,
+    facebook: form.facebook.trim() || null,
+    phone: form.phone.trim() || null,
+    email: form.email.trim() || null,
+    contact_name: form.name.trim() || null,
+    contact_email: form.email.trim() || null,
+    contact_phone: form.phone.trim() || null,
+    submission_notes: 'Auto-created from coach submission',
+    source: 'coach_submission_auto_create',
+    approval_status: 'pending',
+    active: true,
+  }
+
+  const { data, error } = await supabase
+    .from('facilities')
+    .insert([facilityPayload])
+    .select('id')
+    .single()
+
+  if (error) throw error
+  return data?.id || null
+}
+
+const labelStyle = {
+  fontSize: 12,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  display: 'block',
+  marginBottom: 6,
+  color: '#444',
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '9px 12px',
+  borderRadius: 8,
+  border: '2px solid var(--lgray)',
+  fontSize: 14,
+  fontFamily: 'var(--font-body)',
+  outline: 'none',
+  boxSizing: 'border-box',
+  background: '#fff',
+}
+
 const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
@@ -24,18 +140,26 @@ const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield',
 const COACH_SPECIALTIES = ['Pitching','Hitting','Catching','Fielding','Strength / Conditioning']
 const US_STATE_ABBRS = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
 
-function RequiredMark() { return <span style={{ color: 'var(--red)' }}> *</span> }
+function RequiredMark() {
+  return <span style={{ color: 'var(--red)' }}> *</span>
+}
 
 function FieldError({ msg }) {
   if (!msg) return null
-  return <div style={{ background: '#FEE2E2', border: '1px solid #F87171', borderRadius: 8, padding: '10px 14px', margin: '12px 0', color: '#B91C1C', fontSize: 13 }}>{msg}</div>
+  return (
+    <div style={{ background: '#FEE2E2', border: '1px solid #F87171', borderRadius: 8, padding: '10px 14px', margin: '12px 0', color: '#B91C1C', fontSize: 13 }}>
+      {msg}
+    </div>
+  )
 }
 
 function SuccessBanner({ message }) {
   return (
     <div style={{ background: '#DCFCE7', border: '2px solid #16A34A', borderRadius: 10, padding: '20px 24px', textAlign: 'center' }}>
       <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
-      <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>Submitted!</div>
+      <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 700, color: '#15803D', marginBottom: 6 }}>
+        Submitted!
+      </div>
       <div style={{ fontSize: 14, color: '#166534' }}>{message}</div>
     </div>
   )
@@ -43,30 +167,51 @@ function SuccessBanner({ message }) {
 
 function ZipField({ value, onChange, onGeocode, label, hint, required }) {
   const [status, setStatus] = useState('')
+
   async function handleBlur() {
     if (!value || value.length !== 5) return
     setStatus('loading')
     const geo = await geocodeZip(value)
-    if (geo) { setStatus('ok'); onGeocode(geo) } else { setStatus('error'); onGeocode(null) }
+    if (geo) {
+      setStatus('ok')
+      onGeocode(geo)
+    } else {
+      setStatus('error')
+      onGeocode(null)
+    }
   }
+
   return (
     <div>
       <label style={labelStyle}>
-        {label || 'Zip Code'}{required && <span style={{ color: 'var(--red)' }}> *</span>}
+        {label || 'Zip Code'}
+        {required && <span style={{ color: 'var(--red)' }}> *</span>}
         {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Checking…</span>}
         {status === 'ok' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Located</span>}
         {status === 'error' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--red)' }}>Zip not found</span>}
       </label>
-      <input type="text" inputMode="numeric" maxLength={5} value={value} onChange={(e) => onChange(e.target.value)} onBlur={handleBlur} placeholder="e.g. 30076" style={inputStyle} />
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={5}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={handleBlur}
+        placeholder="e.g. 30076"
+        style={inputStyle}
+      />
       <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>{hint || 'Used to place a map pin'}</div>
     </div>
   )
 }
 
 const TRAVEL_OPTIONS = [
-  { value: 10, label: 'Up to 10 miles' }, { value: 25, label: 'Up to 25 miles' },
-  { value: 50, label: 'Up to 50 miles' }, { value: 75, label: 'Up to 75 miles' },
-  { value: 100, label: 'Up to 100 miles' }, { value: 150, label: 'Up to 150 miles' },
+  { value: 10, label: 'Up to 10 miles' },
+  { value: 25, label: 'Up to 25 miles' },
+  { value: 50, label: 'Up to 50 miles' },
+  { value: 75, label: 'Up to 75 miles' },
+  { value: 100, label: 'Up to 100 miles' },
+  { value: 150, label: 'Up to 150 miles' },
   { value: 999, label: 'Anywhere' },
 ]
 
@@ -96,29 +241,95 @@ function CoachForm({ isMobile }) {
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
 
   const [form, setForm] = useState({
-    name: '', sport: 'baseball', specialty: [], city: '', state: 'GA',
-    zip_code: '', lat: null, lng: null, address: '', facility_name: '',
-    phone: '', email: '', website: '', instagram: '', facebook: '',
-    credentials: '', bio: '', age_groups: '', skill_level: '',
-    price_per_session: '', price_notes: '', contact_role: '', submission_notes: '',
+    name: '',
+    sport: 'baseball',
+    specialty: [],
+    city: '',
+    state: 'GA',
+    zip_code: '',
+    lat: null,
+    lng: null,
+    address: '',
+    facility_name: '',
+    phone: '',
+    email: '',
+    website: '',
+    instagram: '',
+    facebook: '',
+    credentials: '',
+    bio: '',
+    age_groups: '',
+    skill_level: '',
+    price_per_session: '',
+    price_notes: '',
+    contact_role: '',
+    submission_notes: '',
   })
+
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
 
-  function set(field, value) { setForm((f) => ({ ...f, [field]: value })) }
-  function toggleSpecialty(v) { setForm((f) => ({ ...f, specialty: f.specialty.includes(v) ? f.specialty.filter((s) => s !== v) : [...f.specialty, v] })) }
-  function handleZipGeocode(geo) { if (geo) setForm((f) => ({ ...f, lat: f.lat || geo.lat, lng: f.lng || geo.lng, city: f.city || geo.city, state: f.state || geo.state })) }
+  function set(field, value) {
+    setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  function toggleSpecialty(v) {
+    setForm((f) => ({
+      ...f,
+      specialty: f.specialty.includes(v)
+        ? f.specialty.filter((s) => s !== v)
+        : [...f.specialty, v],
+    }))
+  }
+
+  function handleZipGeocode(geo) {
+    if (geo) {
+      setForm((f) => ({
+        ...f,
+        lat: f.lat || geo.lat,
+        lng: f.lng || geo.lng,
+        city: f.city || geo.city,
+        state: f.state || geo.state,
+      }))
+    }
+  }
 
   async function handleAddressBlur() {
-    const addr = form.address.trim(); if (!addr) return; setAddrStatus('locating')
+    const addr = form.address.trim()
+    if (!addr) return
+    setAddrStatus('locating')
+
     try {
-      const q = encodeURIComponent(addr + (form.city?', '+form.city:'') + (form.state?', '+form.state:'') + (form.zip_code?' '+form.zip_code:'') + ', USA')
-      const res = await fetch('https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us', { headers: { 'Accept-Language': 'en-US' } })
+      const q = encodeURIComponent(
+        addr +
+        (form.city ? ', ' + form.city : '') +
+        (form.state ? ', ' + form.state : '') +
+        (form.zip_code ? ' ' + form.zip_code : '') +
+        ', USA'
+      )
+
+      const res = await fetch(
+        'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
+        { headers: { 'Accept-Language': 'en-US' } }
+      )
+
       const data = await res.json()
-      if (data && data[0]) { setForm((f) => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) })); setAddrStatus('found') } else setAddrStatus('fallback')
-    } catch { setAddrStatus('fallback') }
+
+      if (data && data[0]) {
+        setForm((f) => ({
+          ...f,
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        }))
+        setAddrStatus('found')
+      } else {
+        setAddrStatus('fallback')
+      }
+    } catch {
+      setAddrStatus('fallback')
+    }
   }
 
   function validate() {
@@ -135,31 +346,64 @@ function CoachForm({ isMobile }) {
 
   async function handleSubmit(e) {
     if (e) e.preventDefault()
-    const err = validate(); if (err) { setError(err); return }
-    setError(''); setSubmitting(true)
+
+    const err = validate()
+    if (err) {
+      setError(err)
+      return
+    }
+
+    setError('')
+    setSubmitting(true)
+
     try {
+      const facilityId = await findOrCreateFacilityFromCoach(form)
+
       const payload = {
-        name: form.name.trim(), sport: form.sport, specialty: form.specialty.length ? form.specialty : null,
-        city: form.city.trim() || null, state: form.state || null, zip: form.zip_code || null,
-        lat: form.lat != null ? parseFloat(form.lat) : null, lng: form.lng != null ? parseFloat(form.lng) : null,
-        address: form.address.trim() || null, facility_name: form.facility_name.trim(),
-        phone: form.phone.trim() || null, email: form.email.trim() || null,
-        website: form.website.trim() || null, instagram: form.instagram.trim() || null,
-        facebook: form.facebook.trim() || null, credentials: form.credentials.trim() || null,
-        bio: form.bio.trim() || null, age_groups: form.age_groups.trim() || null,
-        skill_level: form.skill_level || null, price_per_session: form.price_per_session ? parseFloat(form.price_per_session) : null,
-        price_notes: form.price_notes.trim() || null, contact_role: form.contact_role.trim(),
+        name: form.name.trim(),
+        sport: form.sport,
+        specialty: form.specialty.length ? form.specialty : null,
+        city: form.city.trim() || null,
+        state: form.state || null,
+        zip: form.zip_code || null,
+        lat: form.lat != null ? parseFloat(form.lat) : null,
+        lng: form.lng != null ? parseFloat(form.lng) : null,
+        address: form.address.trim() || null,
+        facility_name: form.facility_name.trim(),
+        facility_id: facilityId,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        website: form.website.trim() || null,
+        instagram: form.instagram.trim() || null,
+        facebook: form.facebook.trim() || null,
+        credentials: form.credentials.trim() || null,
+        bio: form.bio.trim() || null,
+        age_groups: form.age_groups.trim() || null,
+        skill_level: form.skill_level || null,
+        price_per_session: form.price_per_session ? parseFloat(form.price_per_session) : null,
+        price_notes: form.price_notes.trim() || null,
+        contact_role: form.contact_role.trim(),
         submission_notes: form.submission_notes.trim() || null,
-        approval_status: 'pending', source: 'website_form', active: true, verified_status: false,
+        approval_status: 'pending',
+        source: 'website_form',
+        active: true,
+        verified_status: false,
       }
+
       const { error: sbError } = await supabase.from('coaches').insert([payload])
       if (sbError) throw sbError
+
       setSubmitted(true)
-    } catch (err) { setError(err.message || 'Something went wrong. Please try again.') }
-    finally { setSubmitting(false) }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  if (submitted) return <SuccessBanner message="Your coach profile has been submitted for review. We'll have it live within a few days." />
+  if (submitted) {
+    return <SuccessBanner message="Your coach profile has been submitted for review. We'll have it live within a few days." />
+  }
 
   return (
     <div>
@@ -169,10 +413,30 @@ function CoachForm({ isMobile }) {
           <label style={labelStyle}>Sport <RequiredMark /></label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['baseball', 'softball', 'both'].map((s) => (
-              <button key={s} type="button" onClick={() => set('sport', s)} style={{ padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer', borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)', background: form.sport === s ? 'var(--navy)' : 'white', color: form.sport === s ? 'white' : 'var(--navy)', fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)' }}>{s}</button>
+              <button
+                key={s}
+                type="button"
+                onClick={() => set('sport', s)}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  border: '2px solid',
+                  cursor: 'pointer',
+                  borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
+                  background: form.sport === s ? 'var(--navy)' : 'white',
+                  color: form.sport === s ? 'white' : 'var(--navy)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  textTransform: 'capitalize',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {s}
+              </button>
             ))}
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Coach / Trainer Name <RequiredMark /></label>
@@ -183,6 +447,7 @@ function CoachForm({ isMobile }) {
             <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
           </div>
         </div>
+
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
             Street Address
@@ -190,8 +455,15 @@ function CoachForm({ isMobile }) {
             {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
             {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
           </label>
-          <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="Optional street address for more accurate map placement" style={inputStyle} />
+          <input
+            value={form.address}
+            onChange={(e) => set('address', e.target.value)}
+            onBlur={handleAddressBlur}
+            placeholder="Optional street address for more accurate map placement"
+            style={inputStyle}
+          />
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>City <RequiredMark /></label>
@@ -214,18 +486,39 @@ function CoachForm({ isMobile }) {
           <label style={labelStyle}>Specialty</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {COACH_SPECIALTIES.map((item) => (
-              <button key={item} type="button" onClick={() => toggleSpecialty(item)} style={{ padding: '6px 12px', borderRadius: 20, border: '2px solid', cursor: 'pointer', borderColor: form.specialty.includes(item) ? 'var(--navy)' : 'var(--lgray)', background: form.specialty.includes(item) ? 'var(--navy)' : 'white', color: form.specialty.includes(item) ? 'white' : 'var(--navy)', fontSize: 12, fontFamily: 'var(--font-body)', fontWeight: 600 }}>{item}</button>
+              <button
+                key={item}
+                type="button"
+                onClick={() => toggleSpecialty(item)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                  border: '2px solid',
+                  cursor: 'pointer',
+                  borderColor: form.specialty.includes(item) ? 'var(--navy)' : 'var(--lgray)',
+                  background: form.specialty.includes(item) ? 'var(--navy)' : 'white',
+                  color: form.specialty.includes(item) ? 'white' : 'var(--navy)',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 600,
+                }}
+              >
+                {item}
+              </button>
             ))}
           </div>
         </div>
+
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Credentials / Background</label>
           <input value={form.credentials} onChange={(e) => set('credentials', e.target.value)} placeholder="e.g. Former MiLB pitcher, Masters in Biomechanics" style={inputStyle} />
         </div>
+
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Bio / Description</label>
           <textarea value={form.bio} onChange={(e) => set('bio', e.target.value)} rows={3} placeholder="Tell families about your coaching style, experience, and approach..." style={textareaStyle} />
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Age Groups Served</label>
@@ -234,10 +527,15 @@ function CoachForm({ isMobile }) {
           <div>
             <label style={labelStyle}>Skill Level</label>
             <select value={form.skill_level} onChange={(e) => set('skill_level', e.target.value)} style={selectStyle}>
-              <option value="">All levels</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>Elite / Travel</option>
+              <option value="">All levels</option>
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+              <option>Elite / Travel</option>
             </select>
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 0 }}>
           <div>
             <label style={labelStyle}>Price Per Session ($)</label>
@@ -257,6 +555,7 @@ function CoachForm({ isMobile }) {
           <input value={form.contact_role} onChange={(e) => set('contact_role', e.target.value)} placeholder="e.g. Coach (self), Facility Owner, Parent submitting for coach" style={inputStyle} />
           <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Helps us understand your relationship to this listing</div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
@@ -267,6 +566,7 @@ function CoachForm({ isMobile }) {
             <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="e.g. 770-555-0100" style={inputStyle} />
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Website</label>
@@ -281,6 +581,7 @@ function CoachForm({ isMobile }) {
             <SocialInput prefix="facebook.com/" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="page name" />
           </div>
         </div>
+
         <div style={{ marginBottom: 0 }}>
           <label style={labelStyle}>Submission Notes</label>
           <textarea value={form.submission_notes} onChange={(e) => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know when reviewing this listing?" style={textareaStyle} />
@@ -290,8 +591,29 @@ function CoachForm({ isMobile }) {
       <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
         All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
       </div>
+
       <FieldError msg={error} />
-      <button type="button" onClick={handleSubmit} disabled={submitting} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: 8, padding: '12px 32px', fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer', width: isMobile ? '100%' : 'auto' }}>
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        style={{
+          background: 'var(--red)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          padding: '12px 32px',
+          fontFamily: 'var(--font-head)',
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          opacity: submitting ? 0.7 : 1,
+          cursor: submitting ? 'not-allowed' : 'pointer',
+          width: isMobile ? '100%' : 'auto',
+        }}
+      >
         {submitting ? 'Submitting…' : 'Submit Coach Profile'}
       </button>
     </div>
@@ -304,20 +626,49 @@ function TeamForm({ isMobile }) {
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
 
   const [form, setForm] = useState({
-    name: '', sport: 'baseball', org_affiliation: '', age_group: '',
-    city: '', state: 'GA', zip_code: '', lat: null, lng: null, address: '',
-    contact_name: '', contact_email: '', contact_phone: '', website: '',
-    tryout_status: 'closed', tryout_date: '', tryout_notes: '', description: '', submission_notes: '',
+    name: '',
+    sport: 'baseball',
+    org_affiliation: '',
+    age_group: '',
+    city: '',
+    state: 'GA',
+    zip_code: '',
+    lat: null,
+    lng: null,
+    address: '',
+    contact_name: '',
+    contact_email: '',
+    contact_phone: '',
+    website: '',
+    tryout_status: 'closed',
+    tryout_date: '',
+    tryout_notes: '',
+    description: '',
+    submission_notes: '',
   })
+
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
 
-  function set(field, value) { setForm((f) => ({ ...f, [field]: value })) }
-  function handleGeocode(geo) {
-    if (geo) setForm((f) => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city, state: f.state || geo.state }))
-    else setForm((f) => ({ ...f, lat: null, lng: null }))
+  function set(field, value) {
+    setForm((f) => ({ ...f, [field]: value }))
   }
+
+  function handleGeocode(geo) {
+    if (geo) {
+      setForm((f) => ({
+        ...f,
+        lat: geo.lat,
+        lng: geo.lng,
+        city: f.city || geo.city,
+        state: f.state || geo.state,
+      }))
+    } else {
+      setForm((f) => ({ ...f, lat: null, lng: null }))
+    }
+  }
+
   function validate() {
     if (!form.name.trim()) return 'Team name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -329,29 +680,57 @@ function TeamForm({ isMobile }) {
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
     return ''
   }
+
   async function handleSubmit() {
-    const err = validate(); if (err) { setError(err); return }
-    setError(''); setSubmitting(true)
+    const err = validate()
+    if (err) {
+      setError(err)
+      return
+    }
+
+    setError('')
+    setSubmitting(true)
+
     try {
       const payload = {
-        name: form.name.trim(), sport: form.sport, org_affiliation: form.org_affiliation.trim() || null,
-        age_group: form.age_group, city: form.city.trim(), state: form.state,
-        zip_code: form.zip_code || null, lat: form.lat != null ? parseFloat(form.lat) : null, lng: form.lng != null ? parseFloat(form.lng) : null,
-        address: form.address.trim() || null, contact_name: form.contact_name.trim(),
-        contact_email: form.contact_email.trim() || null, contact_phone: form.contact_phone.trim() || null,
-        website: form.website.trim() || null, tryout_status: form.tryout_status || 'closed',
-        tryout_date: form.tryout_date || null, tryout_notes: form.tryout_notes.trim() || null,
-        description: form.description.trim() || null, submission_notes: form.submission_notes.trim() || null,
-        approval_status: 'pending', source: 'website_form', active: true,
+        name: form.name.trim(),
+        sport: form.sport,
+        org_affiliation: form.org_affiliation.trim() || null,
+        age_group: form.age_group,
+        city: form.city.trim(),
+        state: form.state,
+        zip_code: form.zip_code || null,
+        lat: form.lat != null ? parseFloat(form.lat) : null,
+        lng: form.lng != null ? parseFloat(form.lng) : null,
+        address: form.address.trim() || null,
+        contact_name: form.contact_name.trim(),
+        contact_email: form.contact_email.trim() || null,
+        contact_phone: form.contact_phone.trim() || null,
+        website: form.website.trim() || null,
+        tryout_status: form.tryout_status || 'closed',
+        tryout_date: form.tryout_date || null,
+        tryout_notes: form.tryout_notes.trim() || null,
+        description: form.description.trim() || null,
+        submission_notes: form.submission_notes.trim() || null,
+        approval_status: 'pending',
+        source: 'website_form',
+        active: true,
       }
+
       const { error: sbError } = await supabase.from('travel_teams').insert([payload])
       if (sbError) throw sbError
+
       setSubmitted(true)
-    } catch (err) { setError(err.message || 'Something went wrong. Please try again.') }
-    finally { setSubmitting(false) }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  if (submitted) return <SuccessBanner message="Your travel team has been submitted for review. We'll have it live within a few days." />
+  if (submitted) {
+    return <SuccessBanner message="Your travel team has been submitted for review. We'll have it live within a few days." />
+  }
 
   return (
     <div>
@@ -361,10 +740,30 @@ function TeamForm({ isMobile }) {
           <label style={labelStyle}>Sport <RequiredMark /></label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['baseball', 'softball'].map((s) => (
-              <button key={s} type="button" onClick={() => set('sport', s)} style={{ padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer', borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'var(--lgray)', background: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'white', color: form.sport === s ? 'white' : 'var(--navy)', fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)' }}>{s}</button>
+              <button
+                key={s}
+                type="button"
+                onClick={() => set('sport', s)}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  border: '2px solid',
+                  cursor: 'pointer',
+                  borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'var(--lgray)',
+                  background: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'white',
+                  color: form.sport === s ? 'white' : 'var(--navy)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  textTransform: 'capitalize',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {s}
+              </button>
             ))}
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Team Name <RequiredMark /></label>
@@ -375,6 +774,7 @@ function TeamForm({ isMobile }) {
             <input value={form.org_affiliation} onChange={(e) => set('org_affiliation', e.target.value)} placeholder="e.g. USSSA, PGF, Perfect Game" style={inputStyle} />
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Age Group <RequiredMark /></label>
@@ -388,6 +788,7 @@ function TeamForm({ isMobile }) {
             <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>State <RequiredMark /></label>
@@ -398,6 +799,7 @@ function TeamForm({ isMobile }) {
           </div>
           <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="For map pin placement" />
         </div>
+
         <div style={{ marginBottom: 0 }}>
           <label style={labelStyle}>Street Address <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional — improves map accuracy)</span></label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="e.g. 123 Main St" style={inputStyle} />
@@ -410,8 +812,10 @@ function TeamForm({ isMobile }) {
           <div>
             <label style={labelStyle}>Tryout Status</label>
             <select value={form.tryout_status} onChange={(e) => set('tryout_status', e.target.value)} style={selectStyle}>
-              <option value="closed">Closed / Unknown</option><option value="open">Open</option>
-              <option value="year_round">Year Round</option><option value="by_invite">By Invite Only</option>
+              <option value="closed">Closed / Unknown</option>
+              <option value="open">Open</option>
+              <option value="year_round">Year Round</option>
+              <option value="by_invite">By Invite Only</option>
             </select>
           </div>
           <div>
@@ -419,10 +823,12 @@ function TeamForm({ isMobile }) {
             <input type="date" value={form.tryout_date} onChange={(e) => set('tryout_date', e.target.value)} style={inputStyle} />
           </div>
         </div>
+
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Tryout Notes</label>
           <input value={form.tryout_notes} onChange={(e) => set('tryout_notes', e.target.value)} placeholder="e.g. Bring your own helmet. Arrive 15 min early." style={inputStyle} />
         </div>
+
         <div style={{ marginBottom: 0 }}>
           <label style={labelStyle}>Team Description</label>
           <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} placeholder="Tell players and families about your program..." style={textareaStyle} />
@@ -445,6 +851,7 @@ function TeamForm({ isMobile }) {
             <input type="tel" value={form.contact_phone} onChange={(e) => set('contact_phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
           </div>
         </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 0 }}>
           <div>
             <label style={labelStyle}>Website</label>
@@ -457,9 +864,32 @@ function TeamForm({ isMobile }) {
         </div>
       </div>
 
-      <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.</div>
+      <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
+        All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
+      </div>
+
       <FieldError msg={error} />
-      <button type="button" onClick={handleSubmit} disabled={submitting} style={{ background: 'var(--red)', color: 'white', border: 'none', borderRadius: 8, padding: '12px 32px', fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer', width: isMobile ? '100%' : 'auto' }}>
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        style={{
+          background: 'var(--red)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          padding: '12px 32px',
+          fontFamily: 'var(--font-head)',
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          opacity: submitting ? 0.7 : 1,
+          cursor: submitting ? 'not-allowed' : 'pointer',
+          width: isMobile ? '100%' : 'auto',
+        }}
+      >
         {submitting ? 'Submitting…' : 'Submit Travel Team'}
       </button>
     </div>
@@ -470,22 +900,53 @@ function TeamForm({ isMobile }) {
 function PlayerForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const [postType, setPostType] = useState('player_needed')
+
   const [form, setForm] = useState({
-    sport: 'baseball', age_group: '', team_name: '', position_needed: [],
-    city: '', zip_code: '', lat: null, lng: null, location_name: '',
-    event_date: '', player_age: '', player_position: [], player_description: '',
-    contact_info: '', additional_notes: '', distance_travel: 25, bats: '', throws: '',
+    sport: 'baseball',
+    age_group: '',
+    team_name: '',
+    position_needed: [],
+    city: '',
+    zip_code: '',
+    lat: null,
+    lng: null,
+    location_name: '',
+    event_date: '',
+    player_age: '',
+    player_position: [],
+    player_description: '',
+    contact_info: '',
+    additional_notes: '',
+    distance_travel: 25,
+    bats: '',
+    throws: '',
   })
+
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
 
-  function set(field, value) { setForm((f) => ({ ...f, [field]: value })) }
-  function togglePos(pos, field) { setForm((f) => ({ ...f, [field]: f[field].includes(pos) ? f[field].filter((p) => p !== pos) : [...f[field], pos] })) }
-  function handleGeocode(geo) {
-    if (geo) setForm((f) => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
-    else setForm((f) => ({ ...f, lat: null, lng: null }))
+  function set(field, value) {
+    setForm((f) => ({ ...f, [field]: value }))
   }
+
+  function togglePos(pos, field) {
+    setForm((f) => ({
+      ...f,
+      [field]: f[field].includes(pos)
+        ? f[field].filter((p) => p !== pos)
+        : [...f[field], pos],
+    }))
+  }
+
+  function handleGeocode(geo) {
+    if (geo) {
+      setForm((f) => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
+    } else {
+      setForm((f) => ({ ...f, lat: null, lng: null }))
+    }
+  }
+
   function validate() {
     if (!form.sport) return 'Sport is required.'
     if (postType === 'player_needed') {
@@ -503,50 +964,145 @@ function PlayerForm({ isMobile }) {
     }
     return ''
   }
+
   async function handleSubmit() {
-    const err = validate(); if (err) { setError(err); return }
-    setError(''); setSubmitting(true)
+    const err = validate()
+    if (err) {
+      setError(err)
+      return
+    }
+
+    setError('')
+    setSubmitting(true)
+
     try {
       const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
-      const notesWithTravel = postType === 'player_available' ? [travelNote, form.additional_notes.trim()].filter(Boolean).join('\n') : form.additional_notes.trim() || null
+      const notesWithTravel = postType === 'player_available'
+        ? [travelNote, form.additional_notes.trim()].filter(Boolean).join('\n')
+        : form.additional_notes.trim() || null
+
       const payload = {
-        post_type: postType, sport: form.sport, city: form.city.trim() || null, zip_code: form.zip_code || null,
-        lat: form.lat != null ? parseFloat(form.lat) : null, lng: form.lng != null ? parseFloat(form.lng) : null,
-        contact_info: form.contact_info.trim(), additional_notes: notesWithTravel,
-        active: true, approval_status: 'pending', source: 'website_form', last_confirmed_at: new Date().toISOString(),
+        post_type: postType,
+        sport: form.sport,
+        city: form.city.trim() || null,
+        zip_code: form.zip_code || null,
+        lat: form.lat != null ? parseFloat(form.lat) : null,
+        lng: form.lng != null ? parseFloat(form.lng) : null,
+        contact_info: form.contact_info.trim(),
+        additional_notes: notesWithTravel,
+        active: true,
+        approval_status: 'pending',
+        source: 'website_form',
+        last_confirmed_at: new Date().toISOString(),
         ...(postType === 'player_needed'
-          ? { age_group: form.age_group, team_name: form.team_name.trim() || null, position_needed: form.position_needed, location_name: form.location_name.trim(), event_date: form.event_date }
-          : { player_age: form.player_age ? parseInt(form.player_age, 10) : null, age_group: form.age_group || null, player_position: form.player_position, player_description: form.player_description.trim() || null, bats: form.bats || null, throws: form.throws || null }),
+          ? {
+              age_group: form.age_group,
+              team_name: form.team_name.trim() || null,
+              position_needed: form.position_needed,
+              location_name: form.location_name.trim(),
+              event_date: form.event_date,
+            }
+          : {
+              player_age: form.player_age ? parseInt(form.player_age, 10) : null,
+              age_group: form.age_group || null,
+              player_position: form.player_position,
+              player_description: form.player_description.trim() || null,
+              bats: form.bats || null,
+              throws: form.throws || null,
+            }),
       }
+
       const { error: sbError } = await supabase.from('player_board').insert([payload])
       if (sbError) throw sbError
+
       setSubmitted(true)
-    } catch (err) { setError(err.message || 'Something went wrong. Please try again.') }
-    finally { setSubmitting(false) }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
 
-  if (submitted) return <SuccessBanner message="Your post has been submitted and will appear on the Player Board once reviewed. Posts expire in 4 days." />
+  if (submitted) {
+    return <SuccessBanner message="Your post has been submitted and will appear on the Player Board once reviewed. Posts expire in 4 days." />
+  }
 
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[['player_needed','⚾ Player Needed'],['player_available','🧢 Player Available']].map(([val,label]) => (
-          <button key={val} type="button" onClick={() => { setPostType(val); setForm((f) => ({ ...f, age_group:'', team_name:'', position_needed:[], location_name:'', event_date:'', player_age:'', player_position:[], player_description:'', distance_travel:25, bats:'', throws:'' })) }} style={{ flex:1, padding:'10px', borderRadius:8, border:'2px solid', cursor:'pointer', borderColor: postType===val?'var(--navy)':'var(--lgray)', background: postType===val?'var(--navy)':'white', color: postType===val?'white':'var(--navy)', fontWeight:600, fontSize:14, fontFamily:'var(--font-body)' }}>{label}</button>
+        {[['player_needed','⚾ Player Needed'],['player_available','🧢 Player Available']].map(([val, label]) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => {
+              setPostType(val)
+              setForm((f) => ({
+                ...f,
+                age_group: '',
+                team_name: '',
+                position_needed: [],
+                location_name: '',
+                event_date: '',
+                player_age: '',
+                player_position: [],
+                player_description: '',
+                distance_travel: 25,
+                bats: '',
+                throws: '',
+              }))
+            }}
+            style={{
+              flex: 1,
+              padding: '10px',
+              borderRadius: 8,
+              border: '2px solid',
+              cursor: 'pointer',
+              borderColor: postType === val ? 'var(--navy)' : 'var(--lgray)',
+              background: postType === val ? 'var(--navy)' : 'white',
+              color: postType === val ? 'white' : 'var(--navy)',
+              fontWeight: 600,
+              fontSize: 14,
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            {label}
+          </button>
         ))}
       </div>
+
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {['baseball','softball'].map((s) => (
-            <button key={s} type="button" onClick={() => set('sport', s)} style={{ padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer', borderColor: form.sport===s?(s==='softball'?'#7C3AED':'#1D4ED8'):'var(--lgray)', background: form.sport===s?(s==='softball'?'#7C3AED':'#1D4ED8'):'white', color: form.sport===s?'white':'var(--navy)', fontWeight:600, fontSize:13, textTransform:'capitalize', fontFamily:'var(--font-body)' }}>{s}</button>
+            <button
+              key={s}
+              type="button"
+              onClick={() => set('sport', s)}
+              style={{
+                padding: '8px 18px',
+                borderRadius: 8,
+                border: '2px solid',
+                cursor: 'pointer',
+                borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : '#1D4ED8') : 'var(--lgray)',
+                background: form.sport === s ? (s === 'softball' ? '#7C3AED' : '#1D4ED8') : 'white',
+                color: form.sport === s ? 'white' : 'var(--navy)',
+                fontWeight: 600,
+                fontSize: 13,
+                textTransform: 'capitalize',
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              {s}
+            </button>
           ))}
         </div>
       </div>
+
       {postType === 'player_needed' && (
         <>
-          <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
             <div>
               <label style={labelStyle}>Age Group <RequiredMark /></label>
               <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
@@ -559,19 +1115,39 @@ function PlayerForm({ isMobile }) {
               <input value={form.team_name} onChange={(e) => set('team_name', e.target.value)} placeholder="e.g. Cherokee Nationals" style={inputStyle} />
             </div>
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Position(s) Needed <RequiredMark /></label>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {positions.map((pos) => (
-                <button key={pos} type="button" onClick={() => togglePos(pos,'position_needed')} style={{ padding:'5px 12px', borderRadius:20, border:'2px solid', cursor:'pointer', borderColor: form.position_needed.includes(pos)?'var(--navy)':'var(--lgray)', background: form.position_needed.includes(pos)?'var(--navy)':'white', color: form.position_needed.includes(pos)?'white':'var(--navy)', fontSize:12, fontFamily:'var(--font-body)' }}>{pos}</button>
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => togglePos(pos, 'position_needed')}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    border: '2px solid',
+                    cursor: 'pointer',
+                    borderColor: form.position_needed.includes(pos) ? 'var(--navy)' : 'var(--lgray)',
+                    background: form.position_needed.includes(pos) ? 'var(--navy)' : 'white',
+                    color: form.position_needed.includes(pos) ? 'white' : 'var(--navy)',
+                    fontSize: 12,
+                    fontFamily: 'var(--font-body)',
+                  }}
+                >
+                  {pos}
+                </button>
               ))}
             </div>
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
             <input value={form.location_name} onChange={(e) => set('location_name', e.target.value)} placeholder="e.g. Wills Park Field 3, Seckinger High School" style={inputStyle} />
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
             <div>
               <label style={labelStyle}>City</label>
               <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
@@ -581,18 +1157,21 @@ function PlayerForm({ isMobile }) {
               <input type="date" value={form.event_date} onChange={(e) => set('event_date', e.target.value)} style={inputStyle} />
             </div>
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Area zip for search radius matching" />
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Additional Notes</label>
             <textarea value={form.additional_notes} onChange={(e) => set('additional_notes', e.target.value)} rows={3} placeholder="Practice schedule, skill level expected, tryout info..." style={textareaStyle} />
           </div>
         </>
       )}
+
       {postType === 'player_available' && (
         <>
-          <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
             <div>
               <label style={labelStyle}>Player Age <RequiredMark /></label>
               <input type="number" min="6" max="99" value={form.player_age} onChange={(e) => set('player_age', e.target.value)} placeholder="e.g. 12" style={inputStyle} />
@@ -605,57 +1184,141 @@ function PlayerForm({ isMobile }) {
               </select>
             </div>
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Position(s) <RequiredMark /></label>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {positions.map((pos) => (
-                <button key={pos} type="button" onClick={() => togglePos(pos,'player_position')} style={{ padding:'5px 12px', borderRadius:20, border:'2px solid', cursor:'pointer', borderColor: form.player_position.includes(pos)?'var(--navy)':'var(--lgray)', background: form.player_position.includes(pos)?'var(--navy)':'white', color: form.player_position.includes(pos)?'white':'var(--navy)', fontSize:12, fontFamily:'var(--font-body)' }}>{pos}</button>
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => togglePos(pos, 'player_position')}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    border: '2px solid',
+                    cursor: 'pointer',
+                    borderColor: form.player_position.includes(pos) ? 'var(--navy)' : 'var(--lgray)',
+                    background: form.player_position.includes(pos) ? 'var(--navy)' : 'white',
+                    color: form.player_position.includes(pos) ? 'white' : 'var(--navy)',
+                    fontSize: 12,
+                    fontFamily: 'var(--font-body)',
+                  }}
+                >
+                  {pos}
+                </button>
               ))}
             </div>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
+
+          <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
             <div>
               <label style={labelStyle}>Bats</label>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {['R','L','S'].map((v) => (
-                  <button key={v} type="button" onClick={() => set('bats', form.bats===v?'':v)} style={{ padding:'7px 16px', borderRadius:8, border:'2px solid', cursor:'pointer', borderColor: form.bats===v?'var(--navy)':'var(--lgray)', background: form.bats===v?'var(--navy)':'white', color: form.bats===v?'white':'var(--navy)', fontWeight:600, fontSize:13, fontFamily:'var(--font-body)' }}>{v==='S'?'Switch':v==='R'?'Right':'Left'}</button>
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => set('bats', form.bats === v ? '' : v)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 8,
+                      border: '2px solid',
+                      cursor: 'pointer',
+                      borderColor: form.bats === v ? 'var(--navy)' : 'var(--lgray)',
+                      background: form.bats === v ? 'var(--navy)' : 'white',
+                      color: form.bats === v ? 'white' : 'var(--navy)',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    {v === 'S' ? 'Switch' : v === 'R' ? 'Right' : 'Left'}
+                  </button>
                 ))}
               </div>
             </div>
+
             <div>
               <label style={labelStyle}>Throws</label>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {['R','L'].map((v) => (
-                  <button key={v} type="button" onClick={() => set('throws', form.throws===v?'':v)} style={{ padding:'7px 16px', borderRadius:8, border:'2px solid', cursor:'pointer', borderColor: form.throws===v?'var(--navy)':'var(--lgray)', background: form.throws===v?'var(--navy)':'white', color: form.throws===v?'white':'var(--navy)', fontWeight:600, fontSize:13, fontFamily:'var(--font-body)' }}>{v==='R'?'Right':'Left'}</button>
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => set('throws', form.throws === v ? '' : v)}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 8,
+                      border: '2px solid',
+                      cursor: 'pointer',
+                      borderColor: form.throws === v ? 'var(--navy)' : 'var(--lgray)',
+                      background: form.throws === v ? 'var(--navy)' : 'white',
+                      color: form.throws === v ? 'white' : 'var(--navy)',
+                      fontWeight: 600,
+                      fontSize: 13,
+                      fontFamily: 'var(--font-body)',
+                    }}
+                  >
+                    {v === 'R' ? 'Right' : 'Left'}
+                  </button>
                 ))}
               </div>
             </div>
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required />
           </div>
+
           <DistanceSlider value={form.distance_travel} onChange={(v) => set('distance_travel', v)} />
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>City</label>
             <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Description</label>
             <textarea value={form.player_description} onChange={(e) => set('player_description', e.target.value)} rows={3} placeholder="Age, skill level, what you're looking for in a team..." style={textareaStyle} />
           </div>
-          <div style={{ marginBottom:14 }}>
+
+          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Additional Notes</label>
             <textarea value={form.additional_notes} onChange={(e) => set('additional_notes', e.target.value)} rows={2} placeholder="Any other details..." style={textareaStyle} />
           </div>
         </>
       )}
-      <div style={{ marginBottom:8 }}>
+
+      <div style={{ marginBottom: 8 }}>
         <label style={labelStyle}>Contact Info <RequiredMark /></label>
         <input value={form.contact_info} onChange={(e) => set('contact_info', e.target.value)} placeholder="Email, phone, or Instagram handle" style={inputStyle} />
-        <div style={{ fontSize:11, color:'var(--gray)', marginTop:4 }}>Visible publicly. Posts expire after 4 days.</div>
+        <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 4 }}>Visible publicly. Posts expire after 4 days.</div>
       </div>
+
       <FieldError msg={error} />
-      <button type="button" onClick={handleSubmit} disabled={submitting} style={{ background:'var(--red)', color:'white', border:'none', borderRadius:8, padding:'12px 32px', marginTop:8, fontFamily:'var(--font-head)', fontSize:16, fontWeight:700, letterSpacing:'0.04em', textTransform:'uppercase', opacity: submitting?0.7:1, cursor: submitting?'not-allowed':'pointer', width: isMobile?'100%':'auto' }}>
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        style={{
+          background: 'var(--red)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          padding: '12px 32px',
+          marginTop: 8,
+          fontFamily: 'var(--font-head)',
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          opacity: submitting ? 0.7 : 1,
+          cursor: submitting ? 'not-allowed' : 'pointer',
+          width: isMobile ? '100%' : 'auto',
+        }}
+      >
         {submitting ? 'Posting…' : 'Submit Post'}
       </button>
     </div>
@@ -671,27 +1334,95 @@ function FacilityForm({ isMobile }) {
   const FACILITY_TYPES = ['Training Academy','Batting Cage Complex','Indoor Complex','Recreation Park','High School','College Facility','Tournament Venue','Other']
 
   const [form, setForm] = useState({
-    name:'', facility_type:'', sport:'both', city:'', state:'GA', zip_code:'', lat:null, lng:null,
-    address:'', phone:'', email:'', website:'', instagram:'', facebook:'',
-    amenities:[], description:'', hours:'', contact_name:'', contact_email:'', contact_phone:'', submission_notes:'',
+    name: '',
+    facility_type: '',
+    sport: 'both',
+    city: '',
+    state: 'GA',
+    zip_code: '',
+    lat: null,
+    lng: null,
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+    instagram: '',
+    facebook: '',
+    amenities: [],
+    description: '',
+    hours: '',
+    contact_name: '',
+    contact_email: '',
+    contact_phone: '',
+    submission_notes: '',
   })
+
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
 
-  function set(field, value) { setForm((f) => ({ ...f, [field]: value })) }
-  function toggleAmenity(a) { setForm((f) => ({ ...f, amenities: f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a] })) }
-  function handleZipGeocode(geo) { if (geo) setForm((f) => ({ ...f, lat: f.lat||geo.lat, lng: f.lng||geo.lng, city: f.city||geo.city, state: f.state||geo.state })) }
-  async function handleAddressBlur() {
-    const addr = form.address.trim(); if (!addr) return; setAddrStatus('locating')
-    try {
-      const q = encodeURIComponent(addr + (form.city?', '+form.city:'') + (form.state?', '+form.state:'') + (form.zip_code?' '+form.zip_code:'') + ', USA')
-      const res = await fetch('https://nominatim.openstreetmap.org/search?q='+q+'&format=json&limit=1&countrycodes=us', { headers: { 'Accept-Language': 'en-US' } })
-      const data = await res.json()
-      if (data && data[0]) { setForm((f) => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) })); setAddrStatus('found') } else setAddrStatus('fallback')
-    } catch { setAddrStatus('fallback') }
+  function set(field, value) {
+    setForm((f) => ({ ...f, [field]: value }))
   }
+
+  function toggleAmenity(a) {
+    setForm((f) => ({
+      ...f,
+      amenities: f.amenities.includes(a)
+        ? f.amenities.filter((x) => x !== a)
+        : [...f.amenities, a],
+    }))
+  }
+
+  function handleZipGeocode(geo) {
+    if (geo) {
+      setForm((f) => ({
+        ...f,
+        lat: f.lat || geo.lat,
+        lng: f.lng || geo.lng,
+        city: f.city || geo.city,
+        state: f.state || geo.state,
+      }))
+    }
+  }
+
+  async function handleAddressBlur() {
+    const addr = form.address.trim()
+    if (!addr) return
+    setAddrStatus('locating')
+
+    try {
+      const q = encodeURIComponent(
+        addr +
+        (form.city ? ', ' + form.city : '') +
+        (form.state ? ', ' + form.state : '') +
+        (form.zip_code ? ' ' + form.zip_code : '') +
+        ', USA'
+      )
+
+      const res = await fetch(
+        'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
+        { headers: { 'Accept-Language': 'en-US' } }
+      )
+
+      const data = await res.json()
+
+      if (data && data[0]) {
+        setForm((f) => ({
+          ...f,
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        }))
+        setAddrStatus('found')
+      } else {
+        setAddrStatus('fallback')
+      }
+    } catch {
+      setAddrStatus('fallback')
+    }
+  }
+
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
     if (!form.city.trim()) return 'City is required.'
@@ -701,44 +1432,93 @@ function FacilityForm({ isMobile }) {
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
     return ''
   }
+
   async function handleSubmit() {
-    const err = validate(); if (err) { setError(err); return }
-    setError(''); setSubmitting(true)
+    const err = validate()
+    if (err) {
+      setError(err)
+      return
+    }
+
+    setError('')
+    setSubmitting(true)
+
     try {
       const payload = {
-        name: form.name.trim(), facility_type: form.facility_type||null, sport: form.sport,
-        city: form.city.trim()||null, state: form.state||null, zip_code: form.zip_code||null,
-        lat: form.lat!=null?parseFloat(form.lat):null, lng: form.lng!=null?parseFloat(form.lng):null,
-        address: form.address.trim()||null, phone: form.phone.trim()||null, email: form.email.trim()||null,
-        website: form.website.trim()||null, instagram: form.instagram.trim()||null, facebook: form.facebook.trim()||null,
-        amenities: form.amenities.length>0?form.amenities:null, description: form.description.trim()||null,
-        hours: form.hours.trim()||null, contact_name: form.contact_name.trim(),
-        contact_email: form.contact_email.trim()||null, contact_phone: form.contact_phone.trim()||null,
-        submission_notes: form.submission_notes.trim()||null,
-        approval_status: 'pending', source: 'website_form', active: true,
+        name: form.name.trim(),
+        facility_type: form.facility_type || null,
+        sport: form.sport,
+        city: form.city.trim() || null,
+        state: form.state || null,
+        zip_code: form.zip_code || null,
+        lat: form.lat != null ? parseFloat(form.lat) : null,
+        lng: form.lng != null ? parseFloat(form.lng) : null,
+        address: form.address.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        website: form.website.trim() || null,
+        instagram: form.instagram.trim() || null,
+        facebook: form.facebook.trim() || null,
+        amenities: form.amenities.length > 0 ? form.amenities : null,
+        description: form.description.trim() || null,
+        hours: form.hours.trim() || null,
+        contact_name: form.contact_name.trim(),
+        contact_email: form.contact_email.trim() || null,
+        contact_phone: form.contact_phone.trim() || null,
+        submission_notes: form.submission_notes.trim() || null,
+        approval_status: 'pending',
+        source: 'website_form',
+        active: true,
       }
+
       const { error: sbError } = await supabase.from('facilities').insert([payload])
       if (sbError) throw sbError
+
       setSubmitted(true)
-    } catch (err) { setError(err.message || 'Something went wrong. Please try again.') }
-    finally { setSubmitting(false) }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  if (submitted) return <SuccessBanner message="Your facility has been submitted for review. We'll have it live within a few days." />
+  if (submitted) {
+    return <SuccessBanner message="Your facility has been submitted for review. We'll have it live within a few days." />
+  }
 
   return (
     <div>
       <div className="form-section">
         <div className="form-section-title">1. The Basics</div>
-        <div style={{ marginBottom:16 }}>
+        <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Sport <RequiredMark /></label>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['baseball','softball','both'].map((s) => (
-              <button key={s} type="button" onClick={() => set('sport', s)} style={{ padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer', borderColor: form.sport===s?'var(--navy)':'var(--lgray)', background: form.sport===s?'var(--navy)':'white', color: form.sport===s?'white':'var(--navy)', fontWeight:600, fontSize:13, textTransform:'capitalize', fontFamily:'var(--font-body)' }}>{s}</button>
+              <button
+                key={s}
+                type="button"
+                onClick={() => set('sport', s)}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  border: '2px solid',
+                  cursor: 'pointer',
+                  borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
+                  background: form.sport === s ? 'var(--navy)' : 'white',
+                  color: form.sport === s ? 'white' : 'var(--navy)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  textTransform: 'capitalize',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {s}
+              </button>
             ))}
           </div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
+
+        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Facility Name <RequiredMark /></label>
             <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Grit Academy Athletics" style={inputStyle} />
@@ -751,17 +1531,19 @@ function FacilityForm({ isMobile }) {
             </select>
           </div>
         </div>
-        <div style={{ marginBottom:14 }}>
+
+        <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
             Street Address
-            {addrStatus==='locating' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#888' }}>Locating…</span>}
-            {addrStatus==='found' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#16a34a' }}>✓ Pin placed at address</span>}
-            {addrStatus==='fallback' && <span style={{ fontWeight:400, textTransform:'none', marginLeft:6, color:'#ea580c' }}>Address not found — using zip pin</span>}
+            {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+            {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+            {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
           </label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
-          <div style={{ fontSize:11, color:'#888', marginTop:3 }}>Enter address then tab out to place an accurate map pin</div>
+          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:g3, gap:12, marginBottom:0 }}>
+
+        <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
           <div>
             <label style={labelStyle}>City <RequiredMark /></label>
             <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Kennesaw" style={inputStyle} />
@@ -779,19 +1561,38 @@ function FacilityForm({ isMobile }) {
 
       <div className="form-section">
         <div className="form-section-title">2. Amenities &amp; Details</div>
-        <div style={{ marginBottom:14 }}>
+        <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Amenities / Features</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {AMENITY_OPTIONS.map((a) => (
-              <button key={a} type="button" onClick={() => toggleAmenity(a)} style={{ padding:'5px 12px', borderRadius:20, border:'2px solid', cursor:'pointer', borderColor: form.amenities.includes(a)?'var(--navy)':'var(--lgray)', background: form.amenities.includes(a)?'var(--navy)':'white', color: form.amenities.includes(a)?'white':'var(--navy)', fontSize:12, fontFamily:'var(--font-body)' }}>{a}</button>
+              <button
+                key={a}
+                type="button"
+                onClick={() => toggleAmenity(a)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 20,
+                  border: '2px solid',
+                  cursor: 'pointer',
+                  borderColor: form.amenities.includes(a) ? 'var(--navy)' : 'var(--lgray)',
+                  background: form.amenities.includes(a) ? 'var(--navy)' : 'white',
+                  color: form.amenities.includes(a) ? 'white' : 'var(--navy)',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {a}
+              </button>
             ))}
           </div>
         </div>
-        <div style={{ marginBottom:14 }}>
+
+        <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Description</label>
           <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} placeholder="Tell families what makes your facility special..." style={textareaStyle} />
         </div>
-        <div style={{ marginBottom:0 }}>
+
+        <div style={{ marginBottom: 0 }}>
           <label style={labelStyle}>Hours of Operation</label>
           <input value={form.hours} onChange={(e) => set('hours', e.target.value)} placeholder="e.g. Mon-Fri 4-9pm, Sat 8am-5pm" style={inputStyle} />
         </div>
@@ -799,7 +1600,7 @@ function FacilityForm({ isMobile }) {
 
       <div className="form-section">
         <div className="form-section-title">3. Contact</div>
-        <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Facility Phone</label>
             <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
@@ -809,7 +1610,8 @@ function FacilityForm({ isMobile }) {
             <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="info@facility.com" style={inputStyle} />
           </div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:g3, gap:12, marginBottom:14 }}>
+
+        <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Website</label>
             <input value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
@@ -823,15 +1625,18 @@ function FacilityForm({ isMobile }) {
             <SocialInput prefix="facebook.com/" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="page name" />
           </div>
         </div>
-        <div style={{ background:'#f8f9fa', borderRadius:8, padding:'14px', border:'1px solid var(--lgray)' }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'var(--navy)', marginBottom:10, textTransform:'uppercase', letterSpacing:'0.06em' }}>Your Contact Info (not public)</div>
-          <div style={{ display:'grid', gridTemplateColumns:g3, gap:12 }}>
+
+        <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '14px', border: '1px solid var(--lgray)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Your Contact Info (not public)
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12 }}>
             <div>
               <label style={labelStyle}>Your Name <RequiredMark /></label>
               <input value={form.contact_name} onChange={(e) => set('contact_name', e.target.value)} placeholder="Full name" style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>Your Email <RequiredMark /> <span style={{ fontWeight:400, textTransform:'none' }}>(or phone)</span></label>
+              <label style={labelStyle}>Your Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
               <input type="email" value={form.contact_email} onChange={(e) => set('contact_email', e.target.value)} placeholder="you@example.com" style={inputStyle} />
             </div>
             <div>
@@ -842,13 +1647,37 @@ function FacilityForm({ isMobile }) {
         </div>
       </div>
 
-      <div style={{ marginBottom:16 }}>
+      <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Submission Notes</label>
         <textarea value={form.submission_notes} onChange={(e) => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know?" style={textareaStyle} />
       </div>
-      <div style={{ fontSize:11, color:'var(--gray)', marginBottom:12 }}>All listings are reviewed before going live. Fields marked <span style={{ color:'var(--red)' }}>*</span> are required.</div>
+
+      <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
+        All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
+      </div>
+
       <FieldError msg={error} />
-      <button type="button" onClick={handleSubmit} disabled={submitting} style={{ background:'var(--red)', color:'white', border:'none', borderRadius:8, padding:'12px 32px', fontFamily:'var(--font-head)', fontSize:16, fontWeight:700, letterSpacing:'0.04em', textTransform:'uppercase', opacity: submitting?0.7:1, cursor: submitting?'not-allowed':'pointer', width: isMobile?'100%':'auto' }}>
+
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        style={{
+          background: 'var(--red)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          padding: '12px 32px',
+          fontFamily: 'var(--font-head)',
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          opacity: submitting ? 0.7 : 1,
+          cursor: submitting ? 'not-allowed' : 'pointer',
+          width: isMobile ? '100%' : 'auto',
+        }}
+      >
         {submitting ? 'Submitting…' : 'Submit Facility'}
       </button>
     </div>
@@ -877,7 +1706,9 @@ export default function CoachSubmitForm() {
   return (
     <div style={{ maxWidth: 820, margin: '0 auto', padding: isMobile ? '24px 14px' : '32px 20px' }}>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 22 : 28, fontWeight: 800, color: 'var(--navy)', marginBottom: 6 }}>Add a Listing</div>
+        <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 22 : 28, fontWeight: 800, color: 'var(--navy)', marginBottom: 6 }}>
+          Add a Listing
+        </div>
         <div style={{ fontSize: 14, color: 'var(--gray)' }}>All submissions are reviewed before going live. Free to list.</div>
       </div>
 
@@ -885,16 +1716,37 @@ export default function CoachSubmitForm() {
         {TABS.map((tab) => {
           const tabStyle = {
             padding: isMobile ? '8px 10px' : '10px 16px',
-            fontFamily: 'var(--font-head)', fontSize: isMobile ? 11 : 13, fontWeight: 700,
-            letterSpacing: '0.04em', textTransform: 'uppercase', border: 'none',
+            fontFamily: 'var(--font-head)',
+            fontSize: isMobile ? 11 : 13,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            border: 'none',
             borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
-            background: 'transparent', color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
-            cursor: 'pointer', marginBottom: -2,
+            background: 'transparent',
+            color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
+            cursor: 'pointer',
+            marginBottom: -2,
           }
+
           if (tab.id === 'roster') {
-            return <button key="roster" type="button" onClick={() => { window.location.href = '/roster' }} style={{ ...tabStyle, color: 'var(--gray)' }}>{tab.label}</button>
+            return (
+              <button
+                key="roster"
+                type="button"
+                onClick={() => { window.location.href = '/roster' }}
+                style={{ ...tabStyle, color: 'var(--gray)' }}
+              >
+                {tab.label}
+              </button>
+            )
           }
-          return <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} style={tabStyle}>{tab.label}</button>
+
+          return (
+            <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} style={tabStyle}>
+              {tab.label}
+            </button>
+          )
         })}
       </div>
 
