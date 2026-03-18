@@ -254,7 +254,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             className={`badge badge-sport-${coach.sport}`}
             style={selected ? { background: 'rgba(255,255,255,0.15)', color: 'white' } : undefined}
           >
-            {coach.sport}
+            {coach.sport === 'both' ? 'Baseball & Softball' : coach.sport}
           </span>
         </div>
 
