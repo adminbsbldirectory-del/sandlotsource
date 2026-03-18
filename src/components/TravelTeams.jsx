@@ -602,11 +602,9 @@ export default function TravelTeams() {
           style={{
             position: isMobile ? 'static' : 'sticky',
             top: isMobile ? 'auto' : 76,
-            height: isMobile ? 'auto' : 'calc(100vh - 76px)',
+            alignSelf: 'start',
             background: 'var(--white)',
             borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-            overflow: 'hidden',
-            alignSelf: 'start',
             zIndex: 2,
           }}
         >
@@ -687,7 +685,10 @@ export default function TravelTeams() {
               <div style={sectionLabelStyle}>State</div>
               <select
                 value={state}
-                onChange={(e) => setState(e.target.value)}
+                onChange={(e) => {
+                  setState(e.target.value)
+                  setSelectedTeam(null)
+                }}
                 style={filterSelectStyle}
               >
                 <option value="">All States</option>
@@ -712,7 +713,10 @@ export default function TravelTeams() {
                 maxLength={5}
                 placeholder="Zip code"
                 value={zip}
-                onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                onChange={(e) => {
+                  setZip(e.target.value.replace(/\D/g, '').slice(0, 5))
+                  setSelectedTeam(null)
+                }}
                 style={{
                   width: '100%',
                   padding: '9px 10px',
@@ -746,7 +750,10 @@ export default function TravelTeams() {
                     max={100}
                     step={5}
                     value={radius}
-                    onChange={(e) => setRadius(Number(e.target.value))}
+                    onChange={(e) => {
+                      setRadius(Number(e.target.value))
+                      setSelectedTeam(null)
+                    }}
                     style={{ width: '100%', accentColor: 'var(--red)' }}
                   />
                 </div>
@@ -842,195 +849,235 @@ export default function TravelTeams() {
               </a>
             </div>
           </div>
-
-          <div
-            style={{
-              height: isMobile ? 'auto' : 'calc(100vh - 360px)',
-              overflowY: isMobile ? 'visible' : 'auto',
-              padding: 12,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              background: '#fafafa',
-            }}
-          >
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
-                Loading teams...
-              </div>
-            )}
-
-            {!loading && filtered.length === 0 && (
-              <EmptyState
-                hasFilters={hasFilters}
-                stateName={selectedState?.name || ''}
-                zipActive={!!geoCenter}
-                radius={radius}
-              />
-            )}
-
-            {!loading &&
-              filtered.map((team) => (
-                <TeamCard
-                  key={team.id}
-                  team={team}
-                  selected={selectedTeam?.id === team.id}
-                  onOpen={() => setProfileTeam(team)}
-                  onFocusMap={() => {
-                    setSelectedTeam(team)
-                    setShowMap(true)
-                  }}
-                />
-              ))}
-          </div>
         </aside>
 
-        <main
-          style={{
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-          }}
-        >
-          {showMap && (
-            <div
-              style={{
-                background: 'var(--white)',
-                padding: isMobile ? 0 : '8px 0 0 0',
-                width: '100%',
-              }}
-            >
-              <div
-                style={{
-                  height: isMobile ? 260 : 410,
-                  width: '100%',
-                  overflow: 'hidden',
-                  borderRadius: isMobile ? 0 : 14,
-                  border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-                }}
-              >
-                <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <UpdateMapView
-                    center={mapCenter}
-                    zoom={mapZoom}
-                    enabled={!selectedTeam && mappable.length === 0}
-                  />
-                  <FitBounds teams={mappable} enabled={!selectedTeam && mappable.length > 0} />
-                  <FlyToTeam team={selectedTeam} />
-
-                  {mappable.map((team) => (
-                    <Marker
-                      key={team.id}
-                      position={[team.lat, team.lng]}
-                      icon={makeIcon(teamPinColor(team))}
-                      eventHandlers={{
-                        click: () => {
-                          setSelectedTeam(team)
-                        },
-                      }}
-                    >
-                      <Popup>
-                        <div style={{ fontFamily: 'var(--font-body)', minWidth: 170 }}>
-                          <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
-                            {team.name}
-                          </strong>
-                          <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                            {'📍 ' + [team.city, team.state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
-                          </div>
-                          {team.age_group && (
-                            <div style={{ fontSize: 12, marginTop: 3 }}>
-                              {'🎯 ' + team.age_group + ' · ' + (team.sport || '')}
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setProfileTeam(team)}
-                            style={{
-                              marginTop: 8,
-                              width: '100%',
-                              background: 'var(--navy)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '8px 10px',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            View Details
-                          </button>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
-                </MapContainer>
-              </div>
-
-              <MapLegend hasPins={mappable.length > 0} />
-            </div>
-          )}
-
-          {openTryoutCount > 0 && (
-            <div
-              style={{
-                background: 'var(--open-bg)',
-                border: '1px solid var(--open-text)',
-                borderRadius: 12,
-                marginTop: 10,
-                padding: '10px 14px',
-                fontSize: 13,
-                color: 'var(--open-text)',
-                fontWeight: 600,
-                width: '100%',
-              }}
-            >
-              {`✅ ${openTryoutCount} team${openTryoutCount !== 1 ? 's' : ''} currently accepting tryouts${
-                selectedState ? ' in ' + selectedState.name : ''
-              }`}
-            </div>
-          )}
-
-          {!showMap && (
-            <div
-              style={{
-                background: 'var(--white)',
-                border: '1px solid rgba(15,23,42,0.06)',
-                borderRadius: 14,
-                marginTop: 10,
-                padding: '16px',
-                color: 'var(--gray)',
-                fontSize: 13,
-                width: '100%',
-              }}
-            >
-              Map is hidden. Use “Show Map” in the left panel to view team locations.
-            </div>
-          )}
-        </main>
-
-        {!isMobile && (
-          <aside
+        <div style={{ minWidth: 0 }}>
+          <div
             style={{
-              position: 'sticky',
-              top: 86,
-              alignSelf: 'start',
-              padding: '8px 12px 0 0',
-              width: '210px',
+              display: 'grid',
+              gridTemplateColumns: !isMobile ? 'minmax(0, 1fr) 210px' : '1fr',
+              gap: isMobile ? 0 : 14,
+              alignItems: 'start',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <AdBox />
-              <AdBox />
-              <AdBox />
-            </div>
-          </aside>
-        )}
+            <main
+              style={{
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+              }}
+            >
+              {showMap && (
+                <div
+                  style={{
+                    background: 'var(--white)',
+                    padding: isMobile ? 0 : '8px 0 0 0',
+                    width: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      height: isMobile ? 260 : 390,
+                      width: '100%',
+                      overflow: 'hidden',
+                      borderRadius: isMobile ? 0 : 14,
+                      border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                    }}
+                  >
+                    <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <UpdateMapView
+                        center={mapCenter}
+                        zoom={mapZoom}
+                        enabled={!selectedTeam && mappable.length === 0}
+                      />
+                      <FitBounds teams={mappable} enabled={!selectedTeam && mappable.length > 0} />
+                      <FlyToTeam team={selectedTeam} />
+
+                      {mappable.map((team) => (
+                        <Marker
+                          key={team.id}
+                          position={[team.lat, team.lng]}
+                          icon={makeIcon(teamPinColor(team))}
+                          eventHandlers={{
+                            click: () => {
+                              setSelectedTeam(team)
+                            },
+                          }}
+                        >
+                          <Popup>
+                            <div style={{ fontFamily: 'var(--font-body)', minWidth: 170 }}>
+                              <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
+                                {team.name}
+                              </strong>
+                              <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
+                                {'📍 ' + [team.city, team.state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
+                              </div>
+                              {team.age_group && (
+                                <div style={{ fontSize: 12, marginTop: 3 }}>
+                                  {'🎯 ' + team.age_group + ' · ' + (team.sport || '')}
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setProfileTeam(team)}
+                                style={{
+                                  marginTop: 8,
+                                  width: '100%',
+                                  background: 'var(--navy)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: 8,
+                                  padding: '8px 10px',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                View Details
+                              </button>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      ))}
+                    </MapContainer>
+                  </div>
+
+                  <MapLegend hasPins={mappable.length > 0} />
+                </div>
+              )}
+
+              {openTryoutCount > 0 && (
+                <div
+                  style={{
+                    background: 'var(--open-bg)',
+                    border: '1px solid var(--open-text)',
+                    borderRadius: 12,
+                    marginTop: 10,
+                    padding: '10px 14px',
+                    fontSize: 13,
+                    color: 'var(--open-text)',
+                    fontWeight: 600,
+                    width: '100%',
+                  }}
+                >
+                  {`✅ ${openTryoutCount} team${openTryoutCount !== 1 ? 's' : ''} currently accepting tryouts${
+                    selectedState ? ' in ' + selectedState.name : ''
+                  }`}
+                </div>
+              )}
+
+              {!showMap && (
+                <div
+                  style={{
+                    background: 'var(--white)',
+                    border: '1px solid rgba(15,23,42,0.06)',
+                    borderRadius: 14,
+                    marginTop: 10,
+                    padding: '16px',
+                    color: 'var(--gray)',
+                    fontSize: 13,
+                    width: '100%',
+                  }}
+                >
+                  Map is hidden. Use “Show Map” in the left panel to view team locations.
+                </div>
+              )}
+
+              <div
+                style={{
+                  marginTop: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-head)',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: 'var(--navy)',
+                  }}
+                >
+                  {filtered.length} Team{filtered.length !== 1 ? 's' : ''}
+                  {selectedState ? ` in ${selectedState.name}` : ''}
+                </div>
+
+                <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+                  Browse teams, tryouts, and roster opportunities
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: 'grid',
+                  gridTemplateColumns: isMobile
+                    ? '1fr'
+                    : 'repeat(auto-fill, minmax(270px, 1fr))',
+                  gap: 14,
+                  alignItems: 'stretch',
+                }}
+              >
+                {loading && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+                    Loading teams...
+                  </div>
+                )}
+
+                {!loading && filtered.length === 0 && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <EmptyState
+                      hasFilters={hasFilters}
+                      stateName={selectedState?.name || ''}
+                      zipActive={!!geoCenter}
+                      radius={radius}
+                    />
+                  </div>
+                )}
+
+                {!loading &&
+                  filtered.map((team) => (
+                    <TeamCard
+                      key={team.id}
+                      team={team}
+                      selected={selectedTeam?.id === team.id}
+                      onOpen={() => setProfileTeam(team)}
+                      onFocusMap={() => {
+                        setSelectedTeam(team)
+                        setShowMap(true)
+                      }}
+                    />
+                  ))}
+              </div>
+            </main>
+
+            {!isMobile && (
+              <aside
+                style={{
+                  position: 'sticky',
+                  top: 86,
+                  alignSelf: 'start',
+                  padding: '8px 12px 0 0',
+                  width: '210px',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <AdBox />
+                  <AdBox />
+                  <AdBox />
+                </div>
+              </aside>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
