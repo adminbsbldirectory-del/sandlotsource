@@ -686,7 +686,7 @@ function FacilityForm({ isMobile }) {
   async function handleAddressBlur() {
     const addr = form.address.trim(); if (!addr) return; setAddrStatus('locating')
     try {
-      const q = encodeURIComponent(addr + (form.city?', '+form.city:'') + (form.zip_code?', '+form.zip_code:'') + ', USA')
+      const q = encodeURIComponent(addr + (form.city?', '+form.city:'') + (form.state?', '+form.state:'') + (form.zip_code?' '+form.zip_code:'') + ', USA')
       const res = await fetch('https://nominatim.openstreetmap.org/search?q='+q+'&format=json&limit=1&countrycodes=us', { headers: { 'Accept-Language': 'en-US' } })
       const data = await res.json()
       if (data && data[0]) { setForm((f) => ({ ...f, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) })); setAddrStatus('found') } else setAddrStatus('fallback')
