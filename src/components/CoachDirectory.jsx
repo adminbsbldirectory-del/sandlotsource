@@ -18,14 +18,18 @@ const makeIcon = (color) =>
   L.divIcon({
     className: '',
     html: `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -30],
   })
 
 const makeSelectedIcon = (color) =>
   L.divIcon({
     className: '',
     html: `<div style="width:38px;height:38px;border-radius:50% 50% 50% 0;background:${color};border:4px solid #f0a500;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(0,0,0,0.5);"></div>`,
-    iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -40],
+    iconSize: [38, 38],
+    iconAnchor: [19, 38],
+    popupAnchor: [0, -40],
   })
 
 const PIN_COLORS = {
@@ -41,13 +45,12 @@ const SPECIALTIES = ['All Specialties', 'Pitching', 'Hitting', 'Catching', 'Fiel
 
 const US_STATES = [
   'All States',
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
-  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
-  'VA','WA','WV','WI','WY',
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA',
+  'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT',
+  'VA', 'WA', 'WV', 'WI', 'WY',
 ]
 
-// ── Utility helpers ───────────────────────────────────────
 function parseFirstPhone(raw) {
   if (!raw) return null
   return raw.split(/[\/,]/)[0].trim() || null
@@ -79,48 +82,62 @@ function normalizeCoach(coach) {
   }
 }
 
-// ── Map helpers ───────────────────────────────────────────
 function FlyTo({ lat, lng }) {
   const map = useMap()
+
   useEffect(() => {
     if (lat != null && lng != null) {
       map.flyTo([lat, lng], 13, { duration: 0.8 })
     }
   }, [lat, lng, map])
+
   return null
 }
 
-function FitBounds({ coaches }) {
+function FitBounds({ coaches, selectedId }) {
   const map = useMap()
+
   useEffect(() => {
+    if (selectedId) return
+
     const pts = coaches.filter((c) => c.lat != null && c.lng != null)
     if (pts.length === 0) return
+
     if (pts.length === 1) {
       map.setView([pts[0].lat, pts[0].lng], 12)
       return
     }
+
     const bounds = L.latLngBounds(pts.map((c) => [c.lat, c.lng]))
-    // Small timeout ensures Leaflet container is fully sized before fitBounds
-    setTimeout(() => {
+    const t = setTimeout(() => {
       map.invalidateSize()
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 })
     }, 50)
-  }, [coaches, map])
+
+    return () => clearTimeout(t)
+  }, [coaches, selectedId, map])
+
   return null
 }
 
-function MapMarkers({ mappable, selected, setSelected }) {
+function MapMarkers({ mappable, selected, setSelected, setSelectionSource }) {
   return mappable.map((coach) => {
     const isSelected = coach.id === selected
     const zip = getCoachZip(coach)
     const specs = parseSpecialties(coach.specialty)
+
     return (
       <Marker
         key={coach.id}
         position={[coach.lat, coach.lng]}
         icon={isSelected ? makeSelectedIcon(coachPinColor(coach)) : makeIcon(coachPinColor(coach))}
         zIndexOffset={isSelected ? 1000 : 0}
-        eventHandlers={{ click: () => setSelected(coach.id) }}
+        eventHandlers={{
+          click: () => {
+            setSelectionSource('map')
+            setSelected(coach.id)
+          },
+        }}
       >
         <Popup>
           <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
@@ -131,7 +148,9 @@ function MapMarkers({ mappable, selected, setSelected }) {
             </div>
             {specs.length > 0 && <div style={{ fontSize: 12, marginTop: 2 }}>🎯 {specs.join(', ')}</div>}
             {coach.price_per_session && (
-              <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 2 }}>${coach.price_per_session}/session</div>
+              <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 2 }}>
+                ${coach.price_per_session}/session
+              </div>
             )}
           </div>
         </Popup>
@@ -140,7 +159,6 @@ function MapMarkers({ mappable, selected, setSelected }) {
   })
 }
 
-// ── Rating row ────────────────────────────────────────────
 function RatingRow({ coach, selected }) {
   const avg = parseFloat(coach.rating_average) || 0
   const count = parseInt(coach.review_count, 10) || 0
@@ -173,18 +191,36 @@ function RatingRow({ coach, selected }) {
   )
 }
 
-// ── Coach card ────────────────────────────────────────────
 function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
 
   const cardStyle = selected
-    ? { background: 'var(--navy)', color: 'var(--white)', border: '2px solid var(--gold)', borderRadius: 'var(--card-radius)', cursor: 'pointer', transition: 'all 0.15s', marginBottom: 10, display: 'flex', flexDirection: 'column' }
+    ? {
+        background: 'var(--navy)',
+        color: 'var(--white)',
+        border: '2px solid var(--gold)',
+        borderRadius: 'var(--card-radius)',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+        marginBottom: 10,
+        display: 'flex',
+        flexDirection: 'column',
+      }
     : { marginBottom: 10, cursor: 'pointer' }
 
   const footerStyle = selected
-    ? { padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', borderRadius: '0 0 var(--card-radius) var(--card-radius)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }
+    ? {
+        padding: '12px 16px',
+        borderTop: '1px solid rgba(255,255,255,0.15)',
+        background: 'rgba(255,255,255,0.05)',
+        borderRadius: '0 0 var(--card-radius) var(--card-radius)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 'auto',
+      }
     : undefined
 
   return (
@@ -195,18 +231,25 @@ function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '0.02em' }}>
               {coach.name}
             </div>
+
             {(coach.verified_status || coach.featured_status) && (
               <div style={{ display: 'flex', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
                 {coach.verified_status && <span className="badge" style={{ background: '#DBEAFE', color: '#1D4ED8' }}>✓ Verified</span>}
                 {coach.featured_status && <span className="badge" style={{ background: '#FEF3C7', color: '#92400E' }}>⭐ Featured</span>}
               </div>
             )}
+
             {coach.facility_name && <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>{coach.facility_name}</div>}
+
             <div style={{ fontSize: 13, marginTop: 4, opacity: 0.8 }}>
               📍 {[coach.city, coach.state].filter(Boolean).join(', ')}{zip ? ` ${zip}` : ''}
             </div>
           </div>
-          <span className={`badge badge-sport-${coach.sport}`} style={selected ? { background: 'rgba(255,255,255,0.15)', color: 'white' } : undefined}>
+
+          <span
+            className={`badge badge-sport-${coach.sport}`}
+            style={selected ? { background: 'rgba(255,255,255,0.15)', color: 'white' } : undefined}
+          >
             {coach.sport}
           </span>
         </div>
@@ -215,7 +258,19 @@ function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
           {specs.map((s) => (
-            <span key={s} style={{ background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)', color: selected ? 'white' : 'var(--gray)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{s}</span>
+            <span
+              key={s}
+              style={{
+                background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
+                color: selected ? 'white' : 'var(--gray)',
+                fontSize: 11,
+                padding: '2px 8px',
+                borderRadius: 20,
+                textTransform: 'capitalize',
+              }}
+            >
+              {s}
+            </span>
           ))}
         </div>
 
@@ -258,7 +313,10 @@ function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
       <div className={selected ? '' : 'card-footer'} style={footerStyle}>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onViewProfile(coach) }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onViewProfile(coach)
+          }}
           style={{ width: '100%', background: selected ? 'var(--gold)' : 'var(--navy)', color: 'white', border: 'none', borderRadius: 'var(--btn-radius)', padding: '8px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}
         >
           View Profile &amp; Reviews
@@ -268,7 +326,6 @@ function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
   )
 }
 
-// ── Map legend ────────────────────────────────────────────
 function MapLegend() {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '6px 14px', background: 'var(--white)', borderBottom: '1px solid var(--lgray)', alignItems: 'center', flexShrink: 0 }}>
@@ -283,7 +340,6 @@ function MapLegend() {
   )
 }
 
-// ── Main component ────────────────────────────────────────
 export default function CoachDirectory() {
   const [searchParams] = useSearchParams()
 
@@ -296,26 +352,29 @@ export default function CoachDirectory() {
   const [sport, setSport] = useState('Both')
   const [specialty, setSpecialty] = useState('All Specialties')
   const [state, setState] = useState('All States')
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [profileCoach, setProfileCoach] = useState(null)
   const [showMap, setShowMap] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [selectionSource, setSelectionSource] = useState(null)
 
-  // Refs for scrolling cards into view when a map pin is clicked
   const cardRefs = useRef({})
   const cardListRef = useRef(null)
-
-  useEffect(() => {
-  if (!selected) return
-  const el = cardRefs.current[selected]
-  if (el && cardListRef.current) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-}, [selected])
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
   }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput.trim())
+    }, 300)
+
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   useEffect(() => {
     async function load() {
@@ -325,7 +384,7 @@ export default function CoachDirectory() {
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         setCoaches(data)
         const selectId = searchParams.get('select')
         if (selectId) {
@@ -333,39 +392,42 @@ export default function CoachDirectory() {
           if (match) setSelected(match.id)
         }
       }
+
       setLoading(false)
     }
+
     load()
   }, [searchParams])
 
-  // When selection changes (e.g. from clicking a map pin), scroll the card into view
   useEffect(() => {
-    if (!selected) return
+    if (!selected || selectionSource !== 'map') return
     const el = cardRefs.current[selected]
     if (el && cardListRef.current) {
-      // Use 'nearest' so it doesn't scroll if already visible
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
-  }, [selected])
+    setSelectionSource(null)
+  }, [selected, selectionSource])
 
   const normalizedCoaches = coaches.map(normalizeCoach)
 
   const filtered = normalizedCoaches.filter((c) => {
-  const specs = c.specialty || []
-  if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
-  if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
-  if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
-  if (search) {
-    const q = search.toLowerCase()
-    if (
-      !(c.name || '').toLowerCase().includes(q) &&
-      !(c.city || '').toLowerCase().includes(q) &&
-      !(c.facility_name || '').toLowerCase().includes(q) &&
-      !String(c.zip || '').includes(q)
-    ) return false
-  }
-  return true
-})
+    const specs = c.specialty || []
+    if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
+    if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
+    if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
+
+    if (search) {
+      const q = search.toLowerCase()
+      if (
+        !(c.name || '').toLowerCase().includes(q) &&
+        !(c.city || '').toLowerCase().includes(q) &&
+        !(c.facility_name || '').toLowerCase().includes(q) &&
+        !String(c.zip || '').includes(q)
+      ) return false
+    }
+
+    return true
+  })
 
   const mappable = filtered.filter((c) => c.lat != null && c.lng != null)
   const sel = selected
@@ -406,11 +468,8 @@ export default function CoachDirectory() {
     )
   }
 
-  // ── Sidebar filters (desktop) ────────────────────────────
   const Sidebar = () => (
     <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '2px solid var(--lgray)' }}>
-
-      {/* Sticky filter panel */}
       <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '2px solid var(--lgray)', flexShrink: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
           {loading ? 'Loading…' : filtered.length + ' coach' + (filtered.length !== 1 ? 'es' : '')}
@@ -420,8 +479,8 @@ export default function CoachDirectory() {
           <span style={sectionLabel}>Search</span>
           <input
             placeholder="Name, city, facility, zip..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             style={inputStyle}
           />
         </div>
@@ -440,20 +499,39 @@ export default function CoachDirectory() {
 
         <div style={{ marginBottom: 10 }}>
           <span style={sectionLabel}>Specialty</span>
-          <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle }}>
+          <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
             {SPECIALTIES.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
 
-        <div>
+        <div style={{ marginBottom: 10 }}>
           <span style={sectionLabel}>State</span>
-          <select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle }}>
+          <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
             {US_STATES.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
+
+        <a
+          href="/submit"
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            background: 'var(--red)',
+            color: 'white',
+            padding: '10px',
+            borderRadius: 'var(--btn-radius)',
+            fontSize: 13,
+            fontWeight: 700,
+            textDecoration: 'none',
+            fontFamily: 'var(--font-head)',
+            letterSpacing: '0.04em',
+            marginTop: 10,
+          }}
+        >
+          + Add a Coach
+        </a>
       </div>
 
-      {/* Scrollable card list */}
       <div ref={cardListRef} style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
         {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
         {!loading && filtered.length === 0 && <EmptyState />}
@@ -462,28 +540,24 @@ export default function CoachDirectory() {
             key={coach.id}
             coach={coach}
             selected={selected === coach.id}
-            onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+            onClick={() => {
+              setSelectionSource('card')
+              setSelected(selected === coach.id ? null : coach.id)
+            }}
             onViewProfile={setProfileCoach}
             cardRef={(el) => { cardRefs.current[coach.id] = el }}
           />
         ))}
-
-        <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--lgray)' }}>
-          <a href="/submit" style={{ display: 'block', textAlign: 'center', background: 'var(--red)', color: 'white', padding: '10px', borderRadius: 'var(--btn-radius)', fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}>
-            + Add a Coach
-          </a>
-        </div>
       </div>
     </div>
   )
 
-  // ── Mobile filter bar ────────────────────────────────────
   const MobileFilterBar = () => (
     <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
       <input
         placeholder="🔍 Search..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
         style={{ ...inputStyle, flex: 1, minWidth: 120 }}
       />
       <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => s === 'baseball' ? 'Both' : 'baseball')}>⚾</button>
@@ -499,7 +573,6 @@ export default function CoachDirectory() {
     <>
       {profileCoach && <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />}
 
-      {/* ── Mobile layout ── */}
       {isMobile && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <MobileFilterBar />
@@ -509,8 +582,8 @@ export default function CoachDirectory() {
               <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                <FitBounds coaches={mappable} />
-                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
+                <FitBounds coaches={mappable} selectedId={selected} />
+                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} setSelectionSource={setSelectionSource} />
               </MapContainer>
             </div>
           )}
@@ -523,7 +596,10 @@ export default function CoachDirectory() {
                 key={coach.id}
                 coach={coach}
                 selected={selected === coach.id}
-                onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                onClick={() => {
+                  setSelectionSource('card')
+                  setSelected(selected === coach.id ? null : coach.id)
+                }}
                 onViewProfile={setProfileCoach}
                 cardRef={(el) => { cardRefs.current[coach.id] = el }}
               />
@@ -532,30 +608,22 @@ export default function CoachDirectory() {
         </div>
       )}
 
-      {/* ── Desktop layout: left sidebar | center map | right ad rail ── */}
       {!isMobile && (
         <div style={{ display: 'flex', height: 'calc(100vh - ' + HEADER_H + 'px)', overflow: 'hidden' }}>
-
-          {/* Left: filters + scrollable cards */}
           <Sidebar />
 
-          {/* Center: map */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <MapLegend />
             <div style={{ flex: 1, position: 'relative' }}>
               <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                <FitBounds coaches={mappable} />
-                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
+                <FitBounds coaches={mappable} selectedId={selected} />
+                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} setSelectionSource={setSelectionSource} />
               </MapContainer>
             </div>
           </div>
 
-          {/* Right: ad rail */}
           <div style={{ width: 200, flexShrink: 0, borderLeft: '2px solid var(--lgray)', background: 'var(--white)', display: 'flex', flexDirection: 'column', gap: 16, padding: 16, overflowY: 'auto' }}>
             {[1, 2, 3].map((i) => (
               <div key={i} style={{ border: '2px dashed var(--lgray)', borderRadius: 'var(--card-radius)', padding: '16px 12px', textAlign: 'center', background: 'var(--cream)', minHeight: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
