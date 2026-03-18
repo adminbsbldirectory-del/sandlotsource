@@ -197,6 +197,12 @@ export default function Facilities() {
   const cardListRef = useRef(null)
 
   useEffect(() => {
+  if (!selected) return
+  const el = cardRefs.current[selected]
+  if (el && cardListRef.current) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}, [selected])
+
+  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
