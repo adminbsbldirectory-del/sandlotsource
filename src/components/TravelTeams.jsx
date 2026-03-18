@@ -125,7 +125,7 @@ function FitBounds({ teams, enabled }) {
     const pts = teams.filter((t) => t.lat != null && t.lng != null)
     if (!pts.length) return
     const bounds = L.latLngBounds(pts.map((t) => [t.lat, t.lng]))
-    map.fitBounds(bounds, { padding: [32, 32], maxZoom: 10 })
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 10 })
   }, [teams, enabled, map])
 
   return null
@@ -136,9 +136,7 @@ function FlyToTeam({ team }) {
 
   useEffect(() => {
     if (!team || team.lat == null || team.lng == null) return
-    map.flyTo([team.lat, team.lng], Math.max(map.getZoom(), 9), {
-      duration: 0.5,
-    })
+    map.flyTo([team.lat, team.lng], Math.max(map.getZoom(), 9), { duration: 0.5 })
   }, [team, map])
 
   return null
@@ -151,9 +149,9 @@ function MapLegend({ hasPins }) {
         display: 'flex',
         flexWrap: 'wrap',
         gap: 12,
-        padding: '7px 16px',
+        padding: '7px 12px',
         background: 'var(--white)',
-        borderBottom: '1px solid var(--lgray)',
+        borderTop: '1px solid var(--lgray)',
         alignItems: 'center',
       }}
     >
@@ -196,6 +194,47 @@ function MapLegend({ hasPins }) {
           Map pins appear as teams add location data
         </span>
       )}
+    </div>
+  )
+}
+
+function AdBox() {
+  return (
+    <div
+      style={{
+        background: '#F7F3ED',
+        border: '1px dashed #D8D0C5',
+        borderRadius: 14,
+        padding: '28px 18px',
+        textAlign: 'center',
+        minHeight: 170,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 700,
+          color: '#7A6B57',
+          fontFamily: 'var(--font-head)',
+          marginBottom: 10,
+        }}
+      >
+        ADVERTISE HERE
+      </div>
+      <div style={{ fontSize: 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 14 }}>
+        Reach baseball &amp; softball families
+      </div>
+      <a
+        href="/contact"
+        style={{
+          color: 'var(--red)',
+          fontWeight: 700,
+          textDecoration: 'none',
+          fontSize: 14,
+        }}
+      >
+        Contact Us
+      </a>
     </div>
   )
 }
@@ -307,18 +346,11 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
 
         {team.description && (
           <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 8, lineHeight: 1.5 }}>
-            {team.description.length > 110 ? team.description.slice(0, 110) + '…' : team.description}
+            {team.description.length > 105 ? team.description.slice(0, 105) + '…' : team.description}
           </div>
         )}
 
-        <div
-          style={{
-            marginTop: 12,
-            display: 'flex',
-            gap: 8,
-            flexWrap: 'wrap',
-          }}
-        >
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={(e) => {
@@ -343,7 +375,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
             View Details &amp; Claim
           </button>
 
-          {(team.lat != null && team.lng != null) && (
+          {team.lat != null && team.lng != null && (
             <button
               type="button"
               onClick={(e) => {
@@ -397,7 +429,7 @@ export default function TravelTeams() {
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   )
   const [showMap, setShowMap] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= 768 : false
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   )
   const [detectingLoc, setDetectingLoc] = useState(true)
 
@@ -413,10 +445,10 @@ export default function TravelTeams() {
   const [zipError, setZipError] = useState('')
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       setSearchTerm(searchInput.trim().toLowerCase())
     }, 250)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
   }, [searchInput])
 
   useEffect(() => {
@@ -438,16 +470,11 @@ export default function TravelTeams() {
 
   useEffect(() => {
     const handler = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      if (mobile) return
-      if (window.innerWidth >= 768 && showMap === false && selectedTeam?.lat != null) {
-        // leave user preference alone
-      }
+      setIsMobile(window.innerWidth < 768)
     }
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
-  }, [showMap, selectedTeam])
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -499,10 +526,10 @@ export default function TravelTeams() {
       const teamSport = String(t.sport || '').toLowerCase()
       const haystack = [
         t.name,
-        t.org_affiliation,
         t.city,
         t.state,
         t.zip_code,
+        t.org_affiliation,
         t.age_group,
         t.description,
       ]
@@ -524,16 +551,8 @@ export default function TravelTeams() {
     })
   }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius])
 
-  const openTryoutCount = filtered.filter((t) => t.tryout_status === 'open').length
   const mappable = filtered.filter((t) => t.lat != null && t.lng != null)
-
-  const mapCenter = geoCenter
-    ? [geoCenter.lat, geoCenter.lng]
-    : state && STATE_CENTERS[state]
-      ? STATE_CENTERS[state]
-      : [39.5, -98.35]
-
-  const mapZoom = geoCenter ? 10 : state ? 6 : 4
+  const openTryoutCount = filtered.filter((t) => t.tryout_status === 'open').length
 
   const hasFilters =
     sport !== 'Both' ||
@@ -542,6 +561,14 @@ export default function TravelTeams() {
     ageGroup !== 'All Ages' ||
     tryoutFilter !== 'All' ||
     !!searchTerm
+
+  const mapCenter = geoCenter
+    ? [geoCenter.lat, geoCenter.lng]
+    : state && STATE_CENTERS[state]
+      ? STATE_CENTERS[state]
+      : [39.5, -98.35]
+
+  const mapZoom = geoCenter ? 10 : state ? 6 : 4
 
   const filterSelectStyle = {
     width: '100%',
@@ -581,21 +608,24 @@ export default function TravelTeams() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '320px minmax(0, 1fr)',
-          gap: isMobile ? 0 : 16,
+          gridTemplateColumns: isMobile ? '1fr' : '340px minmax(0, 1fr) 230px',
+          gap: isMobile ? 0 : 14,
           alignItems: 'start',
-          maxWidth: 1600,
-          margin: '0 auto',
+          width: '100%',
+          maxWidth: '100%',
+          margin: '0',
+          padding: '0',
         }}
       >
         <aside
           style={{
             position: isMobile ? 'static' : 'sticky',
             top: isMobile ? 'auto' : 76,
-            alignSelf: 'start',
+            height: isMobile ? 'auto' : 'calc(100vh - 76px)',
             background: 'var(--white)',
             borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-            minHeight: isMobile ? 'auto' : 'calc(100vh - 76px)',
+            overflow: 'hidden',
+            alignSelf: 'start',
             zIndex: 2,
           }}
         >
@@ -625,6 +655,7 @@ export default function TravelTeams() {
               flexDirection: 'column',
               gap: 14,
               borderBottom: '1px solid var(--lgray)',
+              background: 'var(--white)',
             }}
           >
             <div>
@@ -774,13 +805,12 @@ export default function TravelTeams() {
               </select>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
                 onClick={() => setShowMap((m) => !m)}
                 style={{
                   flex: 1,
-                  minWidth: 120,
                   padding: '10px 12px',
                   borderRadius: 'var(--btn-radius)',
                   border: '1.5px solid var(--navy)',
@@ -799,7 +829,6 @@ export default function TravelTeams() {
                 href="/submit"
                 style={{
                   flex: 1,
-                  minWidth: 120,
                   textAlign: 'center',
                   textDecoration: 'none',
                   padding: '10px 12px',
@@ -818,12 +847,13 @@ export default function TravelTeams() {
 
           <div
             style={{
-              maxHeight: isMobile ? 'none' : 'calc(100vh - 430px)',
+              height: isMobile ? 'auto' : 'calc(100vh - 430px)',
               overflowY: isMobile ? 'visible' : 'auto',
               padding: 14,
               display: 'flex',
               flexDirection: 'column',
               gap: 12,
+              background: '#fafafa',
             }}
           >
             {loading && (
@@ -857,15 +887,23 @@ export default function TravelTeams() {
           </div>
         </aside>
 
-        <main style={{ minWidth: 0, paddingBottom: 20 }}>
+        <main style={{ minWidth: 0, paddingRight: isMobile ? 0 : 0 }}>
           {showMap && (
             <div
               style={{
                 background: 'var(--white)',
-                borderBottom: '1px solid rgba(15,23,42,0.06)',
+                padding: isMobile ? 0 : '10px 0 0 0',
               }}
             >
-              <div style={{ height: isMobile ? 250 : 420, width: '100%' }}>
+              <div
+                style={{
+                  height: isMobile ? 260 : 380,
+                  width: '100%',
+                  overflow: 'hidden',
+                  borderRadius: isMobile ? 0 : 14,
+                  border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                }}
+              >
                 <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -931,8 +969,10 @@ export default function TravelTeams() {
             <div
               style={{
                 background: 'var(--open-bg)',
-                borderBottom: '1px solid var(--open-text)',
-                padding: '10px 16px',
+                border: '1px solid var(--open-text)',
+                borderRadius: 12,
+                marginTop: 12,
+                padding: '10px 14px',
                 fontSize: 13,
                 color: 'var(--open-text)',
                 fontWeight: 600,
@@ -947,15 +987,36 @@ export default function TravelTeams() {
           {!showMap && (
             <div
               style={{
-                padding: isMobile ? '16px' : '18px 20px',
+                background: 'var(--white)',
+                border: '1px solid rgba(15,23,42,0.06)',
+                borderRadius: 14,
+                marginTop: 10,
+                padding: '16px',
                 color: 'var(--gray)',
                 fontSize: 13,
               }}
             >
-              Map is hidden. Use “Show Map” in the filter panel to view team locations.
+              Map is hidden. Use “Show Map” in the left panel to view team locations.
             </div>
           )}
         </main>
+
+        {!isMobile && (
+          <aside
+            style={{
+              position: 'sticky',
+              top: 86,
+              alignSelf: 'start',
+              padding: '10px 14px 0 0',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <AdBox />
+              <AdBox />
+              <AdBox />
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   )
