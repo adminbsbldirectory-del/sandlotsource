@@ -60,8 +60,8 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
     if (!value || value.length !== 5) return
     setStatus('loading')
     const geo = await geocodeZip(value)
-    if (geo) { setStatus('ok');    onGeocode(geo) }
-    else      { setStatus('error'); onGeocode(null) }
+    if (geo) { setStatus('ok'); onGeocode(geo) }
+    else { setStatus('error'); onGeocode(null) }
   }
   return (
     <div>
@@ -79,7 +79,6 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
   )
 }
 
-// ── FitBounds ─────────────────────────────────────────────
 function FitBounds({ spots }) {
   const map = useMap()
   useEffect(() => {
@@ -91,28 +90,20 @@ function FitBounds({ spots }) {
   return null
 }
 
-// ── Days remaining helper ─────────────────────────────────
 function DaysRemaining({ expiresAt }) {
   if (!expiresAt) return null
   const days = Math.max(0, Math.ceil((new Date(expiresAt) - new Date()) / (1000 * 60 * 60 * 24)))
   const cls = days <= 2 ? 'urgent' : days <= 5 ? 'soon' : 'ok'
   const label = days === 0 ? 'Expires today' : days + ' day' + (days !== 1 ? 's' : '') + ' left'
-  return (
-    <div className={'days-remaining ' + cls} style={{ textAlign:'right', marginTop:8 }}>
-      {label}
-    </div>
-  )
+  return <div className={'days-remaining ' + cls} style={{ textAlign:'right', marginTop:8 }}>{label}</div>
 }
 
-// ── Roster card ───────────────────────────────────────────
 function RosterCard({ spot }) {
   const positions  = Array.isArray(spot.positions_needed) ? spot.positions_needed : []
   const cityState  = [spot.city, spot.state].filter(Boolean).join(', ')
-
   return (
     <div className="card">
       <div className="card-body">
-
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
           <div style={{ flex:1 }}>
             <div style={{ fontFamily:'var(--font-head)', fontSize:17, fontWeight:700, color:'var(--navy)', marginBottom:4 }}>
@@ -132,11 +123,7 @@ function RosterCard({ spot }) {
             )}
           </div>
         </div>
-
-        {spot.org_affiliation && (
-          <div style={{ fontSize:12, color:'var(--gray)', marginBottom:8 }}>🏆 {spot.org_affiliation}</div>
-        )}
-
+        {spot.org_affiliation && <div style={{ fontSize:12, color:'var(--gray)', marginBottom:8 }}>🏆 {spot.org_affiliation}</div>}
         {positions.length > 0 && (
           <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginBottom:10 }}>
             <span style={{ fontSize:12, fontWeight:600, color:'var(--navy)', marginRight:2 }}>Needs:</span>
@@ -145,30 +132,23 @@ function RosterCard({ spot }) {
             ))}
           </div>
         )}
-
         <div style={{ marginBottom:10 }}>
           <span style={{ background:'#DCFCE7', color:'#15803D', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>📅 Full Season</span>
         </div>
-
-        {spot.description && (
-          <div style={{ fontSize:13, color:'#555', lineHeight:1.5, marginBottom:10 }}>{spot.description}</div>
-        )}
-
+        {spot.description && <div style={{ fontSize:13, color:'#555', lineHeight:1.5, marginBottom:10 }}>{spot.description}</div>}
         <div style={{ paddingTop:12, borderTop:'1px solid var(--lgray)', fontSize:13 }}>
-          {spot.contact_name && (
-            <div style={{ fontWeight:600, color:'var(--navy)', marginBottom:3 }}>👤 {spot.contact_name}</div>
-          )}
+          {spot.contact_name && <div style={{ fontWeight:600, color:'var(--navy)', marginBottom:3 }}>👤 {spot.contact_name}</div>}
           <div style={{ color:'#1D4ED8', fontWeight:600 }}>📬 {spot.contact_info}</div>
         </div>
-
         <DaysRemaining expiresAt={spot.expires_at} />
       </div>
     </div>
   )
 }
 
-// ── Roster form ───────────────────────────────────────────
-function RosterForm({ onSubmitted }) {
+function RosterForm({ onSubmitted, isMobile }) {
+  const g2 = isMobile ? '1fr' : '1fr 1fr'
+
   const [form, setForm] = useState({
     sport: 'baseball', team_name: '', org_affiliation: '',
     age_group: '', positions_needed: [],
@@ -207,46 +187,31 @@ function RosterForm({ onSubmitted }) {
     if (err) { setError(err); return }
     setError('')
     setSubmitting(true)
-
     const payload = {
-      sport:            form.sport,
-      team_name:        form.team_name.trim() || null,
-      org_affiliation:  form.org_affiliation.trim() || null,
-      age_group:        form.age_group,
-      positions_needed: form.positions_needed,
-      city:             form.city.trim(),
-      zip_code:         form.zip_code || null,
-      lat:              form.lat || null,
-      lng:              form.lng || null,
-      commitment:       'full_season',
-      description:      form.description.trim() || null,
-      contact_info:     form.contact_info.trim(),
-      active:           true,
-      approval_status:  'pending',
-      source:           'website_form',
+      sport: form.sport, team_name: form.team_name.trim() || null,
+      org_affiliation: form.org_affiliation.trim() || null, age_group: form.age_group,
+      positions_needed: form.positions_needed, city: form.city.trim(),
+      zip_code: form.zip_code || null, lat: form.lat || null, lng: form.lng || null,
+      commitment: 'full_season', description: form.description.trim() || null,
+      contact_info: form.contact_info.trim(), active: true,
+      approval_status: 'pending', source: 'website_form',
       last_confirmed_at: new Date().toISOString(),
     }
-
     const { error: sbError } = await supabase.from('roster_spots').insert(payload)
     setSubmitting(false)
-    if (sbError) {
-      setError('Submission error: ' + (sbError.message || 'Please try again.'))
-    } else {
-      onSubmitted()
-    }
+    if (sbError) setError('Submission error: ' + (sbError.message || 'Please try again.'))
+    else onSubmitted()
   }
 
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
 
   return (
-    <div style={{ background:'white', borderRadius:12, border:'2px solid var(--lgray)', padding:'28px 24px', maxWidth:680, margin:'0 auto' }}>
-      <div style={{ fontFamily:'var(--font-head)', fontSize:20, fontWeight:800, color:'var(--navy)', marginBottom:20 }}>
-        Post a Roster Spot
-      </div>
+    <div style={{ background:'white', borderRadius:12, border:'2px solid var(--lgray)', padding: isMobile ? '20px 16px' : '28px 24px', maxWidth:680, margin:'0 auto' }}>
+      <div style={{ fontFamily:'var(--font-head)', fontSize:20, fontWeight:800, color:'var(--navy)', marginBottom:20 }}>Post a Roster Spot</div>
 
       <div style={{ marginBottom:16 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
-        <div style={{ display:'flex', gap:8 }}>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
           {['baseball','softball'].map(s => (
             <button key={s} onClick={() => { set('sport', s); set('positions_needed', []) }} style={{
               padding:'8px 18px', borderRadius:8, border:'2px solid', cursor:'pointer',
@@ -259,7 +224,7 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+      <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
         <div>
           <label style={labelStyle}>Team Name</label>
           <input value={form.team_name} onChange={e => set('team_name', e.target.value)} placeholder="e.g. Cherokee Nationals" style={inputStyle} />
@@ -270,7 +235,7 @@ function RosterForm({ onSubmitted }) {
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+      <div style={{ display:'grid', gridTemplateColumns:g2, gap:12, marginBottom:14 }}>
         <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
           <select value={form.age_group} onChange={e => set('age_group', e.target.value)} style={selectStyle}>
@@ -324,11 +289,11 @@ function RosterForm({ onSubmitted }) {
       <FieldError msg={error} />
 
       <button onClick={handleSubmit} disabled={submitting} style={{
-        background:'var(--red)', color:'white', border:'none',
-        borderRadius:8, padding:'12px 32px',
-        fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
+        background:'var(--red)', color:'white', border:'none', borderRadius:8,
+        padding:'12px 32px', fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
         letterSpacing:'0.04em', textTransform:'uppercase',
         opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
+        width: isMobile ? '100%' : 'auto',
       }}>
         {submitting ? 'Posting…' : 'Post Roster Spot'}
       </button>
@@ -336,7 +301,6 @@ function RosterForm({ onSubmitted }) {
   )
 }
 
-// ── Main component ────────────────────────────────────────
 export default function RosterSpots() {
   const [spots,    setSpots]    = useState([])
   const [loading,  setLoading]  = useState(true)
@@ -344,13 +308,18 @@ export default function RosterSpots() {
   const [sport,    setSport]    = useState('Both')
   const [ageGroup, setAgeGroup] = useState('All Ages')
   const [showMap,  setShowMap]  = useState(false)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   useEffect(() => {
     async function load() {
       const { data, error } = await supabase
-        .from('roster_spots')
-        .select('*')
-        .eq('active', true)
+        .from('roster_spots').select('*').eq('active', true)
         .in('approval_status', ['pending','approved'])
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
@@ -392,34 +361,21 @@ export default function RosterSpots() {
 
   if (view === 'post') {
     return (
-      <div style={{ padding:'32px 20px' }}>
+      <div style={{ padding: isMobile ? '20px 14px' : '32px 20px' }}>
         <button onClick={() => setView('browse')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--navy)', fontWeight:700, fontSize:13, fontFamily:'var(--font-head)', marginBottom:20, display:'block' }}>
           ← Back to Roster Spots
         </button>
-        <RosterForm onSubmitted={() => setView('submitted')} />
+        <RosterForm onSubmitted={() => setView('submitted')} isMobile={isMobile} />
       </div>
     )
   }
 
   return (
     <div>
-      {/* Filter bar */}
       <div className="filter-bar">
-
-        {/* Sport pill toggles */}
         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-          <button
-            className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-            onClick={() => setSport(s => s === 'baseball' ? 'Both' : 'baseball')}
-          >
-            ⚾ Baseball
-          </button>
-          <button
-            className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-            onClick={() => setSport(s => s === 'softball' ? 'Both' : 'softball')}
-          >
-            🥎 Softball
-          </button>
+          <button className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport(s => s === 'baseball' ? 'Both' : 'baseball')}>⚾ Baseball</button>
+          <button className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport(s => s === 'softball' ? 'Both' : 'softball')}>🥎 Softball</button>
         </div>
 
         <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} style={filterSelectStyle}>
@@ -431,12 +387,9 @@ export default function RosterSpots() {
         </span>
 
         <button onClick={() => setShowMap(m => !m)} style={{
-          padding:'8px 14px', borderRadius:'var(--btn-radius)',
-          border:'2px solid var(--navy)',
-          background: showMap ? 'var(--navy)' : 'white',
-          color:      showMap ? 'white' : 'var(--navy)',
-          fontSize:13, fontWeight:700, cursor:'pointer',
-          fontFamily:'var(--font-head)', whiteSpace:'nowrap',
+          padding:'8px 14px', borderRadius:'var(--btn-radius)', border:'2px solid var(--navy)',
+          background: showMap ? 'var(--navy)' : 'white', color: showMap ? 'white' : 'var(--navy)',
+          fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--font-head)', whiteSpace:'nowrap',
         }}>
           {showMap ? '📋 List' : '🗺️ Map'}
         </button>
@@ -451,15 +404,11 @@ export default function RosterSpots() {
         </button>
       </div>
 
-      {/* Map */}
       {showMap && (
         <div>
           <div style={{ height:320, width:'100%', borderBottom:'2px solid var(--lgray)' }}>
             <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height:'100%', width:'100%' }}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <FitBounds spots={mappable} />
               {mappable.map(spot => (
                 <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={makeIcon(PIN_COLOR)}>
@@ -469,9 +418,7 @@ export default function RosterSpots() {
                       <div style={{ fontSize:12, color:'#666', marginTop:3 }}>
                         {'📍 ' + [spot.city, spot.state].filter(Boolean).join(', ') + (spot.zip_code ? ' ' + spot.zip_code : '')}
                       </div>
-                      {spot.age_group && (
-                        <div style={{ fontSize:12, marginTop:2 }}>{'🎯 ' + spot.age_group + ' · ' + spot.sport}</div>
-                      )}
+                      {spot.age_group && <div style={{ fontSize:12, marginTop:2 }}>{'🎯 ' + spot.age_group + ' · ' + spot.sport}</div>}
                     </div>
                   </Popup>
                 </Marker>
@@ -489,13 +436,11 @@ export default function RosterSpots() {
         </div>
       )}
 
-      {/* Page header */}
       <div style={{ background:'var(--cream)', borderBottom:'2px solid var(--lgray)', padding:'20px 24px' }}>
         <div style={{ fontFamily:'var(--font-head)', fontSize:22, fontWeight:800, color:'var(--navy)', marginBottom:4 }}>Roster Spots Open</div>
         <div style={{ fontSize:13, color:'var(--gray)' }}>Travel teams looking for full-season players. Posts expire after 15 days.</div>
       </div>
 
-      {/* Cards grid */}
       <div style={{ padding:'24px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:16, maxWidth:1200, margin:'0 auto', alignItems:'stretch' }}>
         {!loading && filtered.length === 0 && (
           <div className="empty-state" style={{ gridColumn:'1/-1' }}>
