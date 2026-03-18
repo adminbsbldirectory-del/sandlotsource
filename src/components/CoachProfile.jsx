@@ -155,7 +155,7 @@ export default function CoachProfile({ coach, onClose }) {
           )}
           <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
             <span style={{ background:'rgba(255,255,255,0.15)', color:'white', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, textTransform:'capitalize' }}>
-              {coach.sport}
+              {coach.sport === 'both' ? 'Baseball & Softball' : coach.sport}
             </span>
             {specs.map(s => (
               <span key={s} style={{ background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.85)', fontSize:11, padding:'3px 10px', borderRadius:20, textTransform:'capitalize' }}>
