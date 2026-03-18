@@ -86,11 +86,21 @@ function normalizeCoach(coach) {
   return {
     ...coach,
     id: String(coach.id),
-    facility_id: coach.facility_id ? String(coach.facility_id) : coach.facility_id,
+    facility_id: coach.facility_id ? String(coach.facility_id) : null,
     lat: toNumber(coach.lat ?? coach.latitude),
     lng: toNumber(coach.lng ?? coach.longitude),
     zip: coach.zip || coach.zip_code || '',
     specialty: parseSpecialties(coach.specialty),
+  }
+}
+
+function normalizeFacility(facility) {
+  return {
+    ...facility,
+    id: String(facility.id),
+    lat: toNumber(facility.lat ?? facility.latitude),
+    lng: toNumber(facility.lng ?? facility.longitude),
+    zip: facility.zip || facility.zip_code || '',
   }
 }
 
@@ -440,6 +450,7 @@ export default function CoachDirectory() {
   const [searchParams] = useSearchParams()
 
   const [coaches, setCoaches] = useState([])
+  const [facilities, setFacilities] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(() => searchParams.get('select') || null)
   const [sport, setSport] = useState('Both')
@@ -469,21 +480,30 @@ export default function CoachDirectory() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase
-        .from('coaches')
-        .select('*')
-        .eq('active', true)
-        .in('approval_status', ['approved', 'seeded'])
+      const [{ data: coachData, error: coachError }, { data: facilityData, error: facilityError }] =
+        await Promise.all([
+          supabase
+            .from('coaches')
+            .select('*')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded']),
+          supabase
+            .from('facilities')
+            .select('id, name, lat, lng, latitude, longitude, address, city, state, zip, zip_code')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded']),
+        ])
 
-      if (!error && data) {
-        const normalized = data.map(normalizeCoach)
-        setCoaches(normalized)
+      const normalizedCoachesLoaded = !coachError && coachData ? coachData.map(normalizeCoach) : []
+      const normalizedFacilitiesLoaded = !facilityError && facilityData ? facilityData.map(normalizeFacility) : []
 
-        const selectId = searchParams.get('select')
-        if (selectId) {
-          const match = normalized.find((c) => c.id === selectId)
-          if (match) setSelected(match.id)
-        }
+      setCoaches(normalizedCoachesLoaded)
+      setFacilities(normalizedFacilitiesLoaded)
+
+      const selectId = searchParams.get('select')
+      if (selectId) {
+        const match = normalizedCoachesLoaded.find((c) => c.id === selectId)
+        if (match) setSelected(match.id)
       }
 
       setLoading(false)
@@ -492,10 +512,34 @@ export default function CoachDirectory() {
     load()
   }, [searchParams])
 
-  const normalizedCoaches = useMemo(() => coaches.map(normalizeCoach), [coaches])
+  const facilityMap = useMemo(() => {
+    const map = new Map()
+    for (const facility of facilities) {
+      map.set(facility.id, facility)
+    }
+    return map
+  }, [facilities])
+
+  const resolvedCoaches = useMemo(() => {
+    return coaches.map((coach) => {
+      if (!coach.facility_id) return coach
+
+      const linkedFacility = facilityMap.get(coach.facility_id)
+      if (!linkedFacility) return coach
+      if (linkedFacility.lat == null || linkedFacility.lng == null) return coach
+
+      return {
+        ...coach,
+        lat: linkedFacility.lat,
+        lng: linkedFacility.lng,
+        resolved_from_facility: true,
+        resolved_facility_name: linkedFacility.name || coach.facility_name,
+      }
+    })
+  }, [coaches, facilityMap])
 
   const filtered = useMemo(() => {
-    return normalizedCoaches.filter((c) => {
+    return resolvedCoaches.filter((c) => {
       const specs = c.specialty || []
 
       if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
@@ -516,12 +560,12 @@ export default function CoachDirectory() {
 
       return true
     })
-  }, [normalizedCoaches, sport, specialty, state, search])
+  }, [resolvedCoaches, sport, specialty, state, search])
 
   const mappable = filtered.filter((c) => c.lat != null && c.lng != null)
 
   const sel = selected
-    ? filtered.find((c) => c.id === selected) || normalizedCoaches.find((c) => c.id === selected) || null
+    ? filtered.find((c) => c.id === selected) || resolvedCoaches.find((c) => c.id === selected) || null
     : null
 
   const inputStyle = {
