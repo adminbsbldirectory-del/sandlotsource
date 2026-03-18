@@ -344,28 +344,22 @@ export default function CoachDirectory() {
 
   const normalizedCoaches = coaches.map(normalizeCoach)
 
-  const filtered = normalizedCoaches
-    .filter((c) => {
-      const specs = c.specialty || []
-      if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
-      if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
-      if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (
-          !(c.name || '').toLowerCase().includes(q) &&
-          !(c.city || '').toLowerCase().includes(q) &&
-          !(c.facility_name || '').toLowerCase().includes(q) &&
-          !String(c.zip || '').includes(q)
-        ) return false
-      }
-      return true
-    })
-    .sort((a, b) => {
-      if (a.id === selected) return -1
-      if (b.id === selected) return 1
-      return 0
-    })
+  const filtered = normalizedCoaches.filter((c) => {
+  const specs = c.specialty || []
+  if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
+  if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
+  if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
+  if (search) {
+    const q = search.toLowerCase()
+    if (
+      !(c.name || '').toLowerCase().includes(q) &&
+      !(c.city || '').toLowerCase().includes(q) &&
+      !(c.facility_name || '').toLowerCase().includes(q) &&
+      !String(c.zip || '').includes(q)
+    ) return false
+  }
+  return true
+})
 
   const mappable = filtered.filter((c) => c.lat != null && c.lng != null)
   const sel = selected
