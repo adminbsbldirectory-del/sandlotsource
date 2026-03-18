@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -117,7 +118,9 @@ function FlyTo({ lat, lng }) {
   const map = useMap()
 
   useEffect(() => {
-    if (lat != null && lng != null) map.flyTo([lat, lng], 13, { duration: 0.6 })
+    if (lat != null && lng != null) {
+      map.flyTo([lat, lng], 13, { duration: 0.6 })
+    }
   }, [lat, lng, map])
 
   return null
@@ -200,12 +203,30 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
         {amenities.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
             {amenities.slice(0, 5).map((a) => (
-              <span key={a} style={{ background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)', color: selected ? 'white' : 'var(--gray)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>
+              <span
+                key={a}
+                style={{
+                  background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
+                  color: selected ? 'white' : 'var(--gray)',
+                  fontSize: 11,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                  textTransform: 'capitalize',
+                }}
+              >
                 {a}
               </span>
             ))}
             {amenities.length > 5 && (
-              <span style={{ background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)', color: selected ? 'white' : 'var(--gray)', fontSize: 11, padding: '2px 8px', borderRadius: 20 }}>
+              <span
+                style={{
+                  background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
+                  color: selected ? 'white' : 'var(--gray)',
+                  fontSize: 11,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                }}
+              >
                 +{amenities.length - 5} more
               </span>
             )}
@@ -221,17 +242,36 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
         {(facility.phone || websiteUrl || instagramUrl) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 10 }}>
             {facility.phone && (
-              <a href={'tel:' + facility.phone.replace(/\D/g, '')} className="contact-link" onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}>
+              <a
+                href={'tel:' + facility.phone.replace(/\D/g, '')}
+                className="contact-link"
+                onClick={(e) => e.stopPropagation()}
+                style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}
+              >
                 📞 {facility.phone}
               </a>
             )}
             {websiteUrl && (
-              <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className="contact-link" onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}>
+              <a
+                href={websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="contact-link"
+                onClick={(e) => e.stopPropagation()}
+                style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}
+              >
                 🌐 Website
               </a>
             )}
             {instagramUrl && (
-              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="contact-link" onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}>
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="contact-link"
+                onClick={(e) => e.stopPropagation()}
+                style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}
+              >
                 📸 {facility.instagram}
               </a>
             )}
@@ -251,9 +291,11 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
 }
 
 export default function Facilities() {
+  const [searchParams] = useSearchParams()
+
   const [facilities, setFacilities] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected] = useState(() => searchParams.get('select') || null)
   const [sport, setSport] = useState('Both')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -275,6 +317,11 @@ export default function Facilities() {
   }, [searchInput])
 
   useEffect(() => {
+    const selectedFromUrl = searchParams.get('select') || null
+    setSelected(selectedFromUrl)
+  }, [searchParams])
+
+  useEffect(() => {
     async function load() {
       const { data, error } = await supabase
         .from('facilities')
@@ -283,12 +330,21 @@ export default function Facilities() {
         .in('approval_status', ['approved', 'seeded'])
         .order('name')
 
-      if (!error && data) setFacilities(data)
+      if (!error && data) {
+        const normalized = data.map((f) => ({ ...f, id: String(f.id) }))
+        setFacilities(normalized)
+
+        const selectedFromUrl = searchParams.get('select')
+        if (selectedFromUrl && normalized.some((f) => f.id === selectedFromUrl)) {
+          setSelected(selectedFromUrl)
+        }
+      }
+
       setLoading(false)
     }
 
     load()
-  }, [])
+  }, [searchParams])
 
   async function handleZipBlur() {
     if (!zip || zip.length !== 5) return
@@ -323,7 +379,9 @@ export default function Facilities() {
             !(f.city || '').toLowerCase().includes(q) &&
             !(f.address || '').toLowerCase().includes(q) &&
             !(f.description || '').toLowerCase().includes(q)
-          ) return false
+          ) {
+            return false
+          }
         }
 
         if (geoCenter && f.lat != null && f.lng != null) {
@@ -334,7 +392,10 @@ export default function Facilities() {
       })
       .sort((a, b) => {
         if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
-          return distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) - distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+          return (
+            distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) -
+            distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+          )
         }
         return 0
       })
@@ -342,17 +403,14 @@ export default function Facilities() {
 
   const mappable = filtered.filter((f) => f.lat != null && f.lng != null)
 
-  useEffect(() => {
-    if (selected == null) return
-    if (!filtered.some((f) => f.id === selected)) setSelected(null)
-  }, [filtered, selected])
-
   function getDistance(f) {
     if (!geoCenter || f.lat == null || f.lng == null) return null
     return distanceMiles(geoCenter.lat, geoCenter.lng, f.lat, f.lng)
   }
 
-  const selFacility = selected ? filtered.find((f) => f.id === selected) : null
+  const selFacility = selected
+    ? filtered.find((f) => f.id === selected) || facilities.find((f) => f.id === selected) || null
+    : null
 
   const inputStyle = {
     width: '100%',
@@ -382,7 +440,11 @@ export default function Facilities() {
     return (
       <div className="empty-state">
         <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities listed yet'}</h3>
-        <p>{hasFilters ? 'Try widening your search — clear a filter or increase the radius.' : 'Know a great training facility? Help us grow the directory.'}</p>
+        <p>
+          {hasFilters
+            ? 'Try widening your search — clear a filter or increase the radius.'
+            : 'Know a great training facility? Help us grow the directory.'}
+        </p>
         {!hasFilters && <a href="/submit">Add a Facility</a>}
       </div>
     )
@@ -392,23 +454,55 @@ export default function Facilities() {
     <>
       {isMobile ? (
         <div>
-          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
+          <div
+            style={{
+              background: 'var(--white)',
+              borderBottom: '2px solid var(--lgray)',
+              padding: '10px 12px',
+              display: 'flex',
+              gap: 8,
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              position: 'sticky',
+              top: HEADER_H,
+              zIndex: 100,
+            }}
+          >
             <input
               placeholder="🔍 Search..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               style={{ ...inputStyle, flex: 1, minWidth: 120 }}
             />
-            <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}>⚾</button>
-            <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}>🥎</button>
-            <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+            <button
+              type="button"
+              className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+              onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
+            >
+              ⚾
+            </button>
+            <button
+              type="button"
+              className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+              onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
+            >
+              🥎
+            </button>
+            <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
           <div style={{ height: 220, borderBottom: '2px solid var(--lgray)' }}>
             <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
               <FitBounds facilities={mappable} selectedId={selected} />
-              {selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}
+              {selFacility?.lat != null && selFacility?.lng != null && (
+                <FlyTo lat={selFacility.lat} lng={selFacility.lng} />
+              )}
               {mappable.map((f) => (
                 <Marker
                   key={f.id}
@@ -432,7 +526,11 @@ export default function Facilities() {
           </div>
 
           <div style={{ padding: '12px', background: 'var(--cream)' }}>
-            {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
+                Loading facilities…
+              </div>
+            )}
             {!loading && filtered.length === 0 && <EmptyState />}
             {filtered.map((f) => (
               <FacilityCard
@@ -447,8 +545,24 @@ export default function Facilities() {
         </div>
       ) : (
         <div style={{ display: 'flex', height: 'calc(100vh - ' + HEADER_H + 'px)', overflow: 'hidden' }}>
-          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '2px solid var(--lgray)' }}>
-            <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '2px solid var(--lgray)', flexShrink: 0 }}>
+          <div
+            style={{
+              width: 300,
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              borderRight: '2px solid var(--lgray)',
+            }}
+          >
+            <div
+              style={{
+                padding: '14px 14px 12px',
+                background: 'var(--white)',
+                borderBottom: '2px solid var(--lgray)',
+                flexShrink: 0,
+              }}
+            >
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
                 {loading ? 'Loading…' : filtered.length + ' facilit' + (filtered.length !== 1 ? 'ies' : 'y')}
               </div>
@@ -466,14 +580,35 @@ export default function Facilities() {
               <div style={{ marginBottom: 10 }}>
                 <span style={sectionLabel}>Sport</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>⚾ Baseball</button>
-                  <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>🥎 Softball</button>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+                    onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
+                    style={{ width: '100%', justifyContent: 'flex-start' }}
+                  >
+                    ⚾ Baseball
+                  </button>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+                    onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
+                    style={{ width: '100%', justifyContent: 'flex-start' }}
+                  >
+                    🥎 Softball
+                  </button>
                 </div>
               </div>
 
               <div>
                 <span style={sectionLabel}>Near zip code</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: zip.length === 5 && zipStatus === 'ok' ? 10 : 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: zip.length === 5 && zipStatus === 'ok' ? 10 : 0,
+                  }}
+                >
                   <input
                     type="text"
                     inputMode="numeric"
@@ -491,19 +626,56 @@ export default function Facilities() {
                     onBlur={handleZipBlur}
                     style={{ ...inputStyle, flex: 1 }}
                   />
-                  {zipStatus === 'ok' && <span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span>}
-                  {zipStatus === 'error' && <span style={{ fontSize: 12, color: 'var(--red)', flexShrink: 0 }}>?</span>}
-                  {zipStatus === 'loading' && <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>…</span>}
+                  {zipStatus === 'ok' && (
+                    <span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span>
+                  )}
+                  {zipStatus === 'error' && (
+                    <span style={{ fontSize: 12, color: 'var(--red)', flexShrink: 0 }}>?</span>
+                  )}
+                  {zipStatus === 'loading' && (
+                    <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>…</span>
+                  )}
                 </div>
 
                 {zip.length === 5 && zipStatus === 'ok' && (
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 12,
+                        color: 'var(--gray)',
+                        marginBottom: 4,
+                      }}
+                    >
                       <span>Radius</span>
                       <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span>
                     </div>
-                    <input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} />
-                    <button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                    <input
+                      type="range"
+                      min={5}
+                      max={100}
+                      step={5}
+                      value={radius}
+                      onChange={(e) => setRadius(Number(e.target.value))}
+                      style={{ width: '100%', accentColor: 'var(--red)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={clearZipFilter}
+                      style={{
+                        marginTop: 8,
+                        width: '100%',
+                        background: 'white',
+                        color: 'var(--navy)',
+                        border: '2px solid var(--lgray)',
+                        borderRadius: 8,
+                        padding: '7px 10px',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
                       Clear zip filter
                     </button>
                   </div>
@@ -532,7 +704,11 @@ export default function Facilities() {
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
-              {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
+              {loading && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
+                  Loading facilities…
+                </div>
+              )}
               {!loading && filtered.length === 0 && <EmptyState />}
               {filtered.map((f) => (
                 <FacilityCard
@@ -547,20 +723,59 @@ export default function Facilities() {
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            <div style={{ display: 'flex', gap: 10, padding: '6px 14px', background: 'var(--white)', borderBottom: '1px solid var(--lgray)', alignItems: 'center', flexShrink: 0 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                padding: '6px 14px',
+                background: 'var(--white)',
+                borderBottom: '1px solid var(--lgray)',
+                alignItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.07em',
+                  color: 'var(--gray)',
+                }}
+              >
+                Map key
+              </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: '#1a1a1a', border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50% 50% 50% 0',
+                    transform: 'rotate(-45deg)',
+                    background: '#1a1a1a',
+                    border: '2px solid rgba(255,255,255,0.8)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  }}
+                />
                 <span style={{ fontSize: 11, color: 'var(--gray)' }}>Facility</span>
               </div>
-              {mappable.length === 0 && <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>Map pins appear as facilities add location data</span>}
+              {mappable.length === 0 && (
+                <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
+                  Map pins appear as facilities add location data
+                </span>
+              )}
             </div>
 
             <div style={{ flex: 1, position: 'relative' }}>
               <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-                <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
                 <FitBounds facilities={mappable} selectedId={selected} />
-                {selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}
+                {selFacility?.lat != null && selFacility?.lng != null && (
+                  <FlyTo lat={selFacility.lat} lng={selFacility.lng} />
+                )}
                 {mappable.map((f) => (
                   <Marker
                     key={f.id}
@@ -586,12 +801,62 @@ export default function Facilities() {
             </div>
           </div>
 
-          <div style={{ width: 200, flexShrink: 0, borderLeft: '2px solid var(--lgray)', background: 'var(--white)', display: 'flex', flexDirection: 'column', gap: 16, padding: 16, overflowY: 'auto' }}>
+          <div
+            style={{
+              width: 200,
+              flexShrink: 0,
+              borderLeft: '2px solid var(--lgray)',
+              background: 'var(--white)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+              padding: 16,
+              overflowY: 'auto',
+            }}
+          >
             {[1, 2].map((i) => (
-              <div key={i} style={{ border: '2px dashed var(--lgray)', borderRadius: 'var(--card-radius)', padding: '16px 12px', textAlign: 'center', background: 'var(--cream)', minHeight: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray)' }}>Advertise Here</div>
-                <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>Reach baseball &amp; softball families</div>
-                <a href="mailto:admin.bsbldirectory@gmail.com" style={{ fontSize: 11, color: 'var(--red)', fontWeight: 700, textDecoration: 'none', marginTop: 4 }}>Contact Us</a>
+              <div
+                key={i}
+                style={{
+                  border: '2px dashed var(--lgray)',
+                  borderRadius: 'var(--card-radius)',
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  background: 'var(--cream)',
+                  minHeight: 160,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'var(--gray)',
+                  }}
+                >
+                  Advertise Here
+                </div>
+                <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>
+                  Reach baseball &amp; softball families
+                </div>
+                <a
+                  href="mailto:admin.bsbldirectory@gmail.com"
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--red)',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    marginTop: 4,
+                  }}
+                >
+                  Contact Us
+                </a>
               </div>
             ))}
           </div>
