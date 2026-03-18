@@ -98,23 +98,24 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 fontFamily:'var(--font-head)',
               }}
             >
-              {team.sport}
+              {team.sport === 'both' ? 'baseball & softball' : team.sport}
             </span>
 
             {team.age_group && (
               <span
-                style={{
-                  background:'rgba(255,255,255,0.15)',
-                  color:'white',
-                  fontSize:11,
-                  fontWeight:700,
-                  padding:'3px 10px',
-                  borderRadius:20,
-                  fontFamily:'var(--font-head)',
-                }}
-              >
-                {team.age_group}
-              </span>
+  style={{
+    background: team.sport === 'softball' ? '#7C3AED' : '#1D4ED8',
+    color:'white',
+    fontSize:11,
+    fontWeight:700,
+    padding:'3px 10px',
+    borderRadius:20,
+    textTransform:'uppercase',
+    fontFamily:'var(--font-head)',
+  }}
+>
+  {team.sport === 'both' ? 'baseball & softball' : team.sport}
+</span>
             )}
 
             {team.org_affiliation && (
@@ -159,12 +160,18 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 </div>
               )}
               {team.address && (
-                <div style={{ color:'#666', paddingLeft:22 }}>
-                  {team.address}
-                </div>
-              )}
-            </div>
-          )}
+        <a
+          href={
+            'https://maps.google.com/?q=' +
+             encodeURIComponent([team.address, team.city, team.state, zip].filter(Boolean).join(', '))
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color:'#1D4ED8', paddingLeft:22, textDecoration:'none', fontSize:14 }}
+          >
+            {team.address}
+          </a>
+        )}
 
           {team.tryout_status === 'open' && (team.tryout_date || team.tryout_notes) && (
             <div
@@ -180,12 +187,14 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               </div>
               {team.tryout_date && (
                 <div style={{ color:'#15803D', fontSize:13 }}>
-                  {new Date(team.tryout_date).toLocaleDateString('en-US', {
-                    weekday:'long',
-                    month:'long',
-                    day:'numeric',
-                    year:'numeric',
-                  })}
+                 {isNaN(new Date(team.tryout_date).getTime())
+  ? team.tryout_date
+  : new Date(team.tryout_date).toLocaleDateString('en-US', {
+      weekday:'long',
+      month:'long',
+      day:'numeric',
+      year:'numeric',
+    })}
                 </div>
               )}
               {team.tryout_notes && (
@@ -269,7 +278,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               gap:8,
             }}
           >
-            {team.claimed ? (
+            {team.claimed || team.claimed_status ? (
               <div
                 style={{
                   textAlign:'center',
