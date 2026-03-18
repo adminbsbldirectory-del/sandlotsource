@@ -195,7 +195,25 @@ function getCoachZip(coach) {
   return coach.zip || coach.zip_code || ''
 }
 
-// ── FlyTo: animate map to selected coach ─────────────────
+function toNumber(value) {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+function normalizeCoach(coach) {
+  const lat = toNumber(coach.lat ?? coach.latitude)
+  const lng = toNumber(coach.lng ?? coach.longitude)
+
+  return {
+    ...coach,
+    lat,
+    lng,
+    zip: coach.zip || coach.zip_code || '',
+    specialty: parseSpecialties(coach.specialty),
+  }
+}
+
 function FlyTo({ lat, lng }) {
   const map = useMap()
 
@@ -208,22 +226,27 @@ function FlyTo({ lat, lng }) {
   return null
 }
 
-// ── FitBounds: auto-zoom map to all visible pins ──────────
-function FitBounds({ coaches }) {
+function FitBounds({ coaches, selectedId }) {
   const map = useMap()
 
   useEffect(() => {
+    if (selectedId) return
+
     const pts = coaches.filter((c) => c.lat != null && c.lng != null)
     if (pts.length === 0) return
 
+    if (pts.length === 1) {
+      map.setView([pts[0].lat, pts[0].lng], 11, { animate: true })
+      return
+    }
+
     const bounds = L.latLngBounds(pts.map((c) => [c.lat, c.lng]))
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
-  }, [coaches, map])
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
+  }, [coaches, selectedId, map])
 
   return null
 }
 
-// ── Rating row ────────────────────────────────────────────
 function RatingRow({ coach, selected }) {
   const avg = parseFloat(coach.rating_average) || 0
   const count = parseInt(coach.review_count, 10) || 0
@@ -260,7 +283,6 @@ function RatingRow({ coach, selected }) {
   )
 }
 
-// ── Coach card ────────────────────────────────────────────
 function CoachCard({ coach, selected, onClick, onViewProfile }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
@@ -469,7 +491,6 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
   )
 }
 
-// ── Map markers ───────────────────────────────────────────
 function MapMarkers({ mappable, selected, setSelected }) {
   return mappable.map((coach) => {
     const isSelected = coach.id === selected
@@ -505,7 +526,6 @@ function MapMarkers({ mappable, selected, setSelected }) {
   })
 }
 
-// ── Map legend ────────────────────────────────────────────
 const MAP_LEGEND_ITEMS = [
   { color: PIN_COLORS.coach, label: 'Coach' },
   { color: PIN_COLORS.facility, label: 'Facility' },
@@ -562,7 +582,6 @@ function MapLegend() {
   )
 }
 
-// ── Main component ────────────────────────────────────────
 export default function CoachDirectory() {
   const [searchParams] = useSearchParams()
 
@@ -612,10 +631,12 @@ export default function CoachDirectory() {
     load()
   }, [searchParams])
 
-  const filtered = coaches
+  const normalizedCoaches = coaches.map(normalizeCoach)
+
+  const filtered = normalizedCoaches
     .filter((c) => {
-      const specs = parseSpecialties(c.specialty)
-      const zip = getCoachZip(c)
+      const specs = c.specialty || []
+      const zip = c.zip || ''
 
       if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
       if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
@@ -642,7 +663,9 @@ export default function CoachDirectory() {
     })
 
   const mappable = filtered.filter((c) => c.lat != null && c.lng != null)
-  const sel = selected ? coaches.find((c) => c.id === selected) : null
+  const sel = selected
+    ? filtered.find((c) => c.id === selected) || normalizedCoaches.find((c) => c.id === selected)
+    : null
 
   const filterSelectStyle = {
     padding: '8px 12px',
@@ -755,7 +778,7 @@ export default function CoachDirectory() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                  <FitBounds coaches={mappable} />
+                  <FitBounds coaches={mappable} selectedId={selected} />
                   <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
                 </MapContainer>
               </div>
@@ -773,7 +796,7 @@ export default function CoachDirectory() {
                   key={coach.id}
                   coach={coach}
                   selected={selected === coach.id}
-                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onClick={() => setSelected(coach.id)}
                   onViewProfile={setProfileCoach}
                 />
               ))}
@@ -802,7 +825,7 @@ export default function CoachDirectory() {
                   key={coach.id}
                   coach={coach}
                   selected={selected === coach.id}
-                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onClick={() => setSelected(coach.id)}
                   onViewProfile={setProfileCoach}
                 />
               ))}
@@ -817,7 +840,7 @@ export default function CoachDirectory() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                  <FitBounds coaches={mappable} />
+                  <FitBounds coaches={mappable} selectedId={selected} />
                   <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
                 </MapContainer>
               </div>
