@@ -150,7 +150,7 @@ function CoachForm({ isMobile }) {
         skill_level: form.skill_level || null, price_per_session: form.price_per_session ? parseFloat(form.price_per_session) : null,
         price_notes: form.price_notes.trim() || null, contact_role: form.contact_role.trim(),
         submission_notes: form.submission_notes.trim() || null,
-        approval_status: 'pending', source: 'website_form', active: true, verified: false,
+        approval_status: 'pending', source: 'website_form', active: true, verified_status: false,
       }
       const { error: sbError } = await supabase.from('coaches').insert([payload])
       if (sbError) throw sbError
