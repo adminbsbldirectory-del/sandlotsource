@@ -306,6 +306,12 @@ export default function CoachDirectory() {
   const cardListRef = useRef(null)
 
   useEffect(() => {
+  if (!selected) return
+  const el = cardRefs.current[selected]
+  if (el && cardListRef.current) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}, [selected])
+
+  useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
