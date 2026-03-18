@@ -37,11 +37,14 @@ const PIN_COLORS = {
   facility: '#1a1a1a',
 }
 
-function coachPinColor(coach) {
-  return coach.listing_type === 'facility' ? PIN_COLORS.facility : PIN_COLORS.coach
-}
-
-const SPECIALTIES = ['All Specialties', 'Pitching', 'Hitting', 'Catching', 'Fielding', 'Strength / Conditioning']
+const SPECIALTIES = [
+  'All Specialties',
+  'Pitching',
+  'Hitting',
+  'Catching',
+  'Fielding',
+  'Strength / Conditioning',
+]
 
 const US_STATES = [
   'All States',
@@ -50,6 +53,10 @@ const US_STATES = [
   'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT',
   'VA', 'WA', 'WV', 'WI', 'WY',
 ]
+
+function coachPinColor(coach) {
+  return coach.listing_type === 'facility' ? PIN_COLORS.facility : PIN_COLORS.coach
+}
 
 function parseFirstPhone(raw) {
   if (!raw) return null
@@ -139,7 +146,8 @@ function MapMarkers({ mappable, selected, setSelected }) {
             <strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{coach.name}</strong>
             {coach.facility_name && <div style={{ fontSize: 12, color: '#666' }}>{coach.facility_name}</div>}
             <div style={{ fontSize: 12, marginTop: 4 }}>
-              📍 {[coach.city, coach.state].filter(Boolean).join(', ')}{zip ? ` ${zip}` : ''}
+              📍 {[coach.city, coach.state].filter(Boolean).join(', ')}
+              {zip ? ` ${zip}` : ''}
             </div>
             {specs.length > 0 && <div style={{ fontSize: 12, marginTop: 2 }}>🎯 {specs.join(', ')}</div>}
             {coach.price_per_session && (
@@ -237,7 +245,8 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             {coach.facility_name && <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>{coach.facility_name}</div>}
 
             <div style={{ fontSize: 13, marginTop: 4, opacity: 0.8 }}>
-              📍 {[coach.city, coach.state].filter(Boolean).join(', ')}{zip ? ` ${zip}` : ''}
+              📍 {[coach.city, coach.state].filter(Boolean).join(', ')}
+              {zip ? ` ${zip}` : ''}
             </div>
           </div>
 
@@ -360,9 +369,7 @@ export default function CoachDirectory() {
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setSearch(searchInput.trim())
-    }, 300)
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300)
     return () => clearTimeout(t)
   }, [searchInput])
 
@@ -450,110 +457,28 @@ export default function CoachDirectory() {
     )
   }
 
-  const Sidebar = () => (
-    <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '2px solid var(--lgray)' }}>
-      <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '2px solid var(--lgray)', flexShrink: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
-          {loading ? 'Loading…' : filtered.length + ' coach' + (filtered.length !== 1 ? 'es' : '')}
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <span style={sectionLabel}>Search</span>
-          <input
-            placeholder="Name, city, facility, zip..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <span style={sectionLabel}>Sport</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => s === 'baseball' ? 'Both' : 'baseball')} style={{ width: '100%', justifyContent: 'flex-start' }}>
-              ⚾ Baseball
-            </button>
-            <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => s === 'softball' ? 'Both' : 'softball')} style={{ width: '100%', justifyContent: 'flex-start' }}>
-              🥎 Softball
-            </button>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <span style={sectionLabel}>Specialty</span>
-          <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
-            {SPECIALTIES.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <span style={sectionLabel}>State</span>
-          <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
-            {US_STATES.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-
-        <a
-          href="/submit"
-          style={{
-            display: 'block',
-            textAlign: 'center',
-            background: 'var(--red)',
-            color: 'white',
-            padding: '10px',
-            borderRadius: 'var(--btn-radius)',
-            fontSize: 13,
-            fontWeight: 700,
-            textDecoration: 'none',
-            fontFamily: 'var(--font-head)',
-            letterSpacing: '0.04em',
-            marginTop: 10,
-          }}
-        >
-          + Add a Coach
-        </a>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
-        {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
-        {!loading && filtered.length === 0 && <EmptyState />}
-        {filtered.map((coach) => (
-          <CoachCard
-            key={coach.id}
-            coach={coach}
-            selected={selected === coach.id}
-            onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-            onViewProfile={setProfileCoach}
-          />
-        ))}
-      </div>
-    </div>
-  )
-
-  const MobileFilterBar = () => (
-    <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
-      <input
-        placeholder="🔍 Search..."
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        style={{ ...inputStyle, flex: 1, minWidth: 120 }}
-      />
-      <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => s === 'baseball' ? 'Both' : 'baseball')}>⚾</button>
-      <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => s === 'softball' ? 'Both' : 'softball')}>🥎</button>
-      <button type="button" onClick={() => setShowMap((m) => !m)} style={{ padding: '7px 12px', borderRadius: 'var(--btn-radius)', border: '2px solid var(--navy)', background: showMap ? 'var(--navy)' : 'white', color: showMap ? 'white' : 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
-        {showMap ? '📋 List' : '🗺️ Map'}
-      </button>
-      <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>{filtered.length} coach{filtered.length !== 1 ? 'es' : ''}</span>
-    </div>
-  )
-
   return (
     <>
       {profileCoach && <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />}
 
-      {isMobile && (
+      {isMobile ? (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <MobileFilterBar />
+          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
+            <input
+              placeholder="🔍 Search..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+            />
+            <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}>⚾</button>
+            <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}>🥎</button>
+            <button type="button" onClick={() => setShowMap((m) => !m)} style={{ padding: '7px 12px', borderRadius: 'var(--btn-radius)', border: '2px solid var(--navy)', background: showMap ? 'var(--navy)' : 'white', color: showMap ? 'white' : 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
+              {showMap ? '📋 List' : '🗺️ Map'}
+            </button>
+            <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
+              {filtered.length} coach{filtered.length !== 1 ? 'es' : ''}
+            </span>
+          </div>
 
           {showMap && (
             <div style={{ height: 260, flexShrink: 0, borderBottom: '2px solid var(--lgray)' }}>
@@ -580,11 +505,85 @@ export default function CoachDirectory() {
             ))}
           </div>
         </div>
-      )}
-
-      {!isMobile && (
+      ) : (
         <div style={{ display: 'flex', height: 'calc(100vh - ' + HEADER_H + 'px)', overflow: 'hidden' }}>
-          <Sidebar />
+          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '2px solid var(--lgray)' }}>
+            <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '2px solid var(--lgray)', flexShrink: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
+                {loading ? 'Loading…' : filtered.length + ' coach' + (filtered.length !== 1 ? 'es' : '')}
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <span style={sectionLabel}>Search</span>
+                <input
+                  placeholder="Name, city, facility, zip..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <span style={sectionLabel}>Sport</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                    ⚾ Baseball
+                  </button>
+                  <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                    🥎 Softball
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <span style={sectionLabel}>Specialty</span>
+                <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
+                  {SPECIALTIES.map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <span style={sectionLabel}>State</span>
+                <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
+                  {US_STATES.map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <a
+                href="/submit"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  background: 'var(--red)',
+                  color: 'white',
+                  padding: '10px',
+                  borderRadius: 'var(--btn-radius)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  fontFamily: 'var(--font-head)',
+                  letterSpacing: '0.04em',
+                  marginTop: 10,
+                }}
+              >
+                + Add a Coach
+              </a>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+              {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
+              {!loading && filtered.length === 0 && <EmptyState />}
+              {filtered.map((coach) => (
+                <CoachCard
+                  key={coach.id}
+                  coach={coach}
+                  selected={selected === coach.id}
+                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onViewProfile={setProfileCoach}
+                />
+              ))}
+            </div>
+          </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <MapLegend />
