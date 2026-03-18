@@ -15,7 +15,14 @@ const HEADER_H = 75
 const makeIcon = (selected) =>
   L.divIcon({
     className: '',
-    html: '<div style="width:' + (selected ? 34 : 26) + 'px;height:' + (selected ? 34 : 26) + 'px;border-radius:50% 50% 50% 0;background:#1a1a1a;border:' + (selected ? '4px solid #f0a500' : '3px solid white') + ';transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+    html:
+      '<div style="width:' +
+      (selected ? 34 : 26) +
+      'px;height:' +
+      (selected ? 34 : 26) +
+      'px;border-radius:50% 50% 50% 0;background:#1a1a1a;border:' +
+      (selected ? '4px solid #f0a500' : '3px solid white') +
+      ';transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
     iconSize: [selected ? 34 : 26, selected ? 34 : 26],
     iconAnchor: [selected ? 17 : 13, selected ? 34 : 26],
     popupAnchor: [0, -30],
@@ -74,7 +81,9 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
   const R = 3958.8
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
@@ -114,7 +123,7 @@ function FlyTo({ lat, lng }) {
   return null
 }
 
-function FacilityCard({ facility, selected, onClick, distanceMi, cardRef }) {
+function FacilityCard({ facility, selected, onClick, distanceMi }) {
   const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
   const zip = getFacilityZip(facility)
   const cityState = [facility.city, facility.state].filter(Boolean).join(', ')
@@ -149,7 +158,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi, cardRef }) {
     : undefined
 
   return (
-    <div ref={cardRef} className={selected ? '' : 'card'} style={cardStyle} onClick={onClick}>
+    <div className={selected ? '' : 'card'} style={cardStyle} onClick={onClick}>
       <div className={selected ? '' : 'card-body'} style={selected ? { flex: 1, padding: '14px 16px' } : undefined}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
@@ -253,10 +262,6 @@ export default function Facilities() {
   const [geoCenter, setGeoCenter] = useState(null)
   const [zipStatus, setZipStatus] = useState('')
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-  const [selectionSource, setSelectionSource] = useState(null)
-
-  const cardRefs = useRef({})
-  const cardListRef = useRef(null)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -268,7 +273,6 @@ export default function Facilities() {
     const t = setTimeout(() => {
       setSearch(searchInput.trim())
     }, 300)
-
     return () => clearTimeout(t)
   }, [searchInput])
 
@@ -287,15 +291,6 @@ export default function Facilities() {
 
     load()
   }, [])
-
-  useEffect(() => {
-    if (!selected || selectionSource !== 'map') return
-    const el = cardRefs.current[selected]
-    if (el && cardListRef.current) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-    setSelectionSource(null)
-  }, [selected, selectionSource])
 
   async function handleZipBlur() {
     if (!zip || zip.length !== 5) return
@@ -480,7 +475,7 @@ export default function Facilities() {
         </a>
       </div>
 
-      <div ref={cardListRef} style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
         {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
         {!loading && filtered.length === 0 && <EmptyState />}
         {filtered.map((f) => (
@@ -488,12 +483,8 @@ export default function Facilities() {
             key={f.id}
             facility={f}
             selected={selected === f.id}
-            onClick={() => {
-              setSelectionSource('card')
-              setSelected(selected === f.id ? null : f.id)
-            }}
+            onClick={() => setSelected(selected === f.id ? null : f.id)}
             distanceMi={getDistance(f)}
-            cardRef={(el) => { cardRefs.current[f.id] = el }}
           />
         ))}
       </div>
@@ -530,12 +521,7 @@ export default function Facilities() {
                   position={[f.lat, f.lng]}
                   icon={makeIcon(f.id === selected)}
                   zIndexOffset={f.id === selected ? 1000 : 0}
-                  eventHandlers={{
-                    click: () => {
-                      setSelectionSource('map')
-                      setSelected(f.id)
-                    },
-                  }}
+                  eventHandlers={{ click: () => setSelected(f.id) }}
                 >
                   <Popup>
                     <div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}>
@@ -550,7 +536,7 @@ export default function Facilities() {
             </MapContainer>
           </div>
 
-          <div ref={cardListRef} style={{ padding: '12px', background: 'var(--cream)' }}>
+          <div style={{ padding: '12px', background: 'var(--cream)' }}>
             {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
             {!loading && filtered.length === 0 && <EmptyState />}
             {filtered.map((f) => (
@@ -558,12 +544,8 @@ export default function Facilities() {
                 key={f.id}
                 facility={f}
                 selected={selected === f.id}
-                onClick={() => {
-                  setSelectionSource('card')
-                  setSelected(selected === f.id ? null : f.id)
-                }}
+                onClick={() => setSelected(selected === f.id ? null : f.id)}
                 distanceMi={getDistance(f)}
-                cardRef={(el) => { cardRefs.current[f.id] = el }}
               />
             ))}
           </div>
@@ -595,12 +577,7 @@ export default function Facilities() {
                     position={[f.lat, f.lng]}
                     icon={makeIcon(f.id === selected)}
                     zIndexOffset={f.id === selected ? 1000 : 0}
-                    eventHandlers={{
-                      click: () => {
-                        setSelectionSource('map')
-                        setSelected(f.id)
-                      },
-                    }}
+                    eventHandlers={{ click: () => setSelected(f.id) }}
                   >
                     <Popup>
                       <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
