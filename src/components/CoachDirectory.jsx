@@ -120,7 +120,7 @@ function FitBounds({ coaches, selectedId }) {
   return null
 }
 
-function MapMarkers({ mappable, selected, setSelected, setSelectionSource }) {
+function MapMarkers({ mappable, selected, setSelected }) {
   return mappable.map((coach) => {
     const isSelected = coach.id === selected
     const zip = getCoachZip(coach)
@@ -132,12 +132,7 @@ function MapMarkers({ mappable, selected, setSelected, setSelectionSource }) {
         position={[coach.lat, coach.lng]}
         icon={isSelected ? makeSelectedIcon(coachPinColor(coach)) : makeIcon(coachPinColor(coach))}
         zIndexOffset={isSelected ? 1000 : 0}
-        eventHandlers={{
-          click: () => {
-            setSelectionSource('map')
-            setSelected(coach.id)
-          },
-        }}
+        eventHandlers={{ click: () => setSelected(coach.id) }}
       >
         <Popup>
           <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
@@ -191,7 +186,7 @@ function RatingRow({ coach, selected }) {
   )
 }
 
-function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
+function CoachCard({ coach, selected, onClick, onViewProfile }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
@@ -224,7 +219,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, cardRef }) {
     : undefined
 
   return (
-    <div ref={cardRef} className={selected ? '' : 'card'} style={cardStyle} onClick={onClick}>
+    <div className={selected ? '' : 'card'} style={cardStyle} onClick={onClick}>
       <div className={selected ? '' : 'card-body'} style={selected ? { flex: 1, padding: '14px 16px' } : undefined}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
@@ -357,10 +352,6 @@ export default function CoachDirectory() {
   const [profileCoach, setProfileCoach] = useState(null)
   const [showMap, setShowMap] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-  const [selectionSource, setSelectionSource] = useState(null)
-
-  const cardRefs = useRef({})
-  const cardListRef = useRef(null)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
@@ -372,7 +363,6 @@ export default function CoachDirectory() {
     const t = setTimeout(() => {
       setSearch(searchInput.trim())
     }, 300)
-
     return () => clearTimeout(t)
   }, [searchInput])
 
@@ -399,19 +389,11 @@ export default function CoachDirectory() {
     load()
   }, [searchParams])
 
-  useEffect(() => {
-    if (!selected || selectionSource !== 'map') return
-    const el = cardRefs.current[selected]
-    if (el && cardListRef.current) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-    setSelectionSource(null)
-  }, [selected, selectionSource])
-
   const normalizedCoaches = coaches.map(normalizeCoach)
 
   const filtered = normalizedCoaches.filter((c) => {
     const specs = c.specialty || []
+
     if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
     if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
     if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
@@ -532,7 +514,7 @@ export default function CoachDirectory() {
         </a>
       </div>
 
-      <div ref={cardListRef} style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
         {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
         {!loading && filtered.length === 0 && <EmptyState />}
         {filtered.map((coach) => (
@@ -540,12 +522,8 @@ export default function CoachDirectory() {
             key={coach.id}
             coach={coach}
             selected={selected === coach.id}
-            onClick={() => {
-              setSelectionSource('card')
-              setSelected(selected === coach.id ? null : coach.id)
-            }}
+            onClick={() => setSelected(selected === coach.id ? null : coach.id)}
             onViewProfile={setProfileCoach}
-            cardRef={(el) => { cardRefs.current[coach.id] = el }}
           />
         ))}
       </div>
@@ -583,12 +561,12 @@ export default function CoachDirectory() {
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
                 <FitBounds coaches={mappable} selectedId={selected} />
-                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} setSelectionSource={setSelectionSource} />
+                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
               </MapContainer>
             </div>
           )}
 
-          <div ref={cardListRef} style={{ padding: '12px', background: 'var(--cream)' }}>
+          <div style={{ padding: '12px', background: 'var(--cream)' }}>
             {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
             {!loading && filtered.length === 0 && <EmptyState />}
             {filtered.map((coach) => (
@@ -596,12 +574,8 @@ export default function CoachDirectory() {
                 key={coach.id}
                 coach={coach}
                 selected={selected === coach.id}
-                onClick={() => {
-                  setSelectionSource('card')
-                  setSelected(selected === coach.id ? null : coach.id)
-                }}
+                onClick={() => setSelected(selected === coach.id ? null : coach.id)}
                 onViewProfile={setProfileCoach}
-                cardRef={(el) => { cardRefs.current[coach.id] = el }}
               />
             ))}
           </div>
@@ -619,7 +593,7 @@ export default function CoachDirectory() {
                 <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
                 <FitBounds coaches={mappable} selectedId={selected} />
-                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} setSelectionSource={setSelectionSource} />
+                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
               </MapContainer>
             </div>
           </div>
