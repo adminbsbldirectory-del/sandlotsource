@@ -111,7 +111,12 @@ export default function TeamProfile({ team, onClose, onClaim }) {
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <span
               style={{
-                background: team.sport === 'softball' ? '#7C3AED' : '#1D4ED8',
+                background:
+  team.sport === 'softball'
+    ? '#7C3AED'
+    : team.sport === 'both'
+      ? 'var(--navy)'
+      : '#1D4ED8',
                 color: 'white',
                 fontSize: 11,
                 fontWeight: 700,
@@ -121,7 +126,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 fontFamily: 'var(--font-head)',
               }}
             >
-              {team.sport === 'both' ? 'baseball & softball' : team.sport}
+              {team.sport === 'both' ? 'Baseball & Softball' : team.sport}
             </span>
 
             {team.age_group && (
