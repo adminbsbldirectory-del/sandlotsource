@@ -133,7 +133,7 @@ function CoachCard({ coach, distanceMi }) {
 
   return (
     <Link
-      to={`/coaches?select=${coach.id}`}
+      {`/coaches?select=${coach.id}`}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
@@ -276,8 +276,9 @@ function TeamCard({ team, distanceMi }) {
 
   return (
     <Link
-      to="/teams"
-      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+      <Link
+  to={`/teams?select=${team.id}`}
+  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
         style={{
@@ -375,17 +376,22 @@ function TeamCard({ team, distanceMi }) {
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
           {team.sport && (
-            <span
-              style={{
-                background: LIGHT,
-                color: MUTED,
-                fontSize: 11,
-                padding: '2px 8px',
-                borderRadius: 20,
-              }}
-            >
-              {team.sport === 'softball' ? '🥎' : '⚾'} {team.sport}
-            </span>
+  <span
+    style={{
+      background: LIGHT,
+      color: MUTED,
+      fontSize: 11,
+      padding: '2px 8px',
+      borderRadius: 20,
+    }}
+  >
+    {team.sport === 'both'
+      ? '⚾🥎 Baseball & Softball'
+      : team.sport === 'softball'
+        ? '🥎 Softball'
+        : '⚾ Baseball'}
+  </span>
+)}
           )}
           {team.age_group && (
             <span
@@ -427,9 +433,9 @@ function FacilityCard({ facility, distanceMi }) {
 
   return (
     <Link
-      to="/facilities"
-      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-    >
+  to={`/facilities?select=${facility.id}`}
+  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+>
       <div
         style={{
           border: `1px solid ${BORDER}`,
