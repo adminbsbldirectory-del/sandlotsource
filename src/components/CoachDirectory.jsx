@@ -532,8 +532,7 @@ export default function CoachDirectory() {
         ...coach,
         lat: linkedFacility.lat,
         lng: linkedFacility.lng,
-        resolved_from_facility: true,
-        resolved_facility_name: linkedFacility.name || coach.facility_name,
+        coord_source: 'facility',
       }
     })
   }, [coaches, facilityMap])
@@ -791,4 +790,109 @@ export default function CoachDirectory() {
                   fontWeight: 700,
                   textDecoration: 'none',
                   fontFamily: 'var(--font-head)',
-                  letterSpacing: '0.04em
+                  letterSpacing: '0.04em',
+                  marginTop: 10,
+                }}
+              >
+                + Add a Coach
+              </a>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+              {loading && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
+                  Loading coaches…
+                </div>
+              )}
+              {!loading && filtered.length === 0 && <EmptyState />}
+              {filtered.map((coach) => (
+                <CoachCard
+                  key={coach.id}
+                  coach={coach}
+                  selected={selected === coach.id}
+                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
+                  onViewProfile={setProfileCoach}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+            <MapLegend />
+            <div style={{ flex: 1, position: 'relative' }}>
+              <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
+                <FitBounds coaches={mappable} selectedId={selected} />
+                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
+              </MapContainer>
+            </div>
+          </div>
+
+          <div
+            style={{
+              width: 200,
+              flexShrink: 0,
+              borderLeft: '2px solid var(--lgray)',
+              background: 'var(--white)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+              padding: 16,
+              overflowY: 'auto',
+            }}
+          >
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  border: '2px dashed var(--lgray)',
+                  borderRadius: 'var(--card-radius)',
+                  padding: '16px 12px',
+                  textAlign: 'center',
+                  background: 'var(--cream)',
+                  minHeight: 180,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'var(--gray)',
+                  }}
+                >
+                  Advertise Here
+                </div>
+                <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>
+                  Reach baseball &amp; softball families
+                </div>
+                <a
+                  href="mailto:admin.bsbldirectory@gmail.com"
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--red)',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    marginTop: 4,
+                  }}
+                >
+                  Contact Us
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
