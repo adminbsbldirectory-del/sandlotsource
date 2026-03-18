@@ -229,28 +229,34 @@ export default function Facilities() {
   function clearZipFilter() { setZip(''); setGeoCenter(null); setZipStatus(''); setRadius(25) }
 
   const filtered = useMemo(() => {
-    return facilities
-      .filter((f) => {
-        if (sport === 'baseball' && f.sport !== 'baseball' && f.sport !== 'both') return false
-        if (sport === 'softball' && f.sport !== 'softball' && f.sport !== 'both') return false
-        if (search) {
-          const q = search.toLowerCase()
-          if (!(f.name || '').toLowerCase().includes(q) && !(f.city || '').toLowerCase().includes(q) && !(f.address || '').toLowerCase().includes(q) && !(f.description || '').toLowerCase().includes(q)) return false
-        }
-        if (geoCenter && f.lat != null && f.lng != null) {
-          if (distanceMiles(geoCenter.lat, geoCenter.lng, f.lat, f.lng) > radius) return false
-        }
-        return true
-      })
-      .sort((a, b) => {
-        if (a.id === selected) return -1
-        if (b.id === selected) return 1
-        if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
-          return distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) - distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
-        }
-        return 0
-      })
-  }, [facilities, sport, search, geoCenter, radius, selected])
+  return facilities
+    .filter((f) => {
+      if (sport === 'baseball' && f.sport !== 'baseball' && f.sport !== 'both') return false
+      if (sport === 'softball' && f.sport !== 'softball' && f.sport !== 'both') return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (
+          !(f.name || '').toLowerCase().includes(q) &&
+          !(f.city || '').toLowerCase().includes(q) &&
+          !(f.address || '').toLowerCase().includes(q) &&
+          !(f.description || '').toLowerCase().includes(q)
+        ) return false
+      }
+      if (geoCenter && f.lat != null && f.lng != null) {
+        if (distanceMiles(geoCenter.lat, geoCenter.lng, f.lat, f.lng) > radius) return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
+        return (
+          distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) -
+          distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+        )
+      }
+      return 0
+    })
+}, [facilities, sport, search, geoCenter, radius])
 
   const mappable = filtered.filter((f) => f.lat != null && f.lng != null)
 
