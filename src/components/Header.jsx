@@ -111,15 +111,16 @@ export default function Header() {
   const activeTab = getActiveTab(location.pathname)
 
   useEffect(() => {
-    function handleResize() {
-      const mobile = window.innerWidth < 900
-      setIsMobile(mobile)
-      if (!mobile) setMenuOpen(false)
-    }
+  function handleResize() {
+    const mobile = window.innerWidth < 900
+    setIsMobile(mobile)
+    if (!mobile) setMenuOpen(false)
+  }
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  handleResize()
+  window.addEventListener('resize', handleResize)
+  return () => window.removeEventListener('resize', handleResize)
+}, [])
 
   useEffect(() => {
     setMenuOpen(false)
@@ -135,7 +136,7 @@ export default function Header() {
       style={{
         position: 'sticky',
         top: 0,
-        zIndex: 900,
+        zIndex: 1000,
         background: '#fff',
         borderBottom: '3px solid #e63329',
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
@@ -223,30 +224,28 @@ export default function Header() {
         </div>
 
         {isMobile && menuOpen && (
-          <div
-            style={{
-              padding: '0 0 14px',
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gap: 8,
-                borderTop: '1px solid var(--lgray)',
-                paddingTop: 12,
-              }}
-            >
-              {NAV_TABS.map((tab) => (
-                <NavButton
-                  key={tab.id}
-                  tab={tab}
-                  isActive={activeTab === tab.id}
-                  onClick={() => handleNavigate(tab.path)}
-                  mobile
-                />
-              ))}
-            </div>
-          </div>
+  <div style={{ padding: '0 0 14px' }}>
+    <div
+      style={{
+        display: 'grid',
+        gap: 8,
+        borderTop: '1px solid var(--lgray)',
+        paddingTop: 12,
+        background: '#fff',
+      }}
+    >
+      {NAV_TABS.map((tab) => (
+        <NavButton
+          key={tab.id}
+          tab={tab}
+          isActive={activeTab === tab.id}
+          onClick={() => handleNavigate(tab.path)}
+          mobile
+        />
+      ))}
+    </div>
+  </div>
+)}
         )}
       </div>
     </header>
