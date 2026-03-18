@@ -139,7 +139,7 @@ function CoachForm({ isMobile }) {
     setError(''); setSubmitting(true)
     try {
       const payload = {
-        name: form.name.trim(), sport: form.sport, specialty: form.specialty.length ? form.specialty.join('|') : null,
+        name: form.name.trim(), sport: form.sport, specialty: form.specialty.length ? form.specialty : null,
         city: form.city.trim() || null, state: form.state || null, zip: form.zip_code || null,
         lat: form.lat != null ? parseFloat(form.lat) : null, lng: form.lng != null ? parseFloat(form.lng) : null,
         address: form.address.trim() || null, facility_name: form.facility_name.trim(),
