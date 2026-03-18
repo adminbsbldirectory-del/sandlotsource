@@ -133,9 +133,9 @@ function CoachCard({ coach, distanceMi }) {
 
   return (
     <Link
-      {`/coaches?select=${coach.id}`}
-      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-    >
+  to={`/coaches?select=${coach.id}`}
+  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+>
       <div
         style={{
           border: `1px solid ${BORDER}`,
@@ -276,10 +276,9 @@ function TeamCard({ team, distanceMi }) {
 
   return (
     <Link
-      <Link
   to={`/teams?select=${team.id}`}
   style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-    >
+>
       <div
         style={{
           border: `1px solid ${BORDER}`,
@@ -433,7 +432,8 @@ function FacilityCard({ facility, distanceMi }) {
 
   return (
     <Link
-  to={`/facilities?select=${facility.id}`}
+  <Link
+  to={`/teams?select=${team.id}`}
   style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
 >
       <div
