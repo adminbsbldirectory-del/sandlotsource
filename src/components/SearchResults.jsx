@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase.js'
 
-// ─── Haversine distance (miles) ───────────────────────────────────────────────
+// ─── Haversine distance (miles) ───────────────────────────
 function distanceMiles(lat1, lng1, lat2, lng2) {
   const R = 3958.8
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -15,7 +15,7 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-// ─── Geocode zip ──────────────────────────────────────────────────────────────
+// ─── Geocode zip ──────────────────────────────────────────
 async function geocodeZip(zip) {
   try {
     const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
@@ -34,7 +34,25 @@ async function geocodeZip(zip) {
   }
 }
 
-// ─── Style tokens ─────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────
+function getZip(item) {
+  return item.zip_code || item.zip || ''
+}
+
+function getLocationLine(item) {
+  const zip = getZip(item)
+  const parts = [item.city, item.state].filter(Boolean)
+  if (parts.length === 0 && zip) return zip
+  if (parts.length === 0) return item.county ? `${item.county} Co.` : ''
+  return parts.join(', ') + (zip ? ` ${zip}` : '')
+}
+
+function normalizeSpecialty(item) {
+  if (Array.isArray(item.specialty)) return item.specialty
+  return (item.specialty || '').split('|').filter(Boolean)
+}
+
+// ─── Style tokens ─────────────────────────────────────────
 const RED = '#e63329'
 const DARK = '#1a1a1a'
 const BORDER = '#eaeae6'
@@ -49,7 +67,7 @@ const BADGE_STYLES = {
   facility: { background: '#e8f4ff', color: '#1d4ed8' },
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────
 function ResultCount({ count }) {
   return (
     <span
@@ -110,9 +128,8 @@ function SectionHeader({ title, count, isCollapsed, onToggle }) {
 }
 
 function CoachCard({ coach, distanceMi }) {
-  const specs = Array.isArray(coach.specialty)
-    ? coach.specialty
-    : (coach.specialty || '').split('|').filter(Boolean)
+  const specs = normalizeSpecialty(coach)
+  const locationLine = getLocationLine(coach)
 
   return (
     <Link
@@ -190,7 +207,7 @@ function CoachCard({ coach, distanceMi }) {
         </div>
 
         <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
-          📍 {[coach.city, coach.county ? `${coach.county} Co.` : null].filter(Boolean).join(', ')}
+          📍 {locationLine || 'Location not listed'}
           {distanceMi != null && (
             <span style={{ marginLeft: 8, color: RED, fontWeight: 500 }}>
               {Math.round(distanceMi)} mi away
@@ -255,10 +272,11 @@ function CoachCard({ coach, distanceMi }) {
 function TeamCard({ team, distanceMi }) {
   const isOpen = team.roster_status === 'open' || team.open_spots > 0
   const isTryout = team.tryout_status === 'open' || team.tryout_date
+  const locationLine = getLocationLine(team)
 
   return (
     <Link
-      to={`/teams?select=${team.id}`}
+      to="/teams"
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
@@ -289,8 +307,8 @@ function TeamCard({ team, distanceMi }) {
             >
               {team.name}
             </div>
-            {team.organization && (
-              <div style={{ fontSize: 12, color: MUTED }}>{team.organization}</div>
+            {team.org_affiliation && (
+              <div style={{ fontSize: 12, color: MUTED }}>{team.org_affiliation}</div>
             )}
           </div>
 
@@ -347,7 +365,7 @@ function TeamCard({ team, distanceMi }) {
         </div>
 
         <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
-          📍 {[team.city, team.county ? `${team.county} Co.` : null].filter(Boolean).join(', ') || 'Location TBD'}
+          📍 {locationLine || 'Location TBD'}
           {distanceMi != null && (
             <span style={{ marginLeft: 8, color: RED, fontWeight: 500 }}>
               {Math.round(distanceMi)} mi away
@@ -405,6 +423,7 @@ function TeamCard({ team, distanceMi }) {
 
 function FacilityCard({ facility, distanceMi }) {
   const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
+  const locationLine = getLocationLine(facility)
 
   return (
     <Link
@@ -460,7 +479,7 @@ function FacilityCard({ facility, distanceMi }) {
         </div>
 
         <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
-          📍 {[facility.city, facility.county ? `${facility.county} Co.` : null].filter(Boolean).join(', ')}
+          📍 {locationLine || 'Location not listed'}
           {distanceMi != null && (
             <span style={{ marginLeft: 8, color: RED, fontWeight: 500 }}>
               {Math.round(distanceMi)} mi away
@@ -542,9 +561,10 @@ function EmptyState({ query }) {
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────
 export default function SearchResults() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const [query, setQuery] = useState(searchParams.get('q') || '')
   const [sport, setSport] = useState(searchParams.get('sport') || '')
@@ -627,8 +647,10 @@ export default function SearchResults() {
     return (
       (item.name || '').toLowerCase().includes(q) ||
       (item.city || '').toLowerCase().includes(q) ||
+      (item.state || '').toLowerCase().includes(q) ||
       (item.county || '').toLowerCase().includes(q) ||
       (item.facility_name || '').toLowerCase().includes(q) ||
+      (item.org_affiliation || '').toLowerCase().includes(q) ||
       (item.organization || '').toLowerCase().includes(q) ||
       (item.address || '').toLowerCase().includes(q) ||
       (item.description || '').toLowerCase().includes(q) ||
@@ -704,7 +726,7 @@ export default function SearchResults() {
     if (listingType) params.set('type', listingType)
     if (ageGroup) params.set('age', ageGroup)
     if (radius !== 25) params.set('radius', String(radius))
-    window.location.href = `/search?${params.toString()}`
+    navigate(`/search?${params.toString()}`)
   }
 
   const pillStyle = {
