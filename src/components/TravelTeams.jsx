@@ -608,7 +608,7 @@ export default function TravelTeams() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '340px minmax(0, 860px) 300px',
+          gridTemplateColumns: isMobile ? '1fr' : '340px minmax(0, 920px) 250px',
           gap: isMobile ? 0 : 14,
           alignItems: 'start',
           width: '100%',
@@ -887,24 +887,33 @@ export default function TravelTeams() {
           </div>
         </aside>
 
-        <main style={{ minWidth: 0, paddingRight: isMobile ? 0 : 0 }}>
+        <main
+          style={{
+            minWidth: 0,
+            paddingRight: isMobile ? 0 : 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+          }}
+        >
           {showMap && (
             <div
               style={{
                 background: 'var(--white)',
                 padding: isMobile ? 0 : '10px 0 0 0',
+                width: '100%',
               }}
             >
               <div
-        style={{
-        height: isMobile ? 260 : 340,
-        width: '100%',
-        maxWidth: '920px',
-        overflow: 'hidden',
-        borderRadius: isMobile ? 0 : 14,
-        border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-       }}
-      >
+                style={{
+                  height: isMobile ? 260 : 460,
+                  width: '100%',
+                  maxWidth: '920px',
+                  overflow: 'hidden',
+                  borderRadius: isMobile ? 0 : 14,
+                  border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                }}
+              >
                 <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -977,6 +986,8 @@ export default function TravelTeams() {
                 fontSize: 13,
                 color: 'var(--open-text)',
                 fontWeight: 600,
+                maxWidth: '920px',
+                width: '100%',
               }}
             >
               {`✅ ${openTryoutCount} team${openTryoutCount !== 1 ? 's' : ''} currently accepting tryouts${
@@ -995,6 +1006,8 @@ export default function TravelTeams() {
                 padding: '16px',
                 color: 'var(--gray)',
                 fontSize: 13,
+                maxWidth: '920px',
+                width: '100%',
               }}
             >
               Map is hidden. Use “Show Map” in the left panel to view team locations.
@@ -1004,14 +1017,14 @@ export default function TravelTeams() {
 
         {!isMobile && (
           <aside
-  style={{
-    position: 'sticky',
-    top: 86,
-    alignSelf: 'start',
-    padding: '10px 14px 0 0',
-    width: '280px',
-  }}
->
+            style={{
+              position: 'sticky',
+              top: 86,
+              alignSelf: 'start',
+              padding: '10px 14px 0 0',
+              width: '250px',
+            }}
+          >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <AdBox />
               <AdBox />
