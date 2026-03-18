@@ -270,9 +270,7 @@ export default function Facilities() {
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setSearch(searchInput.trim())
-    }, 300)
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300)
     return () => clearTimeout(t)
   }, [searchInput])
 
@@ -390,126 +388,22 @@ export default function Facilities() {
     )
   }
 
-  const Sidebar = () => (
-    <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '2px solid var(--lgray)' }}>
-      <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '2px solid var(--lgray)', flexShrink: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
-          {loading ? 'Loading…' : filtered.length + ' facilit' + (filtered.length !== 1 ? 'ies' : 'y')}
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <span style={sectionLabel}>Search</span>
-          <input
-            placeholder="Name, city, address..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <span style={sectionLabel}>Sport</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => s === 'baseball' ? 'Both' : 'baseball')} style={{ width: '100%', justifyContent: 'flex-start' }}>⚾ Baseball</button>
-            <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => s === 'softball' ? 'Both' : 'softball')} style={{ width: '100%', justifyContent: 'flex-start' }}>🥎 Softball</button>
-          </div>
-        </div>
-
-        <div>
-          <span style={sectionLabel}>Near zip code</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: zip.length === 5 && zipStatus === 'ok' ? 10 : 0 }}>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g. 30004"
-              maxLength={5}
-              value={zip}
-              onChange={(e) => {
-                const next = e.target.value
-                setZip(next)
-                if (next.length < 5) {
-                  setGeoCenter(null)
-                  setZipStatus('')
-                }
-              }}
-              onBlur={handleZipBlur}
-              style={{ ...inputStyle, flex: 1 }}
-            />
-            {zipStatus === 'ok' && <span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span>}
-            {zipStatus === 'error' && <span style={{ fontSize: 12, color: 'var(--red)', flexShrink: 0 }}>?</span>}
-            {zipStatus === 'loading' && <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>…</span>}
-          </div>
-
-          {zip.length === 5 && zipStatus === 'ok' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4 }}>
-                <span>Radius</span>
-                <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span>
-              </div>
-              <input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} />
-              <button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                Clear zip filter
-              </button>
-            </div>
-          )}
-        </div>
-
-        <a
-          href="/submit"
-          style={{
-            display: 'block',
-            textAlign: 'center',
-            background: 'var(--red)',
-            color: 'white',
-            padding: '10px',
-            borderRadius: 'var(--btn-radius)',
-            fontSize: 13,
-            fontWeight: 700,
-            textDecoration: 'none',
-            fontFamily: 'var(--font-head)',
-            letterSpacing: '0.04em',
-            marginTop: 10,
-          }}
-        >
-          + Add a Facility
-        </a>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
-        {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
-        {!loading && filtered.length === 0 && <EmptyState />}
-        {filtered.map((f) => (
-          <FacilityCard
-            key={f.id}
-            facility={f}
-            selected={selected === f.id}
-            onClick={() => setSelected(selected === f.id ? null : f.id)}
-            distanceMi={getDistance(f)}
-          />
-        ))}
-      </div>
-    </div>
-  )
-
-  const MobileFilterBar = () => (
-    <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
-      <input
-        placeholder="🔍 Search..."
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        style={{ ...inputStyle, flex: 1, minWidth: 120 }}
-      />
-      <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => s === 'baseball' ? 'Both' : 'baseball')}>⚾</button>
-      <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => s === 'softball' ? 'Both' : 'softball')}>🥎</button>
-      <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-    </div>
-  )
-
   return (
     <>
-      {isMobile && (
+      {isMobile ? (
         <div>
-          <MobileFilterBar />
+          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
+            <input
+              placeholder="🔍 Search..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+            />
+            <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}>⚾</button>
+            <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}>🥎</button>
+            <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+          </div>
+
           <div style={{ height: 220, borderBottom: '2px solid var(--lgray)' }}>
             <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
               <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -527,7 +421,8 @@ export default function Facilities() {
                     <div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}>
                       <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong>
                       <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                        📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
+                        📍 {[f.city, f.state].filter(Boolean).join(', ')}
+                        {getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
                       </div>
                     </div>
                   </Popup>
@@ -550,11 +445,106 @@ export default function Facilities() {
             ))}
           </div>
         </div>
-      )}
-
-      {!isMobile && (
+      ) : (
         <div style={{ display: 'flex', height: 'calc(100vh - ' + HEADER_H + 'px)', overflow: 'hidden' }}>
-          <Sidebar />
+          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', borderRight: '2px solid var(--lgray)' }}>
+            <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '2px solid var(--lgray)', flexShrink: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
+                {loading ? 'Loading…' : filtered.length + ' facilit' + (filtered.length !== 1 ? 'ies' : 'y')}
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <span style={sectionLabel}>Search</span>
+                <input
+                  placeholder="Name, city, address..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ marginBottom: 10 }}>
+                <span style={sectionLabel}>Sport</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>⚾ Baseball</button>
+                  <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>🥎 Softball</button>
+                </div>
+              </div>
+
+              <div>
+                <span style={sectionLabel}>Near zip code</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: zip.length === 5 && zipStatus === 'ok' ? 10 : 0 }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="e.g. 30004"
+                    maxLength={5}
+                    value={zip}
+                    onChange={(e) => {
+                      const next = e.target.value
+                      setZip(next)
+                      if (next.length < 5) {
+                        setGeoCenter(null)
+                        setZipStatus('')
+                      }
+                    }}
+                    onBlur={handleZipBlur}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  {zipStatus === 'ok' && <span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span>}
+                  {zipStatus === 'error' && <span style={{ fontSize: 12, color: 'var(--red)', flexShrink: 0 }}>?</span>}
+                  {zipStatus === 'loading' && <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>…</span>}
+                </div>
+
+                {zip.length === 5 && zipStatus === 'ok' && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4 }}>
+                      <span>Radius</span>
+                      <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span>
+                    </div>
+                    <input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} />
+                    <button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      Clear zip filter
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <a
+                href="/submit"
+                style={{
+                  display: 'block',
+                  textAlign: 'center',
+                  background: 'var(--red)',
+                  color: 'white',
+                  padding: '10px',
+                  borderRadius: 'var(--btn-radius)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  fontFamily: 'var(--font-head)',
+                  letterSpacing: '0.04em',
+                  marginTop: 10,
+                }}
+              >
+                + Add a Facility
+              </a>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+              {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
+              {!loading && filtered.length === 0 && <EmptyState />}
+              {filtered.map((f) => (
+                <FacilityCard
+                  key={f.id}
+                  facility={f}
+                  selected={selected === f.id}
+                  onClick={() => setSelected(selected === f.id ? null : f.id)}
+                  distanceMi={getDistance(f)}
+                />
+              ))}
+            </div>
+          </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <div style={{ display: 'flex', gap: 10, padding: '6px 14px', background: 'var(--white)', borderBottom: '1px solid var(--lgray)', alignItems: 'center', flexShrink: 0 }}>
@@ -583,7 +573,8 @@ export default function Facilities() {
                       <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
                         <strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{f.name}</strong>
                         <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                          📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
+                          📍 {[f.city, f.state].filter(Boolean).join(', ')}
+                          {getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
                         </div>
                         {f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}
                         {f.sport && <div style={{ fontSize: 12, marginTop: 2 }}>{getSportLabel(f.sport)}</div>}
