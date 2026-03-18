@@ -98,9 +98,9 @@ function normalizeFacility(facility) {
   return {
     ...facility,
     id: facility.id == null ? '' : String(facility.id).trim(),
-    lat: toNumber(facility.lat ?? facility.latitude),
-    lng: toNumber(facility.lng ?? facility.longitude),
-    zip: facility.zip || facility.zip_code || '',
+    lat: toNumber(facility.lat),
+    lng: toNumber(facility.lng),
+    zip: facility.zip_code || '',
   }
 }
 
@@ -489,7 +489,7 @@ export default function CoachDirectory() {
             .in('approval_status', ['approved', 'seeded']),
           supabase
             .from('facilities')
-            .select('id, name, lat, lng, latitude, longitude, address, city, state, zip, zip_code')
+            .select('id, name, lat, lng, address, city, state, zip_code')
             .eq('active', true)
             .in('approval_status', ['approved', 'seeded']),
         ])
@@ -521,67 +521,22 @@ export default function CoachDirectory() {
   }, [facilities])
 
   const resolvedCoaches = useMemo(() => {
-  return coaches.map((coach) => {
-    const facilityId = coach.facility_id == null ? null : String(coach.facility_id).trim()
-    if (!facilityId) {
-      return {
-        ...coach,
-        coord_source: 'coach:no-facility-id',
-      }
-    }
+    return coaches.map((coach) => {
+      if (!coach.facility_id) return coach
 
-    const linkedFacility = facilityMap.get(facilityId)
-
-    if (!linkedFacility) {
-      console.log('NO FACILITY MATCH', {
-        coach: coach.name,
-        coachId: coach.id,
-        facilityId,
-        availableFacilityIds: Array.from(facilityMap.keys()).slice(0, 20),
-      })
+      const linkedFacility = facilityMap.get(coach.facility_id)
+      if (!linkedFacility) return coach
+      if (linkedFacility.lat == null || linkedFacility.lng == null) return coach
 
       return {
         ...coach,
-        coord_source: 'coach:facility-not-found',
+        lat: linkedFacility.lat,
+        lng: linkedFacility.lng,
+        resolved_from_facility: true,
+        resolved_facility_name: linkedFacility.name || coach.facility_name,
       }
-    }
-
-    if (linkedFacility.lat == null || linkedFacility.lng == null) {
-      console.log('FACILITY HAS NO COORDS', {
-        coach: coach.name,
-        coachId: coach.id,
-        facilityId,
-        facilityName: linkedFacility.name,
-        facilityLat: linkedFacility.lat,
-        facilityLng: linkedFacility.lng,
-      })
-
-      return {
-        ...coach,
-        coord_source: 'coach:facility-no-coords',
-      }
-    }
-
-    console.log('USING FACILITY COORDS', {
-      coach: coach.name,
-      coachId: coach.id,
-      facilityId,
-      facilityName: linkedFacility.name,
-      coachLat: coach.lat,
-      coachLng: coach.lng,
-      facilityLat: linkedFacility.lat,
-      facilityLng: linkedFacility.lng,
     })
-
-    return {
-      ...coach,
-      lat: linkedFacility.lat,
-      lng: linkedFacility.lng,
-      coord_source: 'facility',
-      resolved_facility_name: linkedFacility.name || coach.facility_name,
-    }
-  })
-}, [coaches, facilityMap])
+  }, [coaches, facilityMap])
 
   const filtered = useMemo(() => {
     return resolvedCoaches.filter((c) => {
@@ -607,19 +562,12 @@ export default function CoachDirectory() {
     })
   }, [resolvedCoaches, sport, specialty, state, search])
 
-  const mappable = filtered.filter((c) => c.lat != null && c.lng != null)
+  const mappable = useMemo(() => filtered.filter((c) => c.lat != null && c.lng != null), [filtered])
 
-  const sel = selected
-  ? filtered.find((c) => c.id === selected) || resolvedCoaches.find((c) => c.id === selected) || null
-  : null
-
-console.log('SELECTED COACH RUNTIME', sel?.name, {
-  selectedId: selected,
-  lat: sel?.lat,
-  lng: sel?.lng,
-  facility_id: sel?.facility_id,
-  coord_source: sel?.coord_source,
-})
+  const sel = useMemo(() => {
+    if (!selected) return null
+    return filtered.find((c) => c.id === selected) || resolvedCoaches.find((c) => c.id === selected) || null
+  }, [selected, filtered, resolvedCoaches])
 
   const inputStyle = {
     width: '100%',
@@ -843,109 +791,4 @@ console.log('SELECTED COACH RUNTIME', sel?.name, {
                   fontWeight: 700,
                   textDecoration: 'none',
                   fontFamily: 'var(--font-head)',
-                  letterSpacing: '0.04em',
-                  marginTop: 10,
-                }}
-              >
-                + Add a Coach
-              </a>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
-              {loading && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
-                  Loading coaches…
-                </div>
-              )}
-              {!loading && filtered.length === 0 && <EmptyState />}
-              {filtered.map((coach) => (
-                <CoachCard
-                  key={coach.id}
-                  coach={coach}
-                  selected={selected === coach.id}
-                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-                  onViewProfile={setProfileCoach}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-            <MapLegend />
-            <div style={{ flex: 1, position: 'relative' }}>
-              <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                <FitBounds coaches={mappable} selectedId={selected} />
-                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
-              </MapContainer>
-            </div>
-          </div>
-
-          <div
-            style={{
-              width: 200,
-              flexShrink: 0,
-              borderLeft: '2px solid var(--lgray)',
-              background: 'var(--white)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-              padding: 16,
-              overflowY: 'auto',
-            }}
-          >
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  border: '2px dashed var(--lgray)',
-                  borderRadius: 'var(--card-radius)',
-                  padding: '16px 12px',
-                  textAlign: 'center',
-                  background: 'var(--cream)',
-                  minHeight: 180,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    color: 'var(--gray)',
-                  }}
-                >
-                  Advertise Here
-                </div>
-                <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>
-                  Reach baseball &amp; softball families
-                </div>
-                <a
-                  href="mailto:admin.bsbldirectory@gmail.com"
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--red)',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    marginTop: 4,
-                  }}
-                >
-                  Contact Us
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
+                  letterSpacing: '0.04em
