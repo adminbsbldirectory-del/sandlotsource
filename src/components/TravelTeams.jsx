@@ -659,7 +659,6 @@ export default function TravelTeams() {
               />
             </div>
 
-            {!isMobile && <AdBox compact />}
 
             <div>
               <div style={sectionLabelStyle}>Sport</div>
@@ -799,49 +798,56 @@ export default function TravelTeams() {
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setShowMap((m) => !m)}
-                style={{
-                  flex: 1,
-                  padding: '9px 10px',
-                  borderRadius: 'var(--btn-radius)',
-                  border: '1.5px solid var(--navy)',
-                  background: showMap ? 'var(--navy)' : 'var(--white)',
-                  color: showMap ? 'var(--white)' : 'var(--navy)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-head)',
-                  minHeight: 40,
-                }}
-              >
-                {showMap ? 'Hide Map' : 'Show Map'}
-              </button>
+  <button
+    type="button"
+    onClick={() => setShowMap((m) => !m)}
+    style={{
+      flex: 1,
+      padding: '9px 10px',
+      borderRadius: 'var(--btn-radius)',
+      border: '1.5px solid var(--navy)',
+      background: showMap ? 'var(--navy)' : 'var(--white)',
+      color: showMap ? 'var(--white)' : 'var(--navy)',
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: 'pointer',
+      fontFamily: 'var(--font-head)',
+      minHeight: 40,
+    }}
+  >
+    {showMap ? 'Hide Map' : 'Show Map'}
+  </button>
 
-              <a
-                href="/submit"
-                style={{
-                  flex: 1,
-                  textAlign: 'center',
-                  textDecoration: 'none',
-                  padding: '9px 10px',
-                  borderRadius: 'var(--btn-radius)',
-                  background: 'var(--red)',
-                  color: 'white',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: 'var(--font-head)',
-                  minHeight: 40,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                + Add a Team
-              </a>
-            </div>
-          </div>
+  <a
+    href="/submit"
+    style={{
+      flex: 1,
+      textAlign: 'center',
+      textDecoration: 'none',
+      padding: '9px 10px',
+      borderRadius: 'var(--btn-radius)',
+      background: 'var(--red)',
+      color: 'white',
+      fontSize: 12,
+      fontWeight: 700,
+      fontFamily: 'var(--font-head)',
+      minHeight: 40,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    + Add a Team
+  </a>
+</div>
+</div>
+
+{!isMobile && (
+  <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
+    <AdBox compact />
+  </div>
+)}
+
         </aside>
 
         <div style={{ minWidth: 0 }}>
