@@ -57,7 +57,7 @@ const US_STATES = [
 const STATE_CENTERS = {
   AL: [32.8, -86.8], AK: [64.2, -153.0], AZ: [34.3, -111.1], AR: [34.8, -92.2],
   CA: [36.7, -119.7], CO: [39.0, -105.5], CT: [41.6, -72.7], DE: [39.0, -75.5],
-  FL: [27.8, -81.7], GA: [32.5, -83.5], HI: [20.3, -156.4], ID: [44.4, -114.6],
+  FL: [27.8, -81.7], GA: [32.6, -83.4], HI: [20.3, -156.4], ID: [44.4, -114.6],
   IL: [40.0, -89.2], IN: [39.8, -86.1], IA: [42.0, -93.5], KS: [38.5, -98.4],
   KY: [37.5, -85.3], LA: [31.1, -91.9], ME: [44.7, -69.4], MD: [39.0, -76.8],
   MA: [42.3, -71.8], MI: [44.3, -85.4], MN: [46.4, -93.1], MS: [32.7, -89.7],
@@ -74,12 +74,12 @@ function makeIcon(color) {
   return L.divIcon({
     className: '',
     html:
-      '<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:' +
+      '<div style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:' +
       color +
       ';border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
-    iconSize: [26, 26],
-    iconAnchor: [13, 26],
-    popupAnchor: [0, -28],
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24],
   })
 }
 
@@ -131,6 +131,17 @@ function FitBounds({ teams, enabled }) {
   return null
 }
 
+function UpdateMapView({ center, zoom, enabled }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!enabled || !center) return
+    map.setView(center, zoom, { animate: false })
+  }, [center, zoom, enabled, map])
+
+  return null
+}
+
 function FlyToTeam({ team }) {
   const map = useMap()
 
@@ -149,7 +160,7 @@ function MapLegend({ hasPins }) {
         display: 'flex',
         flexWrap: 'wrap',
         gap: 12,
-        padding: '7px 12px',
+        padding: '6px 10px',
         background: 'var(--white)',
         borderTop: '1px solid var(--lgray)',
         alignItems: 'center',
@@ -205,14 +216,14 @@ function AdBox() {
         background: '#F7F3ED',
         border: '1px dashed #D8D0C5',
         borderRadius: 14,
-        padding: '28px 18px',
+        padding: '24px 16px',
         textAlign: 'center',
-        minHeight: 170,
+        minHeight: 150,
       }}
     >
       <div
         style={{
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 700,
           color: '#7A6B57',
           fontFamily: 'var(--font-head)',
@@ -221,7 +232,7 @@ function AdBox() {
       >
         ADVERTISE HERE
       </div>
-      <div style={{ fontSize: 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 14 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 12 }}>
         Reach baseball &amp; softball families
       </div>
       <a
@@ -254,13 +265,13 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
         boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.10)' : '0 2px 10px rgba(0,0,0,0.05)',
       }}
     >
-      <div className="card-body">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+      <div className="card-body" style={{ padding: '12px 12px 10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <div style={{ flex: 1 }}>
             <div
               style={{
                 fontFamily: 'var(--font-head)',
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: 700,
                 letterSpacing: '0.02em',
                 lineHeight: 1.2,
@@ -269,7 +280,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
               {team.name}
             </div>
 
-            <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
               {locationFull ? `📍 ${locationFull}` : '📍 Location not listed'}
             </div>
           </div>
@@ -286,15 +297,15 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: 7, marginTop: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
           {team.age_group && (
             <span
               style={{
                 background: 'var(--navy)',
                 color: 'white',
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                padding: '2px 8px',
+                padding: '2px 7px',
                 borderRadius: 20,
                 fontFamily: 'var(--font-head)',
               }}
@@ -312,8 +323,8 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
               style={{
                 background: 'var(--lgray)',
                 color: 'var(--gray)',
-                fontSize: 11,
-                padding: '2px 8px',
+                fontSize: 10,
+                padding: '2px 7px',
                 borderRadius: 20,
               }}
             >
@@ -322,35 +333,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
           )}
         </div>
 
-        {team.tryout_status === 'open' && team.tryout_date && (
-          <div
-            style={{
-              marginTop: 10,
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: 'var(--open-bg)',
-              color: 'var(--open-text)',
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {'🗓️ Tryouts: ' +
-              new Date(team.tryout_date).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            {team.tryout_notes && <div style={{ fontWeight: 400, marginTop: 2 }}>{team.tryout_notes}</div>}
-          </div>
-        )}
-
-        {team.description && (
-          <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 8, lineHeight: 1.5 }}>
-            {team.description.length > 105 ? team.description.slice(0, 105) + '…' : team.description}
-          </div>
-        )}
-
-        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={(e) => {
@@ -359,13 +342,13 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
             }}
             style={{
               flex: 1,
-              minWidth: 150,
+              minWidth: 140,
               background: 'var(--navy)',
               color: 'white',
               border: 'none',
               borderRadius: 'var(--btn-radius)',
               padding: '9px 12px',
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 700,
               cursor: 'pointer',
               fontFamily: 'var(--font-head)',
@@ -388,7 +371,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
                 border: '1.5px solid var(--lgray)',
                 borderRadius: 'var(--btn-radius)',
                 padding: '9px 12px',
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 700,
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
@@ -572,7 +555,7 @@ export default function TravelTeams() {
 
   const filterSelectStyle = {
     width: '100%',
-    padding: '10px 12px',
+    padding: '9px 10px',
     borderRadius: 'var(--input-radius)',
     border: '1.5px solid var(--lgray)',
     background: 'var(--white)',
@@ -580,15 +563,16 @@ export default function TravelTeams() {
     color: 'var(--navy)',
     fontFamily: 'var(--font-body)',
     outline: 'none',
+    minHeight: 40,
   }
 
   const sectionLabelStyle = {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 700,
     color: 'var(--gray)',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
-    marginBottom: 6,
+    marginBottom: 5,
   }
 
   return (
@@ -608,13 +592,10 @@ export default function TravelTeams() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '340px minmax(0, 920px) 250px',
+          gridTemplateColumns: isMobile ? '1fr' : '300px minmax(0, 1fr) 210px',
           gap: isMobile ? 0 : 14,
           alignItems: 'start',
           width: '100%',
-          maxWidth: '100%',
-          margin: '0',
-          padding: '0',
         }}
       >
         <aside
@@ -629,31 +610,32 @@ export default function TravelTeams() {
             zIndex: 2,
           }}
         >
-          <div style={{ padding: 14, borderBottom: '1px solid var(--lgray)' }}>
+          <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
             <div
               style={{
                 fontFamily: 'var(--font-head)',
                 fontSize: 16,
                 fontWeight: 700,
                 color: 'var(--navy)',
-                marginBottom: 4,
+                marginBottom: 2,
+                lineHeight: 1.1,
               }}
             >
               {filtered.length} team{filtered.length !== 1 ? 's' : ''}
               {selectedState ? ` in ${selectedState.name}` : ''}
             </div>
 
-            <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+            <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>
               Travel teams, tryouts, and open roster opportunities
             </div>
           </div>
 
           <div
             style={{
-              padding: 14,
+              padding: 12,
               display: 'flex',
               flexDirection: 'column',
-              gap: 14,
+              gap: 10,
               borderBottom: '1px solid var(--lgray)',
               background: 'var(--white)',
             }}
@@ -667,13 +649,14 @@ export default function TravelTeams() {
                 onChange={(e) => setSearchInput(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
+                  padding: '9px 10px',
                   borderRadius: 'var(--input-radius)',
                   border: '1.5px solid var(--lgray)',
                   fontSize: 13,
                   color: 'var(--navy)',
                   outline: 'none',
                   background: 'var(--white)',
+                  minHeight: 40,
                 }}
               />
             </div>
@@ -685,7 +668,7 @@ export default function TravelTeams() {
                   type="button"
                   className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
                   onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, minHeight: 38 }}
                 >
                   ⚾ Baseball
                 </button>
@@ -693,7 +676,7 @@ export default function TravelTeams() {
                   type="button"
                   className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
                   onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, minHeight: 38 }}
                 >
                   🥎 Softball
                 </button>
@@ -715,7 +698,7 @@ export default function TravelTeams() {
                 ))}
               </select>
               {detectingLoc && (
-                <div style={{ marginTop: 6, fontSize: 11, color: '#999' }}>
+                <div style={{ marginTop: 4, fontSize: 11, color: '#999' }}>
                   Detecting your state...
                 </div>
               )}
@@ -732,25 +715,26 @@ export default function TravelTeams() {
                 onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
                 style={{
                   width: '100%',
-                  padding: '10px 12px',
+                  padding: '9px 10px',
                   borderRadius: 'var(--input-radius)',
                   border: '1.5px solid var(--lgray)',
                   fontSize: 13,
                   color: 'var(--navy)',
                   outline: 'none',
                   background: 'var(--white)',
+                  minHeight: 40,
                 }}
               />
 
               {zip.length === 5 && (
-                <div style={{ marginTop: 10 }}>
+                <div style={{ marginTop: 8 }}>
                   <div
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       fontSize: 12,
                       color: 'var(--gray)',
-                      marginBottom: 6,
+                      marginBottom: 4,
                     }}
                   >
                     <span>Distance</span>
@@ -769,40 +753,49 @@ export default function TravelTeams() {
               )}
 
               {zipError && (
-                <div style={{ marginTop: 6, fontSize: 11, color: 'var(--red)' }}>
+                <div style={{ marginTop: 4, fontSize: 11, color: 'var(--red)' }}>
                   {zipError}
                 </div>
               )}
             </div>
 
-            <div>
-              <div style={sectionLabelStyle}>Age</div>
-              <select
-                value={ageGroup}
-                onChange={(e) => setAgeGroup(e.target.value)}
-                style={filterSelectStyle}
-              >
-                {AGE_OPTIONS.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div
+              style={{
+                display: isMobile ? 'flex' : 'grid',
+                gridTemplateColumns: isMobile ? undefined : '1fr 1fr',
+                gap: 8,
+                flexDirection: isMobile ? 'column' : undefined,
+              }}
+            >
+              <div>
+                <div style={sectionLabelStyle}>Age</div>
+                <select
+                  value={ageGroup}
+                  onChange={(e) => setAgeGroup(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  {AGE_OPTIONS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <div style={sectionLabelStyle}>Tryout Status</div>
-              <select
-                value={tryoutFilter}
-                onChange={(e) => setTryoutFilter(e.target.value)}
-                style={filterSelectStyle}
-              >
-                <option value="All">All Tryout Status</option>
-                <option value="open">Open Tryouts</option>
-                <option value="year_round">Year Round</option>
-                <option value="by_invite">By Invite</option>
-                <option value="closed">Closed</option>
-              </select>
+              <div>
+                <div style={sectionLabelStyle}>Tryout Status</div>
+                <select
+                  value={tryoutFilter}
+                  onChange={(e) => setTryoutFilter(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="All">All Tryout Status</option>
+                  <option value="open">Open Tryouts</option>
+                  <option value="year_round">Year Round</option>
+                  <option value="by_invite">By Invite</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
@@ -811,15 +804,16 @@ export default function TravelTeams() {
                 onClick={() => setShowMap((m) => !m)}
                 style={{
                   flex: 1,
-                  padding: '10px 12px',
+                  padding: '9px 10px',
                   borderRadius: 'var(--btn-radius)',
                   border: '1.5px solid var(--navy)',
                   background: showMap ? 'var(--navy)' : 'var(--white)',
                   color: showMap ? 'var(--white)' : 'var(--navy)',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: 'var(--font-head)',
+                  minHeight: 40,
                 }}
               >
                 {showMap ? 'Hide Map' : 'Show Map'}
@@ -831,13 +825,17 @@ export default function TravelTeams() {
                   flex: 1,
                   textAlign: 'center',
                   textDecoration: 'none',
-                  padding: '10px 12px',
+                  padding: '9px 10px',
                   borderRadius: 'var(--btn-radius)',
                   background: 'var(--red)',
                   color: 'white',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 700,
                   fontFamily: 'var(--font-head)',
+                  minHeight: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
                 + Add a Team
@@ -847,9 +845,9 @@ export default function TravelTeams() {
 
           <div
             style={{
-              height: isMobile ? 'auto' : 'calc(100vh - 430px)',
+              height: isMobile ? 'auto' : 'calc(100vh - 360px)',
               overflowY: isMobile ? 'visible' : 'auto',
-              padding: 14,
+              padding: 12,
               display: 'flex',
               flexDirection: 'column',
               gap: 12,
@@ -890,7 +888,6 @@ export default function TravelTeams() {
         <main
           style={{
             minWidth: 0,
-            paddingRight: isMobile ? 0 : 0,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-start',
@@ -900,15 +897,14 @@ export default function TravelTeams() {
             <div
               style={{
                 background: 'var(--white)',
-                padding: isMobile ? 0 : '10px 0 0 0',
+                padding: isMobile ? 0 : '8px 0 0 0',
                 width: '100%',
               }}
             >
               <div
                 style={{
-                  height: isMobile ? 260 : 460,
+                  height: isMobile ? 260 : 410,
                   width: '100%',
-                  maxWidth: '920px',
                   overflow: 'hidden',
                   borderRadius: isMobile ? 0 : 14,
                   border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
@@ -919,7 +915,12 @@ export default function TravelTeams() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  <FitBounds teams={mappable} enabled={!selectedTeam} />
+                  <UpdateMapView
+                    center={mapCenter}
+                    zoom={mapZoom}
+                    enabled={!selectedTeam && mappable.length === 0}
+                  />
+                  <FitBounds teams={mappable} enabled={!selectedTeam && mappable.length > 0} />
                   <FlyToTeam team={selectedTeam} />
 
                   {mappable.map((team) => (
@@ -981,12 +982,11 @@ export default function TravelTeams() {
                 background: 'var(--open-bg)',
                 border: '1px solid var(--open-text)',
                 borderRadius: 12,
-                marginTop: 12,
+                marginTop: 10,
                 padding: '10px 14px',
                 fontSize: 13,
                 color: 'var(--open-text)',
                 fontWeight: 600,
-                maxWidth: '920px',
                 width: '100%',
               }}
             >
@@ -1006,7 +1006,6 @@ export default function TravelTeams() {
                 padding: '16px',
                 color: 'var(--gray)',
                 fontSize: 13,
-                maxWidth: '920px',
                 width: '100%',
               }}
             >
@@ -1021,11 +1020,11 @@ export default function TravelTeams() {
               position: 'sticky',
               top: 86,
               alignSelf: 'start',
-              padding: '10px 14px 0 0',
-              width: '250px',
+              padding: '8px 12px 0 0',
+              width: '210px',
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <AdBox />
               <AdBox />
               <AdBox />
