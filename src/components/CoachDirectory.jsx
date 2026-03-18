@@ -85,8 +85,8 @@ function toNumber(value) {
 function normalizeCoach(coach) {
   return {
     ...coach,
-    id: String(coach.id),
-    facility_id: coach.facility_id ? String(coach.facility_id) : null,
+    id: coach.id == null ? '' : String(coach.id).trim(),
+    facility_id: coach.facility_id == null ? null : String(coach.facility_id).trim(),
     lat: toNumber(coach.lat ?? coach.latitude),
     lng: toNumber(coach.lng ?? coach.longitude),
     zip: coach.zip || coach.zip_code || '',
@@ -97,7 +97,7 @@ function normalizeCoach(coach) {
 function normalizeFacility(facility) {
   return {
     ...facility,
-    id: String(facility.id),
+    id: facility.id == null ? '' : String(facility.id).trim(),
     lat: toNumber(facility.lat ?? facility.latitude),
     lng: toNumber(facility.lng ?? facility.longitude),
     zip: facility.zip || facility.zip_code || '',
@@ -521,22 +521,67 @@ export default function CoachDirectory() {
   }, [facilities])
 
   const resolvedCoaches = useMemo(() => {
-    return coaches.map((coach) => {
-      if (!coach.facility_id) return coach
+  return coaches.map((coach) => {
+    const facilityId = coach.facility_id == null ? null : String(coach.facility_id).trim()
+    if (!facilityId) {
+      return {
+        ...coach,
+        coord_source: 'coach:no-facility-id',
+      }
+    }
 
-      const linkedFacility = facilityMap.get(coach.facility_id)
-      if (!linkedFacility) return coach
-      if (linkedFacility.lat == null || linkedFacility.lng == null) return coach
+    const linkedFacility = facilityMap.get(facilityId)
+
+    if (!linkedFacility) {
+      console.log('NO FACILITY MATCH', {
+        coach: coach.name,
+        coachId: coach.id,
+        facilityId,
+        availableFacilityIds: Array.from(facilityMap.keys()).slice(0, 20),
+      })
 
       return {
         ...coach,
-        lat: linkedFacility.lat,
-        lng: linkedFacility.lng,
-        resolved_from_facility: true,
-        resolved_facility_name: linkedFacility.name || coach.facility_name,
+        coord_source: 'coach:facility-not-found',
       }
+    }
+
+    if (linkedFacility.lat == null || linkedFacility.lng == null) {
+      console.log('FACILITY HAS NO COORDS', {
+        coach: coach.name,
+        coachId: coach.id,
+        facilityId,
+        facilityName: linkedFacility.name,
+        facilityLat: linkedFacility.lat,
+        facilityLng: linkedFacility.lng,
+      })
+
+      return {
+        ...coach,
+        coord_source: 'coach:facility-no-coords',
+      }
+    }
+
+    console.log('USING FACILITY COORDS', {
+      coach: coach.name,
+      coachId: coach.id,
+      facilityId,
+      facilityName: linkedFacility.name,
+      coachLat: coach.lat,
+      coachLng: coach.lng,
+      facilityLat: linkedFacility.lat,
+      facilityLng: linkedFacility.lng,
     })
-  }, [coaches, facilityMap])
+
+    return {
+      ...coach,
+      lat: linkedFacility.lat,
+      lng: linkedFacility.lng,
+      coord_source: 'facility',
+      resolved_facility_name: linkedFacility.name || coach.facility_name,
+    }
+  })
+}, [coaches, facilityMap])
 
   const filtered = useMemo(() => {
     return resolvedCoaches.filter((c) => {
@@ -565,8 +610,16 @@ export default function CoachDirectory() {
   const mappable = filtered.filter((c) => c.lat != null && c.lng != null)
 
   const sel = selected
-    ? filtered.find((c) => c.id === selected) || resolvedCoaches.find((c) => c.id === selected) || null
-    : null
+  ? filtered.find((c) => c.id === selected) || resolvedCoaches.find((c) => c.id === selected) || null
+  : null
+
+console.log('SELECTED COACH RUNTIME', sel?.name, {
+  selectedId: selected,
+  lat: sel?.lat,
+  lng: sel?.lng,
+  facility_id: sel?.facility_id,
+  coord_source: sel?.coord_source,
+})
 
   const inputStyle = {
     width: '100%',
