@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -478,6 +478,12 @@ export default function CoachDirectory() {
   const selectedFromUrl = searchParams.get('select') || null
   const facilityFromUrl = searchParams.get('facility') || null
 
+  const desktopListRef = useRef(null)
+  const mobileListRef = useRef(null)
+  const coachCardRefs = useRef({})
+  const lastAutoScrolledKey = useRef('')
+  const userInteractedWithList = useRef(false)
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handler)
@@ -586,12 +592,86 @@ export default function CoachDirectory() {
     return baseFiltered.filter((c) => c.facility_id === normalizedFacilityId)
   }, [baseFiltered, facilityFromUrl])
 
+  const displayedCoaches = useMemo(() => {
+    if (!selected) return filtered
+
+    const idx = filtered.findIndex((c) => c.id === selected)
+    if (idx <= 0) return filtered
+
+    if (facilityFromUrl) {
+      const next = [...filtered]
+      const [selectedCoach] = next.splice(idx, 1)
+      next.unshift(selectedCoach)
+      return next
+    }
+
+    return filtered
+  }, [filtered, selected, facilityFromUrl])
+
   const mappable = useMemo(() => filtered.filter((c) => c.lat != null && c.lng != null), [filtered])
 
   const sel = useMemo(() => {
     if (!selected) return null
     return filtered.find((c) => c.id === selected) || resolvedCoaches.find((c) => c.id === selected) || null
   }, [selected, filtered, resolvedCoaches])
+
+  useEffect(() => {
+    userInteractedWithList.current = false
+  }, [selectedFromUrl, facilityFromUrl])
+
+  useEffect(() => {
+    if (loading || !selected) return
+
+    const selectedVisible = displayedCoaches.some((c) => c.id === selected)
+    if (!selectedVisible) return
+
+    const listEl = isMobile ? mobileListRef.current : desktopListRef.current
+    const cardEl = coachCardRefs.current[selected]
+    if (!listEl || !cardEl) return
+
+    const scrollKey = [
+      selected,
+      facilityFromUrl || '',
+      search || '',
+      sport,
+      specialty,
+      state,
+      isMobile ? 'mobile' : 'desktop',
+    ].join('|')
+
+    const shouldForceScroll =
+      selected === selectedFromUrl ||
+      !!facilityFromUrl
+
+    if (!shouldForceScroll) return
+
+    if (lastAutoScrolledKey.current === scrollKey && userInteractedWithList.current) return
+
+    const run = () => {
+      if (typeof cardEl.scrollIntoView === 'function') {
+        cardEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest',
+        })
+      }
+      lastAutoScrolledKey.current = scrollKey
+    }
+
+    const t = setTimeout(run, 120)
+    return () => clearTimeout(t)
+  }, [
+    loading,
+    selected,
+    selectedFromUrl,
+    facilityFromUrl,
+    displayedCoaches,
+    isMobile,
+    search,
+    sport,
+    specialty,
+    state,
+  ])
 
   const inputStyle = {
     width: '100%',
@@ -614,6 +694,23 @@ export default function CoachDirectory() {
     color: 'var(--gray)',
     marginBottom: 6,
     display: 'block',
+  }
+
+  const setCardRef = (id) => (node) => {
+    if (node) {
+      coachCardRefs.current[id] = node
+    } else {
+      delete coachCardRefs.current[id]
+    }
+  }
+
+  const handleSelectCoach = (coachId) => {
+    userInteractedWithList.current = true
+    setSelected((prev) => (prev === coachId ? null : coachId))
+  }
+
+  const handleListInteraction = () => {
+    userInteractedWithList.current = true
   }
 
   return (
@@ -680,36 +777,42 @@ export default function CoachDirectory() {
             </a>
           </div>
 
-          <div style={{ padding: 12 }}>
-           {facilityContext && (
-            <div
-              style={{
-              marginTop: 10,
-              marginBottom: 10,
-              padding: '10px 12px',
-              borderRadius: 10,
-              border: '1px solid var(--lgray)',
-              background: '#f8fafc',
-              color: 'var(--navy)',
-            }}
+          <div
+            ref={mobileListRef}
+            onScroll={handleListInteraction}
+            onWheel={handleListInteraction}
+            onTouchMove={handleListInteraction}
+            style={{ padding: 12 }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-              Facility context
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
-            <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
-              Showing only coaches linked to this facility
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <Link
-  to={`/facilities/${facilityContext.id}`}
-  style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
->
-  ← Back to Facility
-</Link>
-            </div>
-          </div>
-        )}
+            {facilityContext && (
+              <div
+                style={{
+                  marginTop: 10,
+                  marginBottom: 10,
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  border: '1px solid var(--lgray)',
+                  background: '#f8fafc',
+                  color: 'var(--navy)',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
+                  Facility context
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
+                <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
+                  Showing only coaches linked to this facility
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <Link
+                    to={`/facilities/${facilityContext.id}`}
+                    style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
+                  >
+                    ← Back to Facility
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <div style={{ marginBottom: 10 }}>
               <span style={sectionLabel}>Search</span>
@@ -761,15 +864,23 @@ export default function CoachDirectory() {
               </select>
             </div>
 
-            {!loading && filtered.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-            {!loading && filtered.map((coach) => (
-              <CoachCard
-                key={coach.id}
-                coach={coach}
-                selected={selected === coach.id}
-                onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-                onViewProfile={setProfileCoach}
-              />
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
+                Loading coaches…
+              </div>
+            )}
+
+            {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
+
+            {!loading && displayedCoaches.map((coach) => (
+              <div key={coach.id} ref={setCardRef(coach.id)}>
+                <CoachCard
+                  coach={coach}
+                  selected={selected === coach.id}
+                  onClick={() => handleSelectCoach(coach.id)}
+                  onViewProfile={setProfileCoach}
+                />
+              </div>
             ))}
           </div>
 
@@ -777,7 +888,7 @@ export default function CoachDirectory() {
             <div style={{ height: '60vh' }}>
               <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
-                  attribution='&copy; OpenStreetMap'
+                  attribution="&copy; OpenStreetMap"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <FitBounds coaches={mappable} selectedId={selected} />
@@ -806,38 +917,38 @@ export default function CoachDirectory() {
           >
             <div style={{ padding: '12px 12px 0' }}>
               <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>
-                {filtered.length} coach{filtered.length !== 1 ? 'es' : ''}
+                {displayedCoaches.length} coach{displayedCoaches.length !== 1 ? 'es' : ''}
               </div>
 
               {facilityContext && (
-           <div
-             style={{
-             marginTop: 10,
-             marginBottom: 10,
-             padding: '10px 12px',
-             borderRadius: 10,
-             border: '1px solid var(--lgray)',
-             background: '#f8fafc',
-             color: 'var(--navy)',
-           }}
-          >
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-            Facility context
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
-          <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
-            Showing only coaches linked to this facility
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <Link
-  to={`/facilities/${facilityContext.id}`}
-  style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
->
-  ← Back to Facility
-</Link>
-          </div>
-        </div>
-      )}
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 10,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--lgray)',
+                    background: '#f8fafc',
+                    color: 'var(--navy)',
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
+                    Facility context
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
+                  <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
+                    Showing only coaches linked to this facility
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <Link
+                      to={`/facilities/${facilityContext.id}`}
+                      style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
+                    >
+                      ← Back to Facility
+                    </Link>
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginBottom: 10 }}>
                 <span style={sectionLabel}>Search</span>
@@ -910,21 +1021,27 @@ export default function CoachDirectory() {
               </a>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+            <div
+              ref={desktopListRef}
+              onScroll={handleListInteraction}
+              onWheel={handleListInteraction}
+              style={{ flex: 1, overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}
+            >
               {loading && (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
                   Loading coaches…
                 </div>
               )}
-              {!loading && filtered.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-              {filtered.map((coach) => (
-                <CoachCard
-                  key={coach.id}
-                  coach={coach}
-                  selected={selected === coach.id}
-                  onClick={() => setSelected(selected === coach.id ? null : coach.id)}
-                  onViewProfile={setProfileCoach}
-                />
+              {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
+              {!loading && displayedCoaches.map((coach) => (
+                <div key={coach.id} ref={setCardRef(coach.id)}>
+                  <CoachCard
+                    coach={coach}
+                    selected={selected === coach.id}
+                    onClick={() => handleSelectCoach(coach.id)}
+                    onViewProfile={setProfileCoach}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -934,7 +1051,7 @@ export default function CoachDirectory() {
             <div style={{ flex: 1, position: 'relative' }}>
               <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
-                  attribution='&copy; OpenStreetMap'
+                  attribution="&copy; OpenStreetMap"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <FitBounds coaches={mappable} selectedId={selected} />
