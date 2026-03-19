@@ -147,7 +147,7 @@ function CoachCard({ coach }) {
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
-        <Link to={`/coaches?select=${coach.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+        <Link to={`/coaches?select=${coach.id}${facility.id ? `&facility=${facility.id}` : ''}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
           View Coach →
         </Link>
         {coach.email && (
