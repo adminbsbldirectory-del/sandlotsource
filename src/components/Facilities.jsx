@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -280,11 +280,27 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
       </div>
 
       <div className={selected ? '' : 'card-footer'} style={footerStyle}>
-        {facility.hours && (
-          <div style={{ fontSize: 12, opacity: selected ? 0.75 : 1, color: selected ? 'white' : 'var(--gray)' }}>
-            🕐 {facility.hours}
-          </div>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {facility.hours ? (
+            <div style={{ fontSize: 12, opacity: selected ? 0.75 : 1, color: selected ? 'white' : 'var(--gray)' }}>
+              🕐 {facility.hours}
+            </div>
+          ) : <span />}
+          <Link
+            to={`/facilities/${facility.id}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              color: selected ? '#f0a500' : '#1D4ED8',
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: 'none',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            View Facility →
+          </Link>
+        </div>
       </div>
     </div>
   )
