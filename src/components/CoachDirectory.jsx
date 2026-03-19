@@ -446,6 +446,19 @@ function MapLegend() {
   )
 }
 
+function EmptyState({ facilityContextName }) {
+  return (
+    <div className="empty-state">
+      <h3>{facilityContextName ? 'No linked coaches found' : 'No coaches match your filters'}</h3>
+      <p>
+        {facilityContextName
+          ? `We couldn’t find approved active coaches linked to ${facilityContextName}.`
+          : 'Try changing your search or clearing one of the filters.'}
+      </p>
+    </div>
+  )
+}
+
 export default function CoachDirectory() {
   const [searchParams] = useSearchParams()
 
@@ -462,6 +475,9 @@ export default function CoachDirectory() {
   const [showMap, setShowMap] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
+  const selectedFromUrl = searchParams.get('select') || null
+  const facilityFromUrl = searchParams.get('facility') || null
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', handler)
@@ -474,9 +490,8 @@ export default function CoachDirectory() {
   }, [searchInput])
 
   useEffect(() => {
-    const selectedFromUrl = searchParams.get('select') || null
     setSelected(selectedFromUrl)
-  }, [searchParams])
+  }, [selectedFromUrl])
 
   useEffect(() => {
     async function load() {
@@ -500,9 +515,8 @@ export default function CoachDirectory() {
       setCoaches(normalizedCoachesLoaded)
       setFacilities(normalizedFacilitiesLoaded)
 
-      const selectId = searchParams.get('select')
-      if (selectId) {
-        const match = normalizedCoachesLoaded.find((c) => c.id === selectId)
+      if (selectedFromUrl) {
+        const match = normalizedCoachesLoaded.find((c) => c.id === selectedFromUrl)
         if (match) setSelected(match.id)
       }
 
@@ -510,7 +524,7 @@ export default function CoachDirectory() {
     }
 
     load()
-  }, [searchParams])
+  }, [selectedFromUrl])
 
   const facilityMap = useMemo(() => {
     const map = new Map()
@@ -519,6 +533,11 @@ export default function CoachDirectory() {
     }
     return map
   }, [facilities])
+
+  const facilityContext = useMemo(() => {
+    if (!facilityFromUrl) return null
+    return facilityMap.get(String(facilityFromUrl).trim()) || null
+  }, [facilityFromUrl, facilityMap])
 
   const resolvedCoaches = useMemo(() => {
     return coaches.map((coach) => {
@@ -537,7 +556,7 @@ export default function CoachDirectory() {
     })
   }, [coaches, facilityMap])
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     return resolvedCoaches.filter((c) => {
       const specs = c.specialty || []
 
@@ -560,6 +579,12 @@ export default function CoachDirectory() {
       return true
     })
   }, [resolvedCoaches, sport, specialty, state, search])
+
+  const filtered = useMemo(() => {
+    if (!facilityFromUrl) return baseFiltered
+    const normalizedFacilityId = String(facilityFromUrl).trim()
+    return baseFiltered.filter((c) => c.facility_id === normalizedFacilityId)
+  }, [baseFiltered, facilityFromUrl])
 
   const mappable = useMemo(() => filtered.filter((c) => c.lat != null && c.lng != null), [filtered])
 
@@ -591,29 +616,12 @@ export default function CoachDirectory() {
     display: 'block',
   }
 
-  function EmptyState() {
-    const hasFilters =
-      sport !== 'Both' || specialty !== 'All Specialties' || state !== 'All States' || search
-
-    return (
-      <div className="empty-state">
-        <h3>{hasFilters ? 'No coaches match your filters' : 'No coaches listed yet'}</h3>
-        <p>
-          {hasFilters
-            ? 'Try widening your search — remove a filter or search a broader area.'
-            : 'Know a great coach? Help us grow the directory.'}
-        </p>
-        {!hasFilters && <a href="/submit">Add a Coach Listing</a>}
-      </div>
-    )
-  }
-
   return (
     <>
       {profileCoach && <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />}
 
       {isMobile ? (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div>
           <div
             style={{
               background: 'var(--white)',
@@ -628,71 +636,124 @@ export default function CoachDirectory() {
               zIndex: 100,
             }}
           >
-            <input
-              placeholder="🔍 Search..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 120 }}
-            />
-            <button
-              type="button"
-              className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-              onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-            >
-              ⚾
-            </button>
-            <button
-              type="button"
-              className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-              onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-            >
-              🥎
-            </button>
             <button
               type="button"
               onClick={() => setShowMap((m) => !m)}
               style={{
-                padding: '7px 12px',
+                flex: 1,
+                padding: '9px 10px',
                 borderRadius: 'var(--btn-radius)',
-                border: '2px solid var(--navy)',
-                background: showMap ? 'var(--navy)' : 'white',
-                color: showMap ? 'white' : 'var(--navy)',
-                fontSize: 13,
+                border: '1.5px solid var(--navy)',
+                background: showMap ? 'var(--navy)' : 'var(--white)',
+                color: showMap ? 'var(--white)' : 'var(--navy)',
+                fontSize: 12,
                 fontWeight: 700,
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
-                whiteSpace: 'nowrap',
+                minHeight: 40,
               }}
             >
-              {showMap ? '📋 List' : '🗺️ Map'}
+              {showMap ? 'Hide Map' : 'Show Map'}
             </button>
-            <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
-              {filtered.length} coach{filtered.length !== 1 ? 'es' : ''}
-            </span>
+
+            <a
+              href="/submit"
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                textDecoration: 'none',
+                padding: '9px 10px',
+                borderRadius: 'var(--btn-radius)',
+                border: '1.5px solid var(--gold)',
+                background: 'var(--gold)',
+                color: 'var(--navy)',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: 'var(--font-head)',
+                minHeight: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              + Add a Coach
+            </a>
           </div>
 
-          {showMap && (
-            <div style={{ height: 260, flexShrink: 0, borderBottom: '2px solid var(--lgray)' }}>
-              <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                <FitBounds coaches={mappable} selectedId={selected} />
-                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
-              </MapContainer>
-            </div>
-          )}
-
-          <div style={{ padding: '12px', background: 'var(--cream)' }}>
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
-                Loading coaches…
+          <div style={{ padding: 12 }}>
+            {facilityContext && (
+              <div
+                style={{
+                  marginBottom: 10,
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  border: '1px solid var(--lgray)',
+                  background: '#f8fafc',
+                  color: 'var(--navy)',
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
+                  Facility context
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
+                <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
+                  Showing only coaches linked to this facility
+                </div>
               </div>
             )}
-            {!loading && filtered.length === 0 && <EmptyState />}
-            {filtered.map((coach) => (
+
+            <div style={{ marginBottom: 10 }}>
+              <span style={sectionLabel}>Search</span>
+              <input
+                placeholder="Name, city, facility, zip..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <span style={sectionLabel}>Sport</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <button
+                  type="button"
+                  className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+                  onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
+                  style={{ width: '100%', justifyContent: 'flex-start' }}
+                >
+                  ⚾ Baseball
+                </button>
+                <button
+                  type="button"
+                  className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+                  onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
+                  style={{ width: '100%', justifyContent: 'flex-start' }}
+                >
+                  🥎 Softball
+                </button>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <span style={sectionLabel}>Specialty</span>
+              <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
+                {SPECIALTIES.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <span style={sectionLabel}>State</span>
+              <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
+                {US_STATES.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            {!loading && filtered.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
+            {!loading && filtered.map((coach) => (
               <CoachCard
                 key={coach.id}
                 coach={coach}
@@ -702,30 +763,64 @@ export default function CoachDirectory() {
               />
             ))}
           </div>
+
+          {showMap && (
+            <div style={{ height: '60vh' }}>
+              <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <FitBounds coaches={mappable} selectedId={selected} />
+                {sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
+                <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
+              </MapContainer>
+            </div>
+          )}
         </div>
       ) : (
-        <div style={{ display: 'flex', height: 'calc(100vh - ' + HEADER_H + 'px)', overflow: 'hidden' }}>
+        <div
+          style={{
+            display: 'flex',
+            height: `calc(100vh - ${HEADER_H}px)`,
+            background: 'var(--cream)',
+          }}
+        >
           <div
             style={{
-              width: 300,
-              flexShrink: 0,
+              width: 330,
+              borderRight: '2px solid var(--lgray)',
+              background: 'var(--white)',
               display: 'flex',
               flexDirection: 'column',
-              height: '100%',
-              borderRight: '2px solid var(--lgray)',
             }}
           >
-            <div
-              style={{
-                padding: '14px 14px 12px',
-                background: 'var(--white)',
-                borderBottom: '2px solid var(--lgray)',
-                flexShrink: 0,
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
-                {loading ? 'Loading…' : filtered.length + ' coach' + (filtered.length !== 1 ? 'es' : '')}
+            <div style={{ padding: '12px 12px 0' }}>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>
+                {filtered.length} coach{filtered.length !== 1 ? 'es' : ''}
               </div>
+
+              {facilityContext && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    marginBottom: 10,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: '1px solid var(--lgray)',
+                    background: '#f8fafc',
+                    color: 'var(--navy)',
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
+                    Facility context
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
+                  <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
+                    Showing only coaches linked to this facility
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginBottom: 10 }}>
                 <span style={sectionLabel}>Search</span>
@@ -804,7 +899,7 @@ export default function CoachDirectory() {
                   Loading coaches…
                 </div>
               )}
-              {!loading && filtered.length === 0 && <EmptyState />}
+              {!loading && filtered.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
               {filtered.map((coach) => (
                 <CoachCard
                   key={coach.id}
@@ -820,76 +915,16 @@ export default function CoachDirectory() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <MapLegend />
             <div style={{ flex: 1, position: 'relative' }}>
-              <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  attribution='&copy; OpenStreetMap'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {sel?.lat != null && sel?.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
                 <FitBounds coaches={mappable} selectedId={selected} />
+                {sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
                 <MapMarkers mappable={mappable} selected={selected} setSelected={setSelected} />
               </MapContainer>
             </div>
-          </div>
-
-          <div
-            style={{
-              width: 200,
-              flexShrink: 0,
-              borderLeft: '2px solid var(--lgray)',
-              background: 'var(--white)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-              padding: 16,
-              overflowY: 'auto',
-            }}
-          >
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  border: '2px dashed var(--lgray)',
-                  borderRadius: 'var(--card-radius)',
-                  padding: '16px 12px',
-                  textAlign: 'center',
-                  background: 'var(--cream)',
-                  minHeight: 180,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    color: 'var(--gray)',
-                  }}
-                >
-                  Advertise Here
-                </div>
-                <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>
-                  Reach baseball &amp; softball families
-                </div>
-                <a
-                  href="mailto:admin.bsbldirectory@gmail.com"
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--red)',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    marginTop: 4,
-                  }}
-                >
-                  Contact Us
-                </a>
-              </div>
-            ))}
           </div>
         </div>
       )}
