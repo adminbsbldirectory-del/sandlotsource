@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -681,26 +681,35 @@ export default function CoachDirectory() {
           </div>
 
           <div style={{ padding: 12 }}>
-            {facilityContext && (
-              <div
-                style={{
-                  marginBottom: 10,
-                  padding: '10px 12px',
-                  borderRadius: 10,
-                  border: '1px solid var(--lgray)',
-                  background: '#f8fafc',
-                  color: 'var(--navy)',
-                }}
-              >
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-                  Facility context
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
-                <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
-                  Showing only coaches linked to this facility
-                </div>
-              </div>
-            )}
+           {facilityContext && (
+            <div
+              style={{
+              marginTop: 10,
+              marginBottom: 10,
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: '1px solid var(--lgray)',
+              background: '#f8fafc',
+              color: 'var(--navy)',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
+              Facility context
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
+            <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
+              Showing only coaches linked to this facility
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <Link
+  to={`/facilities/${facilityContext.id}`}
+  style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
+>
+  ← Back to Facility
+</Link>
+            </div>
+          </div>
+        )}
 
             <div style={{ marginBottom: 10 }}>
               <span style={sectionLabel}>Search</span>
@@ -801,26 +810,34 @@ export default function CoachDirectory() {
               </div>
 
               {facilityContext && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    marginBottom: 10,
-                    padding: '10px 12px',
-                    borderRadius: 10,
-                    border: '1px solid var(--lgray)',
-                    background: '#f8fafc',
-                    color: 'var(--navy)',
-                  }}
-                >
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-                    Facility context
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
-                  <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
-                    Showing only coaches linked to this facility
-                  </div>
-                </div>
-              )}
+           <div
+             style={{
+             marginTop: 10,
+             marginBottom: 10,
+             padding: '10px 12px',
+             borderRadius: 10,
+             border: '1px solid var(--lgray)',
+             background: '#f8fafc',
+             color: 'var(--navy)',
+           }}
+          >
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
+            Facility context
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
+          <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
+            Showing only coaches linked to this facility
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <Link
+  to={`/facilities/${facilityContext.id}`}
+  style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
+>
+  ← Back to Facility
+</Link>
+          </div>
+        </div>
+      )}
 
               <div style={{ marginBottom: 10 }}>
                 <span style={sectionLabel}>Search</span>
