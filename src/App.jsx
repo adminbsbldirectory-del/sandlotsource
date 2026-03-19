@@ -9,6 +9,7 @@ import ClaimListing from './components/ClaimListing.jsx'
 import RosterSpots from './components/RosterSpots.jsx'
 import SearchResults from './components/SearchResults.jsx'
 import Facilities from './components/Facilities.jsx'
+import FacilityProfile from './components/FacilityProfile.jsx'
 import AdminGeocode from './components/AdminGeocode.jsx'
 import LegalPage from './components/LegalPage.jsx'
 
@@ -183,6 +184,7 @@ function AppRoutes() {
           <Route path="/coaches" element={<CoachDirectory />} />
           <Route path="/teams" element={<TravelTeams />} />
           <Route path="/facilities" element={<Facilities />} />
+          <Route path="/facilities/:id" element={<FacilityProfile />} />
           <Route path="/find" element={<PlayerBoard />} />
           <Route path="/roster" element={<RosterSpots />} />
           <Route path="/submit" element={<CoachSubmitForm />} />
