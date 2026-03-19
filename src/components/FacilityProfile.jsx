@@ -1,0 +1,473 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { MapContainer, Marker, TileLayer } from 'react-leaflet'
+import L from 'leaflet'
+import { supabase } from '../supabase.js'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
+
+function normalizeUrl(url) {
+  if (!url) return null
+  const trimmed = String(url).trim()
+  if (!trimmed) return null
+  if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return 'https://' + trimmed
+}
+
+function normalizeInstagramHandle(value) {
+  if (!value) return null
+  const trimmed = String(value).trim()
+  if (!trimmed) return null
+  if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return 'https://instagram.com/' + trimmed.replace(/^@/, '')
+}
+
+function getSportLabel(sport) {
+  if (sport === 'both') return 'Baseball & Softball'
+  if (sport === 'softball') return 'Softball'
+  if (sport === 'baseball') return 'Baseball'
+  return sport || ''
+}
+
+function getCoachSpecialties(coach) {
+  if (Array.isArray(coach.specialty)) return coach.specialty.filter(Boolean)
+  return String(coach.specialty || '')
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function getCoachLocationLine(coach) {
+  const parts = [coach.city, coach.state].filter(Boolean)
+  const zip = coach.zip || ''
+  if (parts.length === 0 && zip) return zip
+  if (parts.length === 0) return ''
+  return parts.join(', ') + (zip ? ` ${zip}` : '')
+}
+
+function getFacilityLocationLine(facility) {
+  const parts = [facility.city, facility.state].filter(Boolean)
+  const zip = facility.zip_code || ''
+  if (parts.length === 0 && zip) return zip
+  if (parts.length === 0) return ''
+  return parts.join(', ') + (zip ? ` ${zip}` : '')
+}
+
+function CoachCard({ coach }) {
+  const specialties = getCoachSpecialties(coach)
+  const websiteUrl = normalizeUrl(coach.website)
+  const instagramUrl = normalizeInstagramHandle(coach.instagram)
+  const mapsQuery = encodeURIComponent(coach.address || getCoachLocationLine(coach))
+
+  return (
+    <div
+      style={{
+        border: '1px solid var(--lgray)',
+        borderRadius: 'var(--card-radius)',
+        background: 'var(--white)',
+        padding: '16px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>
+            {coach.name}
+          </div>
+          {coach.facility_name && (
+            <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 3 }}>{coach.facility_name}</div>
+          )}
+          {(coach.address || getCoachLocationLine(coach)) && (
+            <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6 }}>
+              📍 {coach.address || getCoachLocationLine(coach)}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {coach.sport && (
+            <span
+              style={{
+                background: coach.sport === 'softball' ? '#ede9fe' : '#dbeafe',
+                color: coach.sport === 'softball' ? '#6d28d9' : '#1d4ed8',
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '4px 9px',
+                borderRadius: 999,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {coach.sport === 'both' ? 'Baseball & Softball' : coach.sport}
+            </span>
+          )}
+          {coach.verified_status && (
+            <span style={{ background: '#DBEAFE', color: '#1D4ED8', fontSize: 10, fontWeight: 700, padding: '4px 9px', borderRadius: 999 }}>
+              ✓ Verified
+            </span>
+          )}
+          {coach.featured_status && (
+            <span style={{ background: '#FEF3C7', color: '#92400E', fontSize: 10, fontWeight: 700, padding: '4px 9px', borderRadius: 999 }}>
+              ⭐ Featured
+            </span>
+          )}
+        </div>
+      </div>
+
+      {specialties.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          {specialties.slice(0, 6).map((item) => (
+            <span
+              key={item}
+              style={{
+                background: 'var(--lgray)',
+                color: 'var(--gray)',
+                fontSize: 11,
+                padding: '3px 9px',
+                borderRadius: 999,
+                textTransform: 'capitalize',
+              }}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {coach.bio && (
+        <div style={{ fontSize: 13, color: '#444', lineHeight: 1.55, marginTop: 10 }}>
+          {coach.bio.length > 240 ? coach.bio.slice(0, 240) + '…' : coach.bio}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
+        <Link to={`/coaches?select=${coach.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+          View Coach →
+        </Link>
+        {coach.email && (
+          <a href={`mailto:${coach.email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
+            Email
+          </a>
+        )}
+        {coach.phone && (
+          <a href={`tel:${String(coach.phone).replace(/\D/g, '')}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
+            Call
+          </a>
+        )}
+        {(coach.address || getCoachLocationLine(coach)) && (
+          <a href={`https://maps.google.com/?q=${mapsQuery}`} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
+            Map
+          </a>
+        )}
+        {websiteUrl && (
+          <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
+            Website
+          </a>
+        )}
+        {instagramUrl && (
+          <a href={instagramUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
+            Instagram
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function FacilityProfile() {
+  const { id } = useParams()
+  const [facility, setFacility] = useState(null)
+  const [coaches, setCoaches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let isActive = true
+
+    async function load() {
+      setLoading(true)
+      setError('')
+
+      const normalizedId = String(id || '').trim()
+      if (!normalizedId) {
+        if (isActive) {
+          setFacility(null)
+          setCoaches([])
+          setError('Facility not found.')
+          setLoading(false)
+        }
+        return
+      }
+
+      const [{ data: facilityData, error: facilityError }, { data: coachData, error: coachError }] = await Promise.all([
+        supabase
+          .from('facilities')
+          .select('*')
+          .eq('id', normalizedId)
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .maybeSingle(),
+        supabase
+          .from('coaches')
+          .select('*')
+          .eq('facility_id', normalizedId)
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .order('name'),
+      ])
+
+      if (!isActive) return
+
+      if (facilityError) {
+        setFacility(null)
+        setCoaches([])
+        setError('Unable to load facility right now.')
+        setLoading(false)
+        return
+      }
+
+      if (!facilityData) {
+        setFacility(null)
+        setCoaches([])
+        setError('Facility not found.')
+        setLoading(false)
+        return
+      }
+
+      setFacility({ ...facilityData, id: String(facilityData.id) })
+      setCoaches((coachData || []).map((coach) => ({
+        ...coach,
+        id: String(coach.id),
+        facility_id: coach.facility_id != null ? String(coach.facility_id).trim() : '',
+        lat: facilityData.lat != null ? facilityData.lat : coach.lat,
+        lng: facilityData.lng != null ? facilityData.lng : coach.lng,
+      })))
+      if (coachError) {
+        setError('Facility loaded, but linked coaches could not be loaded.')
+      }
+      setLoading(false)
+    }
+
+    load()
+    return () => {
+      isActive = false
+    }
+  }, [id])
+
+  const websiteUrl = useMemo(() => normalizeUrl(facility?.website), [facility?.website])
+  const instagramUrl = useMemo(() => normalizeInstagramHandle(facility?.instagram), [facility?.instagram])
+  const facebookUrl = useMemo(() => normalizeUrl(facility?.facebook), [facility?.facebook])
+  const locationLine = useMemo(() => (facility ? getFacilityLocationLine(facility) : ''), [facility])
+  const amenityList = useMemo(() => (Array.isArray(facility?.amenities) ? facility.amenities.filter(Boolean) : []), [facility])
+  const sportLabel = facility ? getSportLabel(facility.sport) : ''
+  const mapsQuery = encodeURIComponent(facility?.address || locationLine || facility?.name || '')
+
+  if (loading) {
+    return (
+      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+        <div className="card" style={{ padding: 20 }}>Loading facility…</div>
+      </div>
+    )
+  }
+
+  if (!facility) {
+    return (
+      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)' }}>Facility not found</div>
+          <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 8 }}>{error || 'This facility may have been removed or is no longer active.'}</div>
+          <div style={{ marginTop: 16 }}>
+            <Link to="/facilities" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+              ← Back to Facilities
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+      <div style={{ marginBottom: 18 }}>
+        <Link to="/facilities" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+          ← Back to Facilities
+        </Link>
+      </div>
+
+      <div
+        className="card"
+        style={{
+          background: 'linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%)',
+          color: 'white',
+          padding: '22px 22px 20px',
+          border: 'none',
+          marginBottom: 18,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 30, fontWeight: 800, lineHeight: 1.1 }}>{facility.name}</div>
+            {(facility.address || locationLine) && (
+              <div style={{ fontSize: 14, opacity: 0.9, marginTop: 10 }}>
+                📍 {facility.address || locationLine}
+              </div>
+            )}
+            {facility.facility_type && (
+              <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>
+                {facility.facility_type}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {sportLabel && (
+              <span style={{ background: 'rgba(255,255,255,0.14)', color: 'white', fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {sportLabel}
+              </span>
+            )}
+            {facility.approval_status && (
+              <span style={{ background: 'rgba(255,255,255,0.1)', color: 'white', fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {facility.approval_status}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 0.75fr)', gap: 18, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gap: 18 }}>
+          <div className="card" style={{ padding: 18 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 12 }}>Facility Details</div>
+
+            {facility.description && (
+              <div style={{ fontSize: 14, color: '#333', lineHeight: 1.65, marginBottom: 16 }}>{facility.description}</div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+              {facility.address && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 4 }}>Address</div>
+                  <div style={{ fontSize: 14, color: 'var(--navy)' }}>{facility.address}</div>
+                </div>
+              )}
+              {locationLine && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 4 }}>City / State</div>
+                  <div style={{ fontSize: 14, color: 'var(--navy)' }}>{locationLine}</div>
+                </div>
+              )}
+              {facility.hours && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 4 }}>Hours</div>
+                  <div style={{ fontSize: 14, color: 'var(--navy)' }}>{facility.hours}</div>
+                </div>
+              )}
+              {facility.contact_name && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 4 }}>Contact</div>
+                  <div style={{ fontSize: 14, color: 'var(--navy)' }}>{facility.contact_name}</div>
+                </div>
+              )}
+            </div>
+
+            {amenityList.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 8 }}>Amenities</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {amenityList.map((item) => (
+                    <span key={item} style={{ background: 'var(--lgray)', color: 'var(--gray)', fontSize: 12, padding: '5px 10px', borderRadius: 999, textTransform: 'capitalize' }}>
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="card" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>
+                Linked Coaches
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--gray)', fontWeight: 700 }}>
+                {coaches.length} coach{coaches.length !== 1 ? 'es' : ''}
+              </div>
+            </div>
+
+            {coaches.length === 0 ? (
+              <div style={{ border: '1px dashed var(--lgray)', borderRadius: 12, padding: 16, color: 'var(--gray)', fontSize: 14 }}>
+                No linked coaches yet for this facility.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {coaches.map((coach) => (
+                  <CoachCard key={coach.id} coach={coach} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 18 }}>
+          <div className="card" style={{ padding: 18 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 12 }}>Contact & Links</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {facility.phone && (
+                <a href={`tel:${String(facility.phone).replace(/\D/g, '')}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📞 {facility.phone}</a>
+              )}
+              {facility.contact_phone && (
+                <a href={`tel:${String(facility.contact_phone).replace(/\D/g, '')}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📞 Contact: {facility.contact_phone}</a>
+              )}
+              {(facility.contact_email || facility.email) && (
+                <a href={`mailto:${facility.contact_email || facility.email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📧 {facility.contact_email || facility.email}</a>
+              )}
+              {websiteUrl && (
+                <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>🌐 Website</a>
+              )}
+              {instagramUrl && (
+                <a href={instagramUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📸 Instagram</a>
+              )}
+              {facebookUrl && (
+                <a href={facebookUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>f Facebook</a>
+              )}
+              {(facility.address || locationLine) && (
+                <a href={`https://maps.google.com/?q=${mapsQuery}`} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>🗺 Open in Maps</a>
+              )}
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '18px 18px 12px' }}>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Map</div>
+            </div>
+            {facility.lat != null && facility.lng != null ? (
+              <div style={{ height: 320 }}>
+                <MapContainer center={[facility.lat, facility.lng]} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker position={[facility.lat, facility.lng]} />
+                </MapContainer>
+              </div>
+            ) : (
+              <div style={{ padding: '0 18px 18px', color: 'var(--gray)', fontSize: 14 }}>No map coordinates available for this facility yet.</div>
+            )}
+          </div>
+
+          {error && error !== 'Facility not found.' && (
+            <div className="card" style={{ padding: 16, borderColor: '#FCD34D', background: '#FFFBEB', color: '#92400E' }}>
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
