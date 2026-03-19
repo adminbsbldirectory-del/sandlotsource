@@ -427,7 +427,7 @@ function FacilityCard({ facility, distanceMi }) {
 
   return (
     <Link
-      to={`/facilities?select=${facility.id}`}
+      to={`/facilities/${facility.id}`}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
