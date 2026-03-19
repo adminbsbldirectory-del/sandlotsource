@@ -60,7 +60,7 @@ function getFacilityLocationLine(facility) {
   return parts.join(', ') + (zip ? ` ${zip}` : '')
 }
 
-function CoachCard({ coach }) {
+function CoachCard({ coach, facilityId }) {
   const specialties = getCoachSpecialties(coach)
   const websiteUrl = normalizeUrl(coach.website)
   const instagramUrl = normalizeInstagramHandle(coach.instagram)
@@ -147,9 +147,12 @@ function CoachCard({ coach }) {
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
-        <Link to={`/coaches?select=${coach.id}${facility.id ? `&facility=${facility.id}` : ''}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
-          View Coach →
-        </Link>
+        <Link
+          to={`/coaches?select=${coach.id}${facilityId ? `&facility=${facilityId}` : ''}`}
+          style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
+          >
+            View Coach →
+          </Link>
         {coach.email && (
           <a href={`mailto:${coach.email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
             Email
@@ -407,7 +410,7 @@ export default function FacilityProfile() {
             ) : (
               <div style={{ display: 'grid', gap: 12 }}>
                 {coaches.map((coach) => (
-                  <CoachCard key={coach.id} coach={coach} />
+                  <CoachCard key={coach.id} coach={coach} facilityId={facility.id} />
                 ))}
               </div>
             )}
