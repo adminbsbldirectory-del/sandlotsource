@@ -229,6 +229,22 @@ const POSITIONS_BB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield',
 const POSITIONS_SB = ['Pitcher','Catcher','1B','2B','3B','Shortstop','Outfield','Utility']
 const COACH_SPECIALTIES = ['Pitching','Hitting','Catching','Fielding','Strength / Conditioning']
 const US_STATE_ABBRS = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
+const TEAM_SANCTION_OPTIONS = [
+  'USSSA',
+  'Perfect Game',
+  'PGF',
+  'USA Softball',
+  'USFA',
+  'Top Gun',
+  'Triple Crown',
+  'Independent',
+  'Other',
+]
+
+const TEAM_CLASSIFICATION_OPTIONS = {
+  baseball: ['A', 'AA', 'AAA', 'Majors', 'Open'],
+  softball: ['A', 'B', 'C', 'Open'],
+}
 
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
@@ -326,35 +342,37 @@ function SocialInput({ prefix, value, onChange, placeholder }) {
 }
 
 // ── COACH FORM ────────────────────────────────────────────
-function CoachForm({ isMobile }) {
-  const g2 = isMobile ? '1fr' : '1fr 1fr'
-  const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
+const [form, setForm] = useState({
+  name: '',
+  sport: 'baseball',
+  org_affiliation: '',
+  classification: '',
+  age_group: '',
+  city: '',
+  state: 'GA',
+  zip_code: '',
+  lat: null,
+  lng: null,
+  address: '',
 
-  const [form, setForm] = useState({
-    name: '',
-    sport: 'baseball',
-    specialty: [],
-    city: '',
-    state: 'GA',
-    zip_code: '',
-    lat: null,
-    lng: null,
-    address: '',
-    facility_name: '',
-    phone: '',
-    email: '',
-    website: '',
-    instagram: '',
-    facebook: '',
-    credentials: '',
-    bio: '',
-    age_groups: '',
-    skill_level: '',
-    price_per_session: '',
-    price_notes: '',
-    contact_role: '',
-    submission_notes: '',
-  })
+  facility_name: '',
+  facility_address: '',
+  facility_city: '',
+  facility_state: 'GA',
+  facility_zip_code: '',
+  facility_lat: null,
+  facility_lng: null,
+
+  contact_name: '',
+  contact_email: '',
+  contact_phone: '',
+  website: '',
+  tryout_status: 'closed',
+  tryout_date: '',
+  tryout_notes: '',
+  description: '',
+  submission_notes: '',
+})
 
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -719,6 +737,7 @@ function TeamForm({ isMobile }) {
     name: '',
     sport: 'baseball',
     org_affiliation: '',
+    classification: '',
     age_group: '',
     city: '',
     state: 'GA',
@@ -726,6 +745,15 @@ function TeamForm({ isMobile }) {
     lat: null,
     lng: null,
     address: '',
+
+    facility_name: '',
+    facility_address: '',
+    facility_city: '',
+    facility_state: 'GA',
+    facility_zip_code: '',
+    facility_lat: null,
+    facility_lng: null,
+
     contact_name: '',
     contact_email: '',
     contact_phone: '',
@@ -740,10 +768,14 @@ function TeamForm({ isMobile }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [facilityAddrStatus, setFacilityAddrStatus] = useState('')
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
   }
+
+  const classificationOptions =
+    TEAM_CLASSIFICATION_OPTIONS[form.sport] || TEAM_CLASSIFICATION_OPTIONS.baseball
 
   function handleGeocode(geo) {
     if (geo) {
@@ -759,6 +791,47 @@ function TeamForm({ isMobile }) {
     }
   }
 
+  function handleFacilityZipGeocode(geo) {
+    if (geo) {
+      setForm((f) => ({
+        ...f,
+        facility_lat: f.facility_lat || geo.lat,
+        facility_lng: f.facility_lng || geo.lng,
+        facility_city: f.facility_city || geo.city,
+        facility_state: f.facility_state || geo.state,
+      }))
+    }
+  }
+
+  async function handleFacilityAddressBlur() {
+    const addr = form.facility_address.trim()
+    if (!addr) return
+
+    setFacilityAddrStatus('locating')
+
+    try {
+      const geo = await geocodeAddress(
+        addr,
+        form.facility_city,
+        form.facility_state,
+        form.facility_zip_code
+      )
+
+      if (geo) {
+        setForm((f) => ({
+          ...f,
+          facility_lat: geo.lat,
+          facility_lng: geo.lng,
+        }))
+        setFacilityAddrStatus('found')
+      } else {
+        setFacilityAddrStatus('fallback')
+      }
+    } catch {
+      setFacilityAddrStatus('fallback')
+    }
+  }
+
   function validate() {
     if (!form.name.trim()) return 'Team name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -767,11 +840,22 @@ function TeamForm({ isMobile }) {
     if (!form.state) return 'State is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
-    if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
+    if (!form.contact_email.trim() && !form.contact_phone.trim()) {
+      return 'At least one of contact email or phone is required.'
+    }
+
+    if (form.facility_name.trim()) {
+      if (!form.facility_city.trim()) return 'Facility city is required when a facility name is entered.'
+      if (!form.facility_state) return 'Facility state is required when a facility name is entered.'
+      if (!form.facility_zip_code || form.facility_zip_code.length !== 5) {
+        return 'Facility zip code is required when a facility name is entered.'
+      }
+    }
+
     return ''
   }
 
-  async function handleSubmit() {
+    async function handleSubmit() {
     const err = validate()
     if (err) {
       setError(err)
@@ -782,17 +866,36 @@ function TeamForm({ isMobile }) {
     setSubmitting(true)
 
     try {
+      const facilityId = form.facility_name.trim()
+        ? await findOrCreateFacilityFromTeam(form)
+        : null
+
+      const finalLat =
+        form.facility_lat != null ? parseFloat(form.facility_lat)
+        : form.lat != null ? parseFloat(form.lat)
+        : null
+
+      const finalLng =
+        form.facility_lng != null ? parseFloat(form.facility_lng)
+        : form.lng != null ? parseFloat(form.lng)
+        : null
+
       const payload = {
         name: form.name.trim(),
         sport: form.sport,
-        org_affiliation: form.org_affiliation.trim() || null,
+        org_affiliation: form.org_affiliation || null,
+        classification: form.classification || null,
         age_group: form.age_group,
         city: form.city.trim(),
         state: form.state,
         zip_code: form.zip_code || null,
-        lat: form.lat != null ? parseFloat(form.lat) : null,
-        lng: form.lng != null ? parseFloat(form.lng) : null,
+        lat: finalLat,
+        lng: finalLng,
         address: form.address.trim() || null,
+
+        facility_id: facilityId,
+        facility_name: form.facility_name.trim() || null,
+
         contact_name: form.contact_name.trim(),
         contact_email: form.contact_email.trim() || null,
         contact_phone: form.contact_phone.trim() || null,
@@ -817,7 +920,7 @@ function TeamForm({ isMobile }) {
       setSubmitting(false)
     }
   }
-
+  
   if (submitted) {
     return <SuccessBanner message="Your travel team has been submitted for review. We'll have it live within a few days." />
   }
@@ -854,32 +957,49 @@ function TeamForm({ isMobile }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Team Name <RequiredMark /></label>
-            <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Cherokee Nationals 12U" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Org Affiliation</label>
-            <input value={form.org_affiliation} onChange={(e) => set('org_affiliation', e.target.value)} placeholder="e.g. USSSA, PGF, Perfect Game" style={inputStyle} />
-          </div>
-        </div>
+       <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+  <div>
+    <label style={labelStyle}>Team Name <RequiredMark /></label>
+    <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Cherokee Nationals 12U" style={inputStyle} />
+  </div>
+  <div>
+    <label style={labelStyle}>Age Group <RequiredMark /></label>
+    <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
+      <option value="">Select</option>
+      {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
+    </select>
+  </div>
+</div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Age Group <RequiredMark /></label>
-            <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
-              <option value="">Select</option>
-              {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>City <RequiredMark /></label>
-            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
-          </div>
-        </div>
+<div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+  <div>
+    <label style={labelStyle}>Sanctioning Body / League</label>
+    <select value={form.org_affiliation} onChange={(e) => set('org_affiliation', e.target.value)} style={selectStyle}>
+      <option value="">Select</option>
+      {TEAM_SANCTION_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+    </select>
+  </div>
+  <div>
+    <label style={labelStyle}>Team Classification</label>
+    <select value={form.classification} onChange={(e) => set('classification', e.target.value)} style={selectStyle}>
+      <option value="">Select</option>
+      {classificationOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+    </select>
+  </div>
+</div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+<div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+  <div>
+    <label style={labelStyle}>Team City <RequiredMark /></label>
+    <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+  </div>
+  <div>
+    <label style={labelStyle}>Team Street Address</label>
+    <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Optional home/base address" style={inputStyle} />
+  </div>
+</div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>State <RequiredMark /></label>
             <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
@@ -889,15 +1009,69 @@ function TeamForm({ isMobile }) {
           </div>
           <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="For map pin placement" />
         </div>
-
-        <div style={{ marginBottom: 0 }}>
-          <label style={labelStyle}>Street Address <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional — improves map accuracy)</span></label>
-          <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="e.g. 123 Main St" style={inputStyle} />
-        </div>
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">2. Tryout Info</div>
+        <div className="form-section-title">2. Primary Facility / Practice Location</div>
+
+  <div style={{ marginBottom: 14 }}>
+    <label style={labelStyle}>Facility Name</label>
+    <input
+      value={form.facility_name}
+      onChange={(e) => set('facility_name', e.target.value)}
+      placeholder="e.g. Grand Slam, Grit Academy Athletics"
+      style={inputStyle}
+    />
+    <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+      If this matches an existing facility, the team will be linked automatically.
+    </div>
+  </div>
+
+  <div style={{ marginBottom: 14 }}>
+    <label style={labelStyle}>
+      Facility Street Address
+      {facilityAddrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+      {facilityAddrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+      {facilityAddrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using facility zip pin</span>}
+    </label>
+    <input
+      value={form.facility_address}
+      onChange={(e) => set('facility_address', e.target.value)}
+      onBlur={handleFacilityAddressBlur}
+      placeholder="Optional but preferred for precise facility pin placement"
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
+    <div>
+      <label style={labelStyle}>Facility City</label>
+      <input
+        value={form.facility_city}
+        onChange={(e) => set('facility_city', e.target.value)}
+        placeholder="e.g. Alpharetta"
+        style={inputStyle}
+      />
+    </div>
+    <div>
+      <label style={labelStyle}>Facility State</label>
+      <select value={form.facility_state} onChange={(e) => set('facility_state', e.target.value)} style={selectStyle}>
+        <option value="">Select</option>
+        {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
+    </div>
+    <ZipField
+      value={form.facility_zip_code}
+      onChange={(v) => set('facility_zip_code', v)}
+      onGeocode={handleFacilityZipGeocode}
+      hint="Used for facility pin placement"
+    />
+  </div>
+</div>
+
+
+      <div className="form-section">
+        <div className="form-section-title">3. Tryout Info</div>
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Tryout Status</label>
@@ -926,7 +1100,7 @@ function TeamForm({ isMobile }) {
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">3. Contact</div>
+        <div className="form-section-title">4. Contact</div>
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Contact Name <RequiredMark /></label>
@@ -1689,7 +1863,7 @@ function FacilityForm({ isMobile }) {
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">3. Contact</div>
+        <div className="form-section-title">4. Contact</div>
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Facility Phone</label>
