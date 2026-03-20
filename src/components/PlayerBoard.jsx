@@ -420,6 +420,8 @@ export default function PlayerBoard() {
   })
 
   const mappable = filtered.filter((p) => p.lat != null && p.lng != null)
+  const selectedStateName = STATE_NAMES[stateFilter] || stateFilter
+  const showBrowseMap = !isMobile || showMap
 
   function togglePosition(pos, field) {
     setForm((f) => ({ ...f, [field]: f[field].includes(pos) ? f[field].filter((p) => p !== pos) : [...f[field], pos] }))
@@ -526,377 +528,456 @@ export default function PlayerBoard() {
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {deleteTarget && <DeleteConfirm onConfirm={() => handleDelete(deleteTarget)} onCancel={() => setDeleteTarget(null)} />}
 
-      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '18px 0 0' : '26px 0 0' }}>
-        <div style={{ display: isMobile ? 'block' : 'grid', gridTemplateColumns: '290px minmax(0,1fr) 180px', gap: 18, alignItems: 'start' }}>
-          <div style={{ padding: isMobile ? '0 12px' : 0 }}>
-            <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: 14 }}>
-              <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>{filtered.length} {filtered.length === 1 ? 'post' : 'posts'}{stateFilter ? ' in ' + (STATE_NAMES[stateFilter] || stateFilter) : ''}</div>
-              <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{stateFilter ? (shouldApplyDistance ? 'Showing posts narrowed by ZIP and distance.' : 'Showing all matching posts in the selected state.') : 'Select a state to start browsing the national board.'}</div>
-            </div>
+      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '10px 12px 24px' : '6px 0 24px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '300px minmax(0, 1fr)',
+            gap: isMobile ? 0 : 18,
+            alignItems: 'start',
+            width: '100%',
+          }}
+        >
+          <aside
+            style={{
+              position: isMobile ? 'static' : 'sticky',
+              top: isMobile ? 'auto' : 76,
+              alignSelf: 'start',
+              background: 'var(--white)',
+              borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+              zIndex: 2,
+            }}
+          >
+            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
+              <div
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: 'var(--navy)',
+                  marginBottom: 2,
+                  lineHeight: 1.1,
+                }}
+              >
+                {stateFilter
+                  ? `${filtered.length} post${filtered.length !== 1 ? 's' : ''} in ${selectedStateName}`
+                  : 'National pickup board'}
+              </div>
 
-            <div style={{ marginTop: 12, background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: 14 }}>
-              <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                  <label style={labelStyle}>Post Type</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                    {[['all', 'All Posts'], ['player_available', 'Players Available'], ['player_needed', 'Player Needed']].map(([val, label]) => (
-                      <button key={val} type="button" onClick={() => setFilter(val)} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: '2px solid ' + (filter === val ? 'var(--navy)' : 'var(--lgray)'), background: filter === val ? 'var(--navy)' : 'white', color: filter === val ? 'white' : 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>{label}</button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Sport</label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button type="button" className={'pill-toggle ' + (sportFilter === 'baseball' ? 'active-baseball' : '')} onClick={() => setSportFilter((s) => (s === 'baseball' ? 'Both' : 'baseball'))}>⚾ Baseball</button>
-                    <button type="button" className={'pill-toggle ' + (sportFilter === 'softball' ? 'active-softball' : '')} onClick={() => setSportFilter((s) => (s === 'softball' ? 'Both' : 'softball'))}>🥎 Softball</button>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>State <RequiredMark /></label>
-                  <select value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); if (!nearbyZip) setHasSearched(false) }} style={selectStyle}>
-                    <option value="">Select state first</option>
-                    {US_STATES.filter(Boolean).map((st) => <option key={st} value={st}>{st}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <ZipFieldInline value={nearbyZip} onChange={(val) => { setNearbyZip(val); if (!val) setHasSearched(false) }} onGeocode={() => {}} required={false} />
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Nearby</label>
-                  <select value={nearbyMiles} onChange={(e) => setNearbyMiles(e.target.value)} style={selectStyle}>
-                    <option value="25">Up to 25 miles</option>
-                    <option value="50">Up to 50 miles</option>
-                    <option value="75">Up to 75 miles</option>
-                    <option value="100">Up to 100 miles</option>
-                    <option value="250">Up to 250 miles</option>
-                    <option value="999">Anywhere</option>
-                  </select>
-                  <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>Use a ZIP to narrow results by distance.</div>
-                </div>
-
-                {isMobile && (
-                  <button type="button" onClick={() => setShowMap((m) => !m)} style={{ padding: '10px 14px', borderRadius: 'var(--btn-radius)', border: '2px solid var(--navy)', background: showMap ? 'var(--navy)' : 'white', color: showMap ? 'white' : 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>
-                    {showMap ? 'Hide Map' : 'Show Map'}
-                  </button>
-                )}
-
-                <button type="button" onClick={() => setHasSearched(true)} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--navy)', background: 'var(--navy)', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>{nearbyZip && nearbyZip.length === 5 ? 'Search This Area' : 'Refresh Results'}</button>
-                <button type="button" onClick={() => { setFilter('all'); setSportFilter('Both'); setStateFilter(''); setNearbyZip(''); setNearbyMiles('25'); setSearchGeo(null); setHasSearched(false) }} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--lgray)', background: 'white', color: 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Reset Filters</button>
+              <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.35 }}>
+                {stateFilter
+                  ? 'Pickup-needed and player-available posts for this state.'
+                  : 'Choose a state to load pins and listings, then narrow by ZIP if needed.'}
               </div>
             </div>
 
-            <button type="button" onClick={() => {
-              if (!user) { setShowAuth(true); return }
-              if (showForm && !isEditing) { cancelForm() }
-              else { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); setSubmitted(false); setSubmitMode('create') }
-            }} style={{ marginTop: 12, width: '100%', background: 'var(--red)', color: 'white', border: 'none', borderRadius: 'var(--btn-radius)', padding: '12px 18px', fontWeight: 700, fontFamily: 'var(--font-head)', fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', cursor: 'pointer' }}>
-              {showForm && !isEditing ? '✕ Cancel' : '+ Add Listing'}
-            </button>
-          </div>
-
-          <div>
-            {(!isMobile || showMap) && (
+            <div
+              style={{
+                padding: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                borderBottom: '1px solid var(--lgray)',
+                background: 'var(--white)',
+              }}
+            >
               <div>
-                <div style={{ height: isMobile ? 300 : 360, width: '100%', borderRadius: 12, overflow: 'hidden', border: '2px solid var(--lgray)', background: '#fff', scrollMarginTop: 96 }}>
-                  <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }}>
-                    <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <MapViewport posts={mappable} showFullUS={!stateFilter} />
-                    {mappable.map((post) => {
-                      const color = post.post_type === 'player_available' ? PIN_COLORS.pickup : PIN_COLORS.needs_player
-                      const cityState = [post.city, stateFromPost(post, zipStateMap)].filter(Boolean).join(', ')
-                      return (
-                        <Marker key={post.id} position={[post.lat, post.lng]} icon={makeIcon(color)}>
-                          <Popup>
-                            <div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}>
-                              <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{post.post_type === 'player_available' ? 'Player Available' : 'Player Needed'}</strong>
-                              <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>{post.location_name ? '📍 ' + post.location_name : cityState ? '📍 ' + cityState : ''}</div>
-                              {post.age_group && <div style={{ fontSize: 12, marginTop: 2 }}>🎯 {post.age_group} · {post.sport}</div>}
-                              {post.post_type === 'player_needed' && post.event_date && <div style={{ fontSize: 12, marginTop: 2 }}>📅 {formatDate(post.event_date)}</div>}
-                            </div>
-                          </Popup>
-                        </Marker>
-                      )
-                    })}
-                  </MapContainer>
+                <div style={labelStyle}>Post Type</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    ['all', 'All Posts'],
+                    ['player_available', 'Players Available'],
+                    ['player_needed', 'Player Needed'],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setFilter(value)}
+                      style={{
+                        width: '100%',
+                        minHeight: 38,
+                        borderRadius: 'var(--btn-radius)',
+                        border: '1.5px solid ' + (filter === value ? 'var(--navy)' : 'var(--lgray)'),
+                        background: filter === value ? 'var(--navy)' : 'var(--white)',
+                        color: filter === value ? 'var(--white)' : 'var(--navy)',
+                        fontWeight: 700,
+                        fontFamily: 'var(--font-head)',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 6px 0', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
-                    {[{ color: PIN_COLORS.needs_player, label: 'Player Needed' }, { color: PIN_COLORS.pickup, label: 'Player Available' }].map((item) => (
-                      <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: item.color, border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                        <span style={{ fontSize: 11, color: 'var(--gray)' }}>{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse pickup-needed and player-available posts by state, then refine by ZIP if needed.</div>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Sport</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sportFilter === 'baseball' ? 'active-baseball' : '')}
+                    onClick={() => setSportFilter((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
+                    style={{ flex: 1, minHeight: 38 }}
+                  >
+                    ⚾ Baseball
+                  </button>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sportFilter === 'softball' ? 'active-softball' : '')}
+                    onClick={() => setSportFilter((s) => (s === 'softball' ? 'Both' : 'softball'))}
+                    style={{ flex: 1, minHeight: 38 }}
+                  >
+                    🥎 Softball
+                  </button>
                 </div>
+              </div>
+
+              <div>
+                <div style={labelStyle}>State</div>
+                <select
+                  value={stateFilter}
+                  onChange={(e) => {
+                    setStateFilter(e.target.value)
+                    setHasSearched(false)
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Select state first</option>
+                  {US_STATES.filter(Boolean).map((abbr) => (
+                    <option key={abbr} value={abbr}>{STATE_NAMES[abbr]}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Nearby</div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  placeholder="Zip code"
+                  value={nearbyZip}
+                  onChange={(e) => {
+                    setNearbyZip(e.target.value.replace(/\D/g, '').slice(0, 5))
+                    setHasSearched(false)
+                  }}
+                  style={inputStyle}
+                />
+                <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+                  Used for distance search matching
+                </div>
+              </div>
+
+              <div>
+                <div style={labelStyle}>Distance</div>
+                <select value={nearbyMiles} onChange={(e) => setNearbyMiles(e.target.value)} style={selectStyle}>
+                  <option value="10">Up to 10 miles</option>
+                  <option value="25">Up to 25 miles</option>
+                  <option value="50">Up to 50 miles</option>
+                  <option value="75">Up to 75 miles</option>
+                  <option value="100">Up to 100 miles</option>
+                  <option value="150">Up to 150 miles</option>
+                </select>
+                <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+                  Add a ZIP to narrow results by distance.
+                </div>
+              </div>
+
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setShowMap((m) => !m)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 10px',
+                    borderRadius: 'var(--btn-radius)',
+                    border: '1.5px solid var(--navy)',
+                    background: showMap ? 'var(--navy)' : 'var(--white)',
+                    color: showMap ? 'var(--white)' : 'var(--navy)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-head)',
+                    minHeight: 40,
+                  }}
+                >
+                  {showMap ? 'Hide Map' : 'Show Map'}
+                </button>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setHasSearched(true)}
+                  disabled={!stateFilter || nearbyZip.length !== 5}
+                  style={{
+                    width: '100%',
+                    minHeight: 40,
+                    borderRadius: 'var(--btn-radius)',
+                    border: '1.5px solid ' + (!stateFilter || nearbyZip.length !== 5 ? 'var(--lgray)' : 'var(--navy)'),
+                    background: !stateFilter || nearbyZip.length !== 5 ? '#E5E7EB' : 'var(--navy)',
+                    color: !stateFilter || nearbyZip.length !== 5 ? '#6B7280' : 'var(--white)',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-head)',
+                    fontSize: 12,
+                    cursor: !stateFilter || nearbyZip.length !== 5 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Search This Area
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilter('all')
+                    setSportFilter('Both')
+                    setStateFilter('')
+                    setNearbyZip('')
+                    setNearbyMiles('25')
+                    setHasSearched(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    minHeight: 40,
+                    borderRadius: 'var(--btn-radius)',
+                    border: '1.5px solid var(--lgray)',
+                    background: 'var(--white)',
+                    color: 'var(--navy)',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-head)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Reset Filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(true)}
+                  style={{
+                    width: '100%',
+                    minHeight: 40,
+                    borderRadius: 'var(--btn-radius)',
+                    border: 'none',
+                    background: 'var(--red)',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-head)',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Add Listing
+                </button>
+              </div>
+            </div>
+
+            {!isMobile && (
+              <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                <AdBox compact />
               </div>
             )}
-          </div>
+          </aside>
 
-          {!isMobile && (
-            <div style={{ display: 'grid', gap: 12 }}>
-              {[0,1,2].map((i) => (
-                <div key={i} style={{ border: '1px dashed #d7c8a0', borderRadius: 14, padding: '20px 14px', background: '#F8F4EA', textAlign: 'center', color: '#8A5A00' }}>
-                  <div style={{ fontFamily: 'var(--font-head)', fontWeight: 700, marginBottom: 10 }}>ADVERTISE HERE</div>
-                  <div style={{ fontSize: 14, color: '#8f8573', lineHeight: 1.5 }}>Reach baseball & softball families</div>
-                  <div style={{ marginTop: 16, color: '#C62828', fontWeight: 700 }}>Contact Us</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: !isMobile ? 'minmax(0, 1fr) 230px' : '1fr',
+                gap: isMobile ? 0 : 22,
+                alignItems: 'start',
+              }}
+            >
+              <main style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    position: isMobile ? 'static' : 'sticky',
+                    top: isMobile ? 'auto' : 76,
+                    zIndex: 1,
+                    background: 'var(--page-bg, #f5f3ef)',
+                    paddingTop: isMobile ? 0 : 8,
+                    paddingBottom: 10,
+                  }}
+                >
+                  {showBrowseMap && (
+                    <div style={{ background: 'var(--white)', width: '100%' }}>
+                      <div
+                        style={{
+                          height: isMobile ? 260 : 390,
+                          width: '100%',
+                          overflow: 'hidden',
+                          borderRadius: isMobile ? 0 : 14,
+                          border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                        }}
+                      >
+                        <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
+                          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          <MapViewport posts={mappable} showFullUS={!stateFilter} />
+                          {mappable.map((p) => (
+                            <Marker key={p.id} position={[p.lat, p.lng]} icon={makeIcon(PIN_COLORS[p.post_type] || '#1d4ed8')}>
+                              <Popup>
+                                <div style={{ minWidth: 180 }}>
+                                  <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
+                                    {p.post_type === 'player_available'
+                                      ? `Age ${p.player_age || p.age_group || ''} — ${p.city || p.zip_code || 'Player'}`
+                                      : `${p.team_name || 'Team'}${p.age_group ? ' · ' + p.age_group : ''}`}
+                                  </strong>
+                                  <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
+                                    📍 {p.location_name || [p.city, stateFromPost(p, zipStateMap), p.zip_code].filter(Boolean).join(', ')}
+                                  </div>
+                                  {!!p.contact_info && (
+                                    <div style={{ fontSize: 12, marginTop: 6 }}>
+                                      <ContactDisplay contact_info={p.contact_info} />
+                                    </div>
+                                  )}
+                                </div>
+                              </Popup>
+                            </Marker>
+                          ))}
+                        </MapContainer>
+                      </div>
 
-      {submitted && (
-        <div style={{ background: '#DCFCE7', borderBottom: '2px solid #16A34A', padding: '12px 24px', color: '#15803D', fontWeight: 600, fontSize: 14 }}>
-          {submitMode === 'edit' ? '✅ Your listing has been updated!' : '✅ Your listing has been submitted! It will appear once reviewed and expires in 4 days.'}
-        </div>
-      )}
-
-      {showForm && (
-        <div style={{ margin: isMobile ? '16px 14px' : '24px auto', background: 'white', borderRadius: 12, border: isEditing ? '2px solid var(--gold)' : '2px solid var(--lgray)', padding: isMobile ? '18px 14px' : '24px', maxWidth: 760 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 18 : 22, fontWeight: 700 }}>{isEditing ? '✏️ Edit Your Listing' : 'Post a New Listing'}</div>
-            {isEditing && <button type="button" onClick={cancelForm} style={{ background: 'none', border: 'none', color: 'var(--gray)', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>✕</button>}
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            {[['player_needed', '⚾ Player Needed'], ['player_available', '🧢 Player Available']].map(([val, label]) => (
-              <button key={val} type="button" onClick={() => setForm((f) => ({ ...f, post_type: val, player_age: '', player_position: [], player_description: '', team_name: '', age_group: '', position_needed: [], venue_name: '', location_address: '', field_number: '', event_date: '', distance_travel: 25, lat: null, lng: null, bats: '', throws: '' }))} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '2px solid', cursor: 'pointer', borderColor: form.post_type === val ? 'var(--navy)' : 'var(--lgray)', background: form.post_type === val ? 'var(--navy)' : 'white', color: form.post_type === val ? 'white' : 'var(--navy)', fontWeight: 600, fontSize: 14, fontFamily: 'var(--font-body)' }}>{label}</button>
-            ))}
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Sport <RequiredMark /></label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {['baseball', 'softball'].map((s) => (
-                <button key={s} type="button" onClick={() => setForm((f) => ({ ...f, sport: s }))} style={{ padding: '8px 18px', borderRadius: 8, border: '2px solid', cursor: 'pointer', borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : '#1D4ED8') : 'var(--lgray)', background: form.sport === s ? (s === 'softball' ? '#7C3AED' : '#1D4ED8') : 'white', color: form.sport === s ? 'white' : 'var(--navy)', fontWeight: 600, fontSize: 13, textTransform: 'capitalize', fontFamily: 'var(--font-body)' }}>{s}</button>
-              ))}
-            </div>
-          </div>
-
-          {form.post_type === 'player_needed' && (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={labelStyle}>Age Group <RequiredMark /></label>
-                  <select value={form.age_group} onChange={(e) => setForm((f) => ({ ...f, age_group: e.target.value }))} style={selectStyle}>
-                    <option value="">Select</option>
-                    {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Team Name</label>
-                  <input value={form.team_name} onChange={(e) => setForm((f) => ({ ...f, team_name: e.target.value }))} placeholder="e.g. Cherokee Nationals" style={inputStyle} />
-                </div>
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>Position(s) Needed <RequiredMark /></label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {positions.map((pos) => (
-                    <button key={pos} type="button" onClick={() => togglePosition(pos, 'position_needed')} style={{ padding: '5px 12px', borderRadius: 20, border: '2px solid', cursor: 'pointer', borderColor: form.position_needed.includes(pos) ? 'var(--navy)' : 'var(--lgray)', background: form.position_needed.includes(pos) ? 'var(--navy)' : 'white', color: form.position_needed.includes(pos) ? 'white' : 'var(--navy)', fontSize: 12, textTransform: 'capitalize', fontFamily: 'var(--font-body)' }}>{pos}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ background: '#f8f9fa', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: '1px solid var(--lgray)' }}>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
-                  <input value={form.venue_name} onChange={(e) => setForm((f) => ({ ...f, venue_name: e.target.value }))} placeholder="e.g. North Park or Wills Park" style={inputStyle} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.7fr 0.9fr', gap: 12, marginBottom: 12 }}>
-                  <AddressGeoField value={form.location_address} onChange={(v) => setForm((f) => ({ ...f, location_address: v }))} onGeocode={handleAddressGeocode} city={form.city} zip={form.zip_code} />
-                  <div>
-                    <label style={labelStyle}>Field <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional)</span></label>
-                    <input value={form.field_number} onChange={(e) => setForm((f) => ({ ...f, field_number: e.target.value }))} placeholder="e.g. Field 1 or TBD" style={inputStyle} />
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.1fr 1fr 0.65fr', gap: 12 }}>
-                  <div>
-                    <ZipFieldInline value={form.zip_code} onChange={(v) => setForm((f) => ({ ...f, zip_code: v }))} onGeocode={handleZipGeocode} required />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>City</label>
-                    <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Auto-filled from zip" style={inputStyle} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>State</label>
-                    <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value.toUpperCase() }))} placeholder="GA" maxLength={2} style={inputStyle} />
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={labelStyle}>Event Date <RequiredMark /></label>
-                  <input type="date" value={form.event_date} onChange={(e) => setForm((f) => ({ ...f, event_date: e.target.value }))} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Additional Notes</label>
-                  <textarea value={form.additional_notes} onChange={(e) => setForm((f) => ({ ...f, additional_notes: e.target.value }))} rows={3} placeholder="Anything else families should know..." style={{ ...inputStyle, resize: 'vertical' }} />
-                </div>
-              </div>
-            </>
-          )}
-
-          {form.post_type === 'player_available' && (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={labelStyle}>Player Age <RequiredMark /></label>
-                  <input type="number" min="6" max="99" value={form.player_age} onChange={(e) => setForm((f) => ({ ...f, player_age: e.target.value }))} placeholder="e.g. 12" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>Age Group</label>
-                  <select value={form.age_group} onChange={(e) => setForm((f) => ({ ...f, age_group: e.target.value }))} style={selectStyle}>
-                    <option value="">Select</option>
-                    {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>Position(s) <RequiredMark /></label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {positions.map((pos) => (
-                    <button key={pos} type="button" onClick={() => togglePosition(pos, 'player_position')} style={{ padding: '5px 12px', borderRadius: 20, border: '2px solid', cursor: 'pointer', borderColor: form.player_position.includes(pos) ? 'var(--navy)' : 'var(--lgray)', background: form.player_position.includes(pos) ? 'var(--navy)' : 'white', color: form.player_position.includes(pos) ? 'white' : 'var(--navy)', fontSize: 12, textTransform: 'capitalize', fontFamily: 'var(--font-body)' }}>{pos}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={labelStyle}>Bats</label>
-                  <select value={form.bats} onChange={(e) => setForm((f) => ({ ...f, bats: e.target.value }))} style={selectStyle}>
-                    <option value="">Select</option>
-                    {HAND_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Throws</label>
-                  <select value={form.throws} onChange={(e) => setForm((f) => ({ ...f, throws: e.target.value }))} style={selectStyle}>
-                    <option value="">Select</option>
-                    {HAND_OPTIONS.filter((opt) => opt !== 'Switch').map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <ZipFieldInline value={form.zip_code} onChange={(v) => setForm((f) => ({ ...f, zip_code: v }))} onGeocode={handleZipGeocode} required />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 0.7fr', gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={labelStyle}>City</label>
-                  <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Auto-filled from zip" style={inputStyle} />
-                </div>
-                <div>
-                  <label style={labelStyle}>State</label>
-                  <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value.toUpperCase() }))} placeholder="GA" maxLength={2} style={inputStyle} />
-                </div>
-              </div>
-              <DistanceSlider value={form.distance_travel} onChange={(v) => setForm((f) => ({ ...f, distance_travel: v }))} />
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>Description</label>
-                <textarea value={form.player_description} onChange={(e) => setForm((f) => ({ ...f, player_description: e.target.value }))} rows={3} placeholder="Skill level, what you're looking for in a team..." style={{ ...inputStyle, resize: 'vertical' }} />
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>Additional Notes</label>
-                <textarea value={form.additional_notes} onChange={(e) => setForm((f) => ({ ...f, additional_notes: e.target.value }))} rows={2} placeholder="Any other details..." style={{ ...inputStyle, resize: 'vertical' }} />
-              </div>
-            </>
-          )}
-
-          <ContactFields form={form} setForm={setForm} />
-
-          {validationError && (
-            <div style={{ background: '#FEE2E2', border: '1px solid #F87171', borderRadius: 8, padding: '10px 14px', margin: '12px 0', color: '#B91C1C', fontSize: 13 }}>{validationError}</div>
-          )}
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button type="button" onClick={isEditing ? handleSaveEdit : handleSubmit} disabled={submitting} style={{ background: isEditing ? 'var(--gold)' : 'var(--red)', color: isEditing ? 'var(--navy)' : 'white', border: 'none', borderRadius: 8, padding: '12px 28px', fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer', flex: isMobile ? 1 : 'none' }}>
-              {submitting ? 'Saving…' : isEditing ? '💾 Save Changes' : 'Submit Listing'}
-            </button>
-            {isEditing && <button type="button" onClick={cancelForm} style={{ background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '12px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>}
-          </div>
-        </div>
-      )}
-
-      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '10px 12px 24px' : '6px 0 24px' }}>
-        {!stateFilter && !showForm && (
-          <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '14px 18px', marginBottom: 10, maxWidth: isMobile ? '100%' : 900, marginLeft: isMobile ? 0 : 308 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>Select a state to view posts</div>
-            <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 6 }}>Choose a state to immediately see pins and listings. Add a ZIP only when you want to narrow by distance.</div>
-          </div>
-        )}
-        <div style={{ display: isMobile ? 'block' : 'grid', gridTemplateColumns: '290px minmax(0,1fr) 180px', gap: 18, alignItems: 'start' }}>
-          {!isMobile && <div />}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-        {filtered.map((post) => {
-          const isPlayer = post.post_type === 'player_available'
-          const postPositions = isPlayer ? (Array.isArray(post.player_position) ? post.player_position : []) : (Array.isArray(post.position_needed) ? post.position_needed : [])
-          const isOwner = user && post.user_id && post.user_id === user.id
-          return (
-            <div key={post.id} style={{ background: 'white', borderRadius: 12, border: isOwner ? '2px solid var(--gold)' : '2px solid ' + (isPlayer ? '#DBEAFE' : '#FEF3C7'), padding: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative' }}>
-              {isOwner && <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--gold)', color: 'var(--navy)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: '0 0 6px 6px', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}>YOUR POST</div>}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ background: isPlayer ? '#1D4ED8' : '#D97706', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{isPlayer ? '🧢 Player Available' : '⚾ Player Needed'}</span>
-                <span style={{ background: post.sport === 'softball' ? '#7C3AED' : '#0B1F3A', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase' }}>{post.sport}</span>
-              </div>
-              {isPlayer ? (
-                <div>
-                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{post.player_age ? 'Age ' + post.player_age : post.age_group || 'Player'} — {post.city}</div>
-                  {(post.bats || post.throws) && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{[post.bats ? 'Bats ' + post.bats : '', post.throws ? 'Throws ' + post.throws : ''].filter(Boolean).join(' · ')}</div>}
-                  {post.player_description && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.player_description}</div>}
-                  {post.additional_notes && (
-                    <div style={{ marginTop: 4 }}>
-                      {post.additional_notes.split('\n').map((line, i) => (
-                        <div key={i} style={{ fontSize: 13, lineHeight: 1.5, color: line.startsWith('Willing to travel') ? '#2563EB' : 'var(--gray)', fontWeight: line.startsWith('Willing to travel') ? 600 : 400 }}>
-                          {line.startsWith('Willing to travel') ? '🚗 ' : ''}{line}
-                        </div>
-                      ))}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '6px 10px', background: 'var(--white)', borderTop: '1px solid var(--lgray)', alignItems: 'center' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: PIN_COLORS.needs_player, border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Needed</span></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: PIN_COLORS.pickup, border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Available</span></div>
+                        <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--gray)' }}>Browse pickup-needed and player-available posts.</div>
+                      </div>
                     </div>
                   )}
+
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>
+                      {stateFilter
+                        ? `${filtered.length} Post${filtered.length !== 1 ? 's' : ''} in ${selectedStateName}`
+                        : 'Choose a state to browse posts'}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+                      {stateFilter
+                        ? 'Player-available and player-needed listings'
+                        : 'Start with a state, then narrow by ZIP only when needed.'}
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div>
-                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{(post.team_name || 'Team') + (post.age_group ? ' · ' + post.age_group : '')}</div>
-                  {post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.location_name}</div>}
-                  {post.city && !post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.city}</div>}
-                  {post.event_date && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📅 {formatDate(post.event_date)}</div>}
-                  {post.additional_notes && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.additional_notes}</div>}
+
+                <div
+                  style={{
+                    marginTop: 6,
+                    display: 'grid',
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
+                    gap: 14,
+                    alignItems: 'stretch',
+                  }}
+                >
+                  {loading && (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+                      Loading posts...
+                    </div>
+                  )}
+
+                  {!loading && !stateFilter && (
+                    <div style={{ gridColumn: '1 / -1', background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13 }}>
+                      Select a state in the left panel to load posts and pins.
+                    </div>
+                  )}
+
+                  {!loading && stateFilter && filtered.length === 0 && (
+                    <div style={{ gridColumn: '1 / -1', background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13 }}>
+                      No posts match the current filters.
+                    </div>
+                  )}
+
+                  {!loading && stateFilter && filtered.map((post) => {
+                    const isPlayer = post.post_type === 'player_available'
+                    const postPositions = isPlayer ? (Array.isArray(post.player_position) ? post.player_position : []) : (Array.isArray(post.position_needed) ? post.position_needed : [])
+                    const isOwner = user && post.user_id && post.user_id === user.id
+                    return (
+                      <div key={post.id} style={{ background: 'white', borderRadius: 12, border: isOwner ? '2px solid var(--gold)' : '2px solid ' + (isPlayer ? '#DBEAFE' : '#FEF3C7'), padding: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative' }}>
+                        {isOwner && <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--gold)', color: 'var(--navy)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: '0 0 6px 6px', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}>YOUR POST</div>}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <span style={{ background: isPlayer ? '#1D4ED8' : '#D97706', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{isPlayer ? '🧢 Player Available' : '⚾ Player Needed'}</span>
+                          <span style={{ background: post.sport === 'softball' ? '#7C3AED' : '#0B1F3A', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase' }}>{post.sport}</span>
+                        </div>
+                        {isPlayer ? (
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{post.player_age ? 'Age ' + post.player_age : post.age_group || 'Player'} — {post.city}</div>
+                            {(post.bats || post.throws) && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{[post.bats ? 'Bats ' + post.bats : '', post.throws ? 'Throws ' + post.throws : ''].filter(Boolean).join(' · ')}</div>}
+                            {post.player_description && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.player_description}</div>}
+                            {post.additional_notes && (
+                              <div style={{ marginTop: 4 }}>
+                                {post.additional_notes.split('
+').map((line, i) => (
+                                  <div key={i} style={{ fontSize: 13, lineHeight: 1.5, color: line.startsWith('Willing to travel') ? '#2563EB' : 'var(--gray)', fontWeight: line.startsWith('Willing to travel') ? 600 : 400 }}>
+                                    {line.startsWith('Willing to travel') ? '🚗 ' : ''}{line}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{(post.team_name || 'Team') + (post.age_group ? ' · ' + post.age_group : '')}</div>
+                            {post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.location_name}</div>}
+                            {post.city && !post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.city}</div>}
+                            {post.event_date && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📅 {formatDate(post.event_date)}</div>}
+                            {post.additional_notes && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.additional_notes}</div>}
+                          </div>
+                        )}
+                        {postPositions.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
+                            {postPositions.map((pos) => <span key={pos} style={{ background: 'var(--lgray)', color: 'var(--navy)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{pos}</span>)}
+                          </div>
+                        )}
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)', fontSize: 13 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--navy)' }}>📬 </span>
+                          <ContactDisplay contact_info={post.contact_info} />
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 6 }}>Posted {formatDate(post.created_at)}</div>
+                        {isOwner && (
+                          <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)' }}>
+                            <button type="button" onClick={() => startEdit(post)} style={{ flex: 1, padding: '7px', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>✏️ Edit</button>
+                            <button type="button" onClick={() => setDeleteTarget(post)} style={{ flex: 1, padding: '7px', background: 'white', color: '#DC2626', border: '2px solid #FCA5A5', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>🗑️ Delete</button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
-              {postPositions.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
-                  {postPositions.map((pos) => <span key={pos} style={{ background: 'var(--lgray)', color: 'var(--navy)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{pos}</span>)}
-                </div>
-              )}
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)', fontSize: 13 }}>
-                <span style={{ fontWeight: 600, color: 'var(--navy)' }}>📬 </span>
-                <ContactDisplay contact_info={post.contact_info} />
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 6 }}>Posted {formatDate(post.created_at)}</div>
-              {isOwner && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)' }}>
-                  <button type="button" onClick={() => startEdit(post)} style={{ flex: 1, padding: '7px', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>✏️ Edit</button>
-                  <button type="button" onClick={() => setDeleteTarget(post)} style={{ flex: 1, padding: '7px', background: 'white', color: '#DC2626', border: '2px solid #FCA5A5', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>🗑️ Delete</button>
-                </div>
+              </main>
+
+              {!isMobile && (
+                <aside
+                  style={{
+                    position: 'sticky',
+                    top: 76,
+                    alignSelf: 'start',
+                    padding: '8px 0 0 0',
+                    width: '230px',
+                    justifySelf: 'end',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <AdBox />
+                    <AdBox />
+                    <AdBox />
+                  </div>
+                </aside>
               )}
             </div>
-          )
-        })}
           </div>
-          {!isMobile && <div />}
         </div>
       </div>
 
-      {filtered.length === 0 && !showForm && stateFilter && (
-        <div className="empty-state">
-          <h3>No listings yet</h3>
-          <p>Be the first to post — teams looking for players, or players looking for teams.</p>
-        </div>
-      )}
     </div>
   )
 }
