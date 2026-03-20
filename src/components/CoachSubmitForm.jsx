@@ -414,41 +414,52 @@ function CoachForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-    const addr = form.address.trim()
-    if (!addr) return
-    setAddrStatus('locating')
+  const addr = form.address.trim()
+  if (!addr) return
 
-    try {
-      const q = encodeURIComponent(
-        addr +
-        (form.city ? ', ' + form.city : '') +
-        (form.state ? ', ' + form.state : '') +
-        (form.zip_code ? ' ' + form.zip_code : '') +
-        ', USA'
-      )
+  setAddrStatus('locating')
 
-      const res = await fetch(
-        'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
-        { headers: { 'Accept-Language': 'en-US' } }
-      )
+  try {
+    const geo = await geocodeAddress(addr, form.city, form.state, form.zip_code)
 
-      const data = await res.json()
-
-      if (data && data[0]) {
-        setForm((f) => ({
-          ...f,
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-        }))
-        setAddrStatus('found')
-      } else {
-        setAddrStatus('fallback')
-      }
-    } catch {
-      setAddrStatus('fallback')
+    if (geo) {
+      setForm((f) => ({
+        ...f,
+        lat: geo.lat,
+        lng: geo.lng,
+      }))
+      setAddrStatus('found')
+      return
     }
-  }
 
+    const zipGeo = await geocodeZip(form.zip_code)
+    if (zipGeo) {
+      setForm((f) => ({
+        ...f,
+        lat: zipGeo.lat,
+        lng: zipGeo.lng,
+        city: f.city || zipGeo.city,
+        state: f.state || zipGeo.state,
+      }))
+    }
+
+    setAddrStatus('fallback')
+  } catch {
+    const zipGeo = await geocodeZip(form.zip_code)
+    if (zipGeo) {
+      setForm((f) => ({
+        ...f,
+        lat: zipGeo.lat,
+        lng: zipGeo.lng,
+        city: f.city || zipGeo.city,
+        state: f.state || zipGeo.state,
+      }))
+    }
+
+    setAddrStatus('fallback')
+  }
+}
+  
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -1661,40 +1672,51 @@ function FacilityForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-    const addr = form.address.trim()
-    if (!addr) return
-    setAddrStatus('locating')
+  const addr = form.address.trim()
+  if (!addr) return
 
-    try {
-      const q = encodeURIComponent(
-        addr +
-        (form.city ? ', ' + form.city : '') +
-        (form.state ? ', ' + form.state : '') +
-        (form.zip_code ? ' ' + form.zip_code : '') +
-        ', USA'
-      )
+  setAddrStatus('locating')
 
-      const res = await fetch(
-        'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
-        { headers: { 'Accept-Language': 'en-US' } }
-      )
+  try {
+    const geo = await geocodeAddress(addr, form.city, form.state, form.zip_code)
 
-      const data = await res.json()
-
-      if (data && data[0]) {
-        setForm((f) => ({
-          ...f,
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon),
-        }))
-        setAddrStatus('found')
-      } else {
-        setAddrStatus('fallback')
-      }
-    } catch {
-      setAddrStatus('fallback')
+    if (geo) {
+      setForm((f) => ({
+        ...f,
+        lat: geo.lat,
+        lng: geo.lng,
+      }))
+      setAddrStatus('found')
+      return
     }
+
+    const zipGeo = await geocodeZip(form.zip_code)
+    if (zipGeo) {
+      setForm((f) => ({
+        ...f,
+        lat: zipGeo.lat,
+        lng: zipGeo.lng,
+        city: f.city || zipGeo.city,
+        state: f.state || zipGeo.state,
+      }))
+    }
+
+    setAddrStatus('fallback')
+  } catch {
+    const zipGeo = await geocodeZip(form.zip_code)
+    if (zipGeo) {
+      setForm((f) => ({
+        ...f,
+        lat: zipGeo.lat,
+        lng: zipGeo.lng,
+        city: f.city || zipGeo.city,
+        state: f.state || zipGeo.state,
+      }))
+    }
+
+    setAddrStatus('fallback')
   }
+}
 
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
