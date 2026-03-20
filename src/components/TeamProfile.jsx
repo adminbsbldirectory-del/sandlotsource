@@ -35,16 +35,35 @@ export default function TeamProfile({ team, onClose, onClaim }) {
     }
   }, [])
 
-  const locationParts = [team.city, team.state].filter(Boolean)
+  const facility = team.facility || team.facilities || null
+  const facilityId = facility?.id || team.facility_id || null
+  const facilityName = facility?.name || team.facility_name || ''
+  const facilityCity = facility?.city || ''
+  const facilityState = facility?.state || ''
+
+  const displayCity = team.display_city || team.city || facilityCity || ''
+  const displayState = team.display_state || team.state || facilityState || ''
+
+  const locationParts = [displayCity, displayState].filter(Boolean)
   const locationLine = locationParts.length
     ? locationParts.join(', ') + (zip ? ' ' + zip : '')
     : team.county
       ? team.county + ' Co.'
       : null
 
-  const mapQuery = encodeURIComponent(
-    [team.address, team.city, team.state, zip].filter(Boolean).join(', ')
+  const primaryMapQuery = encodeURIComponent(
+    [
+      facilityName || '',
+      team.address || '',
+      displayCity || '',
+      displayState || '',
+      zip || '',
+    ]
+      .filter(Boolean)
+      .join(', ')
   )
+
+  const facilityLocationLine = [facilityCity, facilityState].filter(Boolean).join(', ')
 
   return (
     <div
@@ -112,11 +131,11 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             <span
               style={{
                 background:
-  team.sport === 'softball'
-    ? '#7C3AED'
-    : team.sport === 'both'
-      ? 'var(--navy)'
-      : '#1D4ED8',
+                  team.sport === 'softball'
+                    ? '#7C3AED'
+                    : team.sport === 'both'
+                      ? 'var(--navy)'
+                      : '#1D4ED8',
                 color: 'white',
                 fontSize: 11,
                 fontWeight: 700,
@@ -142,6 +161,22 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 }}
               >
                 {team.age_group}
+              </span>
+            )}
+
+            {team.classification && (
+              <span
+                style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  color: 'white',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '3px 10px',
+                  borderRadius: 20,
+                  fontFamily: 'var(--font-head)',
+                }}
+              >
+                {team.classification}
               </span>
             )}
 
@@ -189,7 +224,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
 
               {team.address && (
                 <a
-                  href={'https://maps.google.com/?q=' + mapQuery}
+                  href={'https://maps.google.com/?q=' + primaryMapQuery}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -200,6 +235,91 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                   }}
                 >
                   {team.address}
+                </a>
+              )}
+            </div>
+          )}
+
+          {(team.classification || team.sanctioning_body) && (
+            <div
+              style={{
+                background: 'var(--cream)',
+                borderRadius: 10,
+                padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: 'var(--navy)',
+                }}
+              >
+                Team Details
+              </div>
+
+              {team.classification && (
+                <div style={{ fontSize: 14, color: 'var(--navy)' }}>
+                  <strong>Classification:</strong> {team.classification}
+                </div>
+              )}
+
+              {team.sanctioning_body && (
+                <div style={{ fontSize: 14, color: 'var(--navy)' }}>
+                  <strong>Sanctioning Body:</strong> {team.sanctioning_body}
+                </div>
+              )}
+            </div>
+          )}
+
+          {facilityName && (
+            <div
+              style={{
+                background: '#F8FAFC',
+                borderRadius: 10,
+                padding: '14px 16px',
+                border: '1px solid #E2E8F0',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: 'var(--navy)',
+                }}
+              >
+                Primary Facility / Practice Location
+              </div>
+
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>
+                🏟️ {facilityName}
+              </div>
+
+              {facilityLocationLine && (
+                <div style={{ fontSize: 14, color: 'var(--gray)' }}>
+                  📍 {facilityLocationLine}
+                </div>
+              )}
+
+              {facilityId && (
+                <a
+                  href={`/facilities/${facilityId}`}
+                  style={{
+                    color: '#1D4ED8',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}
+                >
+                  View Facility Profile →
                 </a>
               )}
             </div>
