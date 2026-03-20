@@ -130,10 +130,12 @@ function normalizeTeamRecord(team, facilityMap = {}) {
     facility_name: facility?.name || team.facility_name || '',
     facility_city: facility?.city || '',
     facility_state: facility?.state || '',
-    lat: facilityLat != null && facilityLng != null ? facilityLat : teamLat,
-    lng: facilityLat != null && facilityLng != null ? facilityLng : teamLng,
+    lat: teamLat != null && teamLng != null ? teamLat : facilityLat,
+    lng: teamLat != null && teamLng != null ? teamLng : facilityLng,
     display_city: team.city || facility?.city || '',
     display_state: team.state || facility?.state || '',
+    practice_city: team.city || '',
+    practice_state: team.state || '',
   }
 }
 
@@ -274,6 +276,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
   const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
   const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
   const locationFull = team.zip_code ? `${cityState} ${team.zip_code}` : cityState
+  const practiceLabel = team.address?.trim() ? team.address.trim() : locationFull
 
   return (
     <div
@@ -301,12 +304,12 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
-              {locationFull ? `📍 ${locationFull}` : '📍 Location not listed'}
+              {practiceLabel ? `📍 Practice: ${practiceLabel}` : '📍 Practice location not listed'}
             </div>
 
             {team.facility_name && (
               <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
-                {`🏟️ ${team.facility_name}`}
+                {`🏟️ Primary: ${team.facility_name}`}
               </div>
             )}
 
