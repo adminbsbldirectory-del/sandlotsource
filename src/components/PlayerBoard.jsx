@@ -28,46 +28,51 @@ function AdBox() {
   return (
     <div
       style={{
-        background: '#f7f1e3',
-        border: '1px dashed #d6c7a1',
-        borderRadius: 16,
-        padding: '24px 16px',
-        textAlign: 'center',
-        minHeight: 150,
+        background: 'var(--white)',
+        border: '1px solid rgba(15,23,42,0.06)',
+        borderRadius: 14,
+        padding: '18px 16px',
+        minHeight: 148,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
+        alignItems: 'center',
+        textAlign: 'center',
       }}
     >
       <div
         style={{
           fontFamily: 'var(--font-head)',
           fontWeight: 800,
-          fontSize: 22,
+          fontSize: 18,
           color: 'var(--navy)',
-          marginBottom: 12,
+          marginBottom: 10,
+          letterSpacing: '0.04em',
         }}
       >
         ADVERTISE HERE
       </div>
+
       <div
         style={{
           color: 'var(--gray)',
-          fontSize: 14,
-          lineHeight: 1.5,
-          marginBottom: 14,
+          fontSize: 13,
+          lineHeight: 1.55,
+          marginBottom: 12,
         }}
       >
         Reach baseball & softball
         <br />
         families
       </div>
+
       <a
         href="/contact"
         style={{
           color: '#c62828',
           fontWeight: 800,
           textDecoration: 'none',
+          fontSize: 13,
         }}
       >
         Contact Us
@@ -351,15 +356,9 @@ function MapViewport({ posts, showFullUS }) {
     const pts = posts.filter((p) => p.lat != null && p.lng != null)
 
     if (showFullUS || pts.length === 0) {
-      const usBounds = L.latLngBounds(
-        [
-          [24.396308, -125.0],
-          [49.384358, -66.93457],
-        ]
-      )
-      map.fitBounds(usBounds, { padding: [24, 24] })
-      return
-    }
+  map.setView([39.5, -98.35], 4)
+  return
+}
 
     const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]))
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
@@ -1143,7 +1142,14 @@ export default function PlayerBoard() {
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {deleteTarget && <DeleteConfirm onConfirm={() => handleDelete(deleteTarget)} onCancel={() => setDeleteTarget(null)} />}
 
-      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '10px 12px 24px' : '6px 0 24px' }}>
+      <div
+  style={{
+    width: '100%',
+    maxWidth: 'none',
+    margin: 0,
+    padding: isMobile ? '10px 12px 24px' : '6px 0 24px 0',
+  }}
+>
         <div
           style={{
             display: 'grid',
@@ -1464,7 +1470,7 @@ export default function PlayerBoard() {
 
                   <div
                     style={{
-                      marginTop: 14,
+                      marginTop: 8,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
