@@ -13,11 +13,68 @@ L.Icon.Default.mergeOptions({
 const makeIcon = (color) =>
   L.divIcon({
     className: '',
-    html: '<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:' + color + ';border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
-    iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -28],
+    html:
+      '<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:' +
+      color +
+      ';border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 26],
+    popupAnchor: [0, -28],
   })
 
 const PIN_COLORS = { needs_player: '#ea580c', pickup: '#0891b2' }
+
+function AdBox() {
+  return (
+    <div
+      style={{
+        background: '#f7f1e3',
+        border: '1px dashed #d6c7a1',
+        borderRadius: 16,
+        padding: '24px 16px',
+        textAlign: 'center',
+        minHeight: 150,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-head)',
+          fontWeight: 800,
+          fontSize: 22,
+          color: 'var(--navy)',
+          marginBottom: 12,
+        }}
+      >
+        ADVERTISE HERE
+      </div>
+      <div
+        style={{
+          color: 'var(--gray)',
+          fontSize: 14,
+          lineHeight: 1.5,
+          marginBottom: 14,
+        }}
+      >
+        Reach baseball & softball
+        <br />
+        families
+      </div>
+      <a
+        href="/contact"
+        style={{
+          color: '#c62828',
+          fontWeight: 800,
+          textDecoration: 'none',
+        }}
+      >
+        Contact Us
+      </a>
+    </div>
+  )
+}
 
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
@@ -27,24 +84,44 @@ async function geocodeZip(zip) {
     const data = await res.json()
     const place = data.places && data.places[0]
     if (!place) return null
-    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude), city: place['place name'], state: place['state abbreviation'] }
-  } catch { return null }
+    return {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude),
+      city: place['place name'],
+      state: place['state abbreviation'],
+    }
+  } catch {
+    return null
+  }
 }
 
 async function geocodeAddress(address, city, zip) {
   if (!address) return null
   try {
-    const q = encodeURIComponent(address + (city ? ', ' + city : '') + (zip ? ', ' + zip : '') + ', USA')
-    const res = await fetch('https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us', { headers: { 'Accept-Language': 'en-US' } })
+    const q = encodeURIComponent(
+      address + (city ? ', ' + city : '') + (zip ? ', ' + zip : '') + ', USA'
+    )
+    const res = await fetch(
+      'https://nominatim.openstreetmap.org/search?q=' +
+        q +
+        '&format=json&limit=1&countrycodes=us',
+      { headers: { 'Accept-Language': 'en-US' } }
+    )
     if (!res.ok) return null
     const data = await res.json()
-    if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    if (data && data[0]) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    }
     return null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function buildLocationName(venue, address, fieldNum) {
-  return [venue.trim(), address.trim(), fieldNum.trim()].filter(Boolean).join(' — ')
+  return [venue.trim(), address.trim(), fieldNum.trim()]
+    .filter(Boolean)
+    .join(' — ')
 }
 
 function parseLocationName(locationName) {
@@ -56,20 +133,79 @@ function parseLocationName(locationName) {
   }
 }
 
-const POSITIONS_BB = ['pitcher', 'catcher', '1B', '2B', '3B', 'shortstop', 'outfield', 'utility']
-const POSITIONS_SB = ['pitcher', 'catcher', '1B', '2B', '3B', 'shortstop', 'outfield', 'utility']
-const AGE_GROUPS = ['6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '18U', 'Adult']
+const POSITIONS_BB = [
+  'pitcher',
+  'catcher',
+  '1B',
+  '2B',
+  '3B',
+  'shortstop',
+  'outfield',
+  'utility',
+]
+const POSITIONS_SB = [
+  'pitcher',
+  'catcher',
+  '1B',
+  '2B',
+  '3B',
+  'shortstop',
+  'outfield',
+  'utility',
+]
+const AGE_GROUPS = [
+  '6U',
+  '7U',
+  '8U',
+  '9U',
+  '10U',
+  '11U',
+  '12U',
+  '13U',
+  '14U',
+  '15U',
+  '16U',
+  '18U',
+  'Adult',
+]
 const HAND_OPTIONS = ['R', 'L', 'Switch']
 
-const labelStyle = { fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }
-const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '2px solid var(--lgray)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' }
+const labelStyle = {
+  fontSize: 12,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  display: 'block',
+  marginBottom: 6,
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '8px 12px',
+  borderRadius: 8,
+  border: '2px solid var(--lgray)',
+  fontSize: 14,
+  fontFamily: 'var(--font-body)',
+  outline: 'none',
+  boxSizing: 'border-box',
+}
+
 const selectStyle = { ...inputStyle }
 
-function RequiredMark() { return <span style={{ color: 'var(--red)' }}> *</span> }
+function RequiredMark() {
+  return <span style={{ color: 'var(--red)' }}> *</span>
+}
 
 function formatDate(d) {
-  try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }
-  catch { return d }
+  try {
+    return new Date(d).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    return d
+  }
 }
 
 function milesBetween(lat1, lng1, lat2, lng2) {
@@ -77,7 +213,11 @@ function milesBetween(lat1, lng1, lat2, lng2) {
   const R = 3958.8
   const dLat = toRad(lat2 - lat1)
   const dLng = toRad(lng2 - lng1)
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) ** 2
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
@@ -89,89 +229,325 @@ function extractTravelMiles(notes) {
   return m ? parseInt(m[1], 10) : null
 }
 
-const STATE_NAMES = { AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming', DC: 'District of Columbia' }
+const STATE_NAMES = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  FL: 'Florida',
+  GA: 'Georgia',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PA: 'Pennsylvania',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+  DC: 'District of Columbia',
+}
 
 const US_STATES = [
-  '', 'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY', 'DC'
+  '',
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
+  'DC',
 ]
 
 function stateFromPost(post, zipStateMap) {
-  return String(post?.state || zipStateMap[String(post?.zip_code || '')] || '').toUpperCase()
+  return String(
+    post?.state || zipStateMap[String(post?.zip_code || '')] || ''
+  ).toUpperCase()
 }
 
 function MapViewport({ posts, showFullUS }) {
   const map = useMap()
+
   useEffect(() => {
     const pts = posts.filter((p) => p.lat != null && p.lng != null)
+
     if (showFullUS || pts.length === 0) {
-      const usBounds = L.latLngBounds([[24.396308, -125.0], [49.384358, -66.93457]])
+      const usBounds = L.latLngBounds(
+        [
+          [24.396308, -125.0],
+          [49.384358, -66.93457],
+        ]
+      )
       map.fitBounds(usBounds, { padding: [24, 24] })
       return
     }
+
     const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]))
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
   }, [posts, map, showFullUS])
+
   return null
 }
 
 function ZipFieldInline({ value, onChange, onGeocode, required }) {
   const [status, setStatus] = useState('')
+
   async function handleBlur() {
     if (!value || value.length !== 5) return
     setStatus('loading')
     const geo = await geocodeZip(value)
-    if (geo) { setStatus('ok'); onGeocode(geo) }
-    else { setStatus('error'); onGeocode(null) }
+    if (geo) {
+      setStatus('ok')
+      onGeocode(geo)
+    } else {
+      setStatus('error')
+      onGeocode(null)
+    }
   }
+
   return (
     <div>
       <label style={labelStyle}>
-        Zip Code{required && <span style={{ color: 'var(--red)' }}> *</span>}
-        {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Checking…</span>}
-        {status === 'ok' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Located</span>}
-        {status === 'error' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--red)' }}>Zip not found</span>}
+        Zip Code
+        {required && <span style={{ color: 'var(--red)' }}> *</span>}
+        {status === 'loading' && (
+          <span
+            style={{
+              fontWeight: 400,
+              textTransform: 'none',
+              marginLeft: 6,
+              color: '#888',
+            }}
+          >
+            Checking…
+          </span>
+        )}
+        {status === 'ok' && (
+          <span
+            style={{
+              fontWeight: 400,
+              textTransform: 'none',
+              marginLeft: 6,
+              color: '#16a34a',
+            }}
+          >
+            ✓ Located
+          </span>
+        )}
+        {status === 'error' && (
+          <span
+            style={{
+              fontWeight: 400,
+              textTransform: 'none',
+              marginLeft: 6,
+              color: 'var(--red)',
+            }}
+          >
+            Zip not found
+          </span>
+        )}
       </label>
-      <input type="text" inputMode="numeric" maxLength={5} value={value} onChange={(e) => onChange(e.target.value)} onBlur={handleBlur} placeholder="e.g. 30009" style={inputStyle} />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Used for distance search matching</div>
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={5}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={handleBlur}
+        placeholder="e.g. 30009"
+        style={inputStyle}
+      />
+      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+        Used for distance search matching
+      </div>
     </div>
   )
 }
 
 function AddressGeoField({ value, onChange, onGeocode, city, zip }) {
   const [status, setStatus] = useState('')
+
   async function handleBlur() {
     if (!value.trim()) return
     setStatus('loading')
     const geo = await geocodeAddress(value, city, zip)
-    if (geo) { setStatus('found'); onGeocode(geo) }
-    else { setStatus('fallback'); onGeocode(null) }
+    if (geo) {
+      setStatus('found')
+      onGeocode(geo)
+    } else {
+      setStatus('fallback')
+      onGeocode(null)
+    }
   }
+
   return (
     <div style={{ marginBottom: 12 }}>
       <label style={labelStyle}>
         Street Address <RequiredMark />
-        {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-        {status === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-        {status === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — pin will use zip area</span>}
+        {status === 'loading' && (
+          <span
+            style={{
+              fontWeight: 400,
+              textTransform: 'none',
+              marginLeft: 6,
+              color: '#888',
+            }}
+          >
+            Locating…
+          </span>
+        )}
+        {status === 'found' && (
+          <span
+            style={{
+              fontWeight: 400,
+              textTransform: 'none',
+              marginLeft: 6,
+              color: '#16a34a',
+            }}
+          >
+            ✓ Pin placed at address
+          </span>
+        )}
+        {status === 'fallback' && (
+          <span
+            style={{
+              fontWeight: 400,
+              textTransform: 'none',
+              marginLeft: 6,
+              color: '#ea580c',
+            }}
+          >
+            Address not found — pin will use zip area
+          </span>
+        )}
       </label>
-      <input value={value} onChange={(e) => onChange(e.target.value)} onBlur={handleBlur} placeholder="e.g. 11925 Wills Rd, Alpharetta, GA 30009" style={inputStyle} />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Tab out after typing to place map pin at exact location</div>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={handleBlur}
+        placeholder="e.g. 11925 Wills Rd, Alpharetta, GA 30009"
+        style={inputStyle}
+      />
+      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+        Tab out after typing to place map pin at exact location
+      </div>
     </div>
   )
 }
 
 const EMPTY_FORM = {
-  post_type: 'player_needed', sport: 'baseball', player_age: '', player_position: [],
-  player_description: '', team_name: '', age_group: '', position_needed: [],
-  city: '', state: '', venue_name: '', location_address: '', field_number: '',
-  event_date: '', additional_notes: '', distance_travel: 25, bats: '', throws: '',
-  contact_type: 'email', contact_email: '', contact_phone: '', zip_code: '', lat: null, lng: null,
+  post_type: 'player_needed',
+  sport: 'baseball',
+  player_age: '',
+  player_position: [],
+  player_description: '',
+  team_name: '',
+  age_group: '',
+  position_needed: [],
+  city: '',
+  state: '',
+  venue_name: '',
+  location_address: '',
+  field_number: '',
+  event_date: '',
+  additional_notes: '',
+  distance_travel: 25,
+  bats: '',
+  throws: '',
+  contact_type: 'email',
+  contact_email: '',
+  contact_phone: '',
+  zip_code: '',
+  lat: null,
+  lng: null,
 }
 
 const TRAVEL_OPTIONS = [
-  { value: 10, label: 'Up to 10 miles' }, { value: 25, label: 'Up to 25 miles' },
-  { value: 50, label: 'Up to 50 miles' }, { value: 75, label: 'Up to 75 miles' },
-  { value: 100, label: 'Up to 100 miles' }, { value: 150, label: 'Up to 150 miles' },
+  { value: 10, label: 'Up to 10 miles' },
+  { value: 25, label: 'Up to 25 miles' },
+  { value: 50, label: 'Up to 50 miles' },
+  { value: 75, label: 'Up to 75 miles' },
+  { value: 100, label: 'Up to 100 miles' },
+  { value: 150, label: 'Up to 150 miles' },
   { value: 999, label: 'Anywhere' },
 ]
 
@@ -179,8 +555,16 @@ function DistanceSlider({ value, onChange }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <label style={labelStyle}>Willing to Travel</label>
-      <select value={value} onChange={(e) => onChange(Number(e.target.value))} style={selectStyle}>
-        {TRAVEL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      <select
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={selectStyle}
+      >
+        {TRAVEL_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
       </select>
     </div>
   )
@@ -196,7 +580,9 @@ function buildContactInfo(form) {
 }
 
 function parseContactInfo(contact_info) {
-  if (!contact_info) return { contact_type: 'email', contact_email: '', contact_phone: '' }
+  if (!contact_info) {
+    return { contact_type: 'email', contact_email: '', contact_phone: '' }
+  }
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (contact_info.includes(' / ')) {
     const [a, b] = contact_info.split(' / ')
@@ -204,7 +590,9 @@ function parseContactInfo(contact_info) {
     const phone = emailRe.test(a) ? b : a
     return { contact_type: 'both', contact_email: email, contact_phone: phone }
   }
-  if (emailRe.test(contact_info)) return { contact_type: 'email', contact_email: contact_info, contact_phone: '' }
+  if (emailRe.test(contact_info)) {
+    return { contact_type: 'email', contact_email: contact_info, contact_phone: '' }
+  }
   return { contact_type: 'phone', contact_email: '', contact_phone: contact_info }
 }
 
@@ -212,6 +600,7 @@ function ContactDisplay({ contact_info }) {
   if (!contact_info) return null
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const phoneRe = /^[\d\s\-\(\)\+\.]+$/
+
   if (contact_info.includes(' / ')) {
     const parts = contact_info.split(' / ')
     return (
@@ -219,41 +608,109 @@ function ContactDisplay({ contact_info }) {
         {parts.map((c, i) => (
           <span key={i}>
             {i > 0 && <span style={{ color: 'var(--lgray)' }}> · </span>}
-            {emailRe.test(c)
-              ? <a href={'mailto:' + c} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>{c}</a>
-              : <a href={'tel:' + c.replace(/\D/g, '')} style={{ color: 'var(--navy)', textDecoration: 'none', fontWeight: 600 }}>{c}</a>}
+            {emailRe.test(c) ? (
+              <a
+                href={'mailto:' + c}
+                style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}
+              >
+                {c}
+              </a>
+            ) : (
+              <a
+                href={'tel:' + c.replace(/\D/g, '')}
+                style={{ color: 'var(--navy)', textDecoration: 'none', fontWeight: 600 }}
+              >
+                {c}
+              </a>
+            )}
           </span>
         ))}
       </span>
     )
   }
-  if (emailRe.test(contact_info)) return <a href={'mailto:' + contact_info} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>{contact_info}</a>
-  if (phoneRe.test((contact_info || '').replace(/^(dad:|mom:|coach:)/i, '').trim())) return <a href={'tel:' + contact_info.replace(/\D/g, '')} style={{ color: 'var(--navy)', textDecoration: 'none', fontWeight: 600 }}>{contact_info}</a>
+
+  if (emailRe.test(contact_info)) {
+    return (
+      <a
+        href={'mailto:' + contact_info}
+        style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}
+      >
+        {contact_info}
+      </a>
+    )
+  }
+
+  if (phoneRe.test((contact_info || '').replace(/^(dad:|mom:|coach:)/i, '').trim())) {
+    return (
+      <a
+        href={'tel:' + contact_info.replace(/\D/g, '')}
+        style={{ color: 'var(--navy)', textDecoration: 'none', fontWeight: 600 }}
+      >
+        {contact_info}
+      </a>
+    )
+  }
+
   return <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{contact_info}</span>
 }
 
 function ContactFields({ form, setForm }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <label style={labelStyle}>Contact Info <RequiredMark /></label>
+      <label style={labelStyle}>
+        Contact Info <RequiredMark />
+      </label>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        {[['email', '📧 Email'], ['phone', '📞 Phone'], ['both', '📧 + 📞 Both']].map(([val, label]) => (
-          <button key={val} type="button" onClick={() => setForm((f) => ({ ...f, contact_type: val }))} style={{
-            padding: '7px 14px', borderRadius: 8, border: '2px solid', cursor: 'pointer',
-            borderColor: form.contact_type === val ? 'var(--navy)' : 'var(--lgray)',
-            background: form.contact_type === val ? 'var(--navy)' : 'white',
-            color: form.contact_type === val ? 'white' : 'var(--navy)',
-            fontWeight: 600, fontSize: 12, fontFamily: 'var(--font-body)',
-          }}>{label}</button>
+        {[
+          ['email', '📧 Email'],
+          ['phone', '📞 Phone'],
+          ['both', '📧 + 📞 Both'],
+        ].map(([val, label]) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => setForm((f) => ({ ...f, contact_type: val }))}
+            style={{
+              padding: '7px 14px',
+              borderRadius: 8,
+              border: '2px solid',
+              cursor: 'pointer',
+              borderColor: form.contact_type === val ? 'var(--navy)' : 'var(--lgray)',
+              background: form.contact_type === val ? 'var(--navy)' : 'white',
+              color: form.contact_type === val ? 'white' : 'var(--navy)',
+              fontWeight: 600,
+              fontSize: 12,
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            {label}
+          </button>
         ))}
       </div>
+
       {(form.contact_type === 'email' || form.contact_type === 'both') && (
-        <input type="email" value={form.contact_email} onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))} placeholder="your@email.com" style={{ ...inputStyle, marginBottom: form.contact_type === 'both' ? 8 : 0 }} />
+        <input
+          type="email"
+          value={form.contact_email}
+          onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))}
+          placeholder="your@email.com"
+          style={{ ...inputStyle, marginBottom: form.contact_type === 'both' ? 8 : 0 }}
+        />
       )}
+
       {(form.contact_type === 'phone' || form.contact_type === 'both') && (
-        <input type="tel" value={form.contact_phone} onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))} placeholder="678-555-0100" style={inputStyle} />
+        <input
+          type="tel"
+          value={form.contact_phone}
+          onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))}
+          placeholder="678-555-0100"
+          style={inputStyle}
+        />
       )}
-      <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 6 }}>Visible publicly. Listings expire after 4 days.</div>
+
+      <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 6 }}>
+        Visible publicly. Listings expire after 4 days.
+      </div>
     </div>
   )
 }
@@ -265,31 +722,122 @@ function AuthModal({ onClose }) {
   const [error, setError] = useState('')
 
   async function handleSend() {
-    if (!email.trim()) { setError('Please enter your email.'); return }
+    if (!email.trim()) {
+      setError('Please enter your email.')
+      return
+    }
     setSending(true)
     const redirectUrl = typeof window !== 'undefined' ? window.location.href : undefined
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: redirectUrl } })
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: redirectUrl },
+    })
     setSending(false)
-    if (error) { setError(error.message); return }
+    if (error) {
+      setError(error.message)
+      return
+    }
     setSent(true)
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: 14, padding: '32px', width: '100%', maxWidth: 420, boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 3000,
+        background: 'rgba(0,0,0,0.55)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: 14,
+          padding: '32px',
+          width: '100%',
+          maxWidth: 420,
+          boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
+        }}
+      >
         {sent ? (
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 800, color: 'var(--navy)', marginBottom: 8 }}>Check your email</div>
-            <div style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>We sent a sign-in link to <strong>{email}</strong>.</div>
+            <div
+              style={{
+                fontFamily: 'var(--font-head)',
+                fontSize: 20,
+                fontWeight: 800,
+                color: 'var(--navy)',
+                marginBottom: 8,
+              }}
+            >
+              Check your email
+            </div>
+            <div style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>
+              We sent a sign-in link to <strong>{email}</strong>.
+            </div>
           </div>
         ) : (
           <>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)', marginBottom: 6 }}>Sign in to post or edit</div>
-            <div style={{ fontSize: 13, color: '#666', marginBottom: 20, lineHeight: 1.5 }}>Enter your email and we&apos;ll send you a magic link — no password needed.</div>
-            <input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} style={{ ...inputStyle, marginBottom: 12, fontSize: 15 }} autoFocus />
-            {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10 }}>{error}</div>}
-            <button type="button" onClick={handleSend} disabled={sending} style={{ width: '100%', padding: '12px', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-head)', opacity: sending ? 0.7 : 1 }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-head)',
+                fontSize: 22,
+                fontWeight: 800,
+                color: 'var(--navy)',
+                marginBottom: 6,
+              }}
+            >
+              Sign in to post or edit
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: '#666',
+                marginBottom: 20,
+                lineHeight: 1.5,
+              }}
+            >
+              Enter your email and we&apos;ll send you a magic link — no password needed.
+            </div>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              style={{ ...inputStyle, marginBottom: 12, fontSize: 15 }}
+              autoFocus
+            />
+            {error && (
+              <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10 }}>
+                {error}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={sending}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'var(--navy)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: sending ? 'not-allowed' : 'pointer',
+                fontFamily: 'var(--font-head)',
+                opacity: sending ? 0.7 : 1,
+              }}
+            >
               {sending ? 'Sending…' : 'Send Sign-in Link'}
             </button>
           </>
@@ -301,14 +849,81 @@ function AuthModal({ onClose }) {
 
 function DeleteConfirm({ onConfirm, onCancel }) {
   return (
-    <div onClick={onCancel} style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: 'white', borderRadius: 14, padding: '28px', width: '100%', maxWidth: 380, boxShadow: '0 8px 40px rgba(0,0,0,0.25)', textAlign: 'center' }}>
+    <div
+      onClick={onCancel}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 3000,
+        background: 'rgba(0,0,0,0.55)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: 14,
+          padding: '28px',
+          width: '100%',
+          maxWidth: 380,
+          boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
+          textAlign: 'center',
+        }}
+      >
         <div style={{ fontSize: 36, marginBottom: 12 }}>🗑️</div>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 8 }}>Delete this listing?</div>
-        <div style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>This can&apos;t be undone.</div>
+        <div
+          style={{
+            fontFamily: 'var(--font-head)',
+            fontSize: 18,
+            fontWeight: 800,
+            color: 'var(--navy)',
+            marginBottom: 8,
+          }}
+        >
+          Delete this listing?
+        </div>
+        <div style={{ fontSize: 14, color: '#555', marginBottom: 20 }}>
+          This can&apos;t be undone.
+        </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button type="button" onClick={onCancel} style={{ flex: 1, padding: '11px', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-          <button type="button" onClick={onConfirm} style={{ flex: 1, padding: '11px', background: '#DC2626', color: 'white', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              flex: 1,
+              padding: '11px',
+              background: 'white',
+              color: 'var(--navy)',
+              border: '2px solid var(--lgray)',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: '11px',
+              background: '#DC2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Delete
+          </button>
         </div>
       </div>
     </div>
