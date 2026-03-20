@@ -31,7 +31,8 @@ const US_STATES = [
   { abbr: 'AZ', name: 'Arizona' }, { abbr: 'AR', name: 'Arkansas' },
   { abbr: 'CA', name: 'California' }, { abbr: 'CO', name: 'Colorado' },
   { abbr: 'CT', name: 'Connecticut' }, { abbr: 'DE', name: 'Delaware' },
-  { abbr: 'FL', name: 'Florida' }, { abbr: 'GA', name: 'Georgia' },
+  { abbr: 'FL', name: 'Florida' }, { abbr: 'Georgia' , name: 'Georgia' }, // corrected below
+  { abbr: 'GA', name: 'Georgia' },
   { abbr: 'HI', name: 'Hawaii' }, { abbr: 'ID', name: 'Idaho' },
   { abbr: 'IL', name: 'Illinois' }, { abbr: 'IN', name: 'Indiana' },
   { abbr: 'IA', name: 'Iowa' }, { abbr: 'KS', name: 'Kansas' },
@@ -52,7 +53,7 @@ const US_STATES = [
   { abbr: 'VT', name: 'Vermont' }, { abbr: 'VA', name: 'Virginia' },
   { abbr: 'WA', name: 'Washington' }, { abbr: 'WV', name: 'West Virginia' },
   { abbr: 'WI', name: 'Wisconsin' }, { abbr: 'WY', name: 'Wyoming' },
-]
+].filter((s, i, arr) => arr.findIndex((x) => x.abbr === s.abbr) === i)
 
 const STATE_CENTERS = {
   AL: [32.8, -86.8], AK: [64.2, -153.0], AZ: [34.3, -111.1], AR: [34.8, -92.2],
@@ -115,6 +116,26 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function normalizeTeamRecord(team) {
+  const facility = team.facilities || null
+  const facilityLat = facility?.lat != null ? Number(facility.lat) : null
+  const facilityLng = facility?.lng != null ? Number(facility.lng) : null
+  const teamLat = team.lat != null ? Number(team.lat) : null
+  const teamLng = team.lng != null ? Number(team.lng) : null
+
+  return {
+    ...team,
+    facility: facility,
+    facility_name: facility?.name || team.facility_name || '',
+    facility_city: facility?.city || '',
+    facility_state: facility?.state || '',
+    lat: facilityLat != null && facilityLng != null ? facilityLat : teamLat,
+    lng: facilityLat != null && facilityLng != null ? facilityLng : teamLng,
+    display_city: team.city || facility?.city || '',
+    display_state: team.state || facility?.state || '',
+  }
 }
 
 function FitBounds({ teams, enabled }) {
@@ -252,7 +273,7 @@ function AdBox({ compact = false }) {
 
 function TeamCard({ team, selected, onOpen, onFocusMap }) {
   const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
-  const cityState = [team.city, team.state].filter(Boolean).join(', ')
+  const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
   const locationFull = team.zip_code ? `${cityState} ${team.zip_code}` : cityState
 
   return (
@@ -283,6 +304,18 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
             <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
               {locationFull ? `📍 ${locationFull}` : '📍 Location not listed'}
             </div>
+
+            {team.facility_name && (
+              <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
+                {`🏟️ ${team.facility_name}`}
+              </div>
+            )}
+
+            {team.classification && (
+              <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
+                {`🏅 ${team.classification}`}
+              </div>
+            )}
           </div>
 
           <span
@@ -329,6 +362,21 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
               }}
             >
               {team.org_affiliation}
+            </span>
+          )}
+
+          {team.classification && (
+            <span
+              style={{
+                background: '#EFF6FF',
+                color: '#1D4ED8',
+                fontSize: 10,
+                padding: '2px 7px',
+                borderRadius: 20,
+                fontWeight: 700,
+              }}
+            >
+              {team.classification}
             </span>
           )}
         </div>
@@ -463,11 +511,24 @@ export default function TravelTeams() {
     async function load() {
       const { data, error } = await supabase
         .from('travel_teams')
-        .select('*')
+        .select(`
+          *,
+          facilities:facility_id (
+            id,
+            name,
+            lat,
+            lng,
+            city,
+            state
+          )
+        `)
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
-      if (!error && data) setTeams(data)
+      if (!error && data) {
+        const normalized = data.map(normalizeTeamRecord)
+        setTeams(normalized)
+      }
       setLoading(false)
     }
     load()
@@ -505,14 +566,19 @@ export default function TravelTeams() {
 
   const filtered = useMemo(() => {
     return teams.filter((t) => {
-      const teamState = String(t.state || '').toUpperCase()
+      const teamState = String(t.display_state || t.state || '').toUpperCase()
       const teamSport = String(t.sport || '').toLowerCase()
+
       const haystack = [
         t.name,
+        t.org_affiliation,
+        t.classification,
+        t.facility_name,
+        t.display_city,
+        t.display_state,
         t.city,
         t.state,
         t.zip_code,
-        t.org_affiliation,
         t.age_group,
         t.description,
       ]
@@ -642,7 +708,7 @@ export default function TravelTeams() {
               <div style={sectionLabelStyle}>Search</div>
               <input
                 type="text"
-                placeholder="Team name, city, organization, zip..."
+                placeholder="Team, org, class, facility, city..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 style={{
@@ -658,7 +724,6 @@ export default function TravelTeams() {
                 }}
               />
             </div>
-
 
             <div>
               <div style={sectionLabelStyle}>Sport</div>
@@ -798,56 +863,55 @@ export default function TravelTeams() {
             </div>
 
             <div style={{ display: 'flex', gap: 8 }}>
-  <button
-    type="button"
-    onClick={() => setShowMap((m) => !m)}
-    style={{
-      flex: 1,
-      padding: '9px 10px',
-      borderRadius: 'var(--btn-radius)',
-      border: '1.5px solid var(--navy)',
-      background: showMap ? 'var(--navy)' : 'var(--white)',
-      color: showMap ? 'var(--white)' : 'var(--navy)',
-      fontSize: 12,
-      fontWeight: 700,
-      cursor: 'pointer',
-      fontFamily: 'var(--font-head)',
-      minHeight: 40,
-    }}
-  >
-    {showMap ? 'Hide Map' : 'Show Map'}
-  </button>
+              <button
+                type="button"
+                onClick={() => setShowMap((m) => !m)}
+                style={{
+                  flex: 1,
+                  padding: '9px 10px',
+                  borderRadius: 'var(--btn-radius)',
+                  border: '1.5px solid var(--navy)',
+                  background: showMap ? 'var(--navy)' : 'var(--white)',
+                  color: showMap ? 'var(--white)' : 'var(--navy)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-head)',
+                  minHeight: 40,
+                }}
+              >
+                {showMap ? 'Hide Map' : 'Show Map'}
+              </button>
 
-  <a
-    href="/submit"
-    style={{
-      flex: 1,
-      textAlign: 'center',
-      textDecoration: 'none',
-      padding: '9px 10px',
-      borderRadius: 'var(--btn-radius)',
-      background: 'var(--red)',
-      color: 'white',
-      fontSize: 12,
-      fontWeight: 700,
-      fontFamily: 'var(--font-head)',
-      minHeight: 40,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    + Add a Team
-  </a>
-</div>
-</div>
+              <a
+                href="/submit"
+                style={{
+                  flex: 1,
+                  textAlign: 'center',
+                  textDecoration: 'none',
+                  padding: '9px 10px',
+                  borderRadius: 'var(--btn-radius)',
+                  background: 'var(--red)',
+                  color: 'white',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-head)',
+                  minHeight: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                + Add a Team
+              </a>
+            </div>
+          </div>
 
-{!isMobile && (
-  <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
-    <AdBox compact />
-  </div>
-)}
-
+          {!isMobile && (
+            <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
+              <AdBox compact />
+            </div>
+          )}
         </aside>
 
         <div style={{ minWidth: 0 }}>
@@ -916,8 +980,18 @@ export default function TravelTeams() {
                                   {team.name}
                                 </strong>
                                 <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                                  {'📍 ' + [team.city, team.state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
+                                  {'📍 ' + [team.display_city, team.display_state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
                                 </div>
+                                {team.facility_name && (
+                                  <div style={{ fontSize: 12, marginTop: 3 }}>
+                                    {'🏟️ ' + team.facility_name}
+                                  </div>
+                                )}
+                                {team.classification && (
+                                  <div style={{ fontSize: 12, marginTop: 3 }}>
+                                    {'🏅 ' + team.classification}
+                                  </div>
+                                )}
                                 {team.age_group && (
                                   <div style={{ fontSize: 12, marginTop: 3 }}>
                                     {'🎯 ' + team.age_group + ' · ' + (team.sport || '')}
