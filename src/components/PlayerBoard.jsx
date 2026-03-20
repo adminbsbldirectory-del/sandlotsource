@@ -22,7 +22,25 @@ const makeIcon = (color) =>
     popupAnchor: [0, -28],
   })
 
-const PIN_COLORS = { needs_player: '#ea580c', pickup: '#0891b2' }
+const PIN_COLORS = {
+  player_needed: '#ea580c',
+  pickup: '#0891b2',
+}
+
+function getPinColor(post) {
+  const sport = String(post?.sport || '').toLowerCase()
+  const type = String(post?.post_type || '').toLowerCase()
+
+  if (type === 'player_needed') {
+    return sport === 'softball' ? '#CCE500' : '#ea580c'
+  }
+
+  if (type === 'player_available') {
+    return sport === 'softball' ? '#CCE500' : '#0891b2'
+  }
+
+  return sport === 'softball' ? '#CCE500' : '#0B2341'
+}
 
 function AdBox() {
   return (
@@ -1432,32 +1450,31 @@ export default function PlayerBoard() {
                           border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
                         }}
                       >
-                        <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
-                          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          <MapViewport posts={mappable} showFullUS={!stateFilter} />
-                          {mappable.map((p) => (
-                            <Marker key={p.id} position={[p.lat, p.lng]} icon={makeIcon(PIN_COLORS[p.post_type] || '#1d4ed8')}>
-                              <Popup>
-                                <div style={{ minWidth: 180 }}>
-                                  <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
-                                    {p.post_type === 'player_available'
-                                      ? `Age ${p.player_age || p.age_group || ''} — ${p.city || p.zip_code || 'Player'}`
-                                      : `${p.team_name || 'Team'}${p.age_group ? ' · ' + p.age_group : ''}`}
-                                  </strong>
-                                  <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                                    📍 {p.location_name || [p.city, stateFromPost(p, zipStateMap), p.zip_code].filter(Boolean).join(', ')}
-                                  </div>
-                                  {!!p.contact_info && (
-                                    <div style={{ fontSize: 12, marginTop: 6 }}>
-                                      <ContactDisplay contact_info={p.contact_info} />
-                                    </div>
-                                  )}
-                                </div>
-                              </Popup>
-                            </Marker>
-                          ))}
-                        </MapContainer>
-                      </div>
+                      <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
+  <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+  <MapViewport posts={mappable} showFullUS={!stateFilter} />
+  {mappable.map((p) => (
+    <Marker key={p.id} position={[p.lat, p.lng]} icon={makeIcon(getPinColor(p))}>
+      <Popup>
+        <div style={{ minWidth: 180 }}>
+          <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
+            {p.post_type === 'player_available'
+              ? `Age ${p.player_age || p.age_group || ''} — ${p.city || p.zip_code || 'Player'}`
+              : `${p.team_name || 'Team'}${p.age_group ? ' · ' + p.age_group : ''}`}
+          </strong>
+          <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
+            📍 {p.location_name || [p.city, stateFromPost(p, zipStateMap), p.zip_code].filter(Boolean).join(', ')}
+          </div>
+          {!!p.contact_info && (
+            <div style={{ fontSize: 12, marginTop: 6 }}>
+              <ContactDisplay contact_info={p.contact_info} />
+            </div>
+          )}
+        </div>
+      </Popup>
+    </Marker>
+  ))}
+</MapContainer>  
 
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '6px 10px', background: 'var(--white)', borderTop: '1px solid var(--lgray)', alignItems: 'center' }}>
                         <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
