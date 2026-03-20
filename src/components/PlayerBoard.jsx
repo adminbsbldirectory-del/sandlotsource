@@ -27,24 +27,51 @@ async function geocodeZip(zip) {
     const data = await res.json()
     const place = data.places && data.places[0]
     if (!place) return null
-    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude), city: place['place name'] }
-  } catch { return null }
+    return {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude),
+      city: place['place name'],
+      state: place['state abbreviation'],
+    }
+  } catch {
+    return null
+  }
 }
 
-async function geocodeAddress(address, city, zip) {
+async function geocodeAddress(address, city, state, zip) {
   if (!address) return null
   try {
-    const q = encodeURIComponent(address + (city ? ', ' + city : '') + (zip ? ', ' + zip : '') + ', USA')
-    const res = await fetch('https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us', { headers: { 'Accept-Language': 'en-US' } })
+    const q = encodeURIComponent(
+      address +
+      (city ? ', ' + city : '') +
+      (state ? ', ' + state : '') +
+      (zip ? ', ' + zip : '') +
+      ', USA'
+    )
+    const res = await fetch(
+      'https://nominatim.openstreetmap.org/search?q=' + q + '&format=json&limit=1&countrycodes=us',
+      { headers: { 'Accept-Language': 'en-US' } }
+    )
     if (!res.ok) return null
     const data = await res.json()
     if (data && data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
     return null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function buildLocationName(venue, address, fieldNum) {
   return [venue.trim(), address.trim(), fieldNum.trim()].filter(Boolean).join(' — ')
+}
+
+function parseLocationName(value) {
+  const parts = String(value || '').split(' — ').map((v) => v.trim()).filter(Boolean)
+  return {
+    venue_name: parts[0] || '',
+    location_address: parts[1] || '',
+    field_number: parts[2] || '',
+  }
 }
 
 const POSITIONS_BB = ['pitcher', 'catcher', '1B', '2B', '3B', 'shortstop', 'outfield', 'utility']
@@ -54,6 +81,7 @@ const AGE_GROUPS = ['6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '
 const labelStyle = { fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }
 const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '2px solid var(--lgray)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' }
 const selectStyle = { ...inputStyle }
+const mutedHelpStyle = { fontSize: 11, color: '#888', marginTop: 3 }
 
 function RequiredMark() { return <span style={{ color: 'var(--red)' }}> *</span> }
 
@@ -73,8 +101,9 @@ function FitBounds({ posts }) {
   return null
 }
 
-function ZipFieldInline({ value, onChange, onGeocode, required }) {
+function ZipFieldInline({ value, onChange, onGeocode, required, helperText = 'Used for distance search matching' }) {
   const [status, setStatus] = useState('')
+
   async function handleBlur() {
     if (!value || value.length !== 5) return
     setStatus('loading')
@@ -82,6 +111,7 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
     if (geo) { setStatus('ok'); onGeocode(geo) }
     else { setStatus('error'); onGeocode(null) }
   }
+
   return (
     <div>
       <label style={labelStyle}>
@@ -91,40 +121,75 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
         {status === 'error' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: 'var(--red)' }}>Zip not found</span>}
       </label>
       <input type="text" inputMode="numeric" maxLength={5} value={value} onChange={(e) => onChange(e.target.value)} onBlur={handleBlur} placeholder="e.g. 30009" style={inputStyle} />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Used for distance search matching</div>
+      <div style={mutedHelpStyle}>{helperText}</div>
     </div>
   )
 }
 
-function AddressGeoField({ value, onChange, onGeocode, city, zip }) {
+function AddressGeoField({ value, onChange, onGeocode, city, state, zip, label = 'Address', placeholder = 'e.g. 11925 Wills Rd' }) {
   const [status, setStatus] = useState('')
+
   async function handleBlur() {
     if (!value.trim()) return
     setStatus('loading')
-    const geo = await geocodeAddress(value, city, zip)
+    const geo = await geocodeAddress(value, city, state, zip)
     if (geo) { setStatus('found'); onGeocode(geo) }
     else { setStatus('fallback'); onGeocode(null) }
   }
+
   return (
     <div style={{ marginBottom: 12 }}>
       <label style={labelStyle}>
-        Street Address <RequiredMark />
+        {label} <RequiredMark />
         {status === 'loading' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
         {status === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
         {status === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — pin will use zip area</span>}
       </label>
-      <input value={value} onChange={(e) => onChange(e.target.value)} onBlur={handleBlur} placeholder="e.g. 11925 Wills Rd, Alpharetta, GA 30009" style={inputStyle} />
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Tab out after typing to place map pin at exact location</div>
+      <input value={value} onChange={(e) => onChange(e.target.value)} onBlur={handleBlur} placeholder={placeholder} style={inputStyle} />
+      <div style={mutedHelpStyle}>Tab out after typing to place the map pin at the exact location.</div>
+    </div>
+  )
+}
+
+function CityStatePreview({ city, state, onCityChange, onStateChange }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 12, marginBottom: 14 }}>
+      <div>
+        <label style={labelStyle}>City</label>
+        <input value={city} onChange={(e) => onCityChange(e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
+      </div>
+      <div>
+        <label style={labelStyle}>State</label>
+        <input value={state} onChange={(e) => onStateChange(e.target.value.toUpperCase().slice(0, 2))} placeholder="GA" maxLength={2} style={inputStyle} />
+      </div>
     </div>
   )
 }
 
 const EMPTY_FORM = {
-  post_type: 'player_needed', sport: 'baseball', player_age: '', player_position: [],
-  player_description: '', team_name: '', age_group: '', position_needed: [],
-  city: '', region: '', venue_name: '', location_address: '', field_number: '',
-  event_date: '', additional_notes: '', distance_travel: 25,
-  contact_type: 'email', contact_email: '', contact_phone: '', zip_code: '', lat: null, lng: null,
+  post_type: 'player_needed',
+  sport: 'baseball',
+  player_age: '',
+  player_position: [],
+  player_description: '',
+  team_name: '',
+  age_group: '',
+  position_needed: [],
+  city: '',
+  state: '',
+  region: '',
+  venue_name: '',
+  location_address: '',
+  field_number: '',
+  event_date: '',
+  additional_notes: '',
+  distance_travel: 25,
+  contact_type: 'email',
+  contact_email: '',
+  contact_phone: '',
+  zip_code: '',
+  lat: null,
+  lng: null,
 }
 
 const TRAVEL_OPTIONS = [
@@ -328,7 +393,14 @@ export default function PlayerBoard() {
   }
 
   function handleZipGeocode(geo) {
-    if (geo) setForm((f) => ({ ...f, lat: f.lat || geo.lat, lng: f.lng || geo.lng, city: f.city || geo.city }))
+    if (!geo) return
+    setForm((f) => ({
+      ...f,
+      lat: f.location_address.trim() ? f.lat : geo.lat,
+      lng: f.location_address.trim() ? f.lng : geo.lng,
+      city: geo.city || f.city,
+      state: geo.state || f.state,
+    }))
   }
 
   function handleAddressGeocode(geo) {
@@ -342,8 +414,11 @@ export default function PlayerBoard() {
       if (!form.sport) return 'Sport is required.'
       if (!form.age_group) return 'Age group is required.'
       if (!form.position_needed.length) return 'Select at least one position needed.'
-      if (!form.location_address.trim()) return 'Street address is required.'
+      if (!form.venue_name.trim()) return 'Game/Tournament location is required.'
+      if (!form.location_address.trim()) return 'Address is required.'
       if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
+      if (!form.city.trim()) return 'City is required.'
+      if (!form.state.trim()) return 'State is required.'
       if (!form.event_date) return 'Event date is required.'
     } else {
       if (!form.sport) return 'Sport is required.'
@@ -355,57 +430,152 @@ export default function PlayerBoard() {
   }
 
   async function handleSubmit() {
-    const err = validate(); if (err) { setValidationError(err); return }
-    setValidationError(''); setSubmitting(true)
+    const err = validate()
+    if (err) { setValidationError(err); return }
+    setValidationError('')
+    setSubmitting(true)
+
     const contactInfo = buildContactInfo(form)
     const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
     const notesWithTravel = form.post_type === 'player_available' ? [travelNote, form.additional_notes].filter(Boolean).join('\n') : form.additional_notes || null
     const combinedLocation = buildLocationName(form.venue_name, form.location_address, form.field_number)
+
     const payload = {
-      post_type: form.post_type, sport: form.sport, city: form.city, county: form.region || null,
-      zip_code: form.zip_code || null, lat: form.lat || null, lng: form.lng || null,
-      contact_info: contactInfo, additional_notes: notesWithTravel || null,
-      active: true, approval_status: 'pending', source: 'website_form',
-      last_confirmed_at: new Date().toISOString(), user_id: user?.id ?? null,
+      post_type: form.post_type,
+      sport: form.sport,
+      city: form.city,
+      state: form.state || null,
+      county: form.region || null,
+      zip_code: form.zip_code || null,
+      lat: form.lat || null,
+      lng: form.lng || null,
+      contact_info: contactInfo,
+      additional_notes: notesWithTravel || null,
+      active: true,
+      approval_status: 'pending',
+      source: 'website_form',
+      last_confirmed_at: new Date().toISOString(),
+      user_id: user?.id ?? null,
       ...(form.post_type === 'player_available'
-        ? { player_age: form.player_age ? parseInt(form.player_age, 10) : null, age_group: form.age_group || null, player_position: form.player_position, player_description: form.player_description || null }
-        : { team_name: form.team_name || null, age_group: form.age_group, position_needed: form.position_needed, location_name: combinedLocation, event_date: form.event_date }),
+        ? {
+            player_age: form.player_age ? parseInt(form.player_age, 10) : null,
+            age_group: form.age_group || null,
+            player_position: form.player_position,
+            player_description: form.player_description || null,
+          }
+        : {
+            team_name: form.team_name || null,
+            age_group: form.age_group,
+            position_needed: form.position_needed,
+            location_name: combinedLocation,
+            event_date: form.event_date,
+          }),
     }
+
     const { error } = await supabase.from('player_board').insert([payload])
     setSubmitting(false)
     if (!error) {
-      setSubmitMode('create'); setSubmitted(true); setShowForm(false)
+      setSubmitMode('create')
+      setSubmitted(true)
+      setShowForm(false)
       setPosts((prev) => [{ ...payload, id: Date.now(), created_at: new Date().toISOString() }, ...prev])
       setForm(EMPTY_FORM)
-    } else { setValidationError('Submission error: ' + (error.message || 'Please try again.')) }
+    } else {
+      setValidationError('Submission error: ' + (error.message || 'Please try again.'))
+    }
   }
 
   function startEdit(post) {
     const contactParsed = parseContactInfo(post.contact_info)
-    setForm({ post_type: post.post_type, sport: post.sport, player_age: post.player_age || '', player_position: Array.isArray(post.player_position) ? post.player_position : [], player_description: post.player_description || '', team_name: post.team_name || '', age_group: post.age_group || '', position_needed: Array.isArray(post.position_needed) ? post.position_needed : [], city: post.city || '', region: post.county || '', venue_name: '', location_address: post.location_name || '', field_number: '', event_date: post.event_date ? post.event_date.split('T')[0] : '', additional_notes: post.additional_notes || '', distance_travel: 25, zip_code: post.zip_code || '', lat: post.lat || null, lng: post.lng || null, ...contactParsed })
-    setEditingId(post.id); setShowForm(true); setSubmitted(false); setSubmitMode('edit'); setValidationError('')
+    const parsedLocation = parseLocationName(post.location_name)
+    setForm({
+      post_type: post.post_type,
+      sport: post.sport,
+      player_age: post.player_age || '',
+      player_position: Array.isArray(post.player_position) ? post.player_position : [],
+      player_description: post.player_description || '',
+      team_name: post.team_name || '',
+      age_group: post.age_group || '',
+      position_needed: Array.isArray(post.position_needed) ? post.position_needed : [],
+      city: post.city || '',
+      state: post.state || '',
+      region: post.county || '',
+      venue_name: parsedLocation.venue_name,
+      location_address: parsedLocation.location_address,
+      field_number: parsedLocation.field_number,
+      event_date: post.event_date ? post.event_date.split('T')[0] : '',
+      additional_notes: post.additional_notes || '',
+      distance_travel: 25,
+      zip_code: post.zip_code || '',
+      lat: post.lat || null,
+      lng: post.lng || null,
+      ...contactParsed,
+    })
+    setEditingId(post.id)
+    setShowForm(true)
+    setSubmitted(false)
+    setSubmitMode('edit')
+    setValidationError('')
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleSaveEdit() {
-    const err = validate(); if (err) { setValidationError(err); return }
-    setValidationError(''); setSubmitting(true)
+    const err = validate()
+    if (err) { setValidationError(err); return }
+    setValidationError('')
+    setSubmitting(true)
+
     const contactInfo = buildContactInfo(form)
     const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
     const notesWithTravel = form.post_type === 'player_available' ? [travelNote, form.additional_notes].filter(Boolean).join('\n') : form.additional_notes || null
     const combinedLocation = buildLocationName(form.venue_name, form.location_address, form.field_number)
+
     const updates = {
-      post_type: form.post_type, sport: form.sport, city: form.city, county: form.region || null,
-      zip_code: form.zip_code || null, lat: form.lat || null, lng: form.lng || null,
-      contact_info: contactInfo, additional_notes: notesWithTravel || null,
+      post_type: form.post_type,
+      sport: form.sport,
+      city: form.city,
+      state: form.state || null,
+      county: form.region || null,
+      zip_code: form.zip_code || null,
+      lat: form.lat || null,
+      lng: form.lng || null,
+      contact_info: contactInfo,
+      additional_notes: notesWithTravel || null,
       ...(form.post_type === 'player_available'
-        ? { player_age: form.player_age ? parseInt(form.player_age, 10) : null, age_group: form.age_group || null, player_position: form.player_position, player_description: form.player_description || null, team_name: null, position_needed: null, location_name: null, event_date: null }
-        : { team_name: form.team_name || null, age_group: form.age_group, position_needed: form.position_needed, location_name: combinedLocation, event_date: form.event_date, player_age: null, player_position: null, player_description: null }),
+        ? {
+            player_age: form.player_age ? parseInt(form.player_age, 10) : null,
+            age_group: form.age_group || null,
+            player_position: form.player_position,
+            player_description: form.player_description || null,
+            team_name: null,
+            position_needed: null,
+            location_name: null,
+            event_date: null,
+          }
+        : {
+            team_name: form.team_name || null,
+            age_group: form.age_group,
+            position_needed: form.position_needed,
+            location_name: combinedLocation,
+            event_date: form.event_date,
+            player_age: null,
+            player_position: null,
+            player_description: null,
+          }),
     }
+
     const { error } = await supabase.from('player_board').update(updates).eq('id', editingId)
     setSubmitting(false)
-    if (!error) { setPosts((prev) => prev.map((p) => (p.id === editingId ? { ...p, ...updates } : p))); setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); setSubmitMode('edit'); setSubmitted(true) }
-    else setValidationError('Save error: ' + (error.message || 'Please try again.'))
+    if (!error) {
+      setPosts((prev) => prev.map((p) => (p.id === editingId ? { ...p, ...updates } : p)))
+      setShowForm(false)
+      setEditingId(null)
+      setForm(EMPTY_FORM)
+      setSubmitMode('edit')
+      setSubmitted(true)
+    } else {
+      setValidationError('Save error: ' + (error.message || 'Please try again.'))
+    }
   }
 
   async function handleDelete(post) {
@@ -414,7 +584,12 @@ export default function PlayerBoard() {
     setDeleteTarget(null)
   }
 
-  function cancelForm() { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); setValidationError('') }
+  function cancelForm() {
+    setShowForm(false)
+    setEditingId(null)
+    setForm(EMPTY_FORM)
+    setValidationError('')
+  }
 
   const filterSelectStyle = { padding: '8px 12px', borderRadius: 'var(--input-radius)', border: '1.5px solid var(--lgray)', background: 'var(--white)', fontSize: 13, color: 'var(--navy)', fontFamily: 'var(--font-body)', outline: 'none', cursor: 'pointer' }
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
@@ -426,9 +601,7 @@ export default function PlayerBoard() {
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {deleteTarget && <DeleteConfirm onConfirm={() => handleDelete(deleteTarget)} onCancel={() => setDeleteTarget(null)} />}
 
-      {/* ── Filter bar: two rows on mobile ── */}
       <div className="filter-bar" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-        {/* Row 1: type filters + sport pills */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           {[['all', 'All Posts'], ['player_available', isMobile ? 'Available' : 'Players Available'], ['player_needed', isMobile ? 'Needed' : 'Player Needed']].map(([val, label]) => (
             <button key={val} type="button" onClick={() => setFilter(val)} style={{ ...filterSelectStyle, background: filter === val ? 'var(--navy)' : 'white', color: filter === val ? 'white' : 'var(--navy)', fontWeight: filter === val ? 600 : 400, border: '2px solid ' + (filter === val ? 'var(--navy)' : 'var(--lgray)'), fontSize: isMobile ? 12 : 13 }}>
@@ -439,7 +612,6 @@ export default function PlayerBoard() {
           <button type="button" className={'pill-toggle ' + (sportFilter === 'softball' ? 'active-softball' : '')} onClick={() => setSportFilter((s) => (s === 'softball' ? 'Both' : 'softball'))}>🥎{!isMobile && ' Softball'}</button>
         </div>
 
-        {/* Row 2: map toggle + auth + post button */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           <button type="button" onClick={() => setShowMap((m) => !m)} style={{ padding: '8px 14px', borderRadius: 'var(--btn-radius)', border: '2px solid var(--navy)', background: showMap ? 'var(--navy)' : 'white', color: showMap ? 'white' : 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
             {showMap ? '📋 List' : '🗺️ Map'}
@@ -478,7 +650,7 @@ export default function PlayerBoard() {
                 return (
                   <Marker key={post.id} position={[post.lat, post.lng]} icon={makeIcon(color)}>
                     <Popup>
-                      <div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
                         <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{post.post_type === 'player_available' ? 'Player Available' : 'Player Needed'}</strong>
                         <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>{post.location_name ? '📍 ' + post.location_name : cityState ? '📍 ' + cityState : ''}</div>
                         {post.age_group && <div style={{ fontSize: 12, marginTop: 2 }}>🎯 {post.age_group} · {post.sport}</div>}
@@ -517,7 +689,7 @@ export default function PlayerBoard() {
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             {[['player_needed', '⚾ Player Needed'], ['player_available', '🧢 Player Available']].map(([val, label]) => (
-              <button key={val} type="button" onClick={() => setForm((f) => ({ ...f, post_type: val, player_age: '', player_position: [], player_description: '', team_name: '', age_group: '', position_needed: [], venue_name: '', location_address: '', field_number: '', event_date: '', distance_travel: 25, lat: null, lng: null }))} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '2px solid', cursor: 'pointer', borderColor: form.post_type === val ? 'var(--navy)' : 'var(--lgray)', background: form.post_type === val ? 'var(--navy)' : 'white', color: form.post_type === val ? 'white' : 'var(--navy)', fontWeight: 600, fontSize: 14, fontFamily: 'var(--font-body)' }}>{label}</button>
+              <button key={val} type="button" onClick={() => setForm((f) => ({ ...f, post_type: val, player_age: '', player_position: [], player_description: '', team_name: '', age_group: '', position_needed: [], venue_name: '', location_address: '', field_number: '', event_date: '', distance_travel: 25, city: '', state: '', zip_code: '', lat: null, lng: null }))} style={{ flex: 1, padding: '10px', borderRadius: 8, border: '2px solid', cursor: 'pointer', borderColor: form.post_type === val ? 'var(--navy)' : 'var(--lgray)', background: form.post_type === val ? 'var(--navy)' : 'white', color: form.post_type === val ? 'white' : 'var(--navy)', fontWeight: 600, fontSize: 14, fontFamily: 'var(--font-body)' }}>{label}</button>
             ))}
           </div>
 
@@ -543,8 +715,10 @@ export default function PlayerBoard() {
                 <div>
                   <label style={labelStyle}>Team Name</label>
                   <input value={form.team_name} onChange={(e) => setForm((f) => ({ ...f, team_name: e.target.value }))} placeholder="e.g. Cherokee Nationals" style={inputStyle} />
+                  <div style={mutedHelpStyle}>I left team-directory linking out for now so these short-lived posts stay lightweight.</div>
                 </div>
               </div>
+
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Position(s) Needed <RequiredMark /></label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -553,34 +727,57 @@ export default function PlayerBoard() {
                   ))}
                 </div>
               </div>
+
               <div style={{ background: '#f8f9fa', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: '1px solid var(--lgray)' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Game / Tournament Location</div>
                 <div style={{ marginBottom: 12 }}>
-                  <label style={labelStyle}>Venue / Park Name <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional)</span></label>
-                  <input value={form.venue_name} onChange={(e) => setForm((f) => ({ ...f, venue_name: e.target.value }))} placeholder="e.g. Wills Park, Seckinger High School" style={inputStyle} />
+                  <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
+                  <input value={form.venue_name} onChange={(e) => setForm((f) => ({ ...f, venue_name: e.target.value }))} placeholder="e.g. North Park or Wills Park" style={inputStyle} />
                 </div>
-                <AddressGeoField value={form.location_address} onChange={(v) => setForm((f) => ({ ...f, location_address: v }))} onGeocode={handleAddressGeocode} city={form.city} zip={form.zip_code} />
-                <div>
-                  <label style={labelStyle}>Field # <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional)</span></label>
-                  <input value={form.field_number} onChange={(e) => setForm((f) => ({ ...f, field_number: e.target.value }))} placeholder="e.g. Field 3, Diamond 2" style={inputStyle} />
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>Field</label>
+                  <input value={form.field_number} onChange={(e) => setForm((f) => ({ ...f, field_number: e.target.value }))} placeholder="e.g. Field 1 or TBD" style={inputStyle} />
                 </div>
+
+                <AddressGeoField
+                  value={form.location_address}
+                  onChange={(v) => setForm((f) => ({ ...f, location_address: v }))}
+                  onGeocode={handleAddressGeocode}
+                  city={form.city}
+                  state={form.state}
+                  zip={form.zip_code}
+                  label="Address"
+                  placeholder="e.g. 13450 Cogburn Rd"
+                />
+
+                <div style={{ marginBottom: 12 }}>
+                  <ZipFieldInline
+                    value={form.zip_code}
+                    onChange={(v) => setForm((f) => ({ ...f, zip_code: v }))}
+                    onGeocode={handleZipGeocode}
+                    required
+                    helperText="ZIP auto-fills city and state and helps place the map pin."
+                  />
+                </div>
+
+                <CityStatePreview
+                  city={form.city}
+                  state={form.state}
+                  onCityChange={(v) => setForm((f) => ({ ...f, city: v }))}
+                  onStateChange={(v) => setForm((f) => ({ ...f, state: v }))}
+                />
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-                <div>
-                  <label style={labelStyle}>City</label>
-                  <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="e.g. Alpharetta" style={inputStyle} />
-                </div>
                 <div>
                   <label style={labelStyle}>Event Date <RequiredMark /></label>
                   <input type="date" value={form.event_date} onChange={(e) => setForm((f) => ({ ...f, event_date: e.target.value }))} style={inputStyle} />
                 </div>
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <ZipFieldInline value={form.zip_code} onChange={(v) => setForm((f) => ({ ...f, zip_code: v }))} onGeocode={handleZipGeocode} required />
-              </div>
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>Additional Notes</label>
-                <textarea value={form.additional_notes} onChange={(e) => setForm((f) => ({ ...f, additional_notes: e.target.value }))} rows={3} placeholder="Skill level expected, practice schedule..." style={{ ...inputStyle, resize: 'vertical' }} />
+                <div>
+                  <label style={labelStyle}>Additional Notes</label>
+                  <textarea value={form.additional_notes} onChange={(e) => setForm((f) => ({ ...f, additional_notes: e.target.value }))} rows={3} placeholder="Anything else families should know..." style={{ ...inputStyle, resize: 'vertical' }} />
+                </div>
               </div>
             </>
           )}
@@ -600,6 +797,7 @@ export default function PlayerBoard() {
                   </select>
                 </div>
               </div>
+
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Position(s) <RequiredMark /></label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -608,18 +806,25 @@ export default function PlayerBoard() {
                   ))}
                 </div>
               </div>
+
               <div style={{ marginBottom: 14 }}>
                 <ZipFieldInline value={form.zip_code} onChange={(v) => setForm((f) => ({ ...f, zip_code: v }))} onGeocode={handleZipGeocode} required />
               </div>
+
+              <CityStatePreview
+                city={form.city}
+                state={form.state}
+                onCityChange={(v) => setForm((f) => ({ ...f, city: v }))}
+                onStateChange={(v) => setForm((f) => ({ ...f, state: v }))}
+              />
+
               <DistanceSlider value={form.distance_travel} onChange={(v) => setForm((f) => ({ ...f, distance_travel: v }))} />
-              <div style={{ marginBottom: 14 }}>
-                <label style={labelStyle}>City <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 11, color: '#999' }}>(optional if zip provided)</span></label>
-                <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="e.g. Alpharetta" style={inputStyle} />
-              </div>
+
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Description</label>
                 <textarea value={form.player_description} onChange={(e) => setForm((f) => ({ ...f, player_description: e.target.value }))} rows={3} placeholder="Skill level, what you're looking for in a team..." style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
+
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Additional Notes</label>
                 <textarea value={form.additional_notes} onChange={(e) => setForm((f) => ({ ...f, additional_notes: e.target.value }))} rows={2} placeholder="Any other details..." style={{ ...inputStyle, resize: 'vertical' }} />
@@ -643,10 +848,13 @@ export default function PlayerBoard() {
       )}
 
       <div style={{ padding: isMobile ? '16px 12px' : '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, maxWidth: 1200, margin: '0 auto' }}>
-        {filtered.map((post) => {
+        {loading ? (
+          <div style={{ padding: '24px', color: 'var(--gray)' }}>Loading…</div>
+        ) : filtered.map((post) => {
           const isPlayer = post.post_type === 'player_available'
           const postPositions = isPlayer ? (Array.isArray(post.player_position) ? post.player_position : []) : (Array.isArray(post.position_needed) ? post.position_needed : [])
           const isOwner = user && post.user_id && post.user_id === user.id
+          const parsedLocation = parseLocationName(post.location_name)
           return (
             <div key={post.id} style={{ background: 'white', borderRadius: 12, border: isOwner ? '2px solid var(--gold)' : '2px solid ' + (isPlayer ? '#DBEAFE' : '#FEF3C7'), padding: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative' }}>
               {isOwner && <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--gold)', color: 'var(--navy)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: '0 0 6px 6px', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}>YOUR POST</div>}
@@ -656,7 +864,7 @@ export default function PlayerBoard() {
               </div>
               {isPlayer ? (
                 <div>
-                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{post.player_age ? 'Age ' + post.player_age : post.age_group || 'Player'} — {post.city}</div>
+                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{post.player_age ? 'Age ' + post.player_age : post.age_group || 'Player'} — {[post.city, post.state].filter(Boolean).join(', ') || post.city}</div>
                   {post.player_description && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.player_description}</div>}
                   {post.additional_notes && (
                     <div style={{ marginTop: 4 }}>
@@ -671,8 +879,10 @@ export default function PlayerBoard() {
               ) : (
                 <div>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{(post.team_name || 'Team') + (post.age_group ? ' · ' + post.age_group : '')}</div>
-                  {post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.location_name}</div>}
-                  {post.city && !post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.city}</div>}
+                  {parsedLocation.venue_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {parsedLocation.venue_name}</div>}
+                  {parsedLocation.field_number && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>🏟️ {parsedLocation.field_number}</div>}
+                  {parsedLocation.location_address && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📬 {parsedLocation.location_address}</div>}
+                  {post.city && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>🗺️ {[post.city, post.state, post.zip_code].filter(Boolean).join(', ')}</div>}
                   {post.event_date && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📅 {formatDate(post.event_date)}</div>}
                   {post.additional_notes && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.additional_notes}</div>}
                 </div>
@@ -698,7 +908,7 @@ export default function PlayerBoard() {
         })}
       </div>
 
-      {filtered.length === 0 && !showForm && (
+      {filtered.length === 0 && !showForm && !loading && (
         <div className="empty-state">
           <h3>No listings yet</h3>
           <p>Be the first to post — teams looking for players, or players looking for teams.</p>
