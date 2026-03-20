@@ -1,75 +1,142 @@
-export default function DuplicateWarning({ matches, onDismiss, onCancel }) {
+export default function DuplicateWarning({
+  matches = [],
+  loading = false,
+  mode = 'facility',
+  selectedId = null,
+  onUseExisting,
+  onCreateNewAnyway,
+  onDismiss,
+}) {
+  if (loading) {
+    return (
+      <div style={{
+        background: '#F8FAFC',
+        border: '1px solid #CBD5E1',
+        borderRadius: 12,
+        padding: '14px 16px',
+        marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>
+          Checking for existing {mode === 'facility' ? 'facilities' : 'matches'}…
+        </div>
+      </div>
+    )
+  }
+
   if (!matches || matches.length === 0) return null
 
   return (
     <div style={{
-      background: '#FEF3C7',
-      border: '2px solid #F0A500',
-      borderRadius: 10,
+      background: '#FFF7ED',
+      border: '1.5px solid #FDBA74',
+      borderRadius: 12,
       padding: '16px',
       marginBottom: 16,
     }}>
       <div style={{
         fontFamily: 'var(--font-head)',
-        fontSize: 16, fontWeight: 700,
-        color: '#92400E',
-        marginBottom: 8,
+        fontSize: 16,
+        fontWeight: 800,
+        color: '#9A3412',
+        marginBottom: 6,
       }}>
-        ⚠️ Possible Duplicate Detected
+        Possible existing facility found
       </div>
 
-      <div style={{ fontSize: 13, color: '#92400E', marginBottom: 12 }}>
-        We found {matches.length === 1 ? 'an existing entry' : 'existing entries'} that look similar to what you're adding:
+      <div style={{ fontSize: 13, color: '#9A3412', marginBottom: 14, lineHeight: 1.45 }}>
+        Review the closest match below. You can reuse the existing facility or continue and create a new one anyway.
       </div>
 
-      {matches.map(match => (
-        <div key={match.id} style={{
-          background: 'white',
-          borderRadius: 8,
-          padding: '10px 14px',
-          marginBottom: 8,
-          border: '1px solid #FDE68A',
-        }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>{match.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>
-            {[match.city, match.county ? match.county + ' Co.' : null, match.sport].filter(Boolean).join(' · ')}
-          </div>
-          <div style={{ fontSize: 11, color: '#D97706', marginTop: 4 }}>
-            {Math.round(match.score * 100)}% match
-          </div>
-        </div>
-      ))}
+      <div style={{ display: 'grid', gap: 10, marginBottom: 14 }}>
+        {matches.map((match) => {
+          const selected = selectedId === match.id
+          return (
+            <div
+              key={match.id}
+              style={{
+                background: '#fff',
+                border: selected ? '2px solid var(--navy)' : '1px solid #FED7AA',
+                borderRadius: 10,
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--navy)' }}>
+                    {match.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#475569', marginTop: 3 }}>
+                    {[match.address, match.city, match.state, match.zip_code].filter(Boolean).join(', ')}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#C2410C', marginTop: 5 }}>
+                    {match.matchType === 'strong' ? 'Strong match' : 'Possible match'}
+                    {match.reasons?.length ? ` · ${match.reasons.join(' · ')}` : ''}
+                  </div>
+                </div>
 
-      <div style={{ fontSize: 13, color: '#92400E', marginBottom: 12 }}>
-        Is this the same person or team you're trying to add?
+                <button
+                  type="button"
+                  onClick={() => onUseExisting?.(match)}
+                  style={{
+                    padding: '8px 12px',
+                    background: 'var(--navy)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontFamily: 'var(--font-head)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {selected ? 'Using Existing' : 'Use Existing Facility'}
+                </button>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button
-          onClick={onCancel}
+          type="button"
+          onClick={() => onCreateNewAnyway?.()}
           style={{
-            flex: 1, padding: '9px',
-            background: '#D42B2B', color: 'white',
-            border: 'none', borderRadius: 8,
-            fontFamily: 'var(--font-head)', fontWeight: 700,
-            fontSize: 13, textTransform: 'uppercase',
-            letterSpacing: '0.04em', cursor: 'pointer',
+            padding: '10px 14px',
+            background: '#D42B2B',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontFamily: 'var(--font-head)',
+            fontWeight: 700,
+            fontSize: 12,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
           }}
         >
-          Yes — Don't Add Duplicate
+          Create New Anyway
         </button>
+
         <button
-          onClick={onDismiss}
+          type="button"
+          onClick={() => onDismiss?.()}
           style={{
-            flex: 1, padding: '9px',
-            background: 'var(--navy)', color: 'white',
-            border: 'none', borderRadius: 8,
-            fontFamily: 'var(--font-head)', fontWeight: 700,
-            fontSize: 13, textTransform: 'uppercase',
-            letterSpacing: '0.04em', cursor: 'pointer',
+            padding: '10px 14px',
+            background: '#fff',
+            color: '#9A3412',
+            border: '1px solid #FDBA74',
+            borderRadius: 8,
+            fontFamily: 'var(--font-head)',
+            fontWeight: 700,
+            fontSize: 12,
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
           }}
         >
-          No — It's Different, Continue
+          Clear Suggestion
         </button>
       </div>
     </div>
