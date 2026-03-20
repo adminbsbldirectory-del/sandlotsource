@@ -352,7 +352,7 @@ function CoachForm({ isMobile }) {
     sport: 'baseball',
     specialty: [],
     city: '',
-    state: 'GA',
+    state: '',
     zip_code: '',
     lat: null,
     lng: null,
