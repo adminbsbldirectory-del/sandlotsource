@@ -24,7 +24,7 @@ const makeIcon = (color) =>
 
 const PIN_COLORS = {
   player_needed: '#ea580c',
-  pickup: '#0891b2',
+  player_available: '#0891b2',
 }
 
 function getPinColor(post) {
@@ -46,42 +46,42 @@ function AdBox() {
   return (
     <div
       style={{
-        background: 'var(--white)',
-        border: '1px solid rgba(15,23,42,0.06)',
+        background: '#F5EBDD',
         borderRadius: 14,
-        padding: '18px 16px',
-        minHeight: 148,
+        padding: '22px 16px',
+        minHeight: 150,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         textAlign: 'center',
+        border: '1px solid rgba(15,23,42,0.05)',
       }}
     >
       <div
         style={{
           fontFamily: 'var(--font-head)',
           fontWeight: 800,
-          fontSize: 18,
+          fontSize: 22,
           color: 'var(--navy)',
           marginBottom: 10,
-          letterSpacing: '0.04em',
+          lineHeight: 1.05,
         }}
       >
-        ADVERTISE HERE
+        ADVERTISE
+        <br />
+        HERE
       </div>
 
       <div
         style={{
           color: 'var(--gray)',
           fontSize: 13,
-          lineHeight: 1.55,
+          lineHeight: 1.45,
           marginBottom: 12,
         }}
       >
-        Reach baseball & softball
-        <br />
-        families
+        Reach baseball & softball families
       </div>
 
       <a
@@ -374,7 +374,7 @@ function MapViewport({ posts, showFullUS }) {
     const pts = posts.filter((p) => p.lat != null && p.lng != null)
 
     if (showFullUS || pts.length === 0) {
-  map.setView([39.5, -98.35], 4)
+  map.setView([38.5, -96.5], 5)
   return
 }
 
@@ -1169,24 +1169,27 @@ export default function PlayerBoard() {
   }}
 >
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '300px minmax(0, 1fr)',
-            gap: isMobile ? 0 : 18,
-            alignItems: 'start',
-            width: '100%',
-          }}
-        >
+  style={{
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : '300px minmax(0, 1fr)',
+    gap: isMobile ? 0 : 18,
+    alignItems: 'start',
+    width: '100%',
+    maxWidth: 'none',
+  }}
+>
           <aside
-            style={{
-              position: isMobile ? 'static' : 'sticky',
-              top: isMobile ? 'auto' : 76,
-              alignSelf: 'start',
-              background: 'var(--white)',
-              borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-              zIndex: 2,
-            }}
-          >
+  style={{
+    position: isMobile ? 'static' : 'sticky',
+    top: isMobile ? 'auto' : 76,
+    alignSelf: 'start',
+    background: 'var(--white)',
+    borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+    zIndex: 2,
+    marginLeft: 0,
+    justifySelf: 'stretch',
+  }}
+>
             <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
               <div
                 style={{
@@ -1414,7 +1417,7 @@ export default function PlayerBoard() {
 
             {!isMobile && (
               <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
-                <AdBox compact />
+                <AdBox />
               </div>
             )}
           </aside>
@@ -1443,15 +1446,18 @@ export default function PlayerBoard() {
                     <div style={{ background: 'var(--white)', width: '100%' }}>
                       <div
                         style={{
-                          height: isMobile ? 260 : 390,
+                          height: isMobile ? 260 : 430,
                           width: '100%',
                           overflow: 'hidden',
                           borderRadius: isMobile ? 0 : 14,
                           border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
                         }}
                       >
-                      <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
-  <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+<MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
+  <TileLayer
+    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  />
   <MapViewport posts={mappable} showFullUS={!stateFilter} />
   {mappable.map((p) => (
     <Marker key={p.id} position={[p.lat, p.lng]} icon={makeIcon(getPinColor(p))}>
@@ -1462,9 +1468,11 @@ export default function PlayerBoard() {
               ? `Age ${p.player_age || p.age_group || ''} — ${p.city || p.zip_code || 'Player'}`
               : `${p.team_name || 'Team'}${p.age_group ? ' · ' + p.age_group : ''}`}
           </strong>
+
           <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
             📍 {p.location_name || [p.city, stateFromPost(p, zipStateMap), p.zip_code].filter(Boolean).join(', ')}
           </div>
+
           {!!p.contact_info && (
             <div style={{ fontSize: 12, marginTop: 6 }}>
               <ContactDisplay contact_info={p.contact_info} />
@@ -1474,13 +1482,65 @@ export default function PlayerBoard() {
       </Popup>
     </Marker>
   ))}
-</MapContainer>  
+</MapContainer>
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '6px 10px', background: 'var(--white)', borderTop: '1px solid var(--lgray)', alignItems: 'center' }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: PIN_COLORS.needs_player, border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Needed</span></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: PIN_COLORS.pickup, border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Available</span></div>
-                        <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--gray)' }}>Browse pickup-needed and player-available posts.</div>
+<div
+  style={{
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 12,
+    padding: '6px 10px',
+    background: 'var(--white)',
+    borderTop: '1px solid var(--lgray)',
+    alignItems: 'center',
+  }}
+>
+  <span
+    style={{
+      fontSize: 10,
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: '0.07em',
+      color: 'var(--gray)',
+    }}
+  >
+    Map key
+  </span>
+
+  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+    <div
+      style={{
+        width: 12,
+        height: 12,
+        borderRadius: '50% 50% 50% 0',
+        transform: 'rotate(-45deg)',
+        background: '#ea580c',
+        border: '2px solid rgba(255,255,255,0.85)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+      }}
+    />
+    <span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Needed</span>
+  </div>
+
+  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+    <div
+      style={{
+        width: 12,
+        height: 12,
+        borderRadius: '50% 50% 50% 0',
+        transform: 'rotate(-45deg)',
+        background: '#0891b2',
+        border: '2px solid rgba(255,255,255,0.85)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+      }}
+    />
+    <span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Available</span>
+  </div>
+
+  <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--gray)' }}>
+  Browse player-needed and player-available posts.
+</div>
+</div>
                       </div>
                     </div>
                   )}
