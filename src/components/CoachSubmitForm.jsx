@@ -683,8 +683,6 @@ function CoachForm({ isMobile }) {
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
     if (!form.sport) return 'Sport is required.'
-    if (!form.city.trim()) return 'City is required.'
-    if (!form.state) return 'State is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.facility_name.trim()) return 'Facility name is required.'
     if (!form.contact_role.trim()) return 'Your role is required.'
@@ -845,18 +843,18 @@ function CoachForm({ isMobile }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
+          <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Enter zip first to auto-fill city and state" />
           <div>
-            <label style={labelStyle}>City <RequiredMark /></label>
-            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+            <label style={labelStyle}>City</label>
+            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>State <RequiredMark /></label>
+            <label style={labelStyle}>State</label>
             <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
               <option value="">Select</option>
               {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="For map pin placement" />
         </div>
       </div>
 
@@ -1121,20 +1119,15 @@ function TeamForm({ isMobile }) {
     if (!form.name.trim()) return 'Team name is required.'
     if (!form.sport) return 'Sport is required.'
     if (!form.age_group) return 'Age group is required.'
-    if (!form.city.trim()) return 'City is required.'
-    if (!form.state) return 'State is required.'
-    if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
+    if (!form.address.trim()) return 'Practice street address is required.'
+    if (!form.zip_code || form.zip_code.length !== 5) return 'Practice zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) {
       return 'At least one of contact email or phone is required.'
     }
 
-    if (form.facility_name.trim()) {
-      if (!form.facility_city.trim()) return 'Facility city is required when a facility name is entered.'
-      if (!form.facility_state) return 'Facility state is required when a facility name is entered.'
-      if (!form.facility_zip_code || form.facility_zip_code.length !== 5) {
-        return 'Facility zip code is required when a facility name is entered.'
-      }
+    if (form.facility_name.trim() && (!form.facility_zip_code || form.facility_zip_code.length !== 5)) {
+      return 'Primary facility zip code is required when a facility name is entered.'
     }
 
     return ''
@@ -1315,26 +1308,24 @@ function TeamForm({ isMobile }) {
   Use this section for the team-specific field or practice location families should expect most often. This location drives the team map pin.
 </div>
 
-<div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-  <div>
-    <label style={labelStyle}>Practice City <RequiredMark /></label>
-    <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
-  </div>
-  <div>
-    <label style={labelStyle}>Practice Street Address</label>
-    <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Optional field or park address" style={inputStyle} />
-  </div>
+<div style={{ marginBottom: 14 }}>
+  <label style={labelStyle}>Practice Street Address <RequiredMark /></label>
+  <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Required field or park address" style={inputStyle} />
 </div>
 
-<div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+<div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
+  <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Enter zip first to auto-fill city and state" />
   <div>
-    <label style={labelStyle}>Practice State <RequiredMark /></label>
+    <label style={labelStyle}>Practice City</label>
+    <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
+  </div>
+  <div>
+    <label style={labelStyle}>Practice State</label>
     <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
       <option value="">Select</option>
       {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
     </select>
   </div>
-  <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Used for the team map pin and radius search" />
 </div>
       </div>
 
@@ -1371,12 +1362,18 @@ function TeamForm({ isMobile }) {
   </div>
 
   <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
+    <ZipField
+      value={form.facility_zip_code}
+      onChange={(v) => set('facility_zip_code', v)}
+      onGeocode={handleFacilityZipGeocode}
+      hint="Enter zip first to auto-fill the primary facility city and state"
+    />
     <div>
       <label style={labelStyle}>Primary Facility City</label>
       <input
         value={form.facility_city}
         onChange={(e) => set('facility_city', e.target.value)}
-        placeholder="e.g. Alpharetta"
+        placeholder="Auto-filled from zip"
         style={inputStyle}
       />
     </div>
@@ -1387,12 +1384,6 @@ function TeamForm({ isMobile }) {
         {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
     </div>
-    <ZipField
-      value={form.facility_zip_code}
-      onChange={(v) => set('facility_zip_code', v)}
-      onGeocode={handleFacilityZipGeocode}
-      hint="Used for primary facility matching"
-    />
   </div>
 </div>
 
@@ -1740,17 +1731,17 @@ function PlayerForm({ isMobile }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
             <div>
-              <label style={labelStyle}>City</label>
-              <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
-            </div>
-            <div>
               <label style={labelStyle}>Event Date <RequiredMark /></label>
               <input type="date" value={form.event_date} onChange={(e) => set('event_date', e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>City</label>
+              <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
             </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Area zip for search radius matching" />
+            <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Enter zip first to auto-fill city for area matching" />
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -1859,14 +1850,14 @@ function PlayerForm({ isMobile }) {
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required />
+            <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Enter zip first to auto-fill city" />
           </div>
 
           <DistanceSlider value={form.distance_travel} onChange={(v) => set('distance_travel', v)} />
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>City</label>
-            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
+            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -1929,7 +1920,7 @@ function FacilityForm({ isMobile }) {
     facility_type: '',
     sport: 'both',
     city: '',
-    state: '',
+    state: 'GA',
     zip_code: '',
     lat: null,
     lng: null,
@@ -2040,8 +2031,6 @@ function FacilityForm({ isMobile }) {
 
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
-    if (!form.city.trim()) return 'City is required.'
-    if (!form.state) return 'State is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
@@ -2205,18 +2194,18 @@ function FacilityForm({ isMobile }) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
+          <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Enter zip first to auto-fill city and state" />
           <div>
-            <label style={labelStyle}>City <RequiredMark /></label>
-            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Kennesaw" style={inputStyle} />
+            <label style={labelStyle}>City</label>
+            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>State <RequiredMark /></label>
+            <label style={labelStyle}>State</label>
             <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
               <option value="">Select</option>
               {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="For map pin placement" />
         </div>
       </div>
 
