@@ -20,6 +20,26 @@ async function geocodeZip(zip) {
   }
 }
 
+async function geocodeAddress(address, city, state, zip) {
+  const query = `${address}, ${city}, ${state} ${zip}`
+
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+    const data = await res.json()
+
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+      }
+    }
+  } catch (err) {
+    console.error('Geocode error', err)
+  }
+
+  return null
+}
+
 function normalizeFacilityName(value) {
   return String(value || '')
     .toLowerCase()
@@ -95,6 +115,76 @@ async function findOrCreateFacilityFromCoach(form) {
     contact_phone: form.phone.trim() || null,
     submission_notes: 'Auto-created from coach submission',
     source: 'coach_submission_auto_create',
+    approval_status: 'pending',
+    active: true,
+  }
+
+  const { data, error } = await supabase
+    .from('facilities')
+    .insert([facilityPayload])
+    .select('id')
+    .single()
+
+  if (error) throw error
+  return data?.id || null
+}
+
+async function findOrCreateFacilityFromTeam(form) {
+  const facilityName = String(form.facility_name || '').trim()
+  if (!facilityName) return null
+
+  const facilityCity = String(form.facility_city || form.city || '').trim()
+  const facilityState = String(form.facility_state || form.state || '').trim()
+  const facilityZip = String(form.facility_zip_code || form.zip_code || '').trim()
+
+  const existing = await findMatchingFacility({
+    facilityName,
+    city: facilityCity,
+    state: facilityState,
+    zipCode: facilityZip,
+  })
+
+  if (existing) return existing.id
+
+  let lat = form.facility_lat != null ? parseFloat(form.facility_lat) : null
+  let lng = form.facility_lng != null ? parseFloat(form.facility_lng) : null
+
+  if ((lat == null || lng == null) && form.facility_address?.trim()) {
+    const geo = await geocodeAddress(
+      form.facility_address.trim(),
+      facilityCity,
+      facilityState,
+      facilityZip
+    )
+
+    if (geo) {
+      lat = geo.lat
+      lng = geo.lng
+    }
+  }
+
+  if ((lat == null || lng == null) && form.lat != null && form.lng != null) {
+    lat = parseFloat(form.lat)
+    lng = parseFloat(form.lng)
+  }
+
+  const facilityPayload = {
+    name: facilityName,
+    sport: form.sport || null,
+    city: facilityCity || null,
+    state: facilityState || null,
+    zip_code: facilityZip || null,
+    lat,
+    lng,
+    address: String(form.facility_address || '').trim() || null,
+    website: form.website.trim() || null,
+    phone: form.contact_phone.trim() || null,
+    email: form.contact_email.trim() || null,
+    contact_name: form.contact_name.trim() || null,
+    contact_email: form.contact_email.trim() || null,
+    contact_phone: form.contact_phone.trim() || null,
+    submission_notes: 'Auto-created from travel team submission',
+    source: 'travel_team_submission_auto_create',
     approval_status: 'pending',
     active: true,
   }
