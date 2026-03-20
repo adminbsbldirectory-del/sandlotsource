@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase.js'
+import DuplicateWarning from './DuplicateWarning.jsx'
 
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
@@ -44,61 +45,256 @@ function normalizeFacilityName(value) {
   return String(value || '')
     .toLowerCase()
     .replace(/&/g, ' and ')
+    .replace(/\bhs\b/g, ' high school ')
+    .replace(/\bh\.?s\.?\b/g, ' high school ')
+    .replace(/\bms\b/g, ' middle school ')
+    .replace(/\brec\b/g, ' recreation ')
+    .replace(/\bctr\b/g, ' center ')
+    .replace(/\bath\b/g, ' athletics ')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
-function parseAgeGroupsInput(value) {
-  const raw = String(value || '').trim()
-  if (!raw) return null
-
-  return raw
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+function normalizeAddress(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\bst\b/g, ' street ')
+    .replace(/\brd\b/g, ' road ')
+    .replace(/\bave\b/g, ' avenue ')
+    .replace(/\bdr\b/g, ' drive ')
+    .replace(/\bln\b/g, ' lane ')
+    .replace(/\bblvd\b/g, ' boulevard ')
+    .replace(/\bct\b/g, ' court ')
+    .replace(/\bcir\b/g, ' circle ')
+    .replace(/\bpkwy\b/g, ' parkway ')
+    .replace(/\bhwy\b/g, ' highway ')
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
-async function findMatchingFacility({ facilityName, city, state, zipCode }) {
+function normalizedTokens(value) {
+  return Array.from(new Set(String(value || '').split(' ').filter(Boolean)))
+}
+
+function tokenSimilarity(a, b) {
+  const aTokens = normalizedTokens(a)
+  const bTokens = normalizedTokens(b)
+  if (!aTokens.length || !bTokens.length) return 0
+
+  const bSet = new Set(bTokens)
+  const overlap = aTokens.filter((token) => bSet.has(token)).length
+  return overlap / Math.max(aTokens.length, bTokens.length)
+}
+
+function scoreFacilityCandidate(input, row) {
+  const inputName = normalizeFacilityName(input.facilityName)
+  const rowName = normalizeFacilityName(row.name)
+  const inputAddress = normalizeAddress(input.address)
+  const rowAddress = normalizeAddress(row.address)
+  const inputCity = String(input.city || '').trim().toLowerCase()
+  const rowCity = String(row.city || '').trim().toLowerCase()
+  const inputState = String(input.state || '').trim().toLowerCase()
+  const rowState = String(row.state || '').trim().toLowerCase()
+  const inputZip = String(input.zipCode || '').trim()
+  const rowZip = String(row.zip_code || '').trim()
+
+  const exactAddress = !!inputAddress && !!rowAddress && inputAddress === rowAddress
+  const sameCity = !!inputCity && !!rowCity && inputCity === rowCity
+  const sameState = !!inputState && !!rowState && inputState === rowState
+  const sameCityState = sameCity && sameState
+  const sameZip = !!inputZip && !!rowZip && inputZip === rowZip
+  const exactName = !!inputName && !!rowName && inputName === rowName
+  const containsName =
+    !!inputName &&
+    !!rowName &&
+    (inputName.includes(rowName) || rowName.includes(inputName))
+  const nameSimilarity = inputName && rowName ? Math.max(tokenSimilarity(inputName, rowName), containsName ? 0.92 : 0) : 0
+
+  let score = nameSimilarity
+  if (exactAddress) score = Math.max(score, 0.99)
+  if (exactName && sameZip) score = Math.max(score, 0.96)
+  if (nameSimilarity >= 0.82 && sameZip) score = Math.max(score, 0.93)
+  if (nameSimilarity >= 0.72 && sameCityState) score = Math.max(score, 0.82)
+
+  let matchType = null
+  if (exactAddress || (exactName && sameZip) || (nameSimilarity >= 0.82 && sameZip)) {
+    matchType = 'strong'
+  } else if (nameSimilarity >= 0.72 && sameCityState) {
+    matchType = 'soft'
+  }
+
+  if (!matchType) return null
+
+  const reasons = []
+  if (exactAddress) reasons.push('same address')
+  if (sameZip) reasons.push('same zip')
+  if (sameCityState) reasons.push('same city/state')
+  if (exactName) reasons.push('same normalized name')
+  else if (nameSimilarity >= 0.72) reasons.push('similar name')
+
+  return {
+    ...row,
+    score,
+    matchType,
+    reasons,
+    address: row.address || null,
+  }
+}
+
+async function searchFacilityCandidates({ facilityName, address, city, state, zipCode }) {
   const trimmedName = String(facilityName || '').trim()
-  const normalized = normalizeFacilityName(trimmedName)
-  if (!normalized) return null
+  const trimmedAddress = String(address || '').trim()
+  const trimmedCity = String(city || '').trim()
+  const trimmedState = String(state || '').trim()
+  const trimmedZip = String(zipCode || '').trim()
 
-  const { data, error } = await supabase
-    .from('facilities')
-    .select('id, name, city, state, zip_code')
-    .ilike('name', `%${trimmedName}%`)
+  if (!trimmedName && !trimmedAddress) return []
 
-  if (error) throw error
-  if (!data || data.length === 0) return null
+  const map = new Map()
+  const addRows = (rows) => {
+    for (const row of rows || []) {
+      if (row?.id && !map.has(row.id)) map.set(row.id, row)
+    }
+  }
 
-  const cityNorm = String(city || '').trim().toLowerCase()
-  const stateNorm = String(state || '').trim().toLowerCase()
-  const zipNorm = String(zipCode || '').trim()
+  if (trimmedZip) {
+    const { data, error } = await supabase
+      .from('facilities')
+      .select('id, name, address, city, state, zip_code, lat, lng')
+      .eq('zip_code', trimmedZip)
+      .limit(25)
 
-  const match = data.find((row) => {
-    const rowNameNorm = normalizeFacilityName(row.name)
-    const sameName =
-      rowNameNorm === normalized ||
-      rowNameNorm.includes(normalized) ||
-      normalized.includes(rowNameNorm)
+    if (error) throw error
+    addRows(data)
+  }
 
-    const sameCity = !cityNorm || String(row.city || '').trim().toLowerCase() === cityNorm
-    const sameState = !stateNorm || String(row.state || '').trim().toLowerCase() === stateNorm
-    const sameZip = !zipNorm || String(row.zip_code || '').trim() === zipNorm
+  if (trimmedCity && trimmedState) {
+    const { data, error } = await supabase
+      .from('facilities')
+      .select('id, name, address, city, state, zip_code, lat, lng')
+      .ilike('city', trimmedCity)
+      .eq('state', trimmedState)
+      .limit(40)
 
-    return sameName && sameState && (sameZip || sameCity)
-  })
+    if (error) throw error
+    addRows(data)
+  }
 
-  return match || null
+  if (trimmedName) {
+    const firstToken = normalizeFacilityName(trimmedName).split(' ')[0]
+    if (firstToken) {
+      const { data, error } = await supabase
+        .from('facilities')
+        .select('id, name, address, city, state, zip_code, lat, lng')
+        .ilike('name', `%${firstToken}%`)
+        .limit(40)
+
+      if (error) throw error
+      addRows(data)
+    }
+  }
+
+  const scored = Array.from(map.values())
+    .map((row) => scoreFacilityCandidate({
+      facilityName: trimmedName,
+      address: trimmedAddress,
+      city: trimmedCity,
+      state: trimmedState,
+      zipCode: trimmedZip,
+    }, row))
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+
+  return scored
 }
 
-async function findOrCreateFacilityFromCoach(form) {
+async function findMatchingFacility({ facilityName, address, city, state, zipCode }) {
+  const matches = await searchFacilityCandidates({ facilityName, address, city, state, zipCode })
+  return matches.find((match) => match.matchType === 'strong') || null
+}
+
+function useFacilityDuplicateCheck({ facilityName, address, city, state, zipCode, enabled = true }) {
+  const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      setMatches([])
+      setLoading(false)
+      return
+    }
+
+    const trimmedName = String(facilityName || '').trim()
+    const trimmedAddress = String(address || '').trim()
+
+    if (!trimmedName && !trimmedAddress) {
+      setMatches([])
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const nextMatches = await searchFacilityCandidates({ facilityName, address, city, state, zipCode })
+        if (!cancelled) setMatches(nextMatches)
+      } catch (err) {
+        console.error('Facility duplicate lookup error', err)
+        if (!cancelled) setMatches([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [facilityName, address, city, state, zipCode, enabled])
+
+  return { matches, loading }
+}
+
+function applyExistingFacilityToCoachForm(form, match) {
+  return {
+    ...form,
+    facility_name: match.name || form.facility_name,
+    address: match.address || form.address,
+    city: match.city || form.city,
+    state: match.state || form.state,
+    zip_code: match.zip_code || form.zip_code,
+    lat: match.lat != null ? match.lat : form.lat,
+    lng: match.lng != null ? match.lng : form.lng,
+  }
+}
+
+function applyExistingFacilityToTeamForm(form, match) {
+  return {
+    ...form,
+    facility_name: match.name || form.facility_name,
+    facility_address: match.address || form.facility_address,
+    facility_city: match.city || form.facility_city,
+    facility_state: match.state || form.facility_state,
+    facility_zip_code: match.zip_code || form.facility_zip_code,
+    facility_lat: match.lat != null ? match.lat : form.facility_lat,
+    facility_lng: match.lng != null ? match.lng : form.facility_lng,
+  }
+}
+
+async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = null) {
   const facilityName = form.facility_name.trim()
   if (!facilityName) return null
+  if (selectedExistingFacilityId) return selectedExistingFacilityId
 
   const existing = await findMatchingFacility({
     facilityName,
+    address: form.address,
     city: form.city,
     state: form.state,
     zipCode: form.zip_code,
@@ -139,9 +335,10 @@ async function findOrCreateFacilityFromCoach(form) {
   return data?.id || null
 }
 
-async function findOrCreateFacilityFromTeam(form) {
+async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = null) {
   const facilityName = String(form.facility_name || '').trim()
   if (!facilityName) return null
+  if (selectedExistingFacilityId) return selectedExistingFacilityId
 
   const facilityCity = String(form.facility_city || form.city || '').trim()
   const facilityState = String(form.facility_state || form.state || '').trim()
@@ -149,6 +346,7 @@ async function findOrCreateFacilityFromTeam(form) {
 
   const existing = await findMatchingFacility({
     facilityName,
+    address: form.facility_address,
     city: facilityCity,
     state: facilityState,
     zipCode: facilityZip,
@@ -207,6 +405,16 @@ async function findOrCreateFacilityFromTeam(form) {
 
   if (error) throw error
   return data?.id || null
+}
+
+function parseAgeGroupsInput(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
 }
 
 const labelStyle = {
@@ -387,8 +595,20 @@ function CoachForm({ isMobile }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
+  const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
+  const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
+
+  const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
+    facilityName: form.facility_name,
+    address: form.address,
+    city: form.city,
+    state: form.state,
+    zipCode: form.zip_code,
+  })
 
   function set(field, value) {
+    setAllowCreateNewFacility(false)
+    setSelectedFacilityMatch(null)
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -485,7 +705,14 @@ function CoachForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      const facilityId = await findOrCreateFacilityFromCoach(form)
+      const blockingMatches = facilityMatches.filter((match) => match.id !== selectedFacilityMatch?.id)
+      if (!allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
+        setError('Possible existing facility found. Please review the suggestion below before submitting.')
+        setSubmitting(false)
+        return
+      }
+
+      const facilityId = await findOrCreateFacilityFromCoach(form, selectedFacilityMatch?.id || null)
 
       const payload = {
         name: form.name.trim(),
@@ -535,6 +762,28 @@ function CoachForm({ isMobile }) {
 
   return (
     <div>
+      <DuplicateWarning
+        matches={facilityMatches}
+        loading={facilityMatchLoading}
+        mode="facility"
+        selectedId={selectedFacilityMatch?.id || null}
+        onUseExisting={(match) => {
+          setSelectedFacilityMatch(match)
+          setAllowCreateNewFacility(false)
+          setForm((f) => applyExistingFacilityToCoachForm(f, match))
+          setError('')
+        }}
+        onCreateNewAnyway={() => {
+          setSelectedFacilityMatch(null)
+          setAllowCreateNewFacility(true)
+          setError('')
+        }}
+        onDismiss={() => {
+          setSelectedFacilityMatch(null)
+          setAllowCreateNewFacility(false)
+        }}
+      />
+
       <div className="form-section">
         <div className="form-section-title">1. The Basics</div>
         <div style={{ marginBottom: 16 }}>
@@ -573,6 +822,9 @@ function CoachForm({ isMobile }) {
           <div>
             <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
             <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+              We will suggest an existing facility if one already looks like a match.
+            </div>
           </div>
         </div>
 
@@ -789,8 +1041,21 @@ function TeamForm({ isMobile }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [facilityAddrStatus, setFacilityAddrStatus] = useState('')
+  const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
+  const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
+
+  const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
+    facilityName: form.facility_name,
+    address: form.facility_address,
+    city: form.facility_city || form.city,
+    state: form.facility_state || form.state,
+    zipCode: form.facility_zip_code || form.zip_code,
+    enabled: !!String(form.facility_name || '').trim(),
+  })
 
   function set(field, value) {
+    setAllowCreateNewFacility(false)
+    setSelectedFacilityMatch(null)
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -886,8 +1151,15 @@ function TeamForm({ isMobile }) {
     setSubmitting(true)
 
     try {
+      const blockingMatches = facilityMatches.filter((match) => match.id !== selectedFacilityMatch?.id)
+      if (form.facility_name.trim() && !allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
+        setError('Possible existing facility found. Please review the suggestion below before submitting.')
+        setSubmitting(false)
+        return
+      }
+
       const facilityId = form.facility_name.trim()
-        ? await findOrCreateFacilityFromTeam(form)
+        ? await findOrCreateFacilityFromTeam(form, selectedFacilityMatch?.id || null)
         : null
 
       const finalLat =
@@ -947,6 +1219,28 @@ function TeamForm({ isMobile }) {
 
   return (
     <div>
+      <DuplicateWarning
+        matches={facilityMatches}
+        loading={facilityMatchLoading}
+        mode="facility"
+        selectedId={selectedFacilityMatch?.id || null}
+        onUseExisting={(match) => {
+          setSelectedFacilityMatch(match)
+          setAllowCreateNewFacility(false)
+          setForm((f) => applyExistingFacilityToTeamForm(f, match))
+          setError('')
+        }}
+        onCreateNewAnyway={() => {
+          setSelectedFacilityMatch(null)
+          setAllowCreateNewFacility(true)
+          setError('')
+        }}
+        onDismiss={() => {
+          setSelectedFacilityMatch(null)
+          setAllowCreateNewFacility(false)
+        }}
+      />
+
       <div className="form-section">
         <div className="form-section-title">1. The Basics</div>
         <div style={{ marginBottom: 16 }}>
@@ -1043,7 +1337,7 @@ function TeamForm({ isMobile }) {
       style={inputStyle}
     />
     <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-      If this matches an existing facility, the team will be linked automatically.
+      We will suggest an existing facility before you submit so you can reuse it if it already exists.
     </div>
   </div>
 
@@ -1645,8 +1939,21 @@ function FacilityForm({ isMobile }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
+  const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
+  const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
+    facilityName: form.name,
+    address: form.address,
+    city: form.city,
+    state: form.state,
+    zipCode: form.zip_code,
+  })
 
   function set(field, value) {
+    setAllowCreateNewFacility(false)
+    setSelectedFacilityMatch(null)
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -1735,6 +2042,18 @@ function FacilityForm({ isMobile }) {
       return
     }
 
+    const blockingMatches = facilityMatches.filter((match) => match.id !== selectedFacilityMatch?.id)
+    if (!allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
+      setError('Possible existing facility found. Please review the suggestion below before submitting.')
+      return
+    }
+
+    if (selectedFacilityMatch) {
+      setSubmitted(true)
+      setSuccessMessage('We found an existing facility and reused it. No duplicate facility was created.')
+      return
+    }
+
     setError('')
     setSubmitting(true)
 
@@ -1778,11 +2097,42 @@ function FacilityForm({ isMobile }) {
   }
 
   if (submitted) {
-    return <SuccessBanner message="Your facility has been submitted for review. We'll have it live within a few days." />
+    return <SuccessBanner message={successMessage || "Your facility has been submitted for review. We'll have it live within a few days."} />
   }
 
   return (
     <div>
+      <DuplicateWarning
+        matches={facilityMatches}
+        loading={facilityMatchLoading}
+        mode="facility"
+        selectedId={selectedFacilityMatch?.id || null}
+        onUseExisting={(match) => {
+          setSelectedFacilityMatch(match)
+          setAllowCreateNewFacility(false)
+          setForm((f) => ({
+            ...f,
+            name: match.name || f.name,
+            address: match.address || f.address,
+            city: match.city || f.city,
+            state: match.state || f.state,
+            zip_code: match.zip_code || f.zip_code,
+            lat: match.lat != null ? match.lat : f.lat,
+            lng: match.lng != null ? match.lng : f.lng,
+          }))
+          setError('')
+        }}
+        onCreateNewAnyway={() => {
+          setSelectedFacilityMatch(null)
+          setAllowCreateNewFacility(true)
+          setError('')
+        }}
+        onDismiss={() => {
+          setSelectedFacilityMatch(null)
+          setAllowCreateNewFacility(false)
+        }}
+      />
+
       <div className="form-section">
         <div className="form-section-title">1. The Basics</div>
         <div style={{ marginBottom: 16 }}>
@@ -1817,6 +2167,9 @@ function FacilityForm({ isMobile }) {
           <div>
             <label style={labelStyle}>Facility Name <RequiredMark /></label>
             <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Grit Academy Athletics" style={inputStyle} />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+              We will suggest an existing facility when the name or address looks close to one already on the site.
+            </div>
           </div>
           <div>
             <label style={labelStyle}>Facility Type</label>
