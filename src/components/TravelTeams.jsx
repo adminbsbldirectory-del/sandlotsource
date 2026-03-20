@@ -31,8 +31,7 @@ const US_STATES = [
   { abbr: 'AZ', name: 'Arizona' }, { abbr: 'AR', name: 'Arkansas' },
   { abbr: 'CA', name: 'California' }, { abbr: 'CO', name: 'Colorado' },
   { abbr: 'CT', name: 'Connecticut' }, { abbr: 'DE', name: 'Delaware' },
-  { abbr: 'FL', name: 'Florida' }, { abbr: 'Georgia' , name: 'Georgia' }, // corrected below
-  { abbr: 'GA', name: 'Georgia' },
+  { abbr: 'FL', name: 'Florida' }, { abbr: 'GA', name: 'Georgia' },
   { abbr: 'HI', name: 'Hawaii' }, { abbr: 'ID', name: 'Idaho' },
   { abbr: 'IL', name: 'Illinois' }, { abbr: 'IN', name: 'Indiana' },
   { abbr: 'IA', name: 'Iowa' }, { abbr: 'KS', name: 'Kansas' },
@@ -53,7 +52,7 @@ const US_STATES = [
   { abbr: 'VT', name: 'Vermont' }, { abbr: 'VA', name: 'Virginia' },
   { abbr: 'WA', name: 'Washington' }, { abbr: 'WV', name: 'West Virginia' },
   { abbr: 'WI', name: 'Wisconsin' }, { abbr: 'WY', name: 'Wyoming' },
-].filter((s, i, arr) => arr.findIndex((x) => x.abbr === s.abbr) === i)
+]
 
 const STATE_CENTERS = {
   AL: [32.8, -86.8], AK: [64.2, -153.0], AZ: [34.3, -111.1], AR: [34.8, -92.2],
@@ -118,8 +117,8 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-function normalizeTeamRecord(team) {
-  const facility = team.facilities || null
+function normalizeTeamRecord(team, facilityMap = {}) {
+  const facility = team.facility_id ? facilityMap[team.facility_id] || null : null
   const facilityLat = facility?.lat != null ? Number(facility.lat) : null
   const facilityLng = facility?.lng != null ? Number(facility.lng) : null
   const teamLat = team.lat != null ? Number(team.lat) : null
@@ -127,7 +126,7 @@ function normalizeTeamRecord(team) {
 
   return {
     ...team,
-    facility: facility,
+    facility,
     facility_name: facility?.name || team.facility_name || '',
     facility_city: facility?.city || '',
     facility_state: facility?.state || '',
@@ -453,6 +452,7 @@ function EmptyState({ hasFilters, stateName, zipActive, radius }) {
 export default function TravelTeams() {
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [profileTeam, setProfileTeam] = useState(null)
   const [selectedTeam, setSelectedTeam] = useState(null)
 
@@ -509,28 +509,44 @@ export default function TravelTeams() {
 
   useEffect(() => {
     async function load() {
-      const { data, error } = await supabase
+      setLoading(true)
+      setLoadError('')
+
+      const { data: teamRows, error: teamError } = await supabase
         .from('travel_teams')
-        .select(`
-          *,
-          facilities:facility_id (
-            id,
-            name,
-            lat,
-            lng,
-            city,
-            state
-          )
-        `)
+        .select('*')
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
-      if (!error && data) {
-        const normalized = data.map(normalizeTeamRecord)
-        setTeams(normalized)
+      if (teamError) {
+        console.error('TravelTeams load error:', teamError)
+        setLoadError('Could not load teams.')
+        setTeams([])
+        setLoading(false)
+        return
       }
+
+      const facilityIds = [...new Set((teamRows || []).map((t) => t.facility_id).filter(Boolean))]
+      let facilityMap = {}
+
+      if (facilityIds.length > 0) {
+        const { data: facilityRows, error: facilityError } = await supabase
+          .from('facilities')
+          .select('id, name, lat, lng, city, state')
+          .in('id', facilityIds)
+
+        if (facilityError) {
+          console.error('TravelTeams facility lookup error:', facilityError)
+        } else {
+          facilityMap = Object.fromEntries((facilityRows || []).map((f) => [f.id, f]))
+        }
+      }
+
+      const normalized = (teamRows || []).map((team) => normalizeTeamRecord(team, facilityMap))
+      setTeams(normalized)
       setLoading(false)
     }
+
     load()
   }, [])
 
@@ -934,6 +950,23 @@ export default function TravelTeams() {
                   paddingBottom: 10,
                 }}
               >
+                {loadError && (
+                  <div
+                    style={{
+                      background: '#FEE2E2',
+                      border: '1px solid #FCA5A5',
+                      borderRadius: 12,
+                      marginBottom: 10,
+                      padding: '10px 14px',
+                      fontSize: 13,
+                      color: '#991B1B',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {loadError}
+                  </div>
+                )}
+
                 {showMap && (
                   <div
                     style={{
