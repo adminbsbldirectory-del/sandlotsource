@@ -1916,7 +1916,7 @@ function FacilityForm({ isMobile }) {
     facility_type: '',
     sport: 'both',
     city: '',
-    state: 'GA',
+    state: '',
     zip_code: '',
     lat: null,
     lng: null,
