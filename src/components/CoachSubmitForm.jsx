@@ -1163,13 +1163,13 @@ function TeamForm({ isMobile }) {
         : null
 
       const finalLat =
-        form.facility_lat != null ? parseFloat(form.facility_lat)
-        : form.lat != null ? parseFloat(form.lat)
+        form.lat != null ? parseFloat(form.lat)
+        : form.facility_lat != null ? parseFloat(form.facility_lat)
         : null
 
       const finalLng =
-        form.facility_lng != null ? parseFloat(form.facility_lng)
-        : form.lng != null ? parseFloat(form.lng)
+        form.lng != null ? parseFloat(form.lng)
+        : form.facility_lng != null ? parseFloat(form.facility_lng)
         : null
 
       const payload = {
@@ -1302,48 +1302,61 @@ function TeamForm({ isMobile }) {
   </div>
 </div>
 
+<div style={{
+  background: '#F8FAFC',
+  border: '1px solid #E2E8F0',
+  borderRadius: 10,
+  padding: '12px 14px',
+  marginBottom: 14,
+  fontSize: 12,
+  color: 'var(--gray)',
+  lineHeight: 1.5,
+}}>
+  Use this section for the team-specific field or practice location families should expect most often. This location drives the team map pin.
+</div>
+
 <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
   <div>
-    <label style={labelStyle}>Team City <RequiredMark /></label>
-    <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+    <label style={labelStyle}>Practice City <RequiredMark /></label>
+    <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Alpharetta" style={inputStyle} />
   </div>
   <div>
-    <label style={labelStyle}>Team Street Address</label>
-    <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Optional home/base address" style={inputStyle} />
+    <label style={labelStyle}>Practice Street Address</label>
+    <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Optional field or park address" style={inputStyle} />
   </div>
 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>State <RequiredMark /></label>
-            <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
-              <option value="">Select</option>
-              {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="For map pin placement" />
-        </div>
+<div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+  <div>
+    <label style={labelStyle}>Practice State <RequiredMark /></label>
+    <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
+      <option value="">Select</option>
+      {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
+    </select>
+  </div>
+  <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Used for the team map pin and radius search" />
+</div>
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">2. Primary Facility / Practice Location</div>
+        <div className="form-section-title">2. Primary / Home Facility</div>
 
   <div style={{ marginBottom: 14 }}>
-    <label style={labelStyle}>Facility Name</label>
+    <label style={labelStyle}>Primary Facility Name</label>
     <input
       value={form.facility_name}
       onChange={(e) => set('facility_name', e.target.value)}
-      placeholder="e.g. Grand Slam, Grit Academy Athletics"
+      placeholder="e.g. Grand Slam Johns Creek, Grit Academy Athletics"
       style={inputStyle}
     />
     <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-      We will suggest an existing facility before you submit so you can reuse it if it already exists.
+      Use this for the organization home base, indoor training site, or primary facility. We will suggest an existing facility before you submit so you can reuse it if it already exists.
     </div>
   </div>
 
   <div style={{ marginBottom: 14 }}>
     <label style={labelStyle}>
-      Facility Street Address
+      Primary Facility Street Address
       {facilityAddrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
       {facilityAddrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
       {facilityAddrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using facility zip pin</span>}
@@ -1352,14 +1365,14 @@ function TeamForm({ isMobile }) {
       value={form.facility_address}
       onChange={(e) => set('facility_address', e.target.value)}
       onBlur={handleFacilityAddressBlur}
-      placeholder="Optional but preferred for precise facility pin placement"
+      placeholder="Optional but preferred for precise home-facility pin placement"
       style={inputStyle}
     />
   </div>
 
   <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
     <div>
-      <label style={labelStyle}>Facility City</label>
+      <label style={labelStyle}>Primary Facility City</label>
       <input
         value={form.facility_city}
         onChange={(e) => set('facility_city', e.target.value)}
@@ -1368,7 +1381,7 @@ function TeamForm({ isMobile }) {
       />
     </div>
     <div>
-      <label style={labelStyle}>Facility State</label>
+      <label style={labelStyle}>Primary Facility State</label>
       <select value={form.facility_state} onChange={(e) => set('facility_state', e.target.value)} style={selectStyle}>
         <option value="">Select</option>
         {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -1378,7 +1391,7 @@ function TeamForm({ isMobile }) {
       value={form.facility_zip_code}
       onChange={(v) => set('facility_zip_code', v)}
       onGeocode={handleFacilityZipGeocode}
-      hint="Used for facility pin placement"
+      hint="Used for primary facility matching"
     />
   </div>
 </div>
