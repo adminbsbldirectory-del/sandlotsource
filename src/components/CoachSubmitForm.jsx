@@ -726,6 +726,7 @@ const [form, setForm] = useState({
       </button>
     </div>
   )
+}
 
 // ── TEAM FORM ─────────────────────────────────────────────
 function TeamForm({ isMobile }) {
