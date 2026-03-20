@@ -915,8 +915,7 @@ export default function PlayerBoard() {
                             {post.player_description && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.player_description}</div>}
                             {post.additional_notes && (
                               <div style={{ marginTop: 4 }}>
-                                {post.additional_notes.split('
-').map((line, i) => (
+                                {post.additional_notes.split('\n').map((line, i) => (
                                   <div key={i} style={{ fontSize: 13, lineHeight: 1.5, color: line.startsWith('Willing to travel') ? '#2563EB' : 'var(--gray)', fontWeight: line.startsWith('Willing to travel') ? 600 : 400 }}>
                                     {line.startsWith('Willing to travel') ? '🚗 ' : ''}{line}
                                   </div>
