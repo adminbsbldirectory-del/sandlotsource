@@ -93,6 +93,10 @@ const US_STATES = [
   '', 'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY', 'DC'
 ]
 
+function stateFromPost(post, zipStateMap) {
+  return String(post?.state || zipStateMap[String(post?.zip_code || '')] || '').toUpperCase()
+}
+
 function FitBounds({ posts }) {
   const map = useMap()
   useEffect(() => {
@@ -314,6 +318,8 @@ export default function PlayerBoard() {
   const [nearbyZip, setNearbyZip] = useState('')
   const [nearbyMiles, setNearbyMiles] = useState('25')
   const [searchGeo, setSearchGeo] = useState(null)
+  const [zipStateMap, setZipStateMap] = useState({})
+  const [hasSearched, setHasSearched] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : false)
   const [submitting, setSubmitting] = useState(false)
@@ -364,11 +370,32 @@ export default function PlayerBoard() {
     return () => { ignore = true }
   }, [nearbyZip])
 
+  useEffect(() => {
+    let ignore = false
+    async function hydrateZipStates() {
+      const zips = [...new Set(posts
+        .filter((p) => !p.state && String(p.zip_code || '').length === 5)
+        .map((p) => String(p.zip_code)))]
+      if (!zips.length) return
+      const next = {}
+      for (const zip of zips) {
+        try {
+          const geo = await geocodeZip(zip)
+          if (geo?.state) next[zip] = String(geo.state).toUpperCase()
+        } catch {}
+      }
+      if (!ignore && Object.keys(next).length) setZipStateMap((prev) => ({ ...prev, ...next }))
+    }
+    hydrateZipStates()
+    return () => { ignore = true }
+  }, [posts])
+
   const filtered = posts.filter((p) => {
-    if (!stateFilter) return false
+    if (!hasSearched || !stateFilter) return false
     if (filter !== 'all' && p.post_type !== filter) return false
     if (sportFilter !== 'Both' && p.sport !== sportFilter) return false
-    if (String(p.state || '').toUpperCase() !== stateFilter) return false
+    const derivedState = stateFromPost(p, zipStateMap)
+    if (derivedState !== stateFilter) return false
     if (searchGeo && p.lat != null && p.lng != null) {
       const distance = milesBetween(searchGeo.lat, searchGeo.lng, p.lat, p.lng)
       const cap = parseInt(nearbyMiles, 10) || 25
@@ -495,8 +522,8 @@ export default function PlayerBoard() {
         <div style={{ display: isMobile ? 'block' : 'grid', gridTemplateColumns: '290px minmax(0,1fr) 180px', gap: 18, alignItems: 'start' }}>
           <div style={{ padding: isMobile ? '0 12px' : 0 }}>
             <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: 14 }}>
-              <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>{filtered.length} {filtered.length === 1 ? 'post' : 'posts'}{stateFilter ? ' in ' + stateFilter : ''}</div>
-              <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>Pickup-needed and player-available posts, filtered by state first.</div>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>{hasSearched ? filtered.length : 0} {((hasSearched ? filtered.length : 0) === 1) ? 'post' : 'posts'}{stateFilter ? ' in ' + stateFilter : ''}</div>
+              <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{hasSearched ? 'Pickup-needed and player-available posts filtered by state first.' : 'Choose a state, then click Search to load posts.'}</div>
             </div>
 
             <div style={{ marginTop: 12, background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: 14 }}>
@@ -549,7 +576,8 @@ export default function PlayerBoard() {
                   </button>
                 )}
 
-                <button type="button" onClick={() => { setFilter('all'); setSportFilter('Both'); setStateFilter(''); setNearbyZip(''); setNearbyMiles('25') }} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--lgray)', background: 'white', color: 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Reset Filters</button>
+                <button type="button" onClick={() => setHasSearched(true)} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--navy)', background: 'var(--navy)', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Search</button>
+                <button type="button" onClick={() => { setFilter('all'); setSportFilter('Both'); setStateFilter(''); setNearbyZip(''); setNearbyMiles('25'); setSearchGeo(null); setHasSearched(false) }} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--lgray)', background: 'white', color: 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Reset Filters</button>
               </div>
             </div>
 
@@ -571,7 +599,7 @@ export default function PlayerBoard() {
                     <FitBounds posts={mappable} />
                     {mappable.map((post) => {
                       const color = post.post_type === 'player_available' ? PIN_COLORS.pickup : PIN_COLORS.needs_player
-                      const cityState = [post.city, post.state].filter(Boolean).join(', ')
+                      const cityState = [post.city, stateFromPost(post, zipStateMap)].filter(Boolean).join(', ')
                       return (
                         <Marker key={post.id} position={[post.lat, post.lng]} icon={makeIcon(color)}>
                           <Popup>
