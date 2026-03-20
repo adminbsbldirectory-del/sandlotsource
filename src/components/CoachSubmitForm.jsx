@@ -342,37 +342,36 @@ function SocialInput({ prefix, value, onChange, placeholder }) {
 }
 
 // ── COACH FORM ────────────────────────────────────────────
-const [form, setForm] = useState({
-  name: '',
-  sport: 'baseball',
-  org_affiliation: '',
-  classification: '',
-  age_group: '',
-  city: '',
-  state: 'GA',
-  zip_code: '',
-  lat: null,
-  lng: null,
-  address: '',
+// ── COACH FORM ────────────────────────────────────────────
+function CoachForm({ isMobile }) {
+  const g2 = isMobile ? '1fr' : '1fr 1fr'
+  const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
 
-  facility_name: '',
-  facility_address: '',
-  facility_city: '',
-  facility_state: 'GA',
-  facility_zip_code: '',
-  facility_lat: null,
-  facility_lng: null,
-
-  contact_name: '',
-  contact_email: '',
-  contact_phone: '',
-  website: '',
-  tryout_status: 'closed',
-  tryout_date: '',
-  tryout_notes: '',
-  description: '',
-  submission_notes: '',
-})
+  const [form, setForm] = useState({
+    name: '',
+    sport: 'baseball',
+    specialty: [],
+    city: '',
+    state: 'GA',
+    zip_code: '',
+    lat: null,
+    lng: null,
+    address: '',
+    facility_name: '',
+    phone: '',
+    email: '',
+    website: '',
+    instagram: '',
+    facebook: '',
+    credentials: '',
+    bio: '',
+    age_groups: '',
+    skill_level: '',
+    price_per_session: '',
+    price_notes: '',
+    contact_role: '',
+    submission_notes: '',
+  })
 
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -1100,7 +1099,7 @@ function TeamForm({ isMobile }) {
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">4. Contact</div>
+        <div className="form-section-title">3. Contact</div>
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Contact Name <RequiredMark /></label>
@@ -1863,7 +1862,7 @@ function FacilityForm({ isMobile }) {
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">4. Contact</div>
+        <div className="form-section-title">3. Contact</div>
         <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Facility Phone</label>
