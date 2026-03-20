@@ -51,12 +51,11 @@ export default function TeamProfile({ team, onClose, onClaim }) {
       ? team.county + ' Co.'
       : null
 
-  const primaryMapQuery = encodeURIComponent(
+  const practiceLocationLine = [displayCity, displayState].filter(Boolean).join(', ')
+  const practiceMapQuery = encodeURIComponent(
     [
-      facilityName || '',
       team.address || '',
-      displayCity || '',
-      displayState || '',
+      practiceLocationLine || '',
       zip || '',
     ]
       .filter(Boolean)
@@ -64,6 +63,15 @@ export default function TeamProfile({ team, onClose, onClaim }) {
   )
 
   const facilityLocationLine = [facilityCity, facilityState].filter(Boolean).join(', ')
+  const primaryFacilityMapQuery = encodeURIComponent(
+    [
+      facilityName || '',
+      facilityLocationLine || '',
+      facility?.zip_code || '',
+    ]
+      .filter(Boolean)
+      .join(', ')
+  )
 
   return (
     <div
@@ -224,7 +232,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
 
               {team.address && (
                 <a
-                  href={'https://maps.google.com/?q=' + primaryMapQuery}
+                  href={'https://maps.google.com/?q=' + practiceMapQuery}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -276,7 +284,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             </div>
           )}
 
-          {facilityName && (
+          {((team.address || locationLine) || facilityName) && (
             <div
               style={{
                 background: '#F8FAFC',
@@ -285,7 +293,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 border: '1px solid #E2E8F0',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 8,
+                gap: 12,
               }}
             >
               <div
@@ -296,31 +304,76 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                   color: 'var(--navy)',
                 }}
               >
-                Primary Facility / Practice Location
+                Team Locations
               </div>
 
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>
-                🏟️ {facilityName}
-              </div>
-
-              {facilityLocationLine && (
-                <div style={{ fontSize: 14, color: 'var(--gray)' }}>
-                  📍 {facilityLocationLine}
+              {(team.address || locationLine) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Practice Location
+                  </div>
+                  {team.address && (
+                    <a
+                      href={'https://maps.google.com/?q=' + practiceMapQuery}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600, fontSize: 14 }}
+                    >
+                      📍 {team.address}
+                    </a>
+                  )}
+                  {locationLine && (
+                    <div style={{ fontSize: 14, color: 'var(--gray)' }}>
+                      {team.address ? 'Area: ' : '📍 '}{locationLine}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {facilityId && (
-                <a
-                  href={`/facilities/${facilityId}`}
-                  style={{
-                    color: '#1D4ED8',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    fontSize: 14,
-                  }}
-                >
-                  View Facility Profile →
-                </a>
+              {facilityName && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Primary Facility
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--navy)' }}>
+                    🏟️ {facilityName}
+                  </div>
+                  {facilityLocationLine && (
+                    <div style={{ fontSize: 14, color: 'var(--gray)' }}>
+                      📍 {facilityLocationLine}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {facilityId && (
+                      <a
+                        href={`/facilities/${facilityId}`}
+                        style={{
+                          color: '#1D4ED8',
+                          textDecoration: 'none',
+                          fontWeight: 600,
+                          fontSize: 14,
+                        }}
+                      >
+                        View Facility Profile →
+                      </a>
+                    )}
+                    {!facilityId && facilityLocationLine && (
+                      <a
+                        href={'https://maps.google.com/?q=' + primaryFacilityMapQuery}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: '#1D4ED8',
+                          textDecoration: 'none',
+                          fontWeight: 600,
+                          fontSize: 14,
+                        }}
+                      >
+                        Open in Maps →
+                      </a>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}
