@@ -89,6 +89,8 @@ function extractTravelMiles(notes) {
   return m ? parseInt(m[1], 10) : null
 }
 
+const STATE_NAMES = { AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming', DC: 'District of Columbia' }
+
 const US_STATES = [
   '', 'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY', 'DC'
 ]
@@ -97,14 +99,18 @@ function stateFromPost(post, zipStateMap) {
   return String(post?.state || zipStateMap[String(post?.zip_code || '')] || '').toUpperCase()
 }
 
-function FitBounds({ posts }) {
+function MapViewport({ posts, showFullUS }) {
   const map = useMap()
   useEffect(() => {
     const pts = posts.filter((p) => p.lat != null && p.lng != null)
-    if (pts.length === 0) return
+    if (showFullUS || pts.length === 0) {
+      const usBounds = L.latLngBounds([[24.396308, -125.0], [49.384358, -66.93457]])
+      map.fitBounds(usBounds, { padding: [24, 24] })
+      return
+    }
     const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]))
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
-  }, [posts, map])
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
+  }, [posts, map, showFullUS])
   return null
 }
 
@@ -390,13 +396,15 @@ export default function PlayerBoard() {
     return () => { ignore = true }
   }, [posts])
 
+  const shouldApplyDistance = Boolean(stateFilter && hasSearched && nearbyZip && nearbyZip.length === 5 && searchGeo)
+
   const filtered = posts.filter((p) => {
-    if (!hasSearched || !stateFilter) return false
+    if (!stateFilter) return false
     if (filter !== 'all' && p.post_type !== filter) return false
     if (sportFilter !== 'Both' && p.sport !== sportFilter) return false
     const derivedState = stateFromPost(p, zipStateMap)
     if (derivedState !== stateFilter) return false
-    if (searchGeo && p.lat != null && p.lng != null) {
+    if (shouldApplyDistance && p.lat != null && p.lng != null) {
       const distance = milesBetween(searchGeo.lat, searchGeo.lng, p.lat, p.lng)
       const cap = parseInt(nearbyMiles, 10) || 25
       if (distance > cap) {
@@ -518,12 +526,12 @@ export default function PlayerBoard() {
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {deleteTarget && <DeleteConfirm onConfirm={() => handleDelete(deleteTarget)} onCancel={() => setDeleteTarget(null)} />}
 
-      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '12px 0 0' : '18px 0 0' }}>
+      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '18px 0 0' : '26px 0 0' }}>
         <div style={{ display: isMobile ? 'block' : 'grid', gridTemplateColumns: '290px minmax(0,1fr) 180px', gap: 18, alignItems: 'start' }}>
           <div style={{ padding: isMobile ? '0 12px' : 0 }}>
             <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: 14 }}>
-              <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>{hasSearched ? filtered.length : 0} {((hasSearched ? filtered.length : 0) === 1) ? 'post' : 'posts'}{stateFilter ? ' in ' + stateFilter : ''}</div>
-              <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{hasSearched ? 'Pickup-needed and player-available posts filtered by state first.' : 'Choose a state, then click Search to load posts.'}</div>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>{filtered.length} {filtered.length === 1 ? 'post' : 'posts'}{stateFilter ? ' in ' + (STATE_NAMES[stateFilter] || stateFilter) : ''}</div>
+              <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{stateFilter ? (shouldApplyDistance ? 'Showing posts narrowed by ZIP and distance.' : 'Showing all matching posts in the selected state.') : 'Select a state to start browsing the national board.'}</div>
             </div>
 
             <div style={{ marginTop: 12, background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: 14 }}>
@@ -547,14 +555,14 @@ export default function PlayerBoard() {
 
                 <div>
                   <label style={labelStyle}>State <RequiredMark /></label>
-                  <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} style={selectStyle}>
+                  <select value={stateFilter} onChange={(e) => { setStateFilter(e.target.value); if (!nearbyZip) setHasSearched(false) }} style={selectStyle}>
                     <option value="">Select state first</option>
                     {US_STATES.filter(Boolean).map((st) => <option key={st} value={st}>{st}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <ZipFieldInline value={nearbyZip} onChange={setNearbyZip} onGeocode={() => {}} required={false} />
+                  <ZipFieldInline value={nearbyZip} onChange={(val) => { setNearbyZip(val); if (!val) setHasSearched(false) }} onGeocode={() => {}} required={false} />
                 </div>
 
                 <div>
@@ -576,7 +584,7 @@ export default function PlayerBoard() {
                   </button>
                 )}
 
-                <button type="button" onClick={() => setHasSearched(true)} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--navy)', background: 'var(--navy)', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Search</button>
+                <button type="button" onClick={() => setHasSearched(true)} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--navy)', background: 'var(--navy)', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>{nearbyZip && nearbyZip.length === 5 ? 'Search This Area' : 'Refresh Results'}</button>
                 <button type="button" onClick={() => { setFilter('all'); setSportFilter('Both'); setStateFilter(''); setNearbyZip(''); setNearbyMiles('25'); setSearchGeo(null); setHasSearched(false) }} style={{ padding: '10px 12px', borderRadius: 10, border: '2px solid var(--lgray)', background: 'white', color: 'var(--navy)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Reset Filters</button>
               </div>
             </div>
@@ -593,10 +601,10 @@ export default function PlayerBoard() {
           <div>
             {(!isMobile || showMap) && (
               <div>
-                <div style={{ height: 360, width: '100%', borderRadius: 12, overflow: 'hidden', border: '2px solid var(--lgray)' }}>
-                  <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
+                <div style={{ height: isMobile ? 300 : 360, width: '100%', borderRadius: 12, overflow: 'hidden', border: '2px solid var(--lgray)', background: '#fff', scrollMarginTop: 96 }}>
+                  <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }}>
                     <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <FitBounds posts={mappable} />
+                    <MapViewport posts={mappable} showFullUS={!stateFilter} />
                     {mappable.map((post) => {
                       const color = post.post_type === 'player_available' ? PIN_COLORS.pickup : PIN_COLORS.needs_player
                       const cityState = [post.city, stateFromPost(post, zipStateMap)].filter(Boolean).join(', ')
@@ -625,7 +633,7 @@ export default function PlayerBoard() {
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse pickup-needed and player-available posts by state and distance.</div>
+                  <div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse pickup-needed and player-available posts by state, then refine by ZIP if needed.</div>
                 </div>
               </div>
             )}
@@ -814,11 +822,11 @@ export default function PlayerBoard() {
         </div>
       )}
 
-      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '16px 12px 24px' : '12px 0 24px' }}>
+      <div style={{ maxWidth: 1480, margin: '0 auto', padding: isMobile ? '10px 12px 24px' : '6px 0 24px' }}>
         {!stateFilter && !showForm && (
-          <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '18px', marginBottom: 14, maxWidth: isMobile ? '100%' : 900, marginLeft: isMobile ? 0 : 308 }}>
+          <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: '14px 18px', marginBottom: 10, maxWidth: isMobile ? '100%' : 900, marginLeft: isMobile ? 0 : 308 }}>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)' }}>Select a state to view posts</div>
-            <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 6 }}>Start with a state, then narrow by ZIP and distance. That keeps the national board useful instead of dumping every post at once.</div>
+            <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 6 }}>Choose a state to immediately see pins and listings. Add a ZIP only when you want to narrow by distance.</div>
           </div>
         )}
         <div style={{ display: isMobile ? 'block' : 'grid', gridTemplateColumns: '290px minmax(0,1fr) 180px', gap: 18, alignItems: 'start' }}>
