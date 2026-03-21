@@ -1405,6 +1405,7 @@ function TeamForm({ isMobile }) {
         org_affiliation: resolvedForm.org_affiliation || null,
         classification: resolvedForm.classification || null,
         age_group: resolvedForm.age_group,
+        practice_location_name: resolvedForm.practice_location_name.trim() || null,
         city: resolvedForm.city.trim(),
         state: resolvedForm.state,
         zip_code: resolvedForm.zip_code || null,
