@@ -14,27 +14,24 @@ L.Icon.Default.mergeOptions({
 
 const HEADER_H = 75
 
-const makeIcon = (color) =>
-  L.divIcon({
-    className: '',
-    html: `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -30],
-  })
+function sportPinBackground(value) {
+  const sport = normalizeSportValue(value)
+  if (sport === 'softball') return '#FACC15'
+  if (sport === 'both') return 'conic-gradient(#2563EB 0deg 180deg, #FACC15 180deg 360deg)'
+  return '#2563EB'
+}
 
-const makeSelectedIcon = (color) =>
-  L.divIcon({
+function makePinIcon(background, selected = false) {
+  const size = selected ? 38 : 30
+  const inner = selected ? 30 : 22
+  const border = selected ? '#F0A500' : '#FFFFFF'
+  return L.divIcon({
     className: '',
-    html: `<div style="width:38px;height:38px;border-radius:50% 50% 50% 0;background:${color};border:4px solid #f0a500;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(0,0,0,0.5);"></div>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 38],
-    popupAnchor: [0, -40],
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${background};border:4px solid ${border};transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.32);display:flex;align-items:center;justify-content:center;"><div style="width:${inner}px;height:${inner}px;border-radius:50%;background:rgba(255,255,255,0.18);"></div></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size + 8],
   })
-
-const PIN_COLORS = {
-  coach: '#e63329',
-  facility: '#1a1a1a',
 }
 
 const SPECIALTIES = [
@@ -53,10 +50,6 @@ const US_STATES = [
   'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT',
   'VA', 'WA', 'WV', 'WI', 'WY',
 ]
-
-function coachPinColor(coach) {
-  return coach.listing_type === 'facility' ? PIN_COLORS.facility : PIN_COLORS.coach
-}
 
 function normalizeSportValue(value) {
   const raw = String(value || '').trim().toLowerCase()
@@ -159,6 +152,13 @@ function FitBounds({ points, selectedId }) {
   return null
 }
 
+function aggregateSportValue(items) {
+  const sports = new Set((items || []).map((item) => normalizeSportValue(item.sport)).filter(Boolean))
+  if (sports.has('both') || (sports.has('baseball') && sports.has('softball'))) return 'both'
+  if (sports.has('softball')) return 'softball'
+  return 'baseball'
+}
+
 function buildMarkerGroups(coaches) {
   const map = new Map()
 
@@ -187,8 +187,12 @@ function buildMarkerGroups(coaches) {
     map.get(key).coaches.push(coach)
   }
 
-  return Array.from(map.values())
+  return Array.from(map.values()).map((group) => ({
+    ...group,
+    sport: aggregateSportValue(group.coaches),
+  }))
 }
+
 
 function MapMarkers({ groups, selected, setSelected }) {
   return groups.map((group) => {
@@ -201,7 +205,7 @@ function MapMarkers({ groups, selected, setSelected }) {
       <Marker
         key={group.key}
         position={[group.lat, group.lng]}
-        icon={isSelected ? makeSelectedIcon(coachPinColor(primaryCoach)) : makeIcon(coachPinColor(primaryCoach))}
+        icon={makePinIcon(sportPinBackground(group.sport), isSelected)}
         zIndexOffset={isSelected ? 1000 : 0}
         eventHandlers={{ click: () => setSelected(primaryCoach.id) }}
       >
@@ -525,8 +529,9 @@ function MapLegend() {
         Map key
       </span>
       {[
-        { color: PIN_COLORS.coach, label: 'Coach / Trainer' },
-        { color: PIN_COLORS.facility, label: 'Facility' },
+        { color: '#2563EB', label: 'Baseball Coach' },
+        { color: '#FACC15', label: 'Softball Coach' },
+        { color: 'conic-gradient(#2563EB 0deg 180deg, #FACC15 180deg 360deg)', label: 'Baseball & Softball' },
       ].map((item) => (
         <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div
@@ -544,6 +549,16 @@ function MapLegend() {
           <span style={{ fontSize: 11, color: 'var(--gray)' }}>{item.label}</span>
         </div>
       ))}
+    </div>
+  )
+}
+
+function AdBox({ compact = false }) {
+  return (
+    <div style={{ background: '#F7F3ED', border: '1px dashed #D8D0C5', borderRadius: 14, padding: compact ? '16px 14px' : '24px 16px', textAlign: 'center', minHeight: compact ? 90 : 150 }}>
+      <div style={{ fontSize: compact ? 13 : 16, fontWeight: 700, color: '#7A6B57', fontFamily: 'var(--font-head)', marginBottom: 8 }}>ADVERTISE HERE</div>
+      <div style={{ fontSize: compact ? 12 : 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 10 }}>Reach baseball &amp; softball families</div>
+      <a href="mailto:admin@sandlotsource.com?subject=Sandlot%20Source%20Ad%20Inquiry" style={{ color: 'var(--red)', fontWeight: 700, fontSize: compact ? 12 : 13, textDecoration: 'none' }}>Contact Us</a>
     </div>
   )
 }
@@ -592,10 +607,14 @@ export default function CoachDirectory() {
     return () => window.removeEventListener('resize', handler)
   }, [])
 
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput.trim()), 300)
-    return () => clearTimeout(t)
-  }, [searchInput])
+  const applySearch = () => setSearch(searchInput.trim())
+
+  const onSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applySearch()
+    }
+  }
 
   useEffect(() => {
     setSelected(selectedFromUrl)
@@ -819,301 +838,62 @@ export default function CoachDirectory() {
 
       {isMobile ? (
         <div>
-          <div
-            style={{
-              background: 'var(--white)',
-              borderBottom: '2px solid var(--lgray)',
-              padding: '10px 12px',
-              display: 'flex',
-              gap: 8,
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              position: 'sticky',
-              top: HEADER_H,
-              zIndex: 100,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setShowMap((m) => !m)}
-              style={{
-                flex: 1,
-                padding: '9px 10px',
-                borderRadius: 'var(--btn-radius)',
-                border: '1.5px solid var(--navy)',
-                background: showMap ? 'var(--navy)' : 'var(--white)',
-                color: showMap ? 'var(--white)' : 'var(--navy)',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-head)',
-                minHeight: 40,
-              }}
-            >
-              {showMap ? 'Hide Map' : 'Show Map'}
-            </button>
-
-            <a
-              href="/submit"
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                textDecoration: 'none',
-                padding: '9px 10px',
-                borderRadius: 'var(--btn-radius)',
-                border: '1.5px solid var(--gold)',
-                background: 'var(--gold)',
-                color: 'var(--navy)',
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: 'var(--font-head)',
-                minHeight: 40,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              + Add a Coach
-            </a>
+          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
+            <button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button>
+            <a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a>
           </div>
-
-          <div
-            ref={mobileListRef}
-            onScroll={handleListInteraction}
-            onWheel={handleListInteraction}
-            onTouchMove={handleListInteraction}
-            style={{ padding: 12 }}
-          >
-            {facilityContext && (
-              <div
-                style={{
-                  marginTop: 10,
-                  marginBottom: 10,
-                  padding: '10px 12px',
-                  borderRadius: 10,
-                  border: '1px solid var(--lgray)',
-                  background: '#f8fafc',
-                  color: 'var(--navy)',
-                }}
-              >
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-                  Facility context
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
-                <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
-                  Showing only coaches linked to this facility
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Link
-                    to={`/facilities/${facilityContext.id}`}
-                    style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
-                  >
-                    ← Back to Facility
-                  </Link>
-                </div>
+          <div style={{ padding: 12 }}>
+            <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+              <div>
+                <span style={sectionLabel}>Search</span>
+                <input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={inputStyle} />
               </div>
-            )}
-
-            <div style={{ marginBottom: 10 }}>
-              <span style={sectionLabel}>Search</span>
-              <input
-                placeholder="Name, city, facility, zip..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                style={inputStyle}
-              />
+              <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
             </div>
-
-            <div style={{ marginBottom: 10 }}>
-              <span style={sectionLabel}>Sport</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <button
-                  type="button"
-                  className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-                  onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-                  style={{ width: '100%', justifyContent: 'flex-start' }}
-                >
-                  ⚾ Baseball
-                </button>
-                <button
-                  type="button"
-                  className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-                  onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-                  style={{ width: '100%', justifyContent: 'flex-start' }}
-                >
-                  🥎 Softball
-                </button>
-              </div>
+            {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 260, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} /></MapContainer></div><MapLegend /></div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
+              {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
+              {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
+              {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} /></div>)}
             </div>
-
-            <div style={{ marginBottom: 10 }}>
-              <span style={sectionLabel}>Specialty</span>
-              <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
-                {SPECIALTIES.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 10 }}>
-              <span style={sectionLabel}>State</span>
-              <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
-                {US_STATES.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
-                Loading coaches…
-              </div>
-            )}
-
-            {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-
-            {!loading && displayedCoaches.map((coach) => (
-              <div key={coach.id} ref={setCardRef(coach.id)}>
-                <CoachCard
-                  coach={coach}
-                  selected={selected === coach.id}
-                  onClick={() => handleSelectCoach(coach.id)}
-                  onViewProfile={setProfileCoach}
-                />
-              </div>
-            ))}
           </div>
-
-          {showMap && (
-            <div style={{ height: '60vh' }}>
-              <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution="&copy; OpenStreetMap"
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <FitBounds points={markerGroups} selectedId={selected} />
-                {sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                <MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} />
-              </MapContainer>
-            </div>
-          )}
         </div>
       ) : (
-        <div
-          style={{
-            padding: '16px 14px 20px',
-            background: 'var(--cream)',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '300px minmax(0, 1fr) 200px',
-              gap: 22,
-              alignItems: 'start',
-            }}
-          >
-            <aside
-              style={{
-                position: 'sticky',
-                top: 84,
-                alignSelf: 'start',
-                background: 'var(--white)',
-                border: '1px solid rgba(15,23,42,0.08)',
-                borderRadius: 14,
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '1px solid var(--lgray)' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
-                  {loading ? 'Loading…' : displayedCoaches.length + ' coach' + (displayedCoaches.length !== 1 ? 'es' : '')}
-                </div>
-
-                {facilityContext && (
-                  <div style={{ marginBottom: 10, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--lgray)', background: '#f8fafc', color: 'var(--navy)' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
-                      Facility context
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div>
-                    <div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>
-                      Showing only coaches linked to this facility
-                    </div>
-                    <div style={{ marginTop: 8 }}>
-                      <Link to={`/facilities/${facilityContext.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
-                        ← Back to Facility
-                      </Link>
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>Search</span>
-                  <input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={inputStyle} />
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>Sport</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>⚾ Baseball</button>
-                    <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>🥎 Softball</button>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>Specialty</span>
-                  <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
-                    {SPECIALTIES.map((s) => (<option key={s}>{s}</option>))}
-                  </select>
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>State</span>
-                  <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
-                    {US_STATES.map((s) => (<option key={s}>{s}</option>))}
-                  </select>
-                </div>
-
-                <a href="/submit" style={{ display: 'block', textAlign: 'center', background: 'var(--red)', color: 'white', padding: '10px', borderRadius: 'var(--btn-radius)', fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'var(--font-head)', letterSpacing: '0.04em', marginTop: 10 }}>+ Add a Coach</a>
+        <div style={{ padding: '16px 14px 20px', background: 'var(--cream)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 18, alignItems: 'start', width: '100%' }}>
+            <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', background: 'var(--white)', borderRight: '1px solid rgba(15,23,42,0.06)', zIndex: 2 }}>
+              <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{displayedCoaches.length} coach{displayedCoaches.length !== 1 ? 'es' : ''}</div>
+                <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>Private instructors, team coaches, and trainers</div>
               </div>
+              <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                {facilityContext && <div style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--lgray)', background: '#f8fafc', color: 'var(--navy)' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>Facility context</div><div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div><div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>Showing only coaches linked to this facility</div><div style={{ marginTop: 8 }}><Link to={`/facilities/${facilityContext.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>← Back to Facility</Link></div></div>}
+                <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
+                <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
+                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
+                <div><div style={sectionLabel}>Specialty</div><select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{SPECIALTIES.map((s) => <option key={s}>{s}</option>)}</select></div>
+                <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
+                <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a></div>
+              </div>
+              <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}><AdBox compact /></div>
             </aside>
-
-            <main style={{ minWidth: 0 }}>
-              <div style={{ position: 'sticky', top: 76, zIndex: 1, background: 'var(--cream)', paddingTop: 8, paddingBottom: 10 }}>
-                <div style={{ background: 'var(--white)', width: '100%' }}>
-                  <div style={{ height: 390, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}>
-                    <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
-                      <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <FitBounds points={markerGroups} selectedId={selected} />
-                      {sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
-                      <MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} />
-                    </MapContainer>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 22, alignItems: 'start' }}>
+                <main style={{ minWidth: 0 }}>
+                  <div style={{ position: 'sticky', top: 76, zIndex: 1, background: 'var(--page-bg, #f5f3ef)', paddingTop: 8, paddingBottom: 10 }}>
+                    {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 390, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} /></MapContainer></div><MapLegend /></div>}
+                    {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, marginTop: 10, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view coach locations.</div>}
+                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{displayedCoaches.length} Coach{displayedCoaches.length !== 1 ? 'es' : ''}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse instructors, trainers, and team coaches</div></div>
                   </div>
-                  <MapLegend />
-                </div>
-              </div>
-
-              <div ref={desktopListRef} onWheel={handleListInteraction} style={{ paddingTop: 10 }}>
-                {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
-                {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-                {!loading && displayedCoaches.map((coach) => (
-                  <div key={coach.id} ref={setCardRef(coach.id)}>
-                    <CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} />
+                  <div ref={desktopListRef} onWheel={handleListInteraction} style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14, alignItems: 'stretch' }}>
+                    {loading && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
+                    {!loading && displayedCoaches.length === 0 && <div style={{ gridColumn: '1 / -1' }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
+                    {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} /></div>)}
                   </div>
-                ))}
+                </main>
+                <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
               </div>
-            </main>
-
-            <aside style={{ position: 'sticky', top: 84, alignSelf: 'start', width: 200 }}>
-              <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 14, padding: 16, display: 'grid', gap: 16 }}>
-                {[1, 2].map((i) => (
-                  <div key={i} style={{ border: '2px dashed var(--lgray)', borderRadius: 'var(--card-radius)', padding: '16px 12px', textAlign: 'center', background: 'var(--cream)', minHeight: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray)' }}>Advertise Here</div>
-                    <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5 }}>Reach baseball & softball families</div>
-                    <a href="mailto:admin@sandlotsource.com?subject=Sandlot%20Source%20Ad%20Inquiry" style={{ color: 'var(--red)', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Contact Us</a>
-                  </div>
-                ))}
-              </div>
-            </aside>
+            </div>
           </div>
         </div>
       )}
