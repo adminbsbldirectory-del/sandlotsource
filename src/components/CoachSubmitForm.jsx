@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../supabase.js'
 import DuplicateWarning from './DuplicateWarning.jsx'
 
@@ -360,6 +360,18 @@ function useFacilityDuplicateCheck({ facilityName, address, city, state, zipCode
   return { matches, loading }
 }
 
+
+function appendLabeledNote(existingNotes, label, value) {
+  const trimmedValue = String(value || '').trim()
+  if (!trimmedValue) return String(existingNotes || '').trim() || null
+  const current = String(existingNotes || '').trim()
+  const line = `${label}: ${trimmedValue}`
+  if (!current) return line
+  if (current.includes(line)) return current
+  return `${line}
+${current}`
+}
+
 function applyExistingFacilityToCoachForm(form, match) {
   return {
     ...form,
@@ -604,17 +616,60 @@ function SuccessBanner({ message }) {
 
 function ZipField({ value, onChange, onGeocode, label, hint, required }) {
   const [status, setStatus] = useState('')
+  const lastLookupRef = useRef('')
+
+  const cleanedValue = String(value || '').replace(/\D/g, '').slice(0, 5)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function runLookup() {
+      if (cleanedValue.length !== 5) {
+        if (cleanedValue.length === 0) setStatus('')
+        return
+      }
+      if (lastLookupRef.current === cleanedValue) return
+      lastLookupRef.current = cleanedValue
+      setStatus('loading')
+      const geo = await geocodeZip(cleanedValue)
+      if (cancelled) return
+      if (geo) {
+        setStatus('ok')
+        onGeocode(geo)
+      } else {
+        setStatus('error')
+        onGeocode(null)
+      }
+    }
+
+    runLookup()
+    return () => {
+      cancelled = true
+    }
+  }, [cleanedValue, onGeocode])
+
+  function updateZip(nextValue) {
+    const digits = String(nextValue || '').replace(/\D/g, '').slice(0, 5)
+    if (digits.length < 5) {
+      lastLookupRef.current = ''
+      if (!digits) setStatus('')
+    }
+    onChange(digits)
+  }
 
   async function handleBlur() {
-    if (!value || value.length !== 5) return
-    setStatus('loading')
-    const geo = await geocodeZip(value)
-    if (geo) {
-      setStatus('ok')
-      onGeocode(geo)
-    } else {
-      setStatus('error')
-      onGeocode(null)
+    if (cleanedValue.length !== 5) return
+    if (lastLookupRef.current !== cleanedValue) {
+      setStatus('loading')
+      const geo = await geocodeZip(cleanedValue)
+      lastLookupRef.current = cleanedValue
+      if (geo) {
+        setStatus('ok')
+        onGeocode(geo)
+      } else {
+        setStatus('error')
+        onGeocode(null)
+      }
     }
   }
 
@@ -631,8 +686,12 @@ function ZipField({ value, onChange, onGeocode, label, hint, required }) {
         type="text"
         inputMode="numeric"
         maxLength={5}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={cleanedValue}
+        onChange={(e) => updateZip(e.target.value)}
+        onPaste={(e) => {
+          e.preventDefault()
+          updateZip(e.clipboardData.getData('text'))
+        }}
         onBlur={handleBlur}
         placeholder="e.g. 30076"
         style={inputStyle}
@@ -709,6 +768,7 @@ function CoachForm({ isMobile }) {
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
   const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
+  const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
 
   const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
@@ -732,6 +792,7 @@ function CoachForm({ isMobile }) {
       if (shouldReset) {
         setAllowCreateNewFacility(false)
         setSelectedFacilityMatch(null)
+        setSelectedFacilityId(null)
       }
       return { ...f, [field]: value }
     })
@@ -753,7 +814,7 @@ function CoachForm({ isMobile }) {
         lat: f.lat || geo.lat,
         lng: f.lng || geo.lng,
         city: f.city || geo.city,
-        state: f.state || geo.state,
+        state: f.state || geo.state || 'GA',
       }))
     }
   }
@@ -876,17 +937,20 @@ function CoachForm({ isMobile }) {
         selectedId={selectedFacilityMatch?.id || null}
         onUseExisting={(match) => {
           setSelectedFacilityMatch(match)
+          setSelectedFacilityId(match.id || null)
           setAllowCreateNewFacility(false)
           setForm((f) => applyExistingFacilityToCoachForm(f, match))
           setError('')
         }}
         onCreateNewAnyway={() => {
           setSelectedFacilityMatch(null)
+          setSelectedFacilityId(null)
           setAllowCreateNewFacility(true)
           setError('')
         }}
         onDismiss={() => {
           setSelectedFacilityMatch(null)
+          setSelectedFacilityId(null)
           setAllowCreateNewFacility(true)
           setError('')
         }}
@@ -1119,6 +1183,7 @@ function TeamForm({ isMobile }) {
     org_affiliation: '',
     classification: '',
     age_group: '',
+    practice_location_name: '',
     city: '',
     state: '',
     zip_code: '',
@@ -1151,6 +1216,7 @@ function TeamForm({ isMobile }) {
   const [addrStatus, setAddrStatus] = useState('')
   const [facilityAddrStatus, setFacilityAddrStatus] = useState('')
   const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
+  const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
 
   const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
@@ -1175,6 +1241,7 @@ function TeamForm({ isMobile }) {
       if (shouldReset) {
         setAllowCreateNewFacility(false)
         setSelectedFacilityMatch(null)
+        setSelectedFacilityId(null)
       }
       return { ...f, [field]: value }
     })
@@ -1190,7 +1257,7 @@ function TeamForm({ isMobile }) {
         lat: geo.lat,
         lng: geo.lng,
         city: f.city || geo.city,
-        state: f.state || geo.state,
+        state: f.state || geo.state || 'GA',
       }))
     } else {
       setForm((f) => ({ ...f, lat: null, lng: null }))
@@ -1222,7 +1289,7 @@ function TeamForm({ isMobile }) {
         facility_lat: f.facility_lat || geo.lat,
         facility_lng: f.facility_lng || geo.lng,
         facility_city: f.facility_city || geo.city,
-        facility_state: f.facility_state || geo.state,
+        facility_state: f.facility_state || geo.state || 'GA',
       }))
     }
   }
@@ -1319,7 +1386,7 @@ function TeamForm({ isMobile }) {
       }
 
       const facilityId = resolvedForm.facility_name.trim()
-        ? await findOrCreateFacilityFromTeam(resolvedForm, selectedFacilityMatch?.id || null)
+        ? await findOrCreateFacilityFromTeam(resolvedForm, selectedFacilityId || selectedFacilityMatch?.id || null)
         : null
 
       const finalLat =
@@ -1356,7 +1423,7 @@ function TeamForm({ isMobile }) {
         tryout_date: resolvedForm.tryout_date || null,
         tryout_notes: resolvedForm.tryout_notes.trim() || null,
         description: resolvedForm.description.trim() || null,
-        submission_notes: resolvedForm.submission_notes.trim() || null,
+        submission_notes: appendLabeledNote(resolvedForm.submission_notes, 'Practice Location Name', resolvedForm.practice_location_name),
         approval_status: 'pending',
         source: 'website_form',
         active: true,
@@ -1386,17 +1453,20 @@ function TeamForm({ isMobile }) {
         selectedId={selectedFacilityMatch?.id || null}
         onUseExisting={(match) => {
           setSelectedFacilityMatch(match)
+          setSelectedFacilityId(match.id || null)
           setAllowCreateNewFacility(false)
           setForm((f) => applyExistingFacilityToTeamForm(f, match))
           setError('')
         }}
         onCreateNewAnyway={() => {
           setSelectedFacilityMatch(null)
+          setSelectedFacilityId(null)
           setAllowCreateNewFacility(true)
           setError('')
         }}
         onDismiss={() => {
           setSelectedFacilityMatch(null)
+          setSelectedFacilityId(null)
           setAllowCreateNewFacility(true)
           setError('')
         }}
@@ -1474,6 +1544,16 @@ function TeamForm({ isMobile }) {
   lineHeight: 1.5,
 }}>
   Use this section for the team-specific field or practice location families should expect most often. This location drives the team map pin.
+</div>
+
+<div style={{ marginBottom: 14 }}>
+  <label style={labelStyle}>Practice Location Name</label>
+  <input
+    value={form.practice_location_name}
+    onChange={(e) => set('practice_location_name', e.target.value)}
+    placeholder="e.g. Brook Run Park, Ninth Inning Baseball, Wills Park Field 3"
+    style={inputStyle}
+  />
 </div>
 
 <div style={{ marginBottom: 14 }}>
@@ -2116,6 +2196,7 @@ function FacilityForm({ isMobile }) {
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
   const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
+  const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -2140,6 +2221,7 @@ function FacilityForm({ isMobile }) {
       if (shouldReset) {
         setAllowCreateNewFacility(false)
         setSelectedFacilityMatch(null)
+        setSelectedFacilityId(null)
       }
       return { ...f, [field]: value }
     })
@@ -2161,7 +2243,7 @@ function FacilityForm({ isMobile }) {
         lat: f.lat || geo.lat,
         lng: f.lng || geo.lng,
         city: f.city || geo.city,
-        state: f.state || geo.state,
+        state: f.state || geo.state || 'GA',
       }))
     }
   }
@@ -2250,7 +2332,7 @@ function FacilityForm({ isMobile }) {
         contact_name: resolvedForm.contact_name.trim(),
         contact_email: resolvedForm.contact_email.trim() || null,
         contact_phone: resolvedForm.contact_phone.trim() || null,
-        submission_notes: resolvedForm.submission_notes.trim() || null,
+        submission_notes: appendLabeledNote(resolvedForm.submission_notes, 'Practice Location Name', resolvedForm.practice_location_name),
         approval_status: 'pending',
         source: 'website_form',
         active: true,
@@ -2280,6 +2362,7 @@ function FacilityForm({ isMobile }) {
         selectedId={selectedFacilityMatch?.id || null}
         onUseExisting={(match) => {
           setSelectedFacilityMatch(match)
+          setSelectedFacilityId(match.id || null)
           setAllowCreateNewFacility(false)
           setForm((f) => ({
             ...f,
@@ -2295,11 +2378,13 @@ function FacilityForm({ isMobile }) {
         }}
         onCreateNewAnyway={() => {
           setSelectedFacilityMatch(null)
+          setSelectedFacilityId(null)
           setAllowCreateNewFacility(true)
           setError('')
         }}
         onDismiss={() => {
           setSelectedFacilityMatch(null)
+          setSelectedFacilityId(null)
           setAllowCreateNewFacility(true)
           setError('')
         }}
