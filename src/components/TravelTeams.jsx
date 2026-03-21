@@ -12,9 +12,9 @@ L.Icon.Default.mergeOptions({
 })
 
 const PIN_COLORS = {
-  team: '#1d6fa4',
-  open_roster: '#16a34a',
-  tryout: '#f0a500',
+  baseball: '#2563EB',
+  softball: '#FACC15',
+  both: 'conic-gradient(#2563EB 0deg 180deg, #FACC15 180deg 360deg)',
 }
 
 const STATUS_STYLE = {
@@ -70,12 +70,21 @@ const STATE_CENTERS = {
   WI: [44.3, -89.8], WY: [43.0, -107.6],
 }
 
-function makeIcon(color) {
+function normalizeSportValue(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  if (!raw) return 'baseball'
+  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
+  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
+  if (raw.includes('softball')) return 'softball'
+  return 'baseball'
+}
+
+function makeIcon(background) {
   return L.divIcon({
     className: '',
     html:
       '<div style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:' +
-      color +
+      background +
       ';border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
     iconSize: [24, 24],
     iconAnchor: [12, 24],
@@ -84,9 +93,10 @@ function makeIcon(color) {
 }
 
 function teamPinColor(team) {
-  if (team.tryout_status === 'open') return PIN_COLORS.tryout
-  if (team.roster_status === 'open' || Number(team.open_spots || 0) > 0) return PIN_COLORS.open_roster
-  return PIN_COLORS.team
+  const sport = normalizeSportValue(team.sport)
+  if (sport === 'softball') return PIN_COLORS.softball
+  if (sport === 'both') return PIN_COLORS.both
+  return PIN_COLORS.baseball
 }
 
 async function geocodeZip(zip) {
@@ -201,9 +211,9 @@ function MapLegend({ hasPins }) {
       </span>
 
       {[
-        { color: PIN_COLORS.team, label: 'Team' },
-        { color: PIN_COLORS.open_roster, label: 'Open Roster' },
-        { color: PIN_COLORS.tryout, label: 'Tryouts Open' },
+        { color: PIN_COLORS.baseball, label: 'Baseball Team' },
+        { color: PIN_COLORS.softball, label: 'Softball Team' },
+        { color: PIN_COLORS.both, label: 'Baseball & Softball' },
       ].map((item) => (
         <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div
@@ -730,6 +740,7 @@ export default function TravelTeams() {
                 placeholder="Team, org, class, facility, city..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={onSearchKeyDown}
                 style={{
                   width: '100%',
                   padding: '9px 10px',
@@ -742,6 +753,7 @@ export default function TravelTeams() {
                   minHeight: 40,
                 }}
               />
+              <button type="button" onClick={applySearch} style={{ marginTop: 8, width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
             </div>
 
             <div>
