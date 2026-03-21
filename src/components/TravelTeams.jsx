@@ -762,7 +762,6 @@ export default function TravelTeams() {
                   minHeight: 40,
                 }}
               />
-              <button type="button" onClick={applySearch} style={{ marginTop: 8, width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
             </div>
 
             <div>
@@ -812,7 +811,7 @@ export default function TravelTeams() {
             </div>
 
             <div>
-              <div style={sectionLabelStyle}>Nearby</div>
+              <div style={sectionLabelStyle}>Near Zip Code</div>
               <input
                 type="text"
                 inputMode="numeric"
@@ -901,6 +900,8 @@ export default function TravelTeams() {
                 <option value="closed">Closed</option>
               </select>
             </div>
+
+            <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button
