@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../supabase.js'
 import DuplicateWarning from './DuplicateWarning.jsx'
 
@@ -305,6 +305,7 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
   const facilityPayload = {
     name: facilityName,
     sport: form.sport || null,
+    sport_served: form.sport || null,
     city: form.city.trim() || null,
     state: form.state || null,
     zip_code: form.zip_code || null,
@@ -379,6 +380,7 @@ async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = n
   const facilityPayload = {
     name: facilityName,
     sport: form.sport || null,
+    sport_served: form.sport || null,
     city: facilityCity || null,
     state: facilityState || null,
     zip_code: facilityZip || null,
@@ -463,6 +465,14 @@ const TEAM_CLASSIFICATION_OPTIONS = {
   baseball: ['A', 'AA', 'AAA', 'Majors', 'Open'],
   softball: ['A', 'B', 'C', 'Open'],
 }
+
+const FACILITY_TYPE_OPTIONS = [
+  { value: 'park_field', label: 'Park / Rec Field' },
+  { value: 'training_facility', label: 'Training Facility' },
+  { value: 'travel_team_facility', label: 'Travel Team Facility' },
+  { value: 'school_field', label: 'School Field' },
+  { value: 'other', label: 'Other' },
+]
 
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
@@ -606,9 +616,15 @@ function CoachForm({ isMobile }) {
     zipCode: form.zip_code,
   })
 
+  const visibleFacilityMatches = useMemo(() => {
+    if (allowCreateNewFacility || selectedFacilityMatch) return []
+    return facilityMatches
+  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
+
   function set(field, value) {
     setAllowCreateNewFacility(false)
     setSelectedFacilityMatch(null)
+    setError('')
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -761,7 +777,7 @@ function CoachForm({ isMobile }) {
   return (
     <div>
       <DuplicateWarning
-        matches={facilityMatches}
+        matches={visibleFacilityMatches}
         loading={facilityMatchLoading}
         mode="facility"
         selectedId={selectedFacilityMatch?.id || null}
@@ -778,7 +794,8 @@ function CoachForm({ isMobile }) {
         }}
         onDismiss={() => {
           setSelectedFacilityMatch(null)
-          setAllowCreateNewFacility(false)
+          setAllowCreateNewFacility(true)
+          setError('')
         }}
       />
 
@@ -1054,6 +1071,7 @@ function TeamForm({ isMobile }) {
   function set(field, value) {
     setAllowCreateNewFacility(false)
     setSelectedFacilityMatch(null)
+    setError('')
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -1213,7 +1231,7 @@ function TeamForm({ isMobile }) {
   return (
     <div>
       <DuplicateWarning
-        matches={facilityMatches}
+        matches={visibleFacilityMatches}
         loading={facilityMatchLoading}
         mode="facility"
         selectedId={selectedFacilityMatch?.id || null}
@@ -1230,7 +1248,8 @@ function TeamForm({ isMobile }) {
         }}
         onDismiss={() => {
           setSelectedFacilityMatch(null)
-          setAllowCreateNewFacility(false)
+          setAllowCreateNewFacility(true)
+          setError('')
         }}
       />
 
@@ -1913,7 +1932,6 @@ function FacilityForm({ isMobile }) {
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
 
   const AMENITY_OPTIONS = ['Batting Cages','Pitching Mounds','Turf Infield','HitTrax','Rapsodo','Video Analysis','Weight Room','Bullpen','Indoor Facility','Outdoor Fields','Lights','Restrooms','Parking','Concessions']
-  const FACILITY_TYPES = ['Training Academy','Batting Cage Complex','Indoor Complex','Recreation Park','High School','College Facility','Tournament Venue','Other']
 
   const [form, setForm] = useState({
     name: '',
@@ -1955,9 +1973,15 @@ function FacilityForm({ isMobile }) {
     zipCode: form.zip_code,
   })
 
+  const visibleFacilityMatches = useMemo(() => {
+    if (allowCreateNewFacility || selectedFacilityMatch) return []
+    return facilityMatches
+  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
+
   function set(field, value) {
     setAllowCreateNewFacility(false)
     setSelectedFacilityMatch(null)
+    setError('')
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -2064,6 +2088,7 @@ function FacilityForm({ isMobile }) {
         name: form.name.trim(),
         facility_type: form.facility_type || null,
         sport: form.sport,
+        sport_served: form.sport,
         city: form.city.trim() || null,
         state: form.state || null,
         zip_code: form.zip_code || null,
@@ -2105,7 +2130,7 @@ function FacilityForm({ isMobile }) {
   return (
     <div>
       <DuplicateWarning
-        matches={facilityMatches}
+        matches={visibleFacilityMatches}
         loading={facilityMatchLoading}
         mode="facility"
         selectedId={selectedFacilityMatch?.id || null}
@@ -2131,7 +2156,8 @@ function FacilityForm({ isMobile }) {
         }}
         onDismiss={() => {
           setSelectedFacilityMatch(null)
-          setAllowCreateNewFacility(false)
+          setAllowCreateNewFacility(true)
+          setError('')
         }}
       />
 
@@ -2177,7 +2203,7 @@ function FacilityForm({ isMobile }) {
             <label style={labelStyle}>Facility Type</label>
             <select value={form.facility_type} onChange={(e) => set('facility_type', e.target.value)} style={selectStyle}>
               <option value="">Select type</option>
-              {FACILITY_TYPES.map((t) => <option key={t}>{t}</option>)}
+              {FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
         </div>
