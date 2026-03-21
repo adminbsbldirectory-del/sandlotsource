@@ -32,7 +32,7 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
 }
 
 function getResolvedCity(addr = {}) {
-  return addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.suburb || null
+  return addr.municipality || addr.suburb || addr.city || addr.town || addr.village || addr.hamlet || null
 }
 
 function getResolvedState(addr = {}) {
@@ -50,10 +50,10 @@ async function geocodeAddress(address, city, state, zip) {
 
   const zipGeo = zip && zip.length === 5 ? await geocodeZip(zip) : null
   const queries = Array.from(new Set([
-    [street, city, state, zip].filter(Boolean).join(', '),
-    [street, city, state].filter(Boolean).join(', '),
-    [street, state, zip].filter(Boolean).join(', '),
     [street, zip].filter(Boolean).join(', '),
+    [street, state, zip].filter(Boolean).join(', '),
+    [street, city, state].filter(Boolean).join(', '),
+    [street, city, state, zip].filter(Boolean).join(', '),
   ].filter(Boolean)))
 
   const candidates = []
@@ -384,6 +384,10 @@ function applyExistingFacilityToTeamForm(form, match) {
     facility_lat: match.lat != null ? match.lat : form.facility_lat,
     facility_lng: match.lng != null ? match.lng : form.facility_lng,
   }
+}
+
+function shouldResetAcceptedFacility(field, value, currentValue, identityFields) {
+  return identityFields.includes(field) && String(currentValue ?? '') !== String(value ?? '')
 }
 
 async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = null) {
@@ -721,10 +725,16 @@ function CoachForm({ isMobile }) {
   }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
 
   function set(field, value) {
-    setAllowCreateNewFacility(false)
-    setSelectedFacilityMatch(null)
+    const facilityIdentityFields = ['facility_name', 'address', 'city', 'state', 'zip_code']
     setError('')
-    setForm((f) => ({ ...f, [field]: value }))
+    setForm((f) => {
+      const shouldReset = shouldResetAcceptedFacility(field, value, f[field], facilityIdentityFields)
+      if (shouldReset) {
+        setAllowCreateNewFacility(false)
+        setSelectedFacilityMatch(null)
+      }
+      return { ...f, [field]: value }
+    })
   }
 
   function toggleSpecialty(v) {
@@ -758,8 +768,8 @@ function CoachForm({ isMobile }) {
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
-      city: resolved.city || f.city,
-      state: resolved.state || f.state,
+      city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
+      state: resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state),
       zip_code: resolved.zip_code || f.zip_code,
     }))
 
@@ -803,8 +813,8 @@ function CoachForm({ isMobile }) {
           ...resolvedForm,
           lat: resolvedLocation.lat,
           lng: resolvedLocation.lng,
-          city: resolvedLocation.city || resolvedForm.city,
-          state: resolvedLocation.state || resolvedForm.state,
+          city: resolvedLocation.source === 'address' ? (resolvedLocation.city || resolvedForm.city) : (resolvedForm.city || resolvedLocation.city),
+          state: resolvedLocation.source === 'address' ? (resolvedLocation.state || resolvedForm.state) : (resolvedForm.state || resolvedLocation.state),
           zip_code: resolvedLocation.zip_code || resolvedForm.zip_code,
         }
       }
@@ -1158,10 +1168,16 @@ function TeamForm({ isMobile }) {
   }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
 
   function set(field, value) {
-    setAllowCreateNewFacility(false)
-    setSelectedFacilityMatch(null)
+    const facilityIdentityFields = ['facility_name', 'facility_address', 'facility_city', 'facility_state', 'facility_zip_code']
     setError('')
-    setForm((f) => ({ ...f, [field]: value }))
+    setForm((f) => {
+      const shouldReset = shouldResetAcceptedFacility(field, value, f[field], facilityIdentityFields)
+      if (shouldReset) {
+        setAllowCreateNewFacility(false)
+        setSelectedFacilityMatch(null)
+      }
+      return { ...f, [field]: value }
+    })
   }
 
   const classificationOptions =
@@ -1191,8 +1207,8 @@ function TeamForm({ isMobile }) {
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
-      city: resolved.city || f.city,
-      state: resolved.state || f.state,
+      city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
+      state: resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state),
       zip_code: resolved.zip_code || f.zip_code,
     }))
 
@@ -1226,8 +1242,8 @@ function TeamForm({ isMobile }) {
       ...f,
       facility_lat: resolved.lat,
       facility_lng: resolved.lng,
-      facility_city: resolved.city || f.facility_city,
-      facility_state: resolved.state || f.facility_state,
+      facility_city: resolved.source === 'address' ? (resolved.city || f.facility_city) : (f.facility_city || resolved.city),
+      facility_state: resolved.source === 'address' ? (resolved.state || f.facility_state) : (f.facility_state || resolved.state),
       facility_zip_code: resolved.zip_code || f.facility_zip_code,
     }))
 
@@ -2117,10 +2133,16 @@ function FacilityForm({ isMobile }) {
   }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
 
   function set(field, value) {
-    setAllowCreateNewFacility(false)
-    setSelectedFacilityMatch(null)
+    const facilityIdentityFields = ['name', 'address', 'city', 'state', 'zip_code']
     setError('')
-    setForm((f) => ({ ...f, [field]: value }))
+    setForm((f) => {
+      const shouldReset = shouldResetAcceptedFacility(field, value, f[field], facilityIdentityFields)
+      if (shouldReset) {
+        setAllowCreateNewFacility(false)
+        setSelectedFacilityMatch(null)
+      }
+      return { ...f, [field]: value }
+    })
   }
 
   function toggleAmenity(a) {
@@ -2154,8 +2176,8 @@ function FacilityForm({ isMobile }) {
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
-      city: resolved.city || f.city,
-      state: resolved.state || f.state,
+      city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
+      state: resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state),
       zip_code: resolved.zip_code || f.zip_code,
     }))
 
@@ -2200,8 +2222,8 @@ function FacilityForm({ isMobile }) {
           ...resolvedForm,
           lat: resolvedLocation.lat,
           lng: resolvedLocation.lng,
-          city: resolvedLocation.city || resolvedForm.city,
-          state: resolvedLocation.state || resolvedForm.state,
+          city: resolvedLocation.source === 'address' ? (resolvedLocation.city || resolvedForm.city) : (resolvedForm.city || resolvedLocation.city),
+          state: resolvedLocation.source === 'address' ? (resolvedLocation.state || resolvedForm.state) : (resolvedForm.state || resolvedLocation.state),
           zip_code: resolvedLocation.zip_code || resolvedForm.zip_code,
         }
       }
