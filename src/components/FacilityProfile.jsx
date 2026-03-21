@@ -29,6 +29,21 @@ function normalizeInstagramHandle(value) {
   return 'https://instagram.com/' + trimmed.replace(/^@/, '')
 }
 
+function getFacilitySport(facility) {
+  return facility?.sport_served || facility?.sport || ''
+}
+
+function getFacilityTypeLabel(value) {
+  const map = {
+    park_field: 'Park / Rec Field',
+    training_facility: 'Training Facility',
+    travel_team_facility: 'Travel Team Facility',
+    school_field: 'School Field',
+    other: 'Other',
+  }
+  return map[value] || value || ''
+}
+
 function getSportLabel(sport) {
   if (sport === 'both') return 'Baseball & Softball'
   if (sport === 'softball') return 'Softball'
@@ -268,7 +283,7 @@ export default function FacilityProfile() {
   const facebookUrl = useMemo(() => normalizeUrl(facility?.facebook), [facility?.facebook])
   const locationLine = useMemo(() => (facility ? getFacilityLocationLine(facility) : ''), [facility])
   const amenityList = useMemo(() => (Array.isArray(facility?.amenities) ? facility.amenities.filter(Boolean) : []), [facility])
-  const sportLabel = facility ? getSportLabel(facility.sport) : ''
+  const sportLabel = facility ? getSportLabel(getFacilitySport(facility)) : ''
   const mapsQuery = encodeURIComponent(facility?.address || locationLine || facility?.name || '')
 
   if (loading) {
@@ -323,7 +338,7 @@ export default function FacilityProfile() {
             )}
             {facility.facility_type && (
               <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>
-                {facility.facility_type}
+                {getFacilityTypeLabel(facility.facility_type)}
               </div>
             )}
           </div>
