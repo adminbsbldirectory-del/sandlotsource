@@ -93,10 +93,11 @@ function getSportLabel(sport) {
   return sport || ''
 }
 
-function getSportBadgeColor(sport) {
-  if (sport === 'softball') return '#7C3AED'
-  if (sport === 'both') return '#DCEAFE'
-  return '#1D4ED8'
+function getSportBadgeMeta(sport) {
+  if (sport === 'softball') return { bg: '#FEF3C7', color: '#854D0E', label: 'Softball' }
+  if (sport === 'both') return { bg: '#DCEAFE', color: '#1E3A8A', label: 'Baseball & Softball' }
+  if (sport === 'baseball') return { bg: '#DBEAFE', color: '#1D4ED8', label: 'Baseball' }
+  return null
 }
 
 async function geocodeZip(zip) {
@@ -167,8 +168,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
   const zip = getFacilityZip(facility)
   const cityState = [facility.city, facility.state].filter(Boolean).join(', ')
   const locationFull = zip ? cityState + ' ' + zip : cityState
-  const sportLabel = getSportLabel(getFacilitySport(facility))
-  const sportBg = getSportBadgeColor(getFacilitySport(facility))
+  const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
   const websiteUrl = normalizeUrl(facility.website)
   const instagramUrl = normalizeInstagramHandle(facility.instagram)
 
@@ -234,22 +234,12 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
                 {facilityTypeLabel}
               </span>
             )}
-            {sportLabel && (
+            {sportMeta && (
               <span
-                style={{
-                  background: sportBg,
-                  color: getFacilitySport(facility) === 'both' ? '#1E3A8A' : 'white',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: '2px 7px',
-                  borderRadius: 20,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  fontFamily: 'var(--font-head)',
-                  flexShrink: 0,
-                }}
+                className="badge"
+                style={{ background: selected ? 'rgba(255,255,255,0.18)' : sportMeta.bg, color: selected ? '#fff' : sportMeta.color }}
               >
-                {sportLabel}
+                {sportMeta.label}
               </span>
             )}
           </div>
@@ -361,6 +351,16 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
   )
 }
 
+function AdBox({ compact = false }) {
+  return (
+    <div style={{ background: '#F7F3ED', border: '1px dashed #D8D0C5', borderRadius: 14, padding: compact ? '16px 14px' : '24px 16px', textAlign: 'center', minHeight: compact ? 90 : 150 }}>
+      <div style={{ fontSize: compact ? 13 : 16, fontWeight: 700, color: '#7A6B57', fontFamily: 'var(--font-head)', marginBottom: 8 }}>ADVERTISE HERE</div>
+      <div style={{ fontSize: compact ? 12 : 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 10 }}>Reach baseball &amp; softball families</div>
+      <a href="mailto:admin@sandlotsource.com?subject=Sandlot%20Source%20Ad%20Inquiry" style={{ color: 'var(--red)', fontWeight: 700, fontSize: compact ? 12 : 13, textDecoration: 'none' }}>Contact Us</a>
+    </div>
+  )
+}
+
 export default function Facilities() {
   const [searchParams] = useSearchParams()
 
@@ -383,10 +383,14 @@ export default function Facilities() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput.trim()), 300)
-    return () => clearTimeout(t)
-  }, [searchInput])
+  const applySearch = () => setSearch(searchInput.trim())
+
+  const onSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applySearch()
+    }
+  }
 
   useEffect(() => {
     const selectedFromUrl = searchParams.get('select') || null
@@ -528,481 +532,51 @@ export default function Facilities() {
     <>
       {isMobile ? (
         <div>
-          <div
-            style={{
-              background: 'var(--white)',
-              borderBottom: '2px solid var(--lgray)',
-              padding: '10px 12px',
-              display: 'flex',
-              gap: 8,
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              position: 'sticky',
-              top: HEADER_H,
-              zIndex: 100,
-            }}
-          >
-            <input
-              placeholder="🔍 Search..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 120 }}
-            />
-            <button
-              type="button"
-              className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-              onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-            >
-              ⚾
-            </button>
-            <button
-              type="button"
-              className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-              onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-            >
-              🥎
-            </button>
-            <select
-              value={facilityType}
-              onChange={(e) => setFacilityType(e.target.value)}
-              style={{ ...inputStyle, minWidth: 160, flex: '0 0 160px' }}
-            >
-              {FACILITY_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
-              {filtered.length} result{filtered.length !== 1 ? 's' : ''}
-            </span>
+          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
+            <button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button>
+            <a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Facility</a>
           </div>
-
-          <div style={{ height: 220, borderBottom: '2px solid var(--lgray)' }}>
-            <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <FitBounds facilities={mappable} selectedId={selected} />
-              {selFacility?.lat != null && selFacility?.lng != null && (
-                <FlyTo lat={selFacility.lat} lng={selFacility.lng} />
-              )}
-              {mappable.map((f) => (
-                <Marker
-                  key={f.id}
-                  position={[f.lat, f.lng]}
-                  icon={makeIcon(f, f.id === selected)}
-                  zIndexOffset={f.id === selected ? 1000 : 0}
-                  eventHandlers={{ click: () => setSelected(f.id) }}
-                >
-                  <Popup>
-                    <div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}>
-                      <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong>
-                      <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                        📍 {[f.city, f.state].filter(Boolean).join(', ')}
-                        {getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
-
-          <div style={{ padding: '12px', background: 'var(--cream)' }}>
-            {loading && (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
-                Loading facilities…
-              </div>
-            )}
-            {!loading && filtered.length === 0 && <EmptyState />}
-            {filtered.map((f) => (
-              <FacilityCard
-                key={f.id}
-                facility={f}
-                selected={selected === f.id}
-                onClick={() => setSelected(selected === f.id ? null : f.id)}
-                distanceMi={getDistance(f)}
-              />
-            ))}
+          <div style={{ padding: 12 }}>
+            <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+              <input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={inputStyle} />
+              <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
+            </div>
+            {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 240, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} selectedId={selected} />{selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => setSelected(f.id) }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 160 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>{loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}{!loading && filtered.length === 0 && <EmptyState />}{!loading && filtered.map((f) => <FacilityCard key={f.id} facility={f} selected={selected === f.id} onClick={() => setSelected(selected === f.id ? null : f.id)} distanceMi={getDistance(f)} />)}</div>
           </div>
         </div>
       ) : (
-        <div
-          style={{
-            padding: '16px 14px 20px',
-            background: 'var(--cream)',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '300px minmax(0, 1fr) 200px',
-              gap: 22,
-              alignItems: 'start',
-            }}
-          >
-            <aside
-              style={{
-                position: 'sticky',
-                top: 84,
-                alignSelf: 'start',
-                background: 'var(--white)',
-                border: '1px solid rgba(15,23,42,0.08)',
-                borderRadius: 14,
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  padding: '14px 14px 12px',
-                  background: 'var(--white)',
-                  borderBottom: '1px solid var(--lgray)',
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
-                  {loading ? 'Loading…' : filtered.length + ' facilit' + (filtered.length !== 1 ? 'ies' : 'y')}
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>Search</span>
-                  <input
-                    placeholder="Name, city, address..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    style={inputStyle}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>Location type</span>
-                  <select value={facilityType} onChange={(e) => setFacilityType(e.target.value)} style={inputStyle}>
-                    {FACILITY_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ marginBottom: 10 }}>
-                  <span style={sectionLabel}>Sport</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <button
-                      type="button"
-                      className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-                      onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-                      style={{ width: '100%', justifyContent: 'flex-start' }}
-                    >
-                      ⚾ Baseball
-                    </button>
-                    <button
-                      type="button"
-                      className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-                      onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-                      style={{ width: '100%', justifyContent: 'flex-start' }}
-                    >
-                      🥎 Softball
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <span style={sectionLabel}>Near zip code</span>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      marginBottom: zip.length === 5 && zipStatus === 'ok' ? 10 : 0,
-                    }}
-                  >
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="e.g. 30004"
-                      maxLength={5}
-                      value={zip}
-                      onChange={(e) => {
-                        const next = e.target.value
-                        setZip(next)
-                        if (next.length < 5) {
-                          setGeoCenter(null)
-                          setZipStatus('')
-                        }
-                      }}
-                      onBlur={handleZipBlur}
-                      style={{ ...inputStyle, flex: 1 }}
-                    />
-                    {zipStatus === 'ok' && (
-                      <span style={{ fontSize: 12, color: '#16a34a', flexShrink: 0 }}>✓</span>
-                    )}
-                    {zipStatus === 'error' && (
-                      <span style={{ fontSize: 12, color: 'var(--red)', flexShrink: 0 }}>?</span>
-                    )}
-                    {zipStatus === 'loading' && (
-                      <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>…</span>
-                    )}
-                  </div>
-
-                  {zip.length === 5 && zipStatus === 'ok' && (
-                    <div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: 12,
-                          color: 'var(--gray)',
-                          marginBottom: 4,
-                        }}
-                      >
-                        <span>Radius</span>
-                        <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={5}
-                        max={100}
-                        step={5}
-                        value={radius}
-                        onChange={(e) => setRadius(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: 'var(--red)' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={clearZipFilter}
-                        style={{
-                          marginTop: 8,
-                          width: '100%',
-                          background: 'white',
-                          color: 'var(--navy)',
-                          border: '2px solid var(--lgray)',
-                          borderRadius: 8,
-                          padding: '7px 10px',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Clear zip filter
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <a
-                  href="/submit"
-                  style={{
-                    display: 'block',
-                    textAlign: 'center',
-                    background: 'var(--red)',
-                    color: 'white',
-                    padding: '10px',
-                    borderRadius: 'var(--btn-radius)',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    fontFamily: 'var(--font-head)',
-                    letterSpacing: '0.04em',
-                    marginTop: 10,
-                  }}
-                >
-                  + Add a Facility
-                </a>
+        <div style={{ padding: '16px 14px 20px', background: 'var(--cream)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 18, alignItems: 'start', width: '100%' }}>
+            <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', background: 'var(--white)', borderRight: '1px solid rgba(15,23,42,0.06)', zIndex: 2 }}>
+              <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{filtered.length} facilit{filtered.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>Parks, private facilities, and training locations</div></div>
+              <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
+                <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
+                <div><div style={sectionLabel}>Location type</div><select value={facilityType} onChange={(e) => setFacilityType(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
+                <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value; setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
+                <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Facility</a></div>
               </div>
-
-              <div style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
-                {loading && (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
-                    Loading facilities…
-                  </div>
-                )}
-                {!loading && filtered.length === 0 && <EmptyState />}
-                {filtered.map((f) => (
-                  <FacilityCard
-                    key={f.id}
-                    facility={f}
-                    selected={selected === f.id}
-                    onClick={() => setSelected(selected === f.id ? null : f.id)}
-                    distanceMi={getDistance(f)}
-                  />
-                ))}
-              </div>
+              <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}><AdBox compact /></div>
             </aside>
-
-            <main style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  position: 'sticky',
-                  top: 76,
-                  zIndex: 1,
-                  background: 'var(--cream)',
-                  paddingTop: 8,
-                  paddingBottom: 10,
-                }}
-              >
-                <div style={{ background: 'var(--white)', width: '100%' }}>
-                  <div
-                    style={{
-                      height: 390,
-                      width: '100%',
-                      overflow: 'hidden',
-                      borderRadius: 14,
-                      border: '1px solid rgba(15,23,42,0.06)',
-                    }}
-                  >
-                    <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
-                      <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
-                      <FitBounds facilities={mappable} selectedId={selected} />
-                      {selFacility?.lat != null && selFacility?.lng != null && (
-                        <FlyTo lat={selFacility.lat} lng={selFacility.lng} />
-                      )}
-                      {mappable.map((f) => (
-                        <Marker
-                          key={f.id}
-                          position={[f.lat, f.lng]}
-                          icon={makeIcon(f, f.id === selected)}
-                          zIndexOffset={f.id === selected ? 1000 : 0}
-                          eventHandlers={{ click: () => setSelected(f.id) }}
-                        >
-                          <Popup>
-                            <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
-                              <strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{f.name}</strong>
-                              <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                                📍 {[f.city, f.state].filter(Boolean).join(', ')}
-                                {getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
-                              </div>
-                              {f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}
-                              {getFacilityTypeLabel(f.facility_type) && <div style={{ fontSize: 12, marginTop: 2 }}>{getFacilityTypeLabel(f.facility_type)}</div>}
-                              {getFacilitySport(f) && <div style={{ fontSize: 12, marginTop: 2 }}>{getSportLabel(getFacilitySport(f))}</div>}
-                            </div>
-                          </Popup>
-                        </Marker>
-                      ))}
-                    </MapContainer>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 22, alignItems: 'start' }}>
+                <main style={{ minWidth: 0 }}>
+                  <div style={{ position: 'sticky', top: 76, zIndex: 1, background: 'var(--page-bg, #f5f3ef)', paddingTop: 8, paddingBottom: 10 }}>
+                    {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 390, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} selectedId={selected} />{selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => setSelected(f.id) }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div>{f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}{getFacilityTypeLabel(f.facility_type) && <div style={{ fontSize: 12, marginTop: 2 }}>{getFacilityTypeLabel(f.facility_type)}</div>}</div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
+                    {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, marginTop: 10, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view facility locations.</div>}
+                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{filtered.length} Facilit{filtered.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse parks, schools, and training facilities</div></div>
                   </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      padding: '8px 2px 0',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.07em',
-                        color: 'var(--gray)',
-                      }}
-                    >
-                      Map key
-                    </span>
-                    {[
-                      ['Park / Rec Field', '#16A34A'],
-                      ['Indoor Training Facility', '#D42B2B'],
-                      ['Private Facility', '#8B5CF6'],
-                      ['Team Facility', '#1D4ED8'],
-                      ['School Field', '#6B7280'],
-                    ].map(([label, color]) => (
-                      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div
-                          style={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50% 50% 50% 0',
-                            transform: 'rotate(-45deg)',
-                            background: color,
-                            border: '2px solid rgba(255,255,255,0.9)',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-                          }}
-                        />
-                        <span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span>
-                      </div>
-                    ))}
-                    {mappable.length === 0 && (
-                      <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                        Map pins appear as facilities add location data
-                      </span>
-                    )}
+                  <div style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14, alignItems: 'stretch' }}>
+                    {loading && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities...</div>}
+                    {!loading && filtered.length === 0 && <div style={{ gridColumn: '1 / -1' }}><EmptyState /></div>}
+                    {!loading && filtered.map((f) => <FacilityCard key={f.id} facility={f} selected={selected === f.id} onClick={() => setSelected(selected === f.id ? null : f.id)} distanceMi={getDistance(f)} />)}
                   </div>
-                </div>
+                </main>
+                <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
               </div>
-            </main>
-
-            <aside
-              style={{
-                position: 'sticky',
-                top: 84,
-                alignSelf: 'start',
-                width: 200,
-              }}
-            >
-              <div
-                style={{
-                  background: 'var(--white)',
-                  border: '1px solid rgba(15,23,42,0.08)',
-                  borderRadius: 14,
-                  padding: 16,
-                  display: 'grid',
-                  gap: 16,
-                }}
-              >
-                {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    style={{
-                      border: '2px dashed var(--lgray)',
-                      borderRadius: 'var(--card-radius)',
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                      background: 'var(--cream)',
-                      minHeight: 160,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: 'var(--gray)',
-                      }}
-                    >
-                      Advertise Here
-                    </div>
-                    <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>
-                      Reach baseball &amp; softball families
-                    </div>
-                    <a
-                      href="mailto:admin.bsbldirectory@gmail.com"
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--red)',
-                        fontWeight: 700,
-                        textDecoration: 'none',
-                        marginTop: 4,
-                      }}
-                    >
-                      Contact Us
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </aside>
+            </div>
           </div>
         </div>
       )}
