@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -415,7 +415,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
               letterSpacing: '0.04em',
             }}
           >
-            View Details &amp; Claim
+            View Team &amp; Claim
           </button>
 
           {team.lat != null && team.lng != null && (
@@ -463,6 +463,9 @@ function EmptyState({ hasFilters, stateName, zipActive, radius }) {
 }
 
 export default function TravelTeams() {
+  const cardRefs = useRef({})
+  const desktopListRef = useRef(null)
+  const mobileListRef = useRef(null)
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -637,6 +640,29 @@ export default function TravelTeams() {
       return true
     })
   }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius])
+
+  const displayedTeams = useMemo(() => {
+    if (!selectedTeam?.id) return filtered
+    const idx = filtered.findIndex((t) => t.id === selectedTeam.id)
+    if (idx <= 0) return filtered
+    const next = [...filtered]
+    const [selectedItem] = next.splice(idx, 1)
+    next.unshift(selectedItem)
+    return next
+  }, [filtered, selectedTeam])
+
+  useEffect(() => {
+    if (!selectedTeam?.id) return
+    const listEl = isMobile ? mobileListRef.current : desktopListRef.current
+    const cardEl = cardRefs.current[selectedTeam.id]
+    if (!listEl || !cardEl) return
+    const t = setTimeout(() => {
+      if (typeof cardEl.scrollIntoView === 'function') {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+      }
+    }, 120)
+    return () => clearTimeout(t)
+  }, [selectedTeam, isMobile, filtered])
 
   const mappable = filtered.filter((t) => t.lat != null && t.lng != null)
   const openTryoutCount = filtered.filter((t) => t.tryout_status === 'open').length
@@ -1057,7 +1083,7 @@ export default function TravelTeams() {
                                 )}
                                 <button
                                   type="button"
-                                  onClick={() => setProfileTeam(team)}
+                                  onClick={() => { setSelectedTeam(team); setProfileTeam(team) }}
                                   style={{
                                     marginTop: 8,
                                     width: '100%',
@@ -1071,7 +1097,7 @@ export default function TravelTeams() {
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  View Details
+                                  View Team
                                 </button>
                               </div>
                             </Popup>
@@ -1176,7 +1202,8 @@ export default function TravelTeams() {
                 )}
 
                 {!loading &&
-                  filtered.map((team) => (
+                  displayedTeams.map((team) => (
+                    <div key={team.id} ref={(el) => { if (el) cardRefs.current[team.id] = el; else delete cardRefs.current[team.id] }}>
                     <TeamCard
                       key={team.id}
                       team={team}
@@ -1188,6 +1215,7 @@ export default function TravelTeams() {
                         window.scrollTo({ top: 0, behavior: 'smooth' })
                       }}
                     />
+                    </div>
                   ))}
               </div>
             </main>
