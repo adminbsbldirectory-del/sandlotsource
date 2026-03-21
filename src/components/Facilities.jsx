@@ -13,19 +13,51 @@ L.Icon.Default.mergeOptions({
 
 const HEADER_H = 75
 
-const makeIcon = (selected) =>
+const FACILITY_TYPE_OPTIONS = [
+  { value: 'all', label: 'All Location Types' },
+  { value: 'park_field', label: 'Park / Rec Field' },
+  { value: 'training_facility', label: 'Training Facility' },
+  { value: 'travel_team_facility', label: 'Travel Team Facility' },
+  { value: 'school_field', label: 'School Field' },
+  { value: 'other', label: 'Other' },
+]
+
+function getFacilitySport(facility) {
+  return facility?.sport_served || facility?.sport || ''
+}
+
+function getFacilityTypeLabel(value) {
+  const map = {
+    park_field: 'Park / Rec Field',
+    training_facility: 'Training Facility',
+    travel_team_facility: 'Travel Team Facility',
+    school_field: 'School Field',
+    other: 'Other',
+  }
+  return map[value] || value || ''
+}
+
+function getFacilityTypeColor(value) {
+  if (value === 'park_field') return '#16A34A'
+  if (value === 'training_facility') return '#D42B2B'
+  if (value === 'travel_team_facility') return '#1D4ED8'
+  if (value === 'school_field') return '#6B7280'
+  return '#1a1a1a'
+}
+
+function getFacilityRingBackground(facility) {
+  const sport = getFacilitySport(facility)
+  if (sport === 'softball') return '#FACC15'
+  if (sport === 'both') return 'conic-gradient(#ffffff 0deg 180deg, #FACC15 180deg 360deg)'
+  return '#ffffff'
+}
+
+const makeIcon = (facility, selected) =>
   L.divIcon({
     className: '',
-    html:
-      '<div style="width:' +
-      (selected ? 34 : 26) +
-      'px;height:' +
-      (selected ? 34 : 26) +
-      'px;border-radius:50% 50% 50% 0;background:#1a1a1a;border:' +
-      (selected ? '4px solid #f0a500' : '3px solid white') +
-      ';transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
-    iconSize: [selected ? 34 : 26, selected ? 34 : 26],
-    iconAnchor: [selected ? 17 : 13, selected ? 34 : 26],
+    html: `<div style="width:${selected ? 38 : 30}px;height:${selected ? 38 : 30}px;display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;background:${selected ? '#f0a500' : getFacilityRingBackground(facility)};transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35);"><div style="width:${selected ? 30 : 24}px;height:${selected ? 30 : 24}px;border-radius:50% 50% 50% 0;background:${getFacilityTypeColor(facility.facility_type)};"></div></div>`,
+    iconSize: [selected ? 38 : 30, selected ? 38 : 30],
+    iconAnchor: [selected ? 19 : 15, selected ? 38 : 30],
     popupAnchor: [0, -30],
   })
 
@@ -128,11 +160,12 @@ function FlyTo({ lat, lng }) {
 
 function FacilityCard({ facility, selected, onClick, distanceMi }) {
   const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
+  const facilityTypeLabel = getFacilityTypeLabel(facility.facility_type)
   const zip = getFacilityZip(facility)
   const cityState = [facility.city, facility.state].filter(Boolean).join(', ')
   const locationFull = zip ? cityState + ' ' + zip : cityState
-  const sportLabel = getSportLabel(facility.sport)
-  const sportBg = getSportBadgeColor(facility.sport)
+  const sportLabel = getSportLabel(getFacilitySport(facility))
+  const sportBg = getSportBadgeColor(getFacilitySport(facility))
   const websiteUrl = normalizeUrl(facility.website)
   const instagramUrl = normalizeInstagramHandle(facility.instagram)
 
@@ -179,25 +212,44 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
             {facility.address && <div style={{ fontSize: 12, marginTop: 2, opacity: 0.6 }}>{facility.address}</div>}
           </div>
 
-          {sportLabel && (
-            <span
-              style={{
-                background: sportBg,
-                color: 'white',
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '2px 7px',
-                borderRadius: 20,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                fontFamily: 'var(--font-head)',
-                flexShrink: 0,
-                marginLeft: 8,
-              }}
-            >
-              {sportLabel}
-            </span>
-          )}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 8 }}>
+            {facilityTypeLabel && (
+              <span
+                style={{
+                  background: '#F3F4F6',
+                  color: getFacilityTypeColor(facility.facility_type),
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 20,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  fontFamily: 'var(--font-head)',
+                  flexShrink: 0,
+                }}
+              >
+                {facilityTypeLabel}
+              </span>
+            )}
+            {sportLabel && (
+              <span
+                style={{
+                  background: sportBg,
+                  color: 'white',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 20,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  fontFamily: 'var(--font-head)',
+                  flexShrink: 0,
+                }}
+              >
+                {sportLabel}
+              </span>
+            )}
+          </div>
         </div>
 
         {amenities.length > 0 && (
@@ -313,6 +365,7 @@ export default function Facilities() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(() => searchParams.get('select') || null)
   const [sport, setSport] = useState('Both')
+  const [facilityType, setFacilityType] = useState('all')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [zip, setZip] = useState('')
@@ -385,8 +438,10 @@ export default function Facilities() {
   const filtered = useMemo(() => {
     return facilities
       .filter((f) => {
-        if (sport === 'baseball' && f.sport !== 'baseball' && f.sport !== 'both') return false
-        if (sport === 'softball' && f.sport !== 'softball' && f.sport !== 'both') return false
+        const facilitySport = getFacilitySport(f)
+        if (sport === 'baseball' && facilitySport !== 'baseball' && facilitySport !== 'both') return false
+        if (sport === 'softball' && facilitySport !== 'softball' && facilitySport !== 'both') return false
+        if (facilityType !== 'all' && (f.facility_type || '') !== facilityType) return false
 
         if (search) {
           const q = search.toLowerCase()
@@ -523,7 +578,7 @@ export default function Facilities() {
                 <Marker
                   key={f.id}
                   position={[f.lat, f.lng]}
-                  icon={makeIcon(f.id === selected)}
+                  icon={makeIcon(f, f.id === selected)}
                   zIndexOffset={f.id === selected ? 1000 : 0}
                   eventHandlers={{ click: () => setSelected(f.id) }}
                 >
@@ -773,7 +828,7 @@ export default function Facilities() {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                   }}
                 />
-                <span style={{ fontSize: 11, color: 'var(--gray)' }}>Facility</span>
+                <span style={{ fontSize: 11, color: 'var(--gray)' }}>Type color</span>
               </div>
               {mappable.length === 0 && (
                 <span style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
@@ -796,7 +851,7 @@ export default function Facilities() {
                   <Marker
                     key={f.id}
                     position={[f.lat, f.lng]}
-                    icon={makeIcon(f.id === selected)}
+                    icon={makeIcon(f, f.id === selected)}
                     zIndexOffset={f.id === selected ? 1000 : 0}
                     eventHandlers={{ click: () => setSelected(f.id) }}
                   >
@@ -808,7 +863,8 @@ export default function Facilities() {
                           {getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}
                         </div>
                         {f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}
-                        {f.sport && <div style={{ fontSize: 12, marginTop: 2 }}>{getSportLabel(f.sport)}</div>}
+                        {getFacilityTypeLabel(f.facility_type) && <div style={{ fontSize: 12, marginTop: 2 }}>{getFacilityTypeLabel(f.facility_type)}</div>}
+                        {getFacilitySport(f) && <div style={{ fontSize: 12, marginTop: 2 }}>{getSportLabel(getFacilitySport(f))}</div>}
                       </div>
                     </Popup>
                   </Marker>
