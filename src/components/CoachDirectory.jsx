@@ -68,6 +68,31 @@ function getSportBadgeMeta(value) {
   return { key: 'baseball', label: 'Baseball', bg: '#DBEAFE', color: '#1D4ED8' }
 }
 
+
+async function geocodeZip(zip) {
+  if (!zip || zip.length !== 5) return null
+  try {
+    const res = await fetch('https://api.zippopotam.us/us/' + zip)
+    if (!res.ok) return null
+    const data = await res.json()
+    const place = data.places && data.places[0]
+    if (!place) return null
+    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) }
+  } catch {
+    return null
+  }
+}
+
+function distanceMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 function parseFirstPhone(raw) {
   if (!raw) return null
   return raw.split(/[\/,]/)[0].trim() || null
@@ -291,7 +316,7 @@ function RatingRow({ coach, selected }) {
   )
 }
 
-function CoachCard({ coach, selected, onClick, onViewProfile }) {
+function CoachCard({ coach, selected, onClick, onViewProfile, distanceMi }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
@@ -590,6 +615,10 @@ export default function CoachDirectory() {
   const [search, setSearch] = useState('')
   const [profileCoach, setProfileCoach] = useState(null)
   const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+  const [zip, setZip] = useState('')
+  const [geoCenter, setGeoCenter] = useState(null)
+  const [zipStatus, setZipStatus] = useState('')
+  const [radius, setRadius] = useState(25)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   const selectedFromUrl = searchParams.get('select') || null
@@ -614,6 +643,30 @@ export default function CoachDirectory() {
       e.preventDefault()
       applySearch()
     }
+  }
+
+  async function handleZipBlur() {
+    if (zip.length !== 5) {
+      setGeoCenter(null)
+      setZipStatus('')
+      return
+    }
+
+    const geo = await geocodeZip(zip)
+    if (geo) {
+      setGeoCenter(geo)
+      setZipStatus('ok')
+    } else {
+      setGeoCenter(null)
+      setZipStatus('error')
+    }
+  }
+
+  function clearZipFilter() {
+    setZip('')
+    setGeoCenter(null)
+    setZipStatus('')
+    setRadius(25)
   }
 
   useEffect(() => {
@@ -698,15 +751,19 @@ export default function CoachDirectory() {
           !(c.name || '').toLowerCase().includes(q) &&
           !(c.city || '').toLowerCase().includes(q) &&
           !(c.facility_name || '').toLowerCase().includes(q) &&
-          !String(c.zip || '').includes(q)
+          !String(c.zip || c.zip_code || '').includes(q)
         ) {
           return false
         }
       }
 
+      if (geoCenter && c.lat != null && c.lng != null) {
+        if (distanceMiles(geoCenter.lat, geoCenter.lng, c.lat, c.lng) > radius) return false
+      }
+
       return true
     })
-  }, [resolvedCoaches, sport, specialty, state, search])
+  }, [resolvedCoaches, sport, specialty, state, search, geoCenter, radius])
 
   const filtered = useMemo(() => {
     if (!facilityFromUrl) return baseFiltered
@@ -728,6 +785,11 @@ export default function CoachDirectory() {
 
   const mappable = useMemo(() => filtered.filter((c) => c.lat != null && c.lng != null), [filtered])
   const markerGroups = useMemo(() => buildMarkerGroups(mappable), [mappable])
+
+  function getDistance(coach) {
+    if (!geoCenter || coach.lat == null || coach.lng == null) return null
+    return distanceMiles(geoCenter.lat, geoCenter.lng, coach.lat, coach.lng)
+  }
 
   const sel = useMemo(() => {
     if (!selected) return null
@@ -854,7 +916,7 @@ export default function CoachDirectory() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
               {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
               {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-              {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} /></div>)}
+              {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} distanceMi={getDistance(coach)} /></div>)}
             </div>
           </div>
         </div>
@@ -869,10 +931,11 @@ export default function CoachDirectory() {
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
                 {facilityContext && <div style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--lgray)', background: '#f8fafc', color: 'var(--navy)' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>Facility context</div><div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div><div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>Showing only coaches linked to this facility</div><div style={{ marginTop: 8 }}><Link to={`/facilities/${facilityContext.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>← Back to Facility</Link></div></div>}
                 <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
-                <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
                 <div><div style={sectionLabel}>Specialty</div><select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{SPECIALTIES.map((s) => <option key={s}>{s}</option>)}</select></div>
                 <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
+                <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
+                <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a></div>
               </div>
               <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}><AdBox compact /></div>
@@ -888,7 +951,7 @@ export default function CoachDirectory() {
                   <div ref={desktopListRef} onWheel={handleListInteraction} style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14, alignItems: 'stretch' }}>
                     {loading && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
                     {!loading && displayedCoaches.length === 0 && <div style={{ gridColumn: '1 / -1' }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
-                    {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} /></div>)}
+                    {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} distanceMi={getDistance(coach)} /></div>)}
                   </div>
                 </main>
                 <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
