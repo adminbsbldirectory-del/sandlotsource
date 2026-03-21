@@ -23,8 +23,21 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
+function normalizeSportValue(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
+  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
+  if (raw.includes('softball')) return 'softball'
+  if (raw.includes('baseball')) return 'baseball'
+  return ''
+}
+
 function getFacilitySport(facility) {
-  return facility?.sport_served || facility?.sport || ''
+  const primary = normalizeSportValue(facility?.sport)
+  const served = normalizeSportValue(facility?.sport_served)
+  if (primary) return primary
+  return served
 }
 
 function getFacilityTypeLabel(value) {
