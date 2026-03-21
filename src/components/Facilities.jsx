@@ -42,7 +42,7 @@ function getFacilityTypeLabel(value) {
 function getFacilityTypeColor(value) {
   if (value === 'park_field') return '#16A34A'
   if (value === 'training_facility') return '#D42B2B'
-  if (value === 'private_facility') return '#111827'
+  if (value === 'private_facility') return '#8B5CF6'
   if (value === 'travel_team_facility') return '#1D4ED8'
   if (value === 'school_field') return '#6B7280'
   return '#1a1a1a'
@@ -95,7 +95,7 @@ function getSportLabel(sport) {
 
 function getSportBadgeColor(sport) {
   if (sport === 'softball') return '#7C3AED'
-  if (sport === 'both') return 'var(--navy)'
+  if (sport === 'both') return '#DCEAFE'
   return '#1D4ED8'
 }
 
@@ -238,7 +238,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
               <span
                 style={{
                   background: sportBg,
-                  color: 'white',
+                  color: getFacilitySport(facility) === 'both' ? '#1E3A8A' : 'white',
                   fontSize: 10,
                   fontWeight: 700,
                   padding: '2px 7px',
@@ -383,6 +383,10 @@ export default function Facilities() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   useEffect(() => {
     const selectedFromUrl = searchParams.get('select') || null
@@ -414,21 +418,8 @@ export default function Facilities() {
     load()
   }, [searchParams])
 
-  async function applyFilters() {
-    setSearch(searchInput.trim())
-
-    if (!zip) {
-      setGeoCenter(null)
-      setZipStatus('')
-      return
-    }
-
-    if (zip.length !== 5) {
-      setGeoCenter(null)
-      setZipStatus('error')
-      return
-    }
-
+  async function handleZipBlur() {
+    if (!zip || zip.length !== 5) return
     setZipStatus('loading')
     const geo = await geocodeZip(zip)
     if (geo) {
@@ -438,12 +429,6 @@ export default function Facilities() {
       setGeoCenter(null)
       setZipStatus('error')
     }
-  }
-
-  async function handleZipBlur() {
-    if (!zip || zip.length !== 5) return
-    if (geoCenter && zipStatus === 'ok') return
-    await applyFilters()
   }
 
   function clearZipFilter() {
@@ -525,7 +510,7 @@ export default function Facilities() {
   }
 
   function EmptyState() {
-    const hasFilters = sport !== 'Both' || facilityType !== 'all' || search || zipStatus === 'ok'
+    const hasFilters = sport !== 'Both' || search || zipStatus === 'ok'
     return (
       <div className="empty-state">
         <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities listed yet'}</h3>
@@ -561,7 +546,6 @@ export default function Facilities() {
               placeholder="🔍 Search..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') applyFilters() }}
               style={{ ...inputStyle, flex: 1, minWidth: 120 }}
             />
             <button
@@ -589,24 +573,6 @@ export default function Facilities() {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={applyFilters}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 'var(--btn-radius)',
-                border: '1.5px solid var(--navy)',
-                background: 'var(--navy)',
-                color: 'white',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-head)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Search
-            </button>
             <span style={{ fontSize: 12, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
               {filtered.length} result{filtered.length !== 1 ? 's' : ''}
             </span>
@@ -705,7 +671,6 @@ export default function Facilities() {
                     placeholder="Name, city, address..."
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') applyFilters() }}
                     style={inputStyle}
                   />
                 </div>
@@ -826,27 +791,6 @@ export default function Facilities() {
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={applyFilters}
-                  style={{
-                    width: '100%',
-                    background: 'var(--navy)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 'var(--btn-radius)',
-                    padding: '10px',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-head)',
-                    letterSpacing: '0.04em',
-                    marginTop: 10,
-                  }}
-                >
-                  Search Facilities
-                </button>
-
                 <a
                   href="/submit"
                   style={{
@@ -868,7 +812,23 @@ export default function Facilities() {
                 </a>
               </div>
 
-              <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}><div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.45 }}>Use the map to scan all locations, then browse the cards below for details.</div></div>
+              <div style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}>
+                {loading && (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
+                    Loading facilities…
+                  </div>
+                )}
+                {!loading && filtered.length === 0 && <EmptyState />}
+                {filtered.map((f) => (
+                  <FacilityCard
+                    key={f.id}
+                    facility={f}
+                    selected={selected === f.id}
+                    onClick={() => setSelected(selected === f.id ? null : f.id)}
+                    distanceMi={getDistance(f)}
+                  />
+                ))}
+              </div>
             </aside>
 
             <main style={{ minWidth: 0 }}>
@@ -949,7 +909,7 @@ export default function Facilities() {
                     {[
                       ['Park / Rec Field', '#16A34A'],
                       ['Indoor Training Facility', '#D42B2B'],
-                      ['Private Facility', '#111827'],
+                      ['Private Facility', '#8B5CF6'],
                       ['Team Facility', '#1D4ED8'],
                       ['School Field', '#6B7280'],
                     ].map(([label, color]) => (
@@ -975,63 +935,6 @@ export default function Facilities() {
                     )}
                   </div>
                 </div>
-              </div>
-              <div
-                style={{
-                  marginTop: 14,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-head)',
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: 'var(--navy)',
-                  }}
-                >
-                  {filtered.length} Location{filtered.length !== 1 ? 's' : ''}
-                </div>
-
-                <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-                  Browse parks, indoor facilities, team facilities, schools, and private locations
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
-                  gap: 14,
-                  alignItems: 'stretch',
-                }}
-              >
-                {loading && (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
-                    Loading facilities…
-                  </div>
-                )}
-
-                {!loading && filtered.length === 0 && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <EmptyState />
-                  </div>
-                )}
-
-                {!loading && filtered.map((f) => (
-                  <FacilityCard
-                    key={f.id}
-                    facility={f}
-                    selected={selected === f.id}
-                    onClick={() => setSelected(selected === f.id ? null : f.id)}
-                    distanceMi={getDistance(f)}
-                  />
-                ))}
               </div>
             </main>
 
