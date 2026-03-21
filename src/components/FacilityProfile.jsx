@@ -36,8 +36,9 @@ function getFacilitySport(facility) {
 function getFacilityTypeLabel(value) {
   const map = {
     park_field: 'Park / Rec Field',
-    training_facility: 'Training Facility',
-    travel_team_facility: 'Travel Team Facility',
+    training_facility: 'Indoor Training Facility',
+    private_facility: 'Private Facility',
+    travel_team_facility: 'Team Facility',
     school_field: 'School Field',
     other: 'Other',
   }
