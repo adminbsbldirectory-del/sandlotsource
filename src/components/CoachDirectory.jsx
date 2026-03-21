@@ -219,7 +219,7 @@ function buildMarkerGroups(coaches) {
 }
 
 
-function MapMarkers({ groups, selected, setSelected }) {
+function MapMarkers({ groups, selected, setSelected, onViewCoach }) {
   return groups.map((group) => {
     const selectedCoach = group.coaches.find((coach) => coach.id === selected) || null
     const primaryCoach = selectedCoach || group.coaches[0]
@@ -277,6 +277,24 @@ function MapMarkers({ groups, selected, setSelected }) {
                 )
               })}
             </div>
+            <button
+              type="button"
+              onClick={() => onViewCoach(primaryCoach)}
+              style={{
+                marginTop: 8,
+                width: '100%',
+                background: 'var(--navy)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 10px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              View Coach
+            </button>
           </div>
         </Popup>
       </Marker>
