@@ -589,7 +589,7 @@ export default function CoachDirectory() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [profileCoach, setProfileCoach] = useState(null)
-  const [showMap, setShowMap] = useState(false)
+  const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   const selectedFromUrl = searchParams.get('select') || null
