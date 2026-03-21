@@ -495,6 +495,15 @@ export default function TravelTeams() {
     return () => clearTimeout(timer)
   }, [searchInput])
 
+  const applySearch = () => setSearchTerm(searchInput.trim().toLowerCase())
+
+  const onSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applySearch()
+    }
+  }
+
   useEffect(() => {
     async function detectState() {
       try {
