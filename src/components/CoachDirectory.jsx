@@ -58,6 +58,23 @@ function coachPinColor(coach) {
   return coach.listing_type === 'facility' ? PIN_COLORS.facility : PIN_COLORS.coach
 }
 
+function normalizeSportValue(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
+  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
+  if (raw.includes('softball')) return 'softball'
+  if (raw.includes('baseball')) return 'baseball'
+  return raw
+}
+
+function getSportBadgeMeta(value) {
+  const sport = normalizeSportValue(value)
+  if (sport === 'both') return { key: 'both', label: 'Baseball & Softball', bg: '#DCEAFE', color: '#1E3A8A' }
+  if (sport === 'softball') return { key: 'softball', label: 'Softball', bg: '#F5E79E', color: '#7A4E00' }
+  return { key: 'baseball', label: 'Baseball', bg: '#DBEAFE', color: '#1D4ED8' }
+}
+
 function parseFirstPhone(raw) {
   if (!raw) return null
   return raw.split(/[\/,]/)[0].trim() || null
@@ -241,7 +258,7 @@ function MapMarkers({ groups, selected, setSelected }) {
 function RatingRow({ coach, selected }) {
   const avg = parseFloat(coach.rating_average) || 0
   const count = parseInt(coach.review_count, 10) || 0
-  const icon = coach.sport === 'softball' ? '🥎' : '⚾'
+  const icon = normalizeSportValue(coach.sport) === 'softball' ? '🥎' : '⚾'
 
   if (count === 0) {
     return (
@@ -274,6 +291,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
+  const sportBadge = getSportBadgeMeta(coach.sport)
 
   const cardStyle = selected
     ? {
@@ -335,10 +353,33 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
           </div>
 
           <span
-            className={`badge badge-sport-${coach.sport}`}
-            style={selected ? { background: 'rgba(255,255,255,0.15)', color: 'white' } : undefined}
+            style={selected ? {
+              background: 'rgba(255,255,255,0.15)',
+              color: 'white',
+              fontSize: 11,
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: 20,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontFamily: 'var(--font-head)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            } : {
+              background: sportBadge.bg,
+              color: sportBadge.color,
+              fontSize: 11,
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: 20,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontFamily: 'var(--font-head)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
           >
-            {coach.sport === 'both' ? 'Baseball & Softball' : coach.sport}
+            {sportBadge.label}
           </span>
         </div>
 
@@ -627,7 +668,8 @@ export default function CoachDirectory() {
     return resolvedCoaches.filter((c) => {
       const specs = c.specialty || []
 
-      if (sport !== 'Both' && c.sport !== sport && c.sport !== 'both') return false
+      const normalizedSport = normalizeSportValue(c.sport)
+      if (sport !== 'Both' && normalizedSport !== sport && normalizedSport !== 'both') return false
       if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
       if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
 
@@ -982,23 +1024,13 @@ export default function CoachDirectory() {
                 overflow: 'hidden',
               }}
             >
-              <div style={{ padding: '12px 12px 0' }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>
-                  {displayedCoaches.length} coach{displayedCoaches.length !== 1 ? 'es' : ''}
+              <div style={{ padding: '14px 14px 12px', background: 'var(--white)', borderBottom: '1px solid var(--lgray)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', marginBottom: 10 }}>
+                  {loading ? 'Loading…' : displayedCoaches.length + ' coach' + (displayedCoaches.length !== 1 ? 'es' : '')}
                 </div>
 
                 {facilityContext && (
-                  <div
-                    style={{
-                      marginTop: 10,
-                      marginBottom: 10,
-                      padding: '10px 12px',
-                      borderRadius: 10,
-                      border: '1px solid var(--lgray)',
-                      background: '#f8fafc',
-                      color: 'var(--navy)',
-                    }}
-                  >
+                  <div style={{ marginBottom: 10, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--lgray)', background: '#f8fafc', color: 'var(--navy)' }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>
                       Facility context
                     </div>
@@ -1007,10 +1039,7 @@ export default function CoachDirectory() {
                       Showing only coaches linked to this facility
                     </div>
                     <div style={{ marginTop: 8 }}>
-                      <Link
-                        to={`/facilities/${facilityContext.id}`}
-                        style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
-                      >
+                      <Link to={`/facilities/${facilityContext.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
                         ← Back to Facility
                       </Link>
                     </div>
@@ -1019,126 +1048,41 @@ export default function CoachDirectory() {
 
                 <div style={{ marginBottom: 10 }}>
                   <span style={sectionLabel}>Search</span>
-                  <input
-                    placeholder="Name, city, facility, zip..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    style={inputStyle}
-                  />
+                  <input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={inputStyle} />
                 </div>
 
                 <div style={{ marginBottom: 10 }}>
                   <span style={sectionLabel}>Sport</span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <button
-                      type="button"
-                      className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-                      onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-                      style={{ width: '100%', justifyContent: 'flex-start' }}
-                    >
-                      ⚾ Baseball
-                    </button>
-                    <button
-                      type="button"
-                      className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-                      onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-                      style={{ width: '100%', justifyContent: 'flex-start' }}
-                    >
-                      🥎 Softball
-                    </button>
+                    <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>⚾ Baseball</button>
+                    <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ width: '100%', justifyContent: 'flex-start' }}>🥎 Softball</button>
                   </div>
                 </div>
 
                 <div style={{ marginBottom: 10 }}>
                   <span style={sectionLabel}>Specialty</span>
                   <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={inputStyle}>
-                    {SPECIALTIES.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
+                    {SPECIALTIES.map((s) => (<option key={s}>{s}</option>))}
                   </select>
                 </div>
 
                 <div style={{ marginBottom: 10 }}>
                   <span style={sectionLabel}>State</span>
                   <select value={state} onChange={(e) => setState(e.target.value)} style={inputStyle}>
-                    {US_STATES.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
+                    {US_STATES.map((s) => (<option key={s}>{s}</option>))}
                   </select>
                 </div>
 
-                <a
-                  href="/submit"
-                  style={{
-                    display: 'block',
-                    textAlign: 'center',
-                    background: 'var(--red)',
-                    color: 'white',
-                    padding: '10px',
-                    borderRadius: 'var(--btn-radius)',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    fontFamily: 'var(--font-head)',
-                    letterSpacing: '0.04em',
-                    marginTop: 10,
-                  }}
-                >
-                  + Add a Coach
-                </a>
-              </div>
-
-              <div
-                ref={desktopListRef}
-                onScroll={handleListInteraction}
-                onWheel={handleListInteraction}
-                style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto', padding: '12px', background: 'var(--cream)' }}
-              >
-                {loading && (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>
-                    Loading coaches…
-                  </div>
-                )}
-                {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-                {!loading && displayedCoaches.map((coach) => (
-                  <div key={coach.id} ref={setCardRef(coach.id)}>
-                    <CoachCard
-                      coach={coach}
-                      selected={selected === coach.id}
-                      onClick={() => handleSelectCoach(coach.id)}
-                      onViewProfile={setProfileCoach}
-                    />
-                  </div>
-                ))}
+                <a href="/submit" style={{ display: 'block', textAlign: 'center', background: 'var(--red)', color: 'white', padding: '10px', borderRadius: 'var(--btn-radius)', fontSize: 13, fontWeight: 700, textDecoration: 'none', fontFamily: 'var(--font-head)', letterSpacing: '0.04em', marginTop: 10 }}>+ Add a Coach</a>
               </div>
             </aside>
 
             <main style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  position: 'sticky',
-                  top: 76,
-                  zIndex: 1,
-                  background: 'var(--cream)',
-                  paddingTop: 8,
-                  paddingBottom: 10,
-                }}
-              >
+              <div style={{ position: 'sticky', top: 76, zIndex: 1, background: 'var(--cream)', paddingTop: 8, paddingBottom: 10 }}>
                 <div style={{ background: 'var(--white)', width: '100%' }}>
-                  <div
-                    style={{
-                      height: 420,
-                      width: '100%',
-                      overflow: 'hidden',
-                      borderRadius: 14,
-                      border: '1px solid rgba(15,23,42,0.06)',
-                    }}
-                  >
+                  <div style={{ height: 390, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}>
                     <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
-                      <TileLayer
-                        attribution="&copy; OpenStreetMap"
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      />
+                      <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       <FitBounds points={markerGroups} selectedId={selected} />
                       {sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
                       <MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} />
@@ -1147,69 +1091,25 @@ export default function CoachDirectory() {
                   <MapLegend />
                 </div>
               </div>
+
+              <div ref={desktopListRef} onWheel={handleListInteraction} style={{ paddingTop: 10 }}>
+                {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
+                {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
+                {!loading && displayedCoaches.map((coach) => (
+                  <div key={coach.id} ref={setCardRef(coach.id)}>
+                    <CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} />
+                  </div>
+                ))}
+              </div>
             </main>
 
-            <aside
-              style={{
-                position: 'sticky',
-                top: 84,
-                alignSelf: 'start',
-                width: 200,
-              }}
-            >
-              <div
-                style={{
-                  background: 'var(--white)',
-                  border: '1px solid rgba(15,23,42,0.08)',
-                  borderRadius: 14,
-                  padding: 16,
-                  display: 'grid',
-                  gap: 16,
-                }}
-              >
+            <aside style={{ position: 'sticky', top: 84, alignSelf: 'start', width: 200 }}>
+              <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 14, padding: 16, display: 'grid', gap: 16 }}>
                 {[1, 2].map((i) => (
-                  <div
-                    key={i}
-                    style={{
-                      border: '2px dashed var(--lgray)',
-                      borderRadius: 'var(--card-radius)',
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                      background: 'var(--cream)',
-                      minHeight: 160,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: 'var(--gray)',
-                      }}
-                    >
-                      Advertise Here
-                    </div>
-                    <div style={{ fontSize: 11, color: '#aaa', lineHeight: 1.5 }}>
-                      Reach baseball &amp; softball families
-                    </div>
-                    <a
-                      href="mailto:admin.bsbldirectory@gmail.com"
-                      style={{
-                        fontSize: 11,
-                        color: 'var(--red)',
-                        fontWeight: 700,
-                        textDecoration: 'none',
-                        marginTop: 4,
-                      }}
-                    >
-                      Contact Us
-                    </a>
+                  <div key={i} style={{ border: '2px dashed var(--lgray)', borderRadius: 'var(--card-radius)', padding: '16px 12px', textAlign: 'center', background: 'var(--cream)', minHeight: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray)' }}>Advertise Here</div>
+                    <div style={{ fontSize: 12, color: '#999', lineHeight: 1.5 }}>Reach baseball & softball families</div>
+                    <a href="mailto:admin@sandlotsource.com?subject=Sandlot%20Source%20Ad%20Inquiry" style={{ color: 'var(--red)', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Contact Us</a>
                   </div>
                 ))}
               </div>
