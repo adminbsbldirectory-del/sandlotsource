@@ -842,8 +842,8 @@ function CoachForm({ isMobile }) {
           <div>
             <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
             <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. Grand Slam, Central Park, Milton HS field" style={inputStyle} />
-            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-              Independent coaches can use a park, school field, private facility, or indoor training facility as their main location.
+            <div style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.35 }}>
+              Independent coaches can use a park, school field, private facility, or indoor training facility.
             </div>
           </div>
         </div>
@@ -1083,6 +1083,11 @@ function TeamForm({ isMobile }) {
     zipCode: form.facility_zip_code || form.zip_code,
     enabled: !!String(form.facility_name || '').trim(),
   })
+
+  const visibleFacilityMatches = useMemo(() => {
+    if (allowCreateNewFacility || selectedFacilityMatch) return []
+    return facilityMatches
+  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
 
   function set(field, value) {
     setAllowCreateNewFacility(false)
