@@ -164,7 +164,7 @@ async function searchFacilityCandidates({ facilityName, address, city, state, zi
   if (trimmedZip) {
     const { data, error } = await supabase
       .from('facilities')
-      .select('id, name, address, city, state, zip_code, lat, lng')
+      .select('id, name, address, city, state, zip_code, lat, lng, facility_type')
       .eq('zip_code', trimmedZip)
       .limit(25)
 
@@ -175,7 +175,7 @@ async function searchFacilityCandidates({ facilityName, address, city, state, zi
   if (trimmedCity && trimmedState) {
     const { data, error } = await supabase
       .from('facilities')
-      .select('id, name, address, city, state, zip_code, lat, lng')
+      .select('id, name, address, city, state, zip_code, lat, lng, facility_type')
       .ilike('city', trimmedCity)
       .eq('state', trimmedState)
       .limit(40)
@@ -189,7 +189,7 @@ async function searchFacilityCandidates({ facilityName, address, city, state, zi
     if (firstToken) {
       const { data, error } = await supabase
         .from('facilities')
-        .select('id, name, address, city, state, zip_code, lat, lng')
+        .select('id, name, address, city, state, zip_code, lat, lng, facility_type')
         .ilike('name', `%${firstToken}%`)
         .limit(40)
 
@@ -265,6 +265,7 @@ function applyExistingFacilityToCoachForm(form, match) {
   return {
     ...form,
     facility_name: match.name || form.facility_name,
+    facility_type: match.facility_type || form.facility_type,
     address: match.address || form.address,
     city: match.city || form.city,
     state: match.state || form.state,
@@ -304,6 +305,7 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
 
   const facilityPayload = {
     name: facilityName,
+    facility_type: form.facility_type || null,
     sport: form.sport || null,
     sport_served: form.sport || null,
     city: form.city.trim() || null,
@@ -379,6 +381,7 @@ async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = n
 
   const facilityPayload = {
     name: facilityName,
+    facility_type: form.facility_type || null,
     sport: form.sport || null,
     sport_served: form.sport || null,
     city: facilityCity || null,
@@ -468,8 +471,9 @@ const TEAM_CLASSIFICATION_OPTIONS = {
 
 const FACILITY_TYPE_OPTIONS = [
   { value: 'park_field', label: 'Park / Rec Field' },
-  { value: 'training_facility', label: 'Training Facility' },
-  { value: 'travel_team_facility', label: 'Travel Team Facility' },
+  { value: 'training_facility', label: 'Indoor Training Facility' },
+  { value: 'private_facility', label: 'Private Facility' },
+  { value: 'travel_team_facility', label: 'Team Facility' },
   { value: 'school_field', label: 'School Field' },
   { value: 'other', label: 'Other' },
 ]
@@ -586,6 +590,7 @@ function CoachForm({ isMobile }) {
     lng: null,
     address: '',
     facility_name: '',
+    facility_type: '',
     phone: '',
     email: '',
     website: '',
@@ -836,27 +841,38 @@ function CoachForm({ isMobile }) {
           </div>
           <div>
             <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
-            <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
+            <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. Grand Slam, Central Park, Milton HS field" style={inputStyle} />
             <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-              We will suggest an existing facility if one already looks like a match.
+              Independent coaches can use a park, school field, private facility, or indoor training facility as their main location.
             </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>
-            Street Address
-            {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-            {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-            {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
-          </label>
-          <input
-            value={form.address}
-            onChange={(e) => set('address', e.target.value)}
-            onBlur={handleAddressBlur}
-            placeholder="Optional street address for more accurate map placement"
-            style={inputStyle}
-          />
+        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={labelStyle}>Location Type</label>
+            <select value={form.facility_type} onChange={(e) => set('facility_type', e.target.value)} style={selectStyle}>
+              <option value="">Select a location type</option>
+              {FACILITY_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>
+              Street Address
+              {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+              {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+              {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+            </label>
+            <input
+              value={form.address}
+              onChange={(e) => set('address', e.target.value)}
+              onBlur={handleAddressBlur}
+              placeholder="Optional street address for more accurate map placement"
+              style={inputStyle}
+            />
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
