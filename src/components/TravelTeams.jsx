@@ -286,7 +286,9 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
   const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
   const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
   const locationFull = team.zip_code ? `${cityState} ${team.zip_code}` : cityState
-  const practiceLabel = team.address?.trim() ? team.address.trim() : locationFull
+  const practiceLabel = team.practice_location_name
+    ? [team.practice_location_name, team.address?.trim() || ''].filter(Boolean).join(' · ')
+    : team.address?.trim() ? team.address.trim() : locationFull
 
   return (
     <div
@@ -539,7 +541,7 @@ export default function TravelTeams() {
 
       const { data: teamRows, error: teamError } = await supabase
         .from('travel_teams')
-        .select('*')
+        .select('id, name, sport, org_affiliation, classification, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, active')
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
