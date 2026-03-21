@@ -21,24 +21,66 @@ async function geocodeZip(zip) {
   }
 }
 
+
 async function geocodeAddress(address, city, state, zip) {
-  const query = `${address}, ${city}, ${state} ${zip}`
+  const street = String(address || '').trim()
+  if (!street) return null
 
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-    const data = await res.json()
+  const zipGeo = zip && zip.length === 5 ? await geocodeZip(zip) : null
+  const queries = Array.from(new Set([
+    [street, city, state, zip].filter(Boolean).join(', '),
+    [street, city, state].filter(Boolean).join(', '),
+    [street, state, zip].filter(Boolean).join(', '),
+    [street, zip].filter(Boolean).join(', '),
+  ].filter(Boolean)))
 
-    if (data && data.length > 0) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
+  const candidates = []
+
+  for (const query of queries) {
+    try {
+      const url = new URL('https://nominatim.openstreetmap.org/search')
+      url.searchParams.set('format', 'jsonv2')
+      url.searchParams.set('addressdetails', '1')
+      url.searchParams.set('countrycodes', 'us')
+      url.searchParams.set('limit', '5')
+      url.searchParams.set('q', query)
+
+      const res = await fetch(url.toString(), {
+        headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+      })
+      if (!res.ok) continue
+      const data = await res.json()
+      for (const row of Array.isArray(data) ? data : []) {
+        const lat = parseFloat(row.lat)
+        const lng = parseFloat(row.lon)
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+
+        const addr = row.address || {}
+        let score = 0
+        if (addr.house_number) score += 6
+        if (addr.road) score += 5
+        if (zip && String(addr.postcode || '').includes(zip)) score += 6
+        const cityNeedle = String(city || '').trim().toLowerCase()
+        const cityHay = [addr.city, addr.town, addr.village, addr.hamlet, row.display_name].filter(Boolean).join(' ').toLowerCase()
+        if (cityNeedle && cityHay.includes(cityNeedle)) score += 4
+        if (state && String(addr.state || addr.state_code || row.display_name || '').toLowerCase().includes(String(state).toLowerCase())) score += 3
+        if (zipGeo) {
+          const dist = distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng)
+          score -= Math.min(dist, 25) / 2
+          if (dist > 20) score -= 10
+        }
+
+        candidates.push({ lat, lng, score })
       }
+      if (candidates.length) break
+    } catch (err) {
+      console.error('Geocode error', err)
     }
-  } catch (err) {
-    console.error('Geocode error', err)
   }
 
-  return null
+  if (!candidates.length) return null
+  candidates.sort((a, b) => b.score - a.score)
+  return { lat: candidates[0].lat, lng: candidates[0].lng }
 }
 
 function normalizeFacilityName(value) {
@@ -164,7 +206,7 @@ async function searchFacilityCandidates({ facilityName, address, city, state, zi
   if (trimmedZip) {
     const { data, error } = await supabase
       .from('facilities')
-      .select('id, name, address, city, state, zip_code, lat, lng, facility_type')
+      .select('id, name, address, city, state, zip_code, lat, lng')
       .eq('zip_code', trimmedZip)
       .limit(25)
 
@@ -175,7 +217,7 @@ async function searchFacilityCandidates({ facilityName, address, city, state, zi
   if (trimmedCity && trimmedState) {
     const { data, error } = await supabase
       .from('facilities')
-      .select('id, name, address, city, state, zip_code, lat, lng, facility_type')
+      .select('id, name, address, city, state, zip_code, lat, lng')
       .ilike('city', trimmedCity)
       .eq('state', trimmedState)
       .limit(40)
@@ -189,7 +231,7 @@ async function searchFacilityCandidates({ facilityName, address, city, state, zi
     if (firstToken) {
       const { data, error } = await supabase
         .from('facilities')
-        .select('id, name, address, city, state, zip_code, lat, lng, facility_type')
+        .select('id, name, address, city, state, zip_code, lat, lng')
         .ilike('name', `%${firstToken}%`)
         .limit(40)
 
@@ -265,7 +307,6 @@ function applyExistingFacilityToCoachForm(form, match) {
   return {
     ...form,
     facility_name: match.name || form.facility_name,
-    facility_type: match.facility_type || form.facility_type,
     address: match.address || form.address,
     city: match.city || form.city,
     state: match.state || form.state,
@@ -305,7 +346,6 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
 
   const facilityPayload = {
     name: facilityName,
-    facility_type: form.facility_type || null,
     sport: form.sport || null,
     sport_served: form.sport || null,
     city: form.city.trim() || null,
@@ -381,7 +421,6 @@ async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = n
 
   const facilityPayload = {
     name: facilityName,
-    facility_type: form.facility_type || null,
     sport: form.sport || null,
     sport_served: form.sport || null,
     city: facilityCity || null,
@@ -471,9 +510,8 @@ const TEAM_CLASSIFICATION_OPTIONS = {
 
 const FACILITY_TYPE_OPTIONS = [
   { value: 'park_field', label: 'Park / Rec Field' },
-  { value: 'training_facility', label: 'Indoor Training Facility' },
-  { value: 'private_facility', label: 'Private Facility' },
-  { value: 'travel_team_facility', label: 'Team Facility' },
+  { value: 'training_facility', label: 'Training Facility' },
+  { value: 'travel_team_facility', label: 'Travel Team Facility' },
   { value: 'school_field', label: 'School Field' },
   { value: 'other', label: 'Other' },
 ]
@@ -590,7 +628,6 @@ function CoachForm({ isMobile }) {
     lng: null,
     address: '',
     facility_name: '',
-    facility_type: '',
     phone: '',
     email: '',
     website: '',
@@ -841,38 +878,27 @@ function CoachForm({ isMobile }) {
           </div>
           <div>
             <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
-            <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. Grand Slam, Central Park, Milton HS field" style={inputStyle} />
-            <div style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.35 }}>
-              Independent coaches can use a park, school field, private facility, or indoor training facility.
+            <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+              We will suggest an existing facility if one already looks like a match.
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Location Type</label>
-            <select value={form.facility_type} onChange={(e) => set('facility_type', e.target.value)} style={selectStyle}>
-              <option value="">Select a location type</option>
-              {FACILITY_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>
-              Street Address
-              {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-              {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-              {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
-            </label>
-            <input
-              value={form.address}
-              onChange={(e) => set('address', e.target.value)}
-              onBlur={handleAddressBlur}
-              placeholder="Optional street address for more accurate map placement"
-              style={inputStyle}
-            />
-          </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>
+            Street Address
+            {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+            {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+            {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+          </label>
+          <input
+            value={form.address}
+            onChange={(e) => set('address', e.target.value)}
+            onBlur={handleAddressBlur}
+            placeholder="Optional street address for more accurate map placement"
+            style={inputStyle}
+          />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
@@ -1083,11 +1109,6 @@ function TeamForm({ isMobile }) {
     zipCode: form.facility_zip_code || form.zip_code,
     enabled: !!String(form.facility_name || '').trim(),
   })
-
-  const visibleFacilityMatches = useMemo(() => {
-    if (allowCreateNewFacility || selectedFacilityMatch) return []
-    return facilityMatches
-  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
 
   function set(field, value) {
     setAllowCreateNewFacility(false)
