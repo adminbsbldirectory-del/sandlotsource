@@ -21,6 +21,28 @@ async function geocodeZip(zip) {
   }
 }
 
+function distanceMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function getResolvedCity(addr = {}) {
+  return addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.suburb || null
+}
+
+function getResolvedState(addr = {}) {
+  return addr.state_code || addr.state || null
+}
+
+function normalizeZipCode(value) {
+  const match = String(value || '').match(/\b\d{5}\b/)
+  return match ? match[0] : ''
+}
 
 async function geocodeAddress(address, city, state, zip) {
   const street = String(address || '').trim()
@@ -70,7 +92,14 @@ async function geocodeAddress(address, city, state, zip) {
           if (dist > 20) score -= 10
         }
 
-        candidates.push({ lat, lng, score })
+        candidates.push({
+          lat,
+          lng,
+          score,
+          city: getResolvedCity(addr),
+          state: getResolvedState(addr),
+          zip_code: normalizeZipCode(addr.postcode || zip),
+        })
       }
       if (candidates.length) break
     } catch (err) {
@@ -80,7 +109,35 @@ async function geocodeAddress(address, city, state, zip) {
 
   if (!candidates.length) return null
   candidates.sort((a, b) => b.score - a.score)
-  return { lat: candidates[0].lat, lng: candidates[0].lng }
+  return {
+    lat: candidates[0].lat,
+    lng: candidates[0].lng,
+    city: candidates[0].city || String(city || '').trim() || null,
+    state: candidates[0].state || String(state || '').trim() || null,
+    zip_code: candidates[0].zip_code || normalizeZipCode(zip) || null,
+  }
+}
+
+async function resolveBestLocation(address, city, state, zip) {
+  const street = String(address || '').trim()
+  if (street) {
+    const exact = await geocodeAddress(street, city, state, zip)
+    if (exact) return { ...exact, source: 'address' }
+  }
+
+  const zipGeo = await geocodeZip(String(zip || '').trim())
+  if (zipGeo) {
+    return {
+      lat: zipGeo.lat,
+      lng: zipGeo.lng,
+      city: String(city || '').trim() || zipGeo.city || null,
+      state: String(state || '').trim() || zipGeo.state || null,
+      zip_code: normalizeZipCode(zip) || null,
+      source: 'zip',
+    }
+  }
+
+  return null
 }
 
 function normalizeFacilityName(value) {
@@ -692,51 +749,22 @@ function CoachForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-  const addr = form.address.trim()
-  if (!addr) return
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    if (!resolved) return
 
-  setAddrStatus('locating')
+    setAddrStatus('locating')
 
-  try {
-    const geo = await geocodeAddress(addr, form.city, form.state, form.zip_code)
+    setForm((f) => ({
+      ...f,
+      lat: resolved.lat,
+      lng: resolved.lng,
+      city: resolved.city || f.city,
+      state: resolved.state || f.state,
+      zip_code: resolved.zip_code || f.zip_code,
+    }))
 
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        lat: geo.lat,
-        lng: geo.lng,
-      }))
-      setAddrStatus('found')
-      return
-    }
-
-    const zipGeo = await geocodeZip(form.zip_code)
-    if (zipGeo) {
-      setForm((f) => ({
-        ...f,
-        lat: zipGeo.lat,
-        lng: zipGeo.lng,
-        city: f.city || zipGeo.city,
-        state: f.state || zipGeo.state,
-      }))
-    }
-
-    setAddrStatus('fallback')
-  } catch {
-    const zipGeo = await geocodeZip(form.zip_code)
-    if (zipGeo) {
-      setForm((f) => ({
-        ...f,
-        lat: zipGeo.lat,
-        lng: zipGeo.lng,
-        city: f.city || zipGeo.city,
-        state: f.state || zipGeo.state,
-      }))
-    }
-
-    setAddrStatus('fallback')
+    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
-}
   
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
@@ -768,19 +796,32 @@ function CoachForm({ isMobile }) {
         return
       }
 
-      const facilityId = await findOrCreateFacilityFromCoach(form, selectedFacilityMatch?.id || null)
+      let resolvedForm = { ...form }
+      const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+      if (resolvedLocation) {
+        resolvedForm = {
+          ...resolvedForm,
+          lat: resolvedLocation.lat,
+          lng: resolvedLocation.lng,
+          city: resolvedLocation.city || resolvedForm.city,
+          state: resolvedLocation.state || resolvedForm.state,
+          zip_code: resolvedLocation.zip_code || resolvedForm.zip_code,
+        }
+      }
+
+      const facilityId = await findOrCreateFacilityFromCoach(resolvedForm, selectedFacilityMatch?.id || null)
 
       const payload = {
         name: form.name.trim(),
         sport: form.sport,
         specialty: form.specialty.length ? form.specialty : null,
-        city: form.city.trim() || null,
-        state: form.state || null,
-        zip: form.zip_code || null,
-        lat: form.lat != null ? parseFloat(form.lat) : null,
-        lng: form.lng != null ? parseFloat(form.lng) : null,
-        address: form.address.trim() || null,
-        facility_name: form.facility_name.trim(),
+        city: resolvedForm.city.trim() || null,
+        state: resolvedForm.state || null,
+        zip: resolvedForm.zip_code || null,
+        lat: resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null,
+        lng: resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null,
+        address: resolvedForm.address.trim() || null,
+        facility_name: resolvedForm.facility_name.trim(),
         facility_id: facilityId,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
@@ -1097,6 +1138,7 @@ function TeamForm({ isMobile }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [addrStatus, setAddrStatus] = useState('')
   const [facilityAddrStatus, setFacilityAddrStatus] = useState('')
   const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
@@ -1109,6 +1151,11 @@ function TeamForm({ isMobile }) {
     zipCode: form.facility_zip_code || form.zip_code,
     enabled: !!String(form.facility_name || '').trim(),
   })
+
+  const visibleFacilityMatches = useMemo(() => {
+    if (allowCreateNewFacility || selectedFacilityMatch) return []
+    return facilityMatches
+  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
 
   function set(field, value) {
     setAllowCreateNewFacility(false)
@@ -1134,6 +1181,24 @@ function TeamForm({ isMobile }) {
     }
   }
 
+  async function handlePracticeAddressBlur() {
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    if (!resolved) return
+
+    setAddrStatus('locating')
+
+    setForm((f) => ({
+      ...f,
+      lat: resolved.lat,
+      lng: resolved.lng,
+      city: resolved.city || f.city,
+      state: resolved.state || f.state,
+      zip_code: resolved.zip_code || f.zip_code,
+    }))
+
+    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
+  }
+
   function handleFacilityZipGeocode(geo) {
     if (geo) {
       setForm((f) => ({
@@ -1147,32 +1212,26 @@ function TeamForm({ isMobile }) {
   }
 
   async function handleFacilityAddressBlur() {
-    const addr = form.facility_address.trim()
-    if (!addr) return
+    const resolved = await resolveBestLocation(
+      form.facility_address,
+      form.facility_city,
+      form.facility_state,
+      form.facility_zip_code
+    )
+    if (!resolved) return
 
     setFacilityAddrStatus('locating')
 
-    try {
-      const geo = await geocodeAddress(
-        addr,
-        form.facility_city,
-        form.facility_state,
-        form.facility_zip_code
-      )
+    setForm((f) => ({
+      ...f,
+      facility_lat: resolved.lat,
+      facility_lng: resolved.lng,
+      facility_city: resolved.city || f.facility_city,
+      facility_state: resolved.state || f.facility_state,
+      facility_zip_code: resolved.zip_code || f.facility_zip_code,
+    }))
 
-      if (geo) {
-        setForm((f) => ({
-          ...f,
-          facility_lat: geo.lat,
-          facility_lng: geo.lng,
-        }))
-        setFacilityAddrStatus('found')
-      } else {
-        setFacilityAddrStatus('fallback')
-      }
-    } catch {
-      setFacilityAddrStatus('fallback')
-    }
+    setFacilityAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
 
   function validate() {
@@ -1211,45 +1270,77 @@ function TeamForm({ isMobile }) {
         return
       }
 
-      const facilityId = form.facility_name.trim()
-        ? await findOrCreateFacilityFromTeam(form, selectedFacilityMatch?.id || null)
+      let resolvedForm = { ...form }
+      const practiceLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+      if (practiceLocation) {
+        resolvedForm = {
+          ...resolvedForm,
+          lat: practiceLocation.lat,
+          lng: practiceLocation.lng,
+          city: practiceLocation.city || resolvedForm.city,
+          state: practiceLocation.state || resolvedForm.state,
+          zip_code: practiceLocation.zip_code || resolvedForm.zip_code,
+        }
+      }
+
+      if (form.facility_name.trim()) {
+        const facilityLocation = await resolveBestLocation(
+          form.facility_address,
+          form.facility_city || resolvedForm.city,
+          form.facility_state || resolvedForm.state,
+          form.facility_zip_code || resolvedForm.zip_code
+        )
+        if (facilityLocation) {
+          resolvedForm = {
+            ...resolvedForm,
+            facility_lat: facilityLocation.lat,
+            facility_lng: facilityLocation.lng,
+            facility_city: facilityLocation.city || resolvedForm.facility_city,
+            facility_state: facilityLocation.state || resolvedForm.facility_state,
+            facility_zip_code: facilityLocation.zip_code || resolvedForm.facility_zip_code,
+          }
+        }
+      }
+
+      const facilityId = resolvedForm.facility_name.trim()
+        ? await findOrCreateFacilityFromTeam(resolvedForm, selectedFacilityMatch?.id || null)
         : null
 
       const finalLat =
-        form.lat != null ? parseFloat(form.lat)
-        : form.facility_lat != null ? parseFloat(form.facility_lat)
+        resolvedForm.lat != null ? parseFloat(resolvedForm.lat)
+        : resolvedForm.facility_lat != null ? parseFloat(resolvedForm.facility_lat)
         : null
 
       const finalLng =
-        form.lng != null ? parseFloat(form.lng)
-        : form.facility_lng != null ? parseFloat(form.facility_lng)
+        resolvedForm.lng != null ? parseFloat(resolvedForm.lng)
+        : resolvedForm.facility_lng != null ? parseFloat(resolvedForm.facility_lng)
         : null
 
       const payload = {
-        name: form.name.trim(),
-        sport: form.sport,
-        org_affiliation: form.org_affiliation || null,
-        classification: form.classification || null,
-        age_group: form.age_group,
-        city: form.city.trim(),
-        state: form.state,
-        zip_code: form.zip_code || null,
+        name: resolvedForm.name.trim(),
+        sport: resolvedForm.sport,
+        org_affiliation: resolvedForm.org_affiliation || null,
+        classification: resolvedForm.classification || null,
+        age_group: resolvedForm.age_group,
+        city: resolvedForm.city.trim(),
+        state: resolvedForm.state,
+        zip_code: resolvedForm.zip_code || null,
         lat: finalLat,
         lng: finalLng,
-        address: form.address.trim() || null,
+        address: resolvedForm.address.trim() || null,
 
         facility_id: facilityId,
-        facility_name: form.facility_name.trim() || null,
+        facility_name: resolvedForm.facility_name.trim() || null,
 
-        contact_name: form.contact_name.trim(),
-        contact_email: form.contact_email.trim() || null,
-        contact_phone: form.contact_phone.trim() || null,
-        website: form.website.trim() || null,
-        tryout_status: form.tryout_status || 'closed',
-        tryout_date: form.tryout_date || null,
-        tryout_notes: form.tryout_notes.trim() || null,
-        description: form.description.trim() || null,
-        submission_notes: form.submission_notes.trim() || null,
+        contact_name: resolvedForm.contact_name.trim(),
+        contact_email: resolvedForm.contact_email.trim() || null,
+        contact_phone: resolvedForm.contact_phone.trim() || null,
+        website: resolvedForm.website.trim() || null,
+        tryout_status: resolvedForm.tryout_status || 'closed',
+        tryout_date: resolvedForm.tryout_date || null,
+        tryout_notes: resolvedForm.tryout_notes.trim() || null,
+        description: resolvedForm.description.trim() || null,
+        submission_notes: resolvedForm.submission_notes.trim() || null,
         approval_status: 'pending',
         source: 'website_form',
         active: true,
@@ -1370,8 +1461,13 @@ function TeamForm({ isMobile }) {
 </div>
 
 <div style={{ marginBottom: 14 }}>
-  <label style={labelStyle}>Practice Street Address <RequiredMark /></label>
-  <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Required field or park address" style={inputStyle} />
+  <label style={labelStyle}>
+    Practice Street Address <RequiredMark />
+    {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+    {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+    {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+  </label>
+  <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handlePracticeAddressBlur} placeholder="Required field or park address" style={inputStyle} />
 </div>
 
 <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
@@ -2049,51 +2145,22 @@ function FacilityForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-  const addr = form.address.trim()
-  if (!addr) return
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    if (!resolved) return
 
-  setAddrStatus('locating')
+    setAddrStatus('locating')
 
-  try {
-    const geo = await geocodeAddress(addr, form.city, form.state, form.zip_code)
+    setForm((f) => ({
+      ...f,
+      lat: resolved.lat,
+      lng: resolved.lng,
+      city: resolved.city || f.city,
+      state: resolved.state || f.state,
+      zip_code: resolved.zip_code || f.zip_code,
+    }))
 
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        lat: geo.lat,
-        lng: geo.lng,
-      }))
-      setAddrStatus('found')
-      return
-    }
-
-    const zipGeo = await geocodeZip(form.zip_code)
-    if (zipGeo) {
-      setForm((f) => ({
-        ...f,
-        lat: zipGeo.lat,
-        lng: zipGeo.lng,
-        city: f.city || zipGeo.city,
-        state: f.state || zipGeo.state,
-      }))
-    }
-
-    setAddrStatus('fallback')
-  } catch {
-    const zipGeo = await geocodeZip(form.zip_code)
-    if (zipGeo) {
-      setForm((f) => ({
-        ...f,
-        lat: zipGeo.lat,
-        lng: zipGeo.lng,
-        city: f.city || zipGeo.city,
-        state: f.state || zipGeo.state,
-      }))
-    }
-
-    setAddrStatus('fallback')
+    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
-}
 
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
@@ -2126,29 +2193,42 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
+      let resolvedForm = { ...form }
+      const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+      if (resolvedLocation) {
+        resolvedForm = {
+          ...resolvedForm,
+          lat: resolvedLocation.lat,
+          lng: resolvedLocation.lng,
+          city: resolvedLocation.city || resolvedForm.city,
+          state: resolvedLocation.state || resolvedForm.state,
+          zip_code: resolvedLocation.zip_code || resolvedForm.zip_code,
+        }
+      }
+
       const payload = {
-        name: form.name.trim(),
-        facility_type: form.facility_type || null,
-        sport: form.sport,
-        sport_served: form.sport,
-        city: form.city.trim() || null,
-        state: form.state || null,
-        zip_code: form.zip_code || null,
-        lat: form.lat != null ? parseFloat(form.lat) : null,
-        lng: form.lng != null ? parseFloat(form.lng) : null,
-        address: form.address.trim() || null,
-        phone: form.phone.trim() || null,
-        email: form.email.trim() || null,
-        website: form.website.trim() || null,
-        instagram: form.instagram.trim() || null,
-        facebook: form.facebook.trim() || null,
-        amenities: form.amenities.length > 0 ? form.amenities : null,
-        description: form.description.trim() || null,
-        hours: form.hours.trim() || null,
-        contact_name: form.contact_name.trim(),
-        contact_email: form.contact_email.trim() || null,
-        contact_phone: form.contact_phone.trim() || null,
-        submission_notes: form.submission_notes.trim() || null,
+        name: resolvedForm.name.trim(),
+        facility_type: resolvedForm.facility_type || null,
+        sport: resolvedForm.sport,
+        sport_served: resolvedForm.sport,
+        city: resolvedForm.city.trim() || null,
+        state: resolvedForm.state || null,
+        zip_code: resolvedForm.zip_code || null,
+        lat: resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null,
+        lng: resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null,
+        address: resolvedForm.address.trim() || null,
+        phone: resolvedForm.phone.trim() || null,
+        email: resolvedForm.email.trim() || null,
+        website: resolvedForm.website.trim() || null,
+        instagram: resolvedForm.instagram.trim() || null,
+        facebook: resolvedForm.facebook.trim() || null,
+        amenities: resolvedForm.amenities.length > 0 ? resolvedForm.amenities : null,
+        description: resolvedForm.description.trim() || null,
+        hours: resolvedForm.hours.trim() || null,
+        contact_name: resolvedForm.contact_name.trim(),
+        contact_email: resolvedForm.contact_email.trim() || null,
+        contact_phone: resolvedForm.contact_phone.trim() || null,
+        submission_notes: resolvedForm.submission_notes.trim() || null,
         approval_status: 'pending',
         source: 'website_form',
         active: true,
