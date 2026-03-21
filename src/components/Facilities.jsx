@@ -376,6 +376,7 @@ export default function Facilities() {
   const [geoCenter, setGeoCenter] = useState(null)
   const [zipStatus, setZipStatus] = useState('')
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
