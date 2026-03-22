@@ -968,6 +968,7 @@ export default function PlayerBoard() {
   const [user, setUser] = useState(null)
   const [showAuth, setShowAuth] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [selectedPostId, setSelectedPostId] = useState(null)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
@@ -1052,6 +1053,70 @@ export default function PlayerBoard() {
   const mappable = filtered.filter((p) => p.lat != null && p.lng != null)
   const selectedStateName = STATE_NAMES[stateFilter] || stateFilter
   const showBrowseMap = !isMobile || showMap
+
+  useEffect(() => {
+    if (!filtered.length) {
+      setSelectedPostId(null)
+      return
+    }
+
+    if (!filtered.some((post) => post.id === selectedPostId)) {
+      setSelectedPostId(filtered[0].id)
+    }
+  }, [filtered, selectedPostId])
+
+  function getPostTitle(post) {
+    if (post.post_type === 'player_available') {
+      if (post.player_age) return `Age ${post.player_age} Player`
+      return post.age_group || 'Player Available'
+    }
+
+    return `${post.team_name || 'Team'}${post.age_group ? ' · ' + post.age_group : ''}`
+  }
+
+  function getPostLocation(post) {
+    return (
+      post.location_name ||
+      [post.city, stateFromPost(post, zipStateMap), post.zip_code].filter(Boolean).join(', ') ||
+      'Location pending'
+    )
+  }
+
+  function getPostCapabilities(post) {
+    const positions = post.post_type === 'player_available'
+      ? (Array.isArray(post.player_position) ? post.player_position : [])
+      : (Array.isArray(post.position_needed) ? post.position_needed : [])
+
+    const parts = []
+
+    if (positions.length) parts.push(positions.join(', '))
+
+    if (post.post_type === 'player_available') {
+      if (post.bats || post.throws) {
+        parts.push([
+          post.bats ? `Bats ${post.bats}` : '',
+          post.throws ? `Throws ${post.throws}` : '',
+        ].filter(Boolean).join(' · '))
+      }
+
+      const travelCap = extractTravelMiles(post.additional_notes)
+      if (travelCap === 999) parts.push('Travel: anywhere')
+      else if (travelCap != null) parts.push(`Travel: up to ${travelCap} miles`)
+    } else if (post.event_date) {
+      parts.push(`Date ${formatDate(post.event_date)}`)
+    }
+
+    return parts.filter(Boolean).join(' • ') || 'Details pending'
+  }
+
+  function getPostDetailLines(post) {
+    if (!post.additional_notes) return []
+
+    return String(post.additional_notes)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+  }
 
   function togglePosition(pos, field) {
     setForm((f) => ({ ...f, [field]: f[field].includes(pos) ? f[field].filter((p) => p !== pos) : [...f[field], pos] }))
@@ -1152,6 +1217,15 @@ export default function PlayerBoard() {
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
   const isEditing = editingId !== null
   const g2 = isMobile ? '1fr' : '1fr 1fr'
+  const desktopRowTemplate = 'minmax(170px, 1.05fr) minmax(210px, 1.2fr) minmax(95px, 0.75fr) minmax(220px, 1.35fr) 110px'
+  const desktopHeaderCellStyle = {
+    fontSize: 11,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: 'var(--gray)',
+    fontFamily: 'var(--font-head)',
+  }
 
   return (
     <div>
@@ -1420,128 +1494,335 @@ export default function PlayerBoard() {
               }}
             >
               <main style={{ minWidth: 0 }}>
+                {showBrowseMap && (
+                  <div style={{ background: 'var(--white)', width: '100%' }}>
+                    <div
+                      style={{
+                        height: isMobile ? 260 : 450,
+                        width: '100%',
+                        overflow: 'hidden',
+                        borderRadius: isMobile ? 0 : 14,
+                        border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                      }}
+                    >
+                      <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
+                        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <MapViewport posts={mappable} showFullUS={!stateFilter} />
+                        {mappable.map((p) => (
+                          <Marker
+                            key={p.id}
+                            position={[p.lat, p.lng]}
+                            icon={makeIcon(getPinColor(p))}
+                            eventHandlers={{
+                              click: () => setSelectedPostId(p.id),
+                            }}
+                          >
+                            <Popup>
+                              <div style={{ minWidth: 180 }}>
+                                <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
+                                  {getPostTitle(p)}
+                                </strong>
+                                <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
+                                  📍 {getPostLocation(p)}
+                                </div>
+                                {!!p.contact_info && (
+                                  <div style={{ fontSize: 12, marginTop: 6 }}>
+                                    <ContactDisplay contact_info={p.contact_info} />
+                                  </div>
+                                )}
+                              </div>
+                            </Popup>
+                          </Marker>
+                        ))}
+                      </MapContainer>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '6px 10px', background: 'var(--white)', borderTop: '1px solid var(--lgray)', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: '#ea580c', border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Needed</span></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: '#0891b2', border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Available</span></div>
+                      <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--gray)' }}>Pickup pins stay type-first: needed vs available.</div>
+                    </div>
+                  </div>
+                )}
+
                 <div
                   style={{
-                    position: isMobile ? 'static' : 'sticky',
-                    top: isMobile ? 'auto' : 76,
-                    zIndex: 1,
-                    background: 'var(--page-bg, #f5f3ef)',
-                    paddingTop: isMobile ? 0 : 8,
-                    paddingBottom: 10,
+                    marginTop: showBrowseMap ? 12 : 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
                   }}
                 >
-                  {showBrowseMap && (
-                    <div style={{ background: 'var(--white)', width: '100%' }}>
-                      <div
-                        style={{
-                          height: isMobile ? 260 : 450,
-                          width: '100%',
-                          overflow: 'hidden',
-                          borderRadius: isMobile ? 0 : 14,
-                          border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-                        }}
-                      >
-                        <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
-                          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          <MapViewport posts={mappable} showFullUS={!stateFilter} />
-                          {mappable.map((p) => (
-                            <Marker key={p.id} position={[p.lat, p.lng]} icon={makeIcon(getPinColor(p))}>
-                              <Popup>
-                                <div style={{ minWidth: 180 }}>
-                                  <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
-                                    {p.post_type === 'player_available'
-                                      ? `Age ${p.player_age || p.age_group || ''} — ${p.city || p.zip_code || 'Player'}`
-                                      : `${p.team_name || 'Team'}${p.age_group ? ' · ' + p.age_group : ''}`}
-                                  </strong>
-                                  <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                                    📍 {p.location_name || [p.city, stateFromPost(p, zipStateMap), p.zip_code].filter(Boolean).join(', ')}
-                                  </div>
-                                  {!!p.contact_info && (
-                                    <div style={{ fontSize: 12, marginTop: 6 }}>
-                                      <ContactDisplay contact_info={p.contact_info} />
-                                    </div>
-                                  )}
-                                </div>
-                              </Popup>
-                            </Marker>
-                          ))}
-                        </MapContainer>
-                      </div>
-
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '6px 10px', background: 'var(--white)', borderTop: '1px solid var(--lgray)', alignItems: 'center' }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: '#ea580c', border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Needed</span></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: '#0891b2', border: '2px solid rgba(255,255,255,0.85)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>Player Available</span></div>
-                        <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--gray)' }}>Browse player-needed and player-available posts.</div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>
-                      {stateFilter
-                        ? `${filtered.length} Post${filtered.length !== 1 ? 's' : ''} in ${selectedStateName}`
-                        : 'Choose a state to browse posts'}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-                      {stateFilter
-                        ? 'Player-available and player-needed listings'
-                        : 'Start with a state, then narrow by ZIP only when needed.'}
-                    </div>
+                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>
+                    {stateFilter
+                      ? `${filtered.length} Post${filtered.length !== 1 ? 's' : ''} in ${selectedStateName}`
+                      : 'Choose a state to browse posts'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+                    {stateFilter
+                      ? 'Static list order below. Click a row or pin to open details.'
+                      : 'Start with a state, then narrow by ZIP only when needed.'}
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: 6,
-                    display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: 14,
-                    alignItems: 'stretch',
-                  }}
-                >
-                  {loading && (
-                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
-                      Loading posts...
+                {!isMobile ? (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      background: 'var(--white)',
+                      border: '1px solid rgba(15,23,42,0.06)',
+                      borderRadius: 14,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: desktopRowTemplate,
+                        gap: 12,
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: '#F8FAFC',
+                        borderBottom: '1px solid rgba(15,23,42,0.08)',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1,
+                      }}
+                    >
+                      <div style={desktopHeaderCellStyle}>Name / Listing</div>
+                      <div style={desktopHeaderCellStyle}>Location / Facility</div>
+                      <div style={desktopHeaderCellStyle}>Sport</div>
+                      <div style={desktopHeaderCellStyle}>Capabilities / Need</div>
+                      <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
                     </div>
-                  )}
 
-                  {!loading && !stateFilter && (
-                    <div style={{ gridColumn: '1 / -1', background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13 }}>
-                      Select a state in the left panel to load posts and pins.
-                    </div>
-                  )}
+                    {loading && (
+                      <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+                        Loading posts...
+                      </div>
+                    )}
 
-                  {!loading && stateFilter && filtered.length === 0 && (
-                    <div style={{ gridColumn: '1 / -1', background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13 }}>
-                      No posts match the current filters.
-                    </div>
-                  )}
+                    {!loading && !stateFilter && (
+                      <div style={{ padding: '18px 16px', color: 'var(--gray)', fontSize: 13 }}>
+                        Select a state in the left panel to load posts and pins.
+                      </div>
+                    )}
 
-                  {!loading && stateFilter && filtered.map((post) => {
-                    const isPlayer = post.post_type === 'player_available'
-                    const postPositions = isPlayer ? (Array.isArray(post.player_position) ? post.player_position : []) : (Array.isArray(post.position_needed) ? post.position_needed : [])
-                    const isOwner = user && post.user_id && post.user_id === user.id
-                    return (
-                      <div key={post.id} style={{ background: 'white', borderRadius: 12, border: isOwner ? '2px solid var(--gold)' : '2px solid ' + (isPlayer ? '#DBEAFE' : '#FEF3C7'), padding: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative' }}>
-                        {isOwner && <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--gold)', color: 'var(--navy)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: '0 0 6px 6px', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}>YOUR POST</div>}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                          <span style={{ background: isPlayer ? '#1D4ED8' : '#D97706', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{isPlayer ? '🧢 Player Available' : '⚾ Player Needed'}</span>
-                          <span style={{ background: post.sport === 'softball' ? '#7C3AED' : '#0B1F3A', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase' }}>{post.sport}</span>
+                    {!loading && stateFilter && filtered.length === 0 && (
+                      <div style={{ padding: '18px 16px', color: 'var(--gray)', fontSize: 13 }}>
+                        No posts match the current filters.
+                      </div>
+                    )}
+
+                    {!loading && stateFilter && filtered.map((post) => {
+                      const isPlayer = post.post_type === 'player_available'
+                      const isOwner = user && post.user_id && post.user_id === user.id
+                      const isSelected = selectedPostId === post.id
+                      const postTypeLabel = isPlayer ? 'Player Available' : 'Player Needed'
+                      const detailLines = getPostDetailLines(post)
+
+                      return (
+                        <div
+                          key={post.id}
+                          style={{
+                            borderBottom: '1px solid rgba(15,23,42,0.06)',
+                            background: isSelected ? '#FCFCFD' : 'var(--white)',
+                          }}
+                        >
+                          <div
+                            onClick={() => setSelectedPostId((current) => (current === post.id ? null : post.id))}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                setSelectedPostId((current) => (current === post.id ? null : post.id))
+                              }
+                            }}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: desktopRowTemplate,
+                              gap: 12,
+                              alignItems: 'center',
+                              padding: '14px 16px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                                <span style={{ background: isPlayer ? '#1D4ED8' : '#D97706', color: 'white', fontSize: 10, fontWeight: 700, padding: '4px 8px', borderRadius: 999, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  {postTypeLabel}
+                                </span>
+                                {isOwner && <span style={{ background: 'var(--gold)', color: 'var(--navy)', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 999, fontFamily: 'var(--font-head)', letterSpacing: '0.05em' }}>Your Post</span>}
+                              </div>
+                              <div style={{ marginTop: 8, fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>
+                                {getPostTitle(post)}
+                              </div>
+                              {post.city && (
+                                <div style={{ marginTop: 3, fontSize: 12, color: 'var(--gray)' }}>
+                                  {post.city}
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ minWidth: 0, fontSize: 13, color: 'var(--gray)', lineHeight: 1.45 }}>
+                              {getPostLocation(post)}
+                            </div>
+
+                            <div>
+                              <span style={{ background: post.sport === 'softball' ? '#7C3AED' : '#0B1F3A', color: 'white', fontSize: 11, fontWeight: 700, padding: '4px 9px', borderRadius: 999, fontFamily: 'var(--font-head)', textTransform: 'uppercase' }}>
+                                {post.sport}
+                              </span>
+                            </div>
+
+                            <div style={{ minWidth: 0, fontSize: 13, color: 'var(--gray)', lineHeight: 1.45 }}>
+                              {getPostCapabilities(post)}
+                            </div>
+
+                            <div style={{ textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  setSelectedPostId((current) => (current === post.id ? null : post.id))
+                                }}
+                                style={{
+                                  minWidth: 78,
+                                  padding: '8px 10px',
+                                  borderRadius: 10,
+                                  border: '1.5px solid var(--navy)',
+                                  background: isSelected ? 'var(--navy)' : 'var(--white)',
+                                  color: isSelected ? 'var(--white)' : 'var(--navy)',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  fontFamily: 'var(--font-head)',
+                                }}
+                              >
+                                {isSelected ? 'Hide' : 'View'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {isSelected && (
+                            <div
+                              style={{
+                                padding: '0 16px 16px 16px',
+                                borderTop: '1px solid rgba(15,23,42,0.06)',
+                                background: '#FAFAFA',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(0, 1.4fr) minmax(260px, 0.9fr)',
+                                  gap: 16,
+                                  paddingTop: 14,
+                                }}
+                              >
+                                <div>
+                                  {post.player_description && (
+                                    <div style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 10 }}>
+                                      {post.player_description}
+                                    </div>
+                                  )}
+
+                                  {detailLines.length > 0 && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                      {detailLines.map((line, index) => (
+                                        <div
+                                          key={index}
+                                          style={{
+                                            fontSize: 13,
+                                            lineHeight: 1.5,
+                                            color: line.startsWith('Willing to travel') ? '#2563EB' : 'var(--gray)',
+                                            fontWeight: line.startsWith('Willing to travel') ? 600 : 400,
+                                          }}
+                                        >
+                                          {line.startsWith('Willing to travel') ? '🚗 ' : ''}
+                                          {line}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 12, padding: 14 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                                    Contact / details
+                                  </div>
+                                  <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--navy)' }}>
+                                    <ContactDisplay contact_info={post.contact_info} />
+                                  </div>
+                                  <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 10 }}>
+                                    Posted {formatDate(post.created_at)}
+                                  </div>
+                                  {post.event_date && (
+                                    <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 4 }}>
+                                      Event date {formatDate(post.event_date)}
+                                    </div>
+                                  )}
+
+                                  {isOwner && (
+                                    <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)' }}>
+                                      <button type="button" onClick={() => startEdit(post)} style={{ flex: 1, padding: '8px', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Edit</button>
+                                      <button type="button" onClick={() => setDeleteTarget(post)} style={{ flex: 1, padding: '8px', background: 'white', color: '#DC2626', border: '2px solid #FCA5A5', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>Delete</button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        {isPlayer ? (
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: 'grid',
+                      gridTemplateColumns: '1fr',
+                      gap: 14,
+                      alignItems: 'stretch',
+                    }}
+                  >
+                    {loading && (
+                      <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+                        Loading posts...
+                      </div>
+                    )}
+
+                    {!loading && !stateFilter && (
+                      <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13 }}>
+                        Select a state in the left panel to load posts and pins.
+                      </div>
+                    )}
+
+                    {!loading && stateFilter && filtered.length === 0 && (
+                      <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13 }}>
+                        No posts match the current filters.
+                      </div>
+                    )}
+
+                    {!loading && stateFilter && filtered.map((post) => {
+                      const isPlayer = post.post_type === 'player_available'
+                      const postPositions = isPlayer ? (Array.isArray(post.player_position) ? post.player_position : []) : (Array.isArray(post.position_needed) ? post.position_needed : [])
+                      const isOwner = user && post.user_id && post.user_id === user.id
+                      return (
+                        <div key={post.id} style={{ background: 'white', borderRadius: 12, border: isOwner ? '2px solid var(--gold)' : '2px solid ' + (isPlayer ? '#DBEAFE' : '#FEF3C7'), padding: '18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative' }}>
+                          {isOwner && <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--gold)', color: 'var(--navy)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: '0 0 6px 6px', fontFamily: 'var(--font-head)', letterSpacing: '0.04em' }}>YOUR POST</div>}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <span style={{ background: isPlayer ? '#1D4ED8' : '#D97706', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{isPlayer ? '🧢 Player Available' : '⚾ Player Needed'}</span>
+                            <span style={{ background: post.sport === 'softball' ? '#7C3AED' : '#0B1F3A', color: 'white', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, fontFamily: 'var(--font-head)', textTransform: 'uppercase' }}>{post.sport}</span>
+                          </div>
                           <div>
-                            <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{post.player_age ? 'Age ' + post.player_age : post.age_group || 'Player'} — {post.city}</div>
-                            {(post.bats || post.throws) && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{[post.bats ? 'Bats ' + post.bats : '', post.throws ? 'Throws ' + post.throws : ''].filter(Boolean).join(' · ')}</div>}
+                            <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{getPostTitle(post)}{post.post_type === 'player_available' && post.city ? ` — ${post.city}` : ''}</div>
+                            <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>📍 {getPostLocation(post)}</div>
+                            {post.post_type === 'player_available' && (post.bats || post.throws) && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4 }}>{[post.bats ? 'Bats ' + post.bats : '', post.throws ? 'Throws ' + post.throws : ''].filter(Boolean).join(' · ')}</div>}
                             {post.player_description && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.player_description}</div>}
                             {post.additional_notes && (
                               <div style={{ marginTop: 4 }}>
@@ -1553,35 +1834,27 @@ export default function PlayerBoard() {
                               </div>
                             )}
                           </div>
-                        ) : (
-                          <div>
-                            <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700 }}>{(post.team_name || 'Team') + (post.age_group ? ' · ' + post.age_group : '')}</div>
-                            {post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.location_name}</div>}
-                            {post.city && !post.location_name && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📍 {post.city}</div>}
-                            {post.event_date && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>📅 {formatDate(post.event_date)}</div>}
-                            {post.additional_notes && <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, lineHeight: 1.5 }}>{post.additional_notes}</div>}
+                          {postPositions.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
+                              {postPositions.map((pos) => <span key={pos} style={{ background: 'var(--lgray)', color: 'var(--navy)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{pos}</span>)}
+                            </div>
+                          )}
+                          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)', fontSize: 13 }}>
+                            <span style={{ fontWeight: 600, color: 'var(--navy)' }}>📬 </span>
+                            <ContactDisplay contact_info={post.contact_info} />
                           </div>
-                        )}
-                        {postPositions.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 10 }}>
-                            {postPositions.map((pos) => <span key={pos} style={{ background: 'var(--lgray)', color: 'var(--navy)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>{pos}</span>)}
-                          </div>
-                        )}
-                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)', fontSize: 13 }}>
-                          <span style={{ fontWeight: 600, color: 'var(--navy)' }}>📬 </span>
-                          <ContactDisplay contact_info={post.contact_info} />
+                          <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 6 }}>Posted {formatDate(post.created_at)}</div>
+                          {isOwner && (
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)' }}>
+                              <button type="button" onClick={() => startEdit(post)} style={{ flex: 1, padding: '7px', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>✏️ Edit</button>
+                              <button type="button" onClick={() => setDeleteTarget(post)} style={{ flex: 1, padding: '7px', background: 'white', color: '#DC2626', border: '2px solid #FCA5A5', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>🗑️ Delete</button>
+                            </div>
+                          )}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 6 }}>Posted {formatDate(post.created_at)}</div>
-                        {isOwner && (
-                          <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lgray)' }}>
-                            <button type="button" onClick={() => startEdit(post)} style={{ flex: 1, padding: '7px', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>✏️ Edit</button>
-                            <button type="button" onClick={() => setDeleteTarget(post)} style={{ flex: 1, padding: '7px', background: 'white', color: '#DC2626', border: '2px solid #FCA5A5', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>🗑️ Delete</button>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </main>
 
               {!isMobile && (
