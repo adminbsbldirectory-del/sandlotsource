@@ -21,38 +21,6 @@ async function geocodeZip(zip) {
   }
 }
 
-async function geocodeCensus(address, city, state, zip) {
-  const street = normalizeStreetForGeocode(String(address || '').trim())
-  if (!street) return null
-  try {
-    const params = new URLSearchParams()
-    params.set('street', street)
-    if (city) params.set('city', String(city).trim())
-    if (state) params.set('state', normalizeStateValue(state))
-    if (zip) params.set('zip', normalizeZipCode(zip))
-    params.set('benchmark', 'Public_AR_Current')
-    params.set('format', 'json')
-    const url = 'https://geocoding.geo.census.gov/geocoder/locations/address?' + params.toString()
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
-    if (!res.ok) return null
-    const data = await res.json()
-    const matches = data && data.result && data.result.addressMatches
-    if (!matches || !matches.length) return null
-    const match = matches[0]
-    const coords = match.coordinates
-    if (!coords || coords.x == null || coords.y == null) return null
-    const comp = match.addressComponents || {}
-    return {
-      lat: parseFloat(coords.y),
-      lng: parseFloat(coords.x),
-      city: comp.city || String(city || '').trim() || null,
-      state: normalizeStateValue(comp.state || state) || null,
-      zip_code: normalizeZipCode(comp.zip || zip) || null,
-    }
-  } catch {
-    return null
-  }
-}
 
 async function geocodePhoton(address, city, state, zip) {
   const cleanState = normalizeStateValue(state)
@@ -82,7 +50,6 @@ async function geocodePhoton(address, city, state, zip) {
       const url = new URL('https://photon.komoot.io/api/')
       url.searchParams.set('q', q)
       url.searchParams.set('limit', '5')
-      url.searchParams.set('countrycode', 'us')
       const res = await fetch(url.toString(), { headers: { 'Accept-Language': 'en-US,en;q=0.9' } })
       if (!res.ok) return null
       const data = await res.json()
@@ -351,8 +318,7 @@ async function resolveBestLocation(address, city, state, zip) {
   const street = String(address || '').trim()
   const cleanZipStr = String(zip || '').trim()
 
-  // Zip centroid — used as sanity constraint for OSM geocoders (not Census)
-  // 8-mile radius accommodates large rural zip codes nationally
+  // Zip centroid — used as sanity constraint (8-mile radius for rural zip codes)
   const zipGeo = cleanZipStr.length === 5 ? await geocodeZip(cleanZipStr) : null
 
   function withinZipBounds(lat, lng) {
@@ -361,25 +327,20 @@ async function resolveBestLocation(address, city, state, zip) {
   }
 
   if (street) {
-    // Tier 1: US Census Bureau TIGER/Line — most accurate free US geocoder
-    // No zip-bounds check needed; federal data is state-constrained by design
-    const census = await geocodeCensus(street, city, state, zip)
-    if (census) return { ...census, source: 'address' }
-
-    // Tier 2: Nominatim — good coverage, zip-bounds sanity check applied
+    // Tier 1: Nominatim
     const exact = await geocodeAddress(street, city, state, zip)
     if (exact && withinZipBounds(exact.lat, exact.lng)) {
       return { ...exact, source: 'address' }
     }
 
-    // Tier 3: Photon — retries directional/suite variants automatically
+    // Tier 2: Photon — retries directional/suite variants automatically
     const photon = await geocodePhoton(street, city, state, zip)
     if (photon && withinZipBounds(photon.lat, photon.lng)) {
       return { ...photon, source: 'address' }
     }
   }
 
-  // Tier 4: zip centroid — last resort, always within the right area
+  // Tier 3: zip centroid — last resort, always within the right area
   if (zipGeo) {
     return {
       lat: zipGeo.lat,
@@ -406,17 +367,13 @@ async function resolveFacilityLocation(address, city, state, zip) {
   }
 
   if (street) {
-    // Tier 1: US Census Bureau
-    const census = await geocodeCensus(street, city, state, zip)
-    if (census) return { ...census, source: 'address' }
-
-    // Tier 2: Nominatim
+    // Tier 1: Nominatim
     const exact = await geocodeAddress(street, city, state, zip)
     if (exact && withinZipBounds(exact.lat, exact.lng)) {
       return { ...exact, source: 'address' }
     }
 
-    // Tier 3: Photon
+    // Tier 2: Photon
     const photon = await geocodePhoton(street, city, state, zip)
     if (photon && withinZipBounds(photon.lat, photon.lng)) {
       return { ...photon, source: 'address' }
