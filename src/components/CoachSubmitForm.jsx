@@ -81,17 +81,18 @@ async function geocodeAddress(address, city, state, zip) {
   const rawStreet = String(address || '').trim()
   if (!rawStreet) return null
 
-  const cleanCity = String(city || '').trim()
-  const cleanState = normalizeStateValue(state)
-  const cleanZip = normalizeZipCode(zip)
   const street = normalizeStreetForGeocode(rawStreet) || rawStreet
-  const zipGeo = cleanZip && cleanZip.length === 5 ? await geocodeZip(cleanZip) : null
+  const normalizedZip = normalizeZipCode(zip)
+  const normalizedState = normalizeStateValue(state)
+  const normalizedCity = String(city || '').trim().toLowerCase()
+  const zipGeo = normalizedZip && normalizedZip.length === 5 ? await geocodeZip(normalizedZip) : null
+
   const streetVariants = Array.from(new Set([street, rawStreet].filter(Boolean)))
   const queries = Array.from(new Set(streetVariants.flatMap((streetLine) => [
-    [streetLine, cleanCity, cleanState, cleanZip].filter(Boolean).join(', '),
-    [streetLine, cleanState, cleanZip].filter(Boolean).join(', '),
-    [streetLine, cleanCity, cleanState].filter(Boolean).join(', '),
-    [streetLine, cleanZip].filter(Boolean).join(', '),
+    [streetLine, city, normalizedState, normalizedZip].filter(Boolean).join(', '),
+    [streetLine, city, normalizedState].filter(Boolean).join(', '),
+    [streetLine, normalizedZip].filter(Boolean).join(', '),
+    [streetLine, normalizedState, normalizedZip].filter(Boolean).join(', '),
   ].filter(Boolean))))
 
   const candidates = []
@@ -109,6 +110,7 @@ async function geocodeAddress(address, city, state, zip) {
         headers: { 'Accept-Language': 'en-US,en;q=0.9' },
       })
       if (!res.ok) continue
+
       const data = await res.json()
       for (const row of Array.isArray(data) ? data : []) {
         const lat = parseFloat(row.lat)
@@ -116,45 +118,50 @@ async function geocodeAddress(address, city, state, zip) {
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
 
         const addr = row.address || {}
-        const resolvedCity = getResolvedCity(addr)
-        const resolvedState = getResolvedState(addr)
-        const resolvedZip = normalizeZipCode(addr.postcode || '')
-        const cityNeedle = cleanCity.toLowerCase()
-        const cityHay = [resolvedCity, addr.city, addr.town, addr.village, addr.hamlet, row.display_name]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-        const stateMatches = !cleanState || normalizeStateValue(resolvedState) === cleanState || String(row.display_name || '').toUpperCase().includes(cleanState)
-        const zipMatches = !cleanZip || resolvedZip === cleanZip
-        const cityMatches = !cityNeedle || cityHay.includes(cityNeedle)
+        const candidateCity = String(getResolvedCity(addr) || '').trim().toLowerCase()
+        const candidateState = normalizeStateValue(getResolvedState(addr) || '')
+        const candidateZip = normalizeZipCode(addr.postcode || '')
 
         let score = 0
-        if (addr.house_number) score += 6
-        if (addr.road) score += 5
-        if (zipMatches && cleanZip) score += 12
-        else if (cleanZip) score -= 18
-        if (cityMatches && cityNeedle) score += 6
-        else if (cityNeedle) score -= 8
-        if (stateMatches && cleanState) score += 5
-        else if (cleanState) score -= 12
+        if (addr.house_number) score += 8
+        if (addr.road) score += 8
+
+        if (normalizedZip) {
+          if (candidateZip === normalizedZip) score += 15
+          else if (candidateZip) score -= 18
+        }
+
+        if (normalizedCity) {
+          if (candidateCity === normalizedCity) score += 12
+          else if (candidateCity) score -= 14
+        }
+
+        if (normalizedState) {
+          if (candidateState === normalizedState) score += 12
+          else if (candidateState) score -= 20
+        }
+
         if (zipGeo) {
           const dist = distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng)
           score -= Math.min(dist, 40) / 2
-          if (dist > 20) score -= 15
-          if (dist > 100) score -= 40
+          if (dist > 10) score -= 10
+          if (dist > 25) score -= 20
         }
 
-        if ((cleanZip || cleanState || cleanCity) && (!zipMatches || !stateMatches || !cityMatches) && score < 8) {
-          continue
-        }
+        const localityMismatch = (
+          (normalizedZip && candidateZip && candidateZip !== normalizedZip) ||
+          (normalizedState && candidateState && candidateState !== normalizedState) ||
+          (normalizedCity && candidateCity && candidateCity !== normalizedCity)
+        )
 
         candidates.push({
           lat,
           lng,
-          score,
-          city: resolvedCity,
-          state: resolvedState,
-          zip_code: resolvedZip || cleanZip,
+          score: localityMismatch ? score - 25 : score,
+          city: getResolvedCity(addr),
+          state: getResolvedState(addr),
+          zip_code: candidateZip || normalizedZip,
+          localityMismatch,
         })
       }
     } catch (err) {
@@ -163,13 +170,20 @@ async function geocodeAddress(address, city, state, zip) {
   }
 
   if (!candidates.length) return null
-  candidates.sort((a, b) => b.score - a.score)
+
+  const preferred = candidates.filter((c) => !c.localityMismatch)
+  const pool = preferred.length ? preferred : candidates
+  pool.sort((a, b) => b.score - a.score)
+
+  const best = pool[0]
+  if (!best) return null
+
   return {
-    lat: candidates[0].lat,
-    lng: candidates[0].lng,
-    city: candidates[0].city || cleanCity || null,
-    state: normalizeStateValue(candidates[0].state || cleanState) || null,
-    zip_code: candidates[0].zip_code || cleanZip || null,
+    lat: best.lat,
+    lng: best.lng,
+    city: String(city || '').trim() || best.city || null,
+    state: normalizeStateValue(state) || normalizeStateValue(best.state) || null,
+    zip_code: normalizedZip || best.zip_code || null,
   }
 }
 
