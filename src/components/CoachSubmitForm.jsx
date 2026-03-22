@@ -922,6 +922,9 @@ function SuccessBanner({ message }) {
 }
 
 // ── PIN CONFIRM MAP ───────────────────────────────────────
+// Desktop: draggable marker
+// Mobile: tap-to-place (no drag, no scroll trap)
+
 function DraggableMarker({ lat, lng, onMove }) {
   const markerRef = useRef(null)
   const eventHandlers = useMemo(() => ({
@@ -938,6 +941,15 @@ function DraggableMarker({ lat, lng, onMove }) {
   )
 }
 
+function TapToPlaceMarker({ lat, lng, onMove }) {
+  useMapEvents({
+    click(e) {
+      onMove(e.latlng.lat, e.latlng.lng)
+    },
+  })
+  return <Marker position={[lat, lng]} />
+}
+
 function RecenterMap({ lat, lng }) {
   const map = useMapEvents({})
   useEffect(() => { map.setView([lat, lng], 16) }, [lat, lng, map])
@@ -946,15 +958,56 @@ function RecenterMap({ lat, lng }) {
 
 function PinConfirmMap({ lat, lng, onMove, isMobile }) {
   if (lat == null || lng == null) return null
-  const height = isMobile ? 220 : 300
+
+  if (isMobile) {
+    // Mobile: static map (no scroll trap), tap anywhere to move pin
+    // dragging={false} prevents the map from intercepting page scroll
+    return (
+      <div style={{ marginTop: 10, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--lgray)' }}>
+        <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid var(--lgray)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 2 }}>
+            📍 Confirm Pin Location
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--gray)' }}>
+            Tap the map to move the pin to the correct spot
+          </div>
+        </div>
+        <div style={{ height: 260 }}>
+          <MapContainer
+            center={[lat, lng]}
+            zoom={16}
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom={false}
+            dragging={false}
+            touchZoom={false}
+            doubleClickZoom={false}
+          >
+            <TileLayer attribution='&copy; OpenStreetMap' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
+            <RecenterMap lat={lat} lng={lng} />
+            <TapToPlaceMarker lat={lat} lng={lng} onMove={onMove} />
+          </MapContainer>
+        </div>
+        <div style={{ padding: '6px 12px', background: '#F8FAFC', borderTop: '1px solid var(--lgray)', fontSize: 11, color: 'var(--gray)', textAlign: 'center' }}>
+          Pin position is saved on submit
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop: draggable marker, full pan/zoom
   return (
     <div style={{ marginTop: 10, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--lgray)' }}>
       <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid var(--lgray)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confirm Pin Location</span>
         <span style={{ fontSize: 11, color: 'var(--gray)' }}>Drag pin to adjust if needed</span>
       </div>
-      <div style={{ height }}>
-        <MapContainer center={[lat, lng]} zoom={16} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+      <div style={{ height: 300 }}>
+        <MapContainer
+          center={[lat, lng]}
+          zoom={16}
+          style={{ height: '100%', width: '100%' }}
+          scrollWheelZoom={false}
+        >
           <TileLayer attribution='&copy; OpenStreetMap' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
           <RecenterMap lat={lat} lng={lng} />
           <DraggableMarker lat={lat} lng={lng} onMove={onMove} />
