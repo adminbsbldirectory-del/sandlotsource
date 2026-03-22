@@ -1,6 +1,17 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
 import { supabase } from '../supabase.js'
 import DuplicateWarning from './DuplicateWarning.jsx'
+
+if (typeof window !== 'undefined') {
+  delete L.Icon.Default.prototype._getIconUrl
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  })
+}
 
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
@@ -910,6 +921,52 @@ function SuccessBanner({ message }) {
   )
 }
 
+// ── PIN CONFIRM MAP ───────────────────────────────────────
+function DraggableMarker({ lat, lng, onMove }) {
+  const markerRef = useRef(null)
+  const eventHandlers = useMemo(() => ({
+    dragend() {
+      const marker = markerRef.current
+      if (marker) {
+        const pos = marker.getLatLng()
+        onMove(pos.lat, pos.lng)
+      }
+    },
+  }), [onMove])
+  return (
+    <Marker draggable eventHandlers={eventHandlers} position={[lat, lng]} ref={markerRef} />
+  )
+}
+
+function RecenterMap({ lat, lng }) {
+  const map = useMapEvents({})
+  useEffect(() => { map.setView([lat, lng], 16) }, [lat, lng, map])
+  return null
+}
+
+function PinConfirmMap({ lat, lng, onMove, isMobile }) {
+  if (lat == null || lng == null) return null
+  const height = isMobile ? 220 : 300
+  return (
+    <div style={{ marginTop: 10, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--lgray)' }}>
+      <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid var(--lgray)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confirm Pin Location</span>
+        <span style={{ fontSize: 11, color: 'var(--gray)' }}>Drag pin to adjust if needed</span>
+      </div>
+      <div style={{ height }}>
+        <MapContainer center={[lat, lng]} zoom={16} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+          <TileLayer attribution='&copy; OpenStreetMap' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
+          <RecenterMap lat={lat} lng={lng} />
+          <DraggableMarker lat={lat} lng={lng} onMove={onMove} />
+        </MapContainer>
+      </div>
+      <div style={{ padding: '6px 12px', background: '#F8FAFC', borderTop: '1px solid var(--lgray)', fontSize: 11, color: 'var(--gray)', textAlign: 'center' }}>
+        Zoom in for more precision. Your adjusted pin is saved on submit.
+      </div>
+    </div>
+  )
+}
+
 function ZipField({ value, onChange, onGeocode, label, hint, required }) {
   const [status, setStatus] = useState('')
   const lastLookupRef = useRef('')
@@ -1145,6 +1202,8 @@ function CoachForm({ isMobile }) {
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
   
+  function handlePinMove(lat, lng) { setForm((f) => ({ ...f, lat, lng })) }
+
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -1316,6 +1375,7 @@ function CoachForm({ isMobile }) {
             placeholder="Optional street address for more accurate map placement"
             style={inputStyle}
           />
+          <PinConfirmMap lat={form.lat} lng={form.lng} onMove={handlePinMove} isMobile={isMobile} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
@@ -1643,6 +1703,8 @@ function TeamForm({ isMobile }) {
     setFacilityAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
 
+  function handlePinMove(lat, lng) { setForm((f) => ({ ...f, lat, lng })) }
+
   function validate() {
     if (!form.name.trim()) return 'Team name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -1877,6 +1939,7 @@ function TeamForm({ isMobile }) {
     {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
   </label>
   <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handlePracticeAddressBlur} placeholder="Required field or park address" style={inputStyle} />
+  <PinConfirmMap lat={form.lat} lng={form.lng} onMove={handlePinMove} isMobile={isMobile} />
 </div>
 
 <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
@@ -2592,6 +2655,8 @@ function FacilityForm({ isMobile }) {
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
 
+  function handlePinMove(lat, lng) { setForm((f) => ({ ...f, lat, lng })) }
+
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
@@ -2765,7 +2830,8 @@ function FacilityForm({ isMobile }) {
             {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
           </label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
-          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
+          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Tab out of address to see your pin below. Drag it if needed.</div>
+          <PinConfirmMap lat={form.lat} lng={form.lng} onMove={handlePinMove} isMobile={isMobile} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
