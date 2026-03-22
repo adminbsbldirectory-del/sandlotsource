@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -13,6 +13,16 @@ L.Icon.Default.mergeOptions({
 })
 
 const HEADER_H = 75
+
+function normalizeSportValue(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
+  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
+  if (raw.includes('softball')) return 'softball'
+  if (raw.includes('baseball')) return 'baseball'
+  return raw
+}
 
 function sportPinBackground(value) {
   const sport = normalizeSportValue(value)
@@ -51,23 +61,12 @@ const US_STATES = [
   'VA', 'WA', 'WV', 'WI', 'WY',
 ]
 
-function normalizeSportValue(value) {
-  const raw = String(value || '').trim().toLowerCase()
-  if (!raw) return ''
-  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
-  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
-  if (raw.includes('softball')) return 'softball'
-  if (raw.includes('baseball')) return 'baseball'
-  return raw
-}
-
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value)
-  if (sport === 'both') return { key: 'both', label: 'Baseball & Softball', bg: '#DCEAFE', color: '#1E3A8A' }
-  if (sport === 'softball') return { key: 'softball', label: 'Softball', bg: '#F5E79E', color: '#7A4E00' }
-  return { key: 'baseball', label: 'Baseball', bg: '#DBEAFE', color: '#1D4ED8' }
+  if (sport === 'both') return { key: 'both', label: 'Both', bg: '#E7EEF9', color: '#1D3E73', border: '#C8D5E8' }
+  if (sport === 'softball') return { key: 'softball', label: 'Softball', bg: '#F3F0D7', color: '#5F5A17', border: '#DDD59A' }
+  return { key: 'baseball', label: 'Baseball', bg: '#E8EEF8', color: '#173B73', border: '#C7D3E8' }
 }
-
 
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
@@ -137,6 +136,31 @@ function normalizeFacility(facility) {
     lng: toNumber(facility.lng),
     zip: facility.zip_code || '',
   }
+}
+
+function formatCoachLocation(coach) {
+  const zip = getCoachZip(coach)
+  const line = [coach.city, coach.state].filter(Boolean).join(', ')
+  return [line, zip].filter(Boolean).join(' ')
+}
+
+function priceLabel(coach) {
+  if (coach.price_per_session) return `$${coach.price_per_session}/session`
+  if (coach.price_notes) return coach.price_notes
+  return 'Contact for rates'
+}
+
+function reviewLabel(coach) {
+  const avg = parseFloat(coach.rating_average) || 0
+  const count = parseInt(coach.review_count, 10) || 0
+  if (!count) return 'No reviews yet'
+  return `${avg.toFixed(1)} · ${count} review${count !== 1 ? 's' : ''}`
+}
+
+function credentialSnippet(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  return raw.length > 150 ? `${raw.slice(0, 150)}…` : raw
 }
 
 function FlyTo({ lat, lng }) {
@@ -218,7 +242,6 @@ function buildMarkerGroups(coaches) {
   }))
 }
 
-
 function MapMarkers({ groups, selected, setSelected, onViewCoach }) {
   return groups.map((group) => {
     const selectedCoach = group.coaches.find((coach) => coach.id === selected) || null
@@ -293,7 +316,7 @@ function MapMarkers({ groups, selected, setSelected, onViewCoach }) {
                 cursor: 'pointer',
               }}
             >
-              View Coach
+              View Coach Profile
             </button>
           </div>
         </Popup>
@@ -334,7 +357,7 @@ function RatingRow({ coach, selected }) {
   )
 }
 
-function CoachCard({ coach, selected, onClick, onViewProfile, distanceMi }) {
+function CoachCard({ coach, selected, onClick, onViewProfile }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
@@ -458,11 +481,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, distanceMi }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 12 }}>
           <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight: 600 }}>
-            {coach.price_per_session
-              ? '$' + coach.price_per_session + '/session'
-              : coach.price_notes
-                ? coach.price_notes
-                : 'Contact for rates'}
+            {priceLabel(coach)}
           </span>
           {coach.recommendation_count > 0 && (
             <span style={{ opacity: 0.6 }}>
@@ -619,6 +638,264 @@ function EmptyState({ facilityContextName }) {
   )
 }
 
+function CoachRow({ coach, selected, onOpen, onViewProfile }) {
+  const sportBadge = getSportBadgeMeta(coach.sport)
+  const specialties = parseSpecialties(coach.specialty)
+  const location = formatCoachLocation(coach)
+  const capabilities = specialties.length ? specialties.join(' · ') : 'General coaching'
+
+  return (
+    <div
+      onClick={onOpen}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '120px minmax(210px, 1.25fr) minmax(220px, 1.2fr) minmax(180px, 1fr) 96px',
+        gap: 12,
+        alignItems: 'center',
+        padding: '10px 14px',
+        borderTop: '1px solid #E7E5E1',
+        background: selected ? '#F9FBFF' : '#fff',
+        cursor: 'pointer',
+      }}
+    >
+      <div>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: sportBadge.bg,
+            color: sportBadge.color,
+            border: `1px solid ${sportBadge.border}`,
+            borderRadius: 999,
+            padding: '4px 10px',
+            fontSize: 11,
+            fontWeight: 800,
+            fontFamily: 'var(--font-head)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {sportBadge.label}
+        </span>
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, color: 'var(--navy)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {capabilities}
+        </div>
+        {coach.credentials && (
+          <div style={{ fontSize: 11.5, color: 'var(--gray)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {credentialSnippet(coach.credentials)}
+          </div>
+        )}
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {coach.facility_name || 'Independent / Private Lessons'}
+        </div>
+        <div style={{ fontSize: 11.5, color: 'var(--gray)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {location || 'Location not listed'}
+        </div>
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--navy)', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {coach.name}
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          {coach.verified_status && <span className="badge" style={{ background: '#E8F1FF', color: '#1D4ED8' }}>Verified</span>}
+          {coach.featured_status && <span className="badge" style={{ background: '#FDF0D5', color: '#A16207' }}>Featured</span>}
+          <span style={{ fontSize: 11.5, color: 'var(--gray)' }}>{reviewLabel(coach)}</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onOpen()
+          }}
+          style={{
+            minWidth: 76,
+            background: selected ? 'var(--navy)' : '#fff',
+            color: selected ? '#fff' : 'var(--navy)',
+            border: `1.5px solid ${selected ? 'var(--navy)' : '#93A0B3'}`,
+            borderRadius: 10,
+            padding: '8px 10px',
+            fontSize: 12,
+            fontWeight: 800,
+            fontFamily: 'var(--font-head)',
+            cursor: 'pointer',
+          }}
+        >
+          {selected ? 'Close' : 'Open'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
+  if (!coach) return null
+
+  const sportBadge = getSportBadgeMeta(coach.sport)
+  const specialties = parseSpecialties(coach.specialty)
+  const firstPhone = parseFirstPhone(coach.phone)
+  const website = coach.website
+    ? (coach.website.startsWith('http') ? coach.website : `https://${coach.website}`)
+    : null
+  const location = formatCoachLocation(coach)
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.18)',
+          zIndex: 2100,
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(720px, calc(100vw - 48px))',
+          maxHeight: 'calc(100vh - 120px)',
+          overflowY: 'auto',
+          background: '#fff',
+          borderRadius: 24,
+          boxShadow: '0 30px 60px rgba(15,23,42,0.22)',
+          border: '1px solid rgba(15,23,42,0.08)',
+          padding: '22px 22px 20px',
+          zIndex: 2200,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+              <span style={{ background: sportBadge.bg, color: sportBadge.color, border: `1px solid ${sportBadge.border}`, borderRadius: 999, padding: '5px 10px', fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sportBadge.label}</span>
+              {coach.verified_status && <span className="badge" style={{ background: '#E8F1FF', color: '#1D4ED8' }}>Verified</span>}
+              {coach.featured_status && <span className="badge" style={{ background: '#FDF0D5', color: '#A16207' }}>Featured</span>}
+              {coach.recommendation_count > 0 && <span className="badge" style={{ background: '#ECFDF3', color: '#166534' }}>{coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}</span>}
+            </div>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 32, lineHeight: 1.05, color: 'var(--navy)', fontWeight: 800 }}>{coach.name}</div>
+            <div style={{ marginTop: 6, fontSize: 14, color: 'var(--gray)' }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+            {location && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--gray)' }}>{location}</div>}
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              border: '1px solid #D6D3D1',
+              background: '#fff',
+              color: '#334155',
+              fontSize: 18,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(260px, 0.9fr)', gap: 16, marginTop: 18 }}>
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 16, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Capabilities</div>
+              <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {specialties.length > 0 ? specialties.map((item) => (
+                  <span key={item} style={{ background: '#EEF2F7', color: '#334155', borderRadius: 999, padding: '5px 10px', fontSize: 12, fontWeight: 700 }}>
+                    {item}
+                  </span>
+                )) : <span style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 700 }}>General coaching</span>}
+              </div>
+              {coach.credentials && (
+                <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.55, color: 'var(--gray)' }}>
+                  {coach.credentials}
+                </div>
+              )}
+            </div>
+
+            <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 16, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Pricing & reputation</div>
+              <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 800 }}>{priceLabel(coach)}</div>
+                <div style={{ fontSize: 13, color: 'var(--gray)' }}>{reviewLabel(coach)}</div>
+                {distanceMi != null && <div style={{ fontSize: 13, color: 'var(--gray)' }}>{distanceMi.toFixed(1)} miles from your ZIP search</div>}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 12 }}>
+            <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Contact / details</div>
+              <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                {coach.email && (
+                  <a href={`mailto:${coach.email}`} style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
+                    {coach.email}
+                  </a>
+                )}
+                {firstPhone && (
+                  <a href={`tel:${firstPhone.replace(/\D/g, '')}`} style={{ color: 'var(--navy)', fontWeight: 800, textDecoration: 'none', fontSize: 15 }}>
+                    {firstPhone}
+                  </a>
+                )}
+                {website && (
+                  <a href={website} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
+                    Visit website
+                  </a>
+                )}
+                {!coach.email && !firstPhone && !website && (
+                  <div style={{ fontSize: 14, color: 'var(--gray)' }}>Use the profile page for more information.</div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Location</div>
+              <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
+                <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 800 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+                {location && <div style={{ fontSize: 13, color: 'var(--gray)' }}>{location}</div>}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onViewProfile(coach)}
+              style={{
+                width: '100%',
+                background: 'var(--navy)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 14,
+                padding: '12px 14px',
+                fontSize: 13,
+                fontWeight: 800,
+                fontFamily: 'var(--font-head)',
+                cursor: 'pointer',
+              }}
+            >
+              View Profile &amp; Reviews
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function CoachDirectory() {
   const [searchParams] = useSearchParams()
 
@@ -641,12 +918,6 @@ export default function CoachDirectory() {
 
   const selectedFromUrl = searchParams.get('select') || null
   const facilityFromUrl = searchParams.get('facility') || null
-
-  const desktopListRef = useRef(null)
-  const mobileListRef = useRef(null)
-  const coachCardRefs = useRef({})
-  const lastAutoScrolledKey = useRef('')
-  const userInteractedWithList = useRef(false)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
@@ -757,8 +1028,8 @@ export default function CoachDirectory() {
   const baseFiltered = useMemo(() => {
     return resolvedCoaches.filter((c) => {
       const specs = c.specialty || []
-
       const normalizedSport = normalizeSportValue(c.sport)
+
       if (sport !== 'Both' && normalizedSport !== sport && normalizedSport !== 'both') return false
       if (specialty !== 'All Specialties' && !specs.includes(specialty)) return false
       if (state !== 'All States' && (c.state || '').toUpperCase() !== state) return false
@@ -789,25 +1060,10 @@ export default function CoachDirectory() {
     return baseFiltered.filter((c) => c.facility_id === normalizedFacilityId)
   }, [baseFiltered, facilityFromUrl])
 
-  const displayedCoaches = useMemo(() => {
-    if (!selected) return filtered
-
-    const idx = filtered.findIndex((c) => c.id === selected)
-    if (idx <= 0) return filtered
-
-    const next = [...filtered]
-    const [selectedCoach] = next.splice(idx, 1)
-    next.unshift(selectedCoach)
-    return next
-  }, [filtered, selected])
+  const displayedCoaches = filtered
 
   const mappable = useMemo(() => filtered.filter((c) => c.lat != null && c.lng != null), [filtered])
   const markerGroups = useMemo(() => buildMarkerGroups(mappable), [mappable])
-
-  function getDistance(coach) {
-    if (!geoCenter || coach.lat == null || coach.lng == null) return null
-    return distanceMiles(geoCenter.lat, geoCenter.lng, coach.lat, coach.lng)
-  }
 
   const sel = useMemo(() => {
     if (!selected) return null
@@ -815,62 +1071,15 @@ export default function CoachDirectory() {
   }, [selected, filtered, resolvedCoaches])
 
   useEffect(() => {
-    userInteractedWithList.current = false
-  }, [selectedFromUrl, facilityFromUrl])
-
-  useEffect(() => {
-    if (loading || !selected) return
-
-    const selectedVisible = displayedCoaches.some((c) => c.id === selected)
-    if (!selectedVisible) return
-
-    const listEl = isMobile ? mobileListRef.current : desktopListRef.current
-    const cardEl = coachCardRefs.current[selected]
-    if (!listEl || !cardEl) return
-
-    const scrollKey = [
-      selected,
-      facilityFromUrl || '',
-      search || '',
-      sport,
-      specialty,
-      state,
-      isMobile ? 'mobile' : 'desktop',
-    ].join('|')
-
-    const shouldForceScroll =
-      selected === selectedFromUrl ||
-      !!facilityFromUrl
-
-    if (!shouldForceScroll) return
-
-    if (lastAutoScrolledKey.current === scrollKey && userInteractedWithList.current) return
-
-    const run = () => {
-      if (typeof cardEl.scrollIntoView === 'function') {
-        cardEl.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'nearest',
-        })
-      }
-      lastAutoScrolledKey.current = scrollKey
+    if (selected && !filtered.some((c) => c.id === selected)) {
+      setSelected(null)
     }
+  }, [filtered, selected])
 
-    const t = setTimeout(run, 120)
-    return () => clearTimeout(t)
-  }, [
-    loading,
-    selected,
-    selectedFromUrl,
-    facilityFromUrl,
-    displayedCoaches,
-    isMobile,
-    search,
-    sport,
-    specialty,
-    state,
-  ])
+  function getDistance(coach) {
+    if (!geoCenter || coach.lat == null || coach.lng == null) return null
+    return distanceMiles(geoCenter.lat, geoCenter.lng, coach.lat, coach.lng)
+  }
 
   const inputStyle = {
     width: '100%',
@@ -895,26 +1104,21 @@ export default function CoachDirectory() {
     display: 'block',
   }
 
-  const setCardRef = (id) => (node) => {
-    if (node) {
-      coachCardRefs.current[id] = node
-    } else {
-      delete coachCardRefs.current[id]
-    }
-  }
-
   const handleSelectCoach = (coachId) => {
-    userInteractedWithList.current = true
     setSelected((prev) => (prev === coachId ? null : coachId))
-  }
-
-  const handleListInteraction = () => {
-    userInteractedWithList.current = true
   }
 
   return (
     <>
       {profileCoach && <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />}
+      {!isMobile && sel && (
+        <CoachDetailPanel
+          coach={sel}
+          onClose={() => setSelected(null)}
+          onViewProfile={setProfileCoach}
+          distanceMi={getDistance(sel)}
+        />
+      )}
 
       {isMobile ? (
         <div>
@@ -934,7 +1138,7 @@ export default function CoachDirectory() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
               {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
               {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-              {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} distanceMi={getDistance(coach)} /></div>)}
+              {!loading && displayedCoaches.map((coach) => <div key={coach.id}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} /></div>)}
             </div>
           </div>
         </div>
@@ -961,15 +1165,34 @@ export default function CoachDirectory() {
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 22, alignItems: 'start' }}>
                 <main style={{ minWidth: 0 }}>
-                  <div style={{ position: 'sticky', top: 76, zIndex: 1, background: 'var(--page-bg, #f5f3ef)', paddingTop: 8, paddingBottom: 10 }}>
-                    {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 390, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={setProfileCoach} /></MapContainer></div><MapLegend /></div>}
-                    {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, marginTop: 10, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view coach locations.</div>}
-                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{displayedCoaches.length} Coach{displayedCoaches.length !== 1 ? 'es' : ''}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse instructors, trainers, and team coaches</div></div>
+                  {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 355, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={setProfileCoach} /></MapContainer></div><MapLegend /></div>}
+                  {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view coach locations.</div>}
+
+                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>{displayedCoaches.length} Coach{displayedCoaches.length !== 1 ? 'es' : ''}</div>
+                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>Compact list below. Click a row or pin to open the detail card.</div>
                   </div>
-                  <div ref={desktopListRef} onWheel={handleListInteraction} style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14, alignItems: 'stretch' }}>
-                    {loading && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
-                    {!loading && displayedCoaches.length === 0 && <div style={{ gridColumn: '1 / -1' }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
-                    {!loading && displayedCoaches.map((coach) => <div key={coach.id} ref={setCardRef(coach.id)}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} distanceMi={getDistance(coach)} /></div>)}
+
+                  <div style={{ marginTop: 8, border: '1px solid #E7E5E1', borderRadius: 16, overflow: 'hidden', background: '#fff' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(210px, 1.25fr) minmax(220px, 1.2fr) minmax(180px, 1fr) 96px', gap: 12, alignItems: 'center', padding: '12px 14px', background: '#F8FAFC', borderBottom: '1px solid #E7E5E1', position: 'sticky', top: 76, zIndex: 3 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Sport</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Capabilities</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Location / Facility</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Coach</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right' }}>View</div>
+                    </div>
+
+                    {loading && <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
+                    {!loading && displayedCoaches.length === 0 && <div style={{ padding: 18 }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
+                    {!loading && displayedCoaches.map((coach) => (
+                      <CoachRow
+                        key={coach.id}
+                        coach={coach}
+                        selected={selected === coach.id}
+                        onOpen={() => handleSelectCoach(coach.id)}
+                        onViewProfile={setProfileCoach}
+                      />
+                    ))}
                   </div>
                 </main>
                 <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
