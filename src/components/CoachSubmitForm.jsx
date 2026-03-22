@@ -21,71 +21,113 @@ async function geocodeZip(zip) {
   }
 }
 
-async function geocodePhoton(address, city, state, zip) {
-  const parts = [address, city, state, zip].filter(Boolean)
-  if (!parts.length) return null
-  const q = parts.join(', ')
+async function geocodeCensus(address, city, state, zip) {
+  const street = normalizeStreetForGeocode(String(address || '').trim())
+  if (!street) return null
   try {
-    const url = new URL('https://photon.komoot.io/api/')
-    url.searchParams.set('q', q)
-    url.searchParams.set('limit', '5')
-    url.searchParams.set('countrycode', 'us')
-    const res = await fetch(url.toString(), {
-      headers: { 'Accept-Language': 'en-US,en;q=0.9' },
-    })
+    const params = new URLSearchParams()
+    params.set('street', street)
+    if (city) params.set('city', String(city).trim())
+    if (state) params.set('state', normalizeStateValue(state))
+    if (zip) params.set('zip', normalizeZipCode(zip))
+    params.set('benchmark', 'Public_AR_Current')
+    params.set('format', 'json')
+    const url = 'https://geocoding.geo.census.gov/geocoder/locations/address?' + params.toString()
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
     if (!res.ok) return null
     const data = await res.json()
-    const features = (data.features || [])
-    if (!features.length) return null
-
-    const cleanZip = normalizeZipCode(zip)
-    const cleanState = normalizeStateValue(state)
-    let bestFeature = null
-    let bestScore = -Infinity
-
-    for (const feature of features) {
-      const props = feature.properties || {}
-      const coords = feature.geometry && feature.geometry.coordinates
-      if (!coords || coords.length < 2) continue
-      // Skip results clearly in the wrong country
-      const cc = (props.country_code || props.countrycode || '').toLowerCase()
-      if (cc && cc !== 'us') continue
-
-      let score = 0
-      const featureState = normalizeStateValue(props.state || props.state_code || '')
-      const featureZip = normalizeZipCode(props.postcode || '')
-
-      if (cleanState && featureState === cleanState) score += 10
-      else if (cleanState && featureState && featureState !== cleanState) score -= 20
-
-      if (cleanZip && featureZip === cleanZip) score += 15
-      else if (cleanZip && featureZip && featureZip !== cleanZip) score -= 5
-
-      // Prefer house / building level results over street or city centroid
-      const osm = (props.type || props.osm_value || '').toLowerCase()
-      if (osm === 'house' || osm === 'building' || osm === 'apartments') score += 8
-
-      if (score > bestScore) {
-        bestScore = score
-        bestFeature = feature
-      }
-    }
-
-    if (!bestFeature) return null
-    const coords = bestFeature.geometry && bestFeature.geometry.coordinates
-    if (!coords || coords.length < 2) return null
-    const props = bestFeature.properties || {}
-
+    const matches = data && data.result && data.result.addressMatches
+    if (!matches || !matches.length) return null
+    const match = matches[0]
+    const coords = match.coordinates
+    if (!coords || coords.x == null || coords.y == null) return null
+    const comp = match.addressComponents || {}
     return {
-      lat: coords[1],
-      lng: coords[0],
-      city: props.city || props.town || props.village || String(city || '').trim() || null,
-      state: normalizeStateValue(props.state || props.state_code || state) || null,
-      zip_code: normalizeZipCode(props.postcode || zip) || null,
+      lat: parseFloat(coords.y),
+      lng: parseFloat(coords.x),
+      city: comp.city || String(city || '').trim() || null,
+      state: normalizeStateValue(comp.state || state) || null,
+      zip_code: normalizeZipCode(comp.zip || zip) || null,
     }
   } catch {
     return null
   }
+}
+
+async function geocodePhoton(address, city, state, zip) {
+  const cleanState = normalizeStateValue(state)
+  const cleanZip = normalizeZipCode(zip)
+
+  function scoreFeature(feature) {
+    const props = feature.properties || {}
+    const coords = feature.geometry && feature.geometry.coordinates
+    if (!coords || coords.length < 2) return -Infinity
+    const cc = (props.country_code || props.countrycode || '').toLowerCase()
+    if (cc && cc !== 'us') return -Infinity
+    let score = 0
+    const featureState = normalizeStateValue(props.state || props.state_code || '')
+    const featureZip = normalizeZipCode(props.postcode || '')
+    if (cleanState && featureState === cleanState) score += 20
+    else if (cleanState && featureState && featureState !== cleanState) score -= 50
+    if (cleanZip && featureZip === cleanZip) score += 25
+    else if (cleanZip && featureZip && featureZip !== cleanZip) score -= 10
+    const osm = (props.type || props.osm_value || '').toLowerCase()
+    if (osm === 'house' || osm === 'building') score += 10
+    return score
+  }
+
+  async function tryPhoton(streetQuery) {
+    try {
+      const q = [streetQuery, city, state, zip].filter(Boolean).join(', ')
+      const url = new URL('https://photon.komoot.io/api/')
+      url.searchParams.set('q', q)
+      url.searchParams.set('limit', '5')
+      url.searchParams.set('countrycode', 'us')
+      const res = await fetch(url.toString(), { headers: { 'Accept-Language': 'en-US,en;q=0.9' } })
+      if (!res.ok) return null
+      const data = await res.json()
+      const features = (data.features || [])
+      let best = null
+      let bestScore = -Infinity
+      for (const f of features) {
+        const s = scoreFeature(f)
+        if (s > bestScore) { bestScore = s; best = f }
+      }
+      if (!best || bestScore < 0) return null
+      const coords = best.geometry.coordinates
+      const props = best.properties || {}
+      return {
+        lat: coords[1],
+        lng: coords[0],
+        city: props.city || props.town || props.village || String(city || '').trim() || null,
+        state: normalizeStateValue(props.state || props.state_code || state) || null,
+        zip_code: normalizeZipCode(props.postcode || zip) || null,
+      }
+    } catch { return null }
+  }
+
+  if (!address) return null
+  const street = String(address).trim()
+
+  // Attempt 1: full address as given
+  const r1 = await tryPhoton(street)
+  if (r1) return r1
+
+  // Attempt 2: strip directional suffix (NW/SW/NE/SE/N/S/E/W) — common in Atlanta, DC, etc.
+  const stripped = street.replace(/\s+(NW|SW|NE|SE|North|South|East|West|N|S|E|W)\.?\s*$/i, '').trim()
+  if (stripped !== street) {
+    const r2 = await tryPhoton(stripped)
+    if (r2) return r2
+  }
+
+  // Attempt 3: strip suite/unit/apt suffix
+  const noSuite = street.replace(/[,\s]+(ste|suite|apt|unit|#|bldg|fl|floor).*/i, '').trim()
+  if (noSuite !== street && noSuite !== stripped) {
+    const r3 = await tryPhoton(noSuite)
+    if (r3) return r3
+  }
+
+  return null
 }
 
 function distanceMiles(lat1, lng1, lat2, lng2) {
@@ -309,28 +351,35 @@ async function resolveBestLocation(address, city, state, zip) {
   const street = String(address || '').trim()
   const cleanZipStr = String(zip || '').trim()
 
-  // Get zip centroid upfront — used as a sanity constraint (max 3 miles)
+  // Zip centroid — used as sanity constraint for OSM geocoders (not Census)
+  // 8-mile radius accommodates large rural zip codes nationally
   const zipGeo = cleanZipStr.length === 5 ? await geocodeZip(cleanZipStr) : null
 
   function withinZipBounds(lat, lng) {
-    if (!zipGeo) return true  // no zip to check against, allow it
-    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 3
+    if (!zipGeo) return true
+    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 8
   }
 
   if (street) {
-    // Tier 1: Nominatim
+    // Tier 1: US Census Bureau TIGER/Line — most accurate free US geocoder
+    // No zip-bounds check needed; federal data is state-constrained by design
+    const census = await geocodeCensus(street, city, state, zip)
+    if (census) return { ...census, source: 'address' }
+
+    // Tier 2: Nominatim — good coverage, zip-bounds sanity check applied
     const exact = await geocodeAddress(street, city, state, zip)
     if (exact && withinZipBounds(exact.lat, exact.lng)) {
       return { ...exact, source: 'address' }
     }
-    // Tier 2: Photon (better interpolation; same zip-bounds check)
+
+    // Tier 3: Photon — retries directional/suite variants automatically
     const photon = await geocodePhoton(street, city, state, zip)
     if (photon && withinZipBounds(photon.lat, photon.lng)) {
       return { ...photon, source: 'address' }
     }
   }
 
-  // Tier 3: zip centroid
+  // Tier 4: zip centroid — last resort, always within the right area
   if (zipGeo) {
     return {
       lat: zipGeo.lat,
@@ -353,20 +402,26 @@ async function resolveFacilityLocation(address, city, state, zip) {
 
   function withinZipBounds(lat, lng) {
     if (!zipGeo) return true
-    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 3
+    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 8
   }
 
   if (street) {
-    // Tier 1: Nominatim
+    // Tier 1: US Census Bureau
+    const census = await geocodeCensus(street, city, state, zip)
+    if (census) return { ...census, source: 'address' }
+
+    // Tier 2: Nominatim
     const exact = await geocodeAddress(street, city, state, zip)
     if (exact && withinZipBounds(exact.lat, exact.lng)) {
       return { ...exact, source: 'address' }
     }
-    // Tier 2: Photon
+
+    // Tier 3: Photon
     const photon = await geocodePhoton(street, city, state, zip)
     if (photon && withinZipBounds(photon.lat, photon.lng)) {
       return { ...photon, source: 'address' }
     }
+
     return null
   }
 
