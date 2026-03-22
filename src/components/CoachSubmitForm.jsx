@@ -181,6 +181,40 @@ function hasLocationContext(city, state, zip) {
   return Boolean(String(city || '').trim() && normalizeStateValue(state))
 }
 
+function applyResolvedCoordsPreservingLocality(current, resolved, options = {}) {
+  if (!resolved) return { ...current }
+  const preserveLocality = options.preserveLocality !== false
+  const next = {
+    ...current,
+    lat: resolved.lat,
+    lng: resolved.lng,
+  }
+
+  if (preserveLocality) {
+    next.city = String(current.city || '').trim() || resolved.city || ''
+    next.state = normalizeStateValue(current.state) || normalizeStateValue(resolved.state) || ''
+    next.zip_code = normalizeZipCode(current.zip_code) || normalizeZipCode(resolved.zip_code) || ''
+    return next
+  }
+
+  next.city = resolved.city || String(current.city || '').trim() || ''
+  next.state = normalizeStateValue(resolved.state || current.state) || ''
+  next.zip_code = normalizeZipCode(resolved.zip_code) || normalizeZipCode(current.zip_code) || ''
+  return next
+}
+
+function applyResolvedFacilityCoordsPreservingLocality(current, resolved) {
+  if (!resolved) return { ...current }
+  return {
+    ...current,
+    facility_lat: resolved.lat,
+    facility_lng: resolved.lng,
+    facility_city: String(current.facility_city || '').trim() || resolved.city || '',
+    facility_state: normalizeStateValue(current.facility_state) || normalizeStateValue(resolved.state) || '',
+    facility_zip_code: normalizeZipCode(current.facility_zip_code) || normalizeZipCode(resolved.zip_code) || '',
+  }
+}
+
 function normalizeFacilityName(value) {
   return String(value || '')
     .toLowerCase()
@@ -923,14 +957,7 @@ function CoachForm({ isMobile }) {
       let resolvedForm = { ...form }
       const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
       if (resolvedLocation) {
-        resolvedForm = {
-          ...resolvedForm,
-          lat: resolvedLocation.lat,
-          lng: resolvedLocation.lng,
-          city: resolvedLocation.source === 'address' ? (resolvedLocation.city || resolvedForm.city) : (resolvedForm.city || resolvedLocation.city),
-          state: resolvedLocation.source === 'address' ? (resolvedLocation.state || resolvedForm.state) : (resolvedForm.state || resolvedLocation.state),
-          zip_code: resolvedLocation.zip_code || resolvedForm.zip_code,
-        }
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
       }
 
       const facilityId = await findOrCreateFacilityFromCoach(resolvedForm, selectedFacilityMatch?.id || null)
@@ -1434,14 +1461,7 @@ function TeamForm({ isMobile }) {
       let resolvedForm = { ...form }
       const practiceLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
       if (practiceLocation) {
-        resolvedForm = {
-          ...resolvedForm,
-          lat: practiceLocation.lat,
-          lng: practiceLocation.lng,
-          city: practiceLocation.city || resolvedForm.city,
-          state: normalizeStateValue(practiceLocation.state || resolvedForm.state),
-          zip_code: practiceLocation.zip_code || resolvedForm.zip_code,
-        }
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, practiceLocation)
       }
 
       if (form.facility_name.trim()) {
@@ -1452,14 +1472,7 @@ function TeamForm({ isMobile }) {
           form.facility_zip_code || resolvedForm.zip_code
         )
         if (facilityLocation) {
-          resolvedForm = {
-            ...resolvedForm,
-            facility_lat: facilityLocation.lat,
-            facility_lng: facilityLocation.lng,
-            facility_city: facilityLocation.city || resolvedForm.facility_city,
-            facility_state: normalizeStateValue(facilityLocation.state || resolvedForm.facility_state),
-            facility_zip_code: facilityLocation.zip_code || resolvedForm.facility_zip_code,
-          }
+          resolvedForm = applyResolvedFacilityCoordsPreservingLocality(resolvedForm, facilityLocation)
         }
       }
 
@@ -2389,18 +2402,9 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      let resolvedForm = { ...form }
-      const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-      if (resolvedLocation) {
-        resolvedForm = {
-          ...resolvedForm,
-          lat: resolvedLocation.lat,
-          lng: resolvedLocation.lng,
-          city: resolvedLocation.source === 'address' ? (resolvedLocation.city || resolvedForm.city) : (resolvedForm.city || resolvedLocation.city),
-          state: resolvedLocation.source === 'address' ? (resolvedLocation.state || resolvedForm.state) : (resolvedForm.state || resolvedLocation.state),
-          zip_code: resolvedLocation.zip_code || resolvedForm.zip_code,
+        if (facilityLocation) {
+          resolvedForm = applyResolvedFacilityCoordsPreservingLocality(resolvedForm, facilityLocation)
         }
-      }
 
       const payload = {
         name: resolvedForm.name.trim(),
