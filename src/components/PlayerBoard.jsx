@@ -1481,6 +1481,46 @@ export default function PlayerBoard() {
     color: "var(--gray)",
     fontFamily: "var(--font-head)",
   };
+  const selectedPost =
+    filtered.find((post) => post.id === selectedPostId) || null;
+  const selectedPostDetailLines = selectedPost
+    ? getPostDetailLines(selectedPost)
+    : [];
+  const selectedTravelMiles = selectedPost
+    ? extractTravelMiles(selectedPost.additional_notes)
+    : null;
+  const selectedTravelLabel =
+    selectedPost && selectedPost.post_type === "player_available"
+      ? selectedTravelMiles === 999
+        ? "Willing to travel anywhere"
+        : selectedTravelMiles != null
+          ? `Willing to travel up to ${selectedTravelMiles} miles`
+          : ""
+      : "";
+
+  function getSportChipStyle(sport) {
+    const normalized = String(sport || "").toLowerCase();
+    if (normalized === "softball") {
+      return {
+        background: "#F3F0D7",
+        color: "#5F5A17",
+        border: "1px solid #DDD59A",
+      };
+    }
+    return {
+      background: "#E8EEF8",
+      color: "#173B73",
+      border: "1px solid #C7D3E8",
+    };
+  }
+
+  function getTypeChipStyle(isPlayer) {
+    return {
+      background: isPlayer ? "#1593B5" : "#E66A1F",
+      color: "white",
+      border: "1px solid transparent",
+    };
+  }
 
   return (
     <div>
@@ -1987,7 +2027,7 @@ export default function PlayerBoard() {
                   </div>
                   <div style={{ fontSize: 12, color: "var(--gray)" }}>
                     {stateFilter
-                      ? "Compact list below. Rows start closed — click a row or pin to open details."
+                      ? "Compact list below. Click a row or pin to open the detail card."
                       : "Start with a state, then narrow by ZIP only when needed."}
                   </div>
                 </div>
@@ -2000,6 +2040,7 @@ export default function PlayerBoard() {
                       border: "1px solid rgba(15,23,42,0.06)",
                       borderRadius: 14,
                       overflow: "hidden",
+                      position: "relative",
                     }}
                   >
                     <div
@@ -2088,7 +2129,6 @@ export default function PlayerBoard() {
                           const postTypeLabel = isPlayer
                             ? "Player Available"
                             : "Player Needed";
-                          const detailLines = getPostDetailLines(post);
 
                           return (
                             <div
@@ -2101,11 +2141,7 @@ export default function PlayerBoard() {
                               }}
                             >
                               <div
-                                onClick={() =>
-                                  setSelectedPostId((current) =>
-                                    current === post.id ? null : post.id,
-                                  )
-                                }
+                                onClick={() => setSelectedPostId(post.id)}
                                 role="button"
                                 tabIndex={0}
                                 onKeyDown={(event) => {
@@ -2114,9 +2150,7 @@ export default function PlayerBoard() {
                                     event.key === " "
                                   ) {
                                     event.preventDefault();
-                                    setSelectedPostId((current) =>
-                                      current === post.id ? null : post.id,
-                                    );
+                                    setSelectedPostId(post.id);
                                   }
                                 }}
                                 style={{
@@ -2135,10 +2169,7 @@ export default function PlayerBoard() {
                                       alignItems: "center",
                                       justifyContent: "center",
                                       maxWidth: "100%",
-                                      background: isPlayer
-                                        ? "#0891b2"
-                                        : "#ea580c",
-                                      color: "white",
+                                      ...getTypeChipStyle(isPlayer),
                                       fontSize: 10,
                                       fontWeight: 800,
                                       padding: "4px 8px",
@@ -2159,14 +2190,7 @@ export default function PlayerBoard() {
                                       display: "inline-flex",
                                       alignItems: "center",
                                       justifyContent: "center",
-                                      background:
-                                        post.sport === "softball"
-                                          ? "#CCE500"
-                                          : "#0B1F3A",
-                                      color:
-                                        post.sport === "softball"
-                                          ? "var(--navy)"
-                                          : "white",
+                                      ...getSportChipStyle(post.sport),
                                       fontSize: 10,
                                       fontWeight: 800,
                                       padding: "4px 8px",
@@ -2275,8 +2299,8 @@ export default function PlayerBoard() {
                                     type="button"
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      setSelectedPostId((current) =>
-                                        current === post.id ? null : post.id,
+                                      setSelectedPostId(
+                                        isSelected ? null : post.id,
                                       );
                                     }}
                                     style={{
@@ -2300,241 +2324,431 @@ export default function PlayerBoard() {
                                   </button>
                                 </div>
                               </div>
-
-                              {isSelected && (
-                                <div
-                                  style={{
-                                    padding: "0 14px 12px 14px",
-                                    borderTop: "1px solid rgba(15,23,42,0.06)",
-                                    background: "#FAFAFA",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "grid",
-                                      gridTemplateColumns:
-                                        "minmax(0, 1.35fr) minmax(240px, 0.85fr)",
-                                      gap: 14,
-                                      paddingTop: 10,
-                                    }}
-                                  >
-                                    <div>
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          flexWrap: "wrap",
-                                          gap: 6,
-                                          marginBottom: 8,
-                                        }}
-                                      >
-                                        {post.age_group && (
-                                          <span
-                                            style={{
-                                              background: "#EEF2FF",
-                                              color: "var(--navy)",
-                                              fontSize: 11,
-                                              fontWeight: 700,
-                                              padding: "4px 8px",
-                                              borderRadius: 999,
-                                            }}
-                                          >
-                                            {post.age_group}
-                                          </span>
-                                        )}
-                                        {post.event_date && (
-                                          <span
-                                            style={{
-                                              background: "#FEF3C7",
-                                              color: "#92400E",
-                                              fontSize: 11,
-                                              fontWeight: 700,
-                                              padding: "4px 8px",
-                                              borderRadius: 999,
-                                            }}
-                                          >
-                                            {formatDate(post.event_date)}
-                                          </span>
-                                        )}
-                                        {post.player_age && (
-                                          <span
-                                            style={{
-                                              background: "#ECFDF5",
-                                              color: "#166534",
-                                              fontSize: 11,
-                                              fontWeight: 700,
-                                              padding: "4px 8px",
-                                              borderRadius: 999,
-                                            }}
-                                          >
-                                            Age {post.player_age}
-                                          </span>
-                                        )}
-                                      </div>
-
-                                      {post.player_description && (
-                                        <div
-                                          style={{
-                                            fontSize: 13,
-                                            color: "var(--gray)",
-                                            lineHeight: 1.55,
-                                            marginBottom: 10,
-                                          }}
-                                        >
-                                          {post.player_description}
-                                        </div>
-                                      )}
-
-                                      {detailLines.length > 0 && (
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            gap: 5,
-                                          }}
-                                        >
-                                          {detailLines.map((line, index) => (
-                                            <div
-                                              key={index}
-                                              style={{
-                                                fontSize: 12,
-                                                lineHeight: 1.45,
-                                                color: line.startsWith(
-                                                  "Willing to travel",
-                                                )
-                                                  ? "#2563EB"
-                                                  : "var(--gray)",
-                                                fontWeight: line.startsWith(
-                                                  "Willing to travel",
-                                                )
-                                                  ? 600
-                                                  : 400,
-                                              }}
-                                            >
-                                              {line.startsWith(
-                                                "Willing to travel",
-                                              )
-                                                ? "🚗 "
-                                                : ""}
-                                              {line}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div
-                                      style={{
-                                        background: "var(--white)",
-                                        border: "1px solid rgba(15,23,42,0.06)",
-                                        borderRadius: 12,
-                                        padding: 12,
-                                      }}
-                                    >
-                                      <div
-                                        style={{
-                                          fontSize: 11,
-                                          fontWeight: 800,
-                                          color: "var(--gray)",
-                                          textTransform: "uppercase",
-                                          letterSpacing: "0.07em",
-                                          marginBottom: 8,
-                                        }}
-                                      >
-                                        Contact / details
-                                      </div>
-                                      <div
-                                        style={{
-                                          fontSize: 13,
-                                          lineHeight: 1.5,
-                                          color: "var(--navy)",
-                                        }}
-                                      >
-                                        <ContactDisplay
-                                          contact_info={post.contact_info}
-                                        />
-                                      </div>
-                                      <div
-                                        style={{
-                                          fontSize: 12,
-                                          color: "var(--gray)",
-                                          marginTop: 10,
-                                        }}
-                                      >
-                                        Posted {formatDate(post.created_at)}
-                                      </div>
-                                      {post.city && (
-                                        <div
-                                          style={{
-                                            fontSize: 12,
-                                            color: "var(--gray)",
-                                            marginTop: 4,
-                                          }}
-                                        >
-                                          {post.city}
-                                          {stateFromPost(post, zipStateMap)
-                                            ? `, ${stateFromPost(post, zipStateMap)}`
-                                            : ""}
-                                        </div>
-                                      )}
-
-                                      {isOwner && (
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            gap: 8,
-                                            marginTop: 12,
-                                            paddingTop: 12,
-                                            borderTop: "1px solid var(--lgray)",
-                                          }}
-                                        >
-                                          <button
-                                            type="button"
-                                            onClick={() => startEdit(post)}
-                                            style={{
-                                              flex: 1,
-                                              padding: "8px",
-                                              background: "var(--navy)",
-                                              color: "white",
-                                              border: "none",
-                                              borderRadius: 8,
-                                              fontSize: 12,
-                                              fontWeight: 700,
-                                              cursor: "pointer",
-                                              fontFamily: "var(--font-head)",
-                                            }}
-                                          >
-                                            Edit
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setDeleteTarget(post)
-                                            }
-                                            style={{
-                                              flex: 1,
-                                              padding: "8px",
-                                              background: "white",
-                                              color: "#DC2626",
-                                              border: "2px solid #FCA5A5",
-                                              borderRadius: 8,
-                                              fontSize: 12,
-                                              fontWeight: 700,
-                                              cursor: "pointer",
-                                              fontFamily: "var(--font-head)",
-                                            }}
-                                          >
-                                            Delete
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           );
                         })}
                     </div>
+
+                    {!isMobile && selectedPost && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          right: 14,
+                          top: 14,
+                          width: "min(380px, calc(100% - 28px))",
+                          maxHeight: "calc(100vh - 240px)",
+                          overflowY: "auto",
+                          background: "rgba(255,255,255,0.98)",
+                          border: "1px solid rgba(15,23,42,0.08)",
+                          borderRadius: 16,
+                          boxShadow: "0 16px 40px rgba(15,23,42,0.18)",
+                          padding: 16,
+                          zIndex: 6,
+                          backdropFilter: "blur(6px)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            gap: 12,
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 8,
+                                marginBottom: 10,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: "5px 9px",
+                                  borderRadius: 999,
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  fontFamily: "var(--font-head)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em",
+                                  ...getTypeChipStyle(
+                                    selectedPost.post_type ===
+                                      "player_available",
+                                  ),
+                                }}
+                              >
+                                {selectedPost.post_type ===
+                                "player_available"
+                                  ? "Player Available"
+                                  : "Player Needed"}
+                              </span>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: "5px 9px",
+                                  borderRadius: 999,
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  fontFamily: "var(--font-head)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em",
+                                  ...getSportChipStyle(selectedPost.sport),
+                                }}
+                              >
+                                {selectedPost.sport}
+                              </span>
+                              {selectedPost.age_group && (
+                                <span
+                                  style={{
+                                    background: "#F3F4F6",
+                                    color: "var(--navy)",
+                                    border: "1px solid #E5E7EB",
+                                    padding: "5px 9px",
+                                    borderRadius: 999,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {selectedPost.age_group}
+                                </span>
+                              )}
+                              {selectedPost.player_age && (
+                                <span
+                                  style={{
+                                    background: "#ECFDF5",
+                                    color: "#166534",
+                                    border: "1px solid #BBF7D0",
+                                    padding: "5px 9px",
+                                    borderRadius: 999,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Age {selectedPost.player_age}
+                                </span>
+                              )}
+                              {selectedPost.event_date && (
+                                <span
+                                  style={{
+                                    background: "#FEF3C7",
+                                    color: "#92400E",
+                                    border: "1px solid #FDE68A",
+                                    padding: "5px 9px",
+                                    borderRadius: 999,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {formatDate(selectedPost.event_date)}
+                                </span>
+                              )}
+                            </div>
+                            <div
+                              style={{
+                                fontFamily: "var(--font-head)",
+                                fontSize: 22,
+                                fontWeight: 800,
+                                color: "var(--navy)",
+                                lineHeight: 1.15,
+                              }}
+                            >
+                              {getPostTitle(selectedPost)}
+                            </div>
+                            <div
+                              style={{
+                                marginTop: 6,
+                                fontSize: 13,
+                                color: "var(--gray)",
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              {getPostLocation(selectedPost)}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPostId(null)}
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 999,
+                              border: "1px solid rgba(15,23,42,0.12)",
+                              background: "var(--white)",
+                              color: "var(--navy)",
+                              fontSize: 18,
+                              lineHeight: 1,
+                              cursor: "pointer",
+                              flexShrink: 0,
+                            }}
+                            aria-label="Close details"
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 14,
+                            display: "grid",
+                            gap: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              background: "#F8FAFC",
+                              border: "1px solid rgba(15,23,42,0.06)",
+                              borderRadius: 12,
+                              padding: 12,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 800,
+                                color: "var(--gray)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.07em",
+                                marginBottom: 8,
+                              }}
+                            >
+                              Capabilities / need
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                color: "var(--navy)",
+                                lineHeight: 1.55,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {getPostCapabilities(selectedPost)}
+                            </div>
+                            {selectedTravelLabel && (
+                              <div
+                                style={{
+                                  marginTop: 10,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  background: "#EFF6FF",
+                                  color: "#1D4ED8",
+                                  border: "1px solid #BFDBFE",
+                                  borderRadius: 999,
+                                  padding: "6px 10px",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <span>🚗</span>
+                                <span>{selectedTravelLabel}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {selectedPost.player_description && (
+                            <div
+                              style={{
+                                background: "var(--white)",
+                                border: "1px solid rgba(15,23,42,0.06)",
+                                borderRadius: 12,
+                                padding: 12,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  color: "var(--gray)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.07em",
+                                  marginBottom: 8,
+                                }}
+                              >
+                                Description
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  color: "var(--gray)",
+                                  lineHeight: 1.6,
+                                }}
+                              >
+                                {selectedPost.player_description}
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedPostDetailLines.filter(
+                            (line) =>
+                              !line.startsWith("Willing to travel"),
+                          ).length > 0 && (
+                            <div
+                              style={{
+                                background: "var(--white)",
+                                border: "1px solid rgba(15,23,42,0.06)",
+                                borderRadius: 12,
+                                padding: 12,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  color: "var(--gray)",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.07em",
+                                  marginBottom: 8,
+                                }}
+                              >
+                                Notes
+                              </div>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 6,
+                                }}
+                              >
+                                {selectedPostDetailLines
+                                  .filter(
+                                    (line) =>
+                                      !line.startsWith(
+                                        "Willing to travel",
+                                      ),
+                                  )
+                                  .map((line, index) => (
+                                    <div
+                                      key={index}
+                                      style={{
+                                        fontSize: 12,
+                                        lineHeight: 1.5,
+                                        color: "var(--gray)",
+                                      }}
+                                    >
+                                      {line}
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div
+                            style={{
+                              background: "var(--white)",
+                              border: "1px solid rgba(15,23,42,0.06)",
+                              borderRadius: 12,
+                              padding: 12,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 800,
+                                color: "var(--gray)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.07em",
+                                marginBottom: 8,
+                              }}
+                            >
+                              Contact / details
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                lineHeight: 1.55,
+                                color: "var(--navy)",
+                              }}
+                            >
+                              <ContactDisplay
+                                contact_info={selectedPost.contact_info}
+                              />
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "var(--gray)",
+                                marginTop: 10,
+                              }}
+                            >
+                              Posted {formatDate(selectedPost.created_at)}
+                            </div>
+                            {selectedPost.city && (
+                              <div
+                                style={{
+                                  fontSize: 12,
+                                  color: "var(--gray)",
+                                  marginTop: 4,
+                                }}
+                              >
+                                {selectedPost.city}
+                                {stateFromPost(selectedPost, zipStateMap)
+                                  ? `, ${stateFromPost(selectedPost, zipStateMap)}`
+                                  : ""}
+                              </div>
+                            )}
+                            {user &&
+                              selectedPost.user_id &&
+                              selectedPost.user_id === user.id && (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: 8,
+                                    marginTop: 12,
+                                    paddingTop: 12,
+                                    borderTop: "1px solid var(--lgray)",
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => startEdit(selectedPost)}
+                                    style={{
+                                      flex: 1,
+                                      padding: "8px",
+                                      background: "var(--navy)",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: 8,
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                      fontFamily: "var(--font-head)",
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setDeleteTarget(selectedPost)
+                                    }
+                                    style={{
+                                      flex: 1,
+                                      padding: "8px",
+                                      background: "white",
+                                      color: "#DC2626",
+                                      border: "2px solid #FCA5A5",
+                                      borderRadius: 8,
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                      fontFamily: "var(--font-head)",
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div
@@ -2646,8 +2860,7 @@ export default function PlayerBoard() {
                             >
                               <span
                                 style={{
-                                  background: isPlayer ? "#1D4ED8" : "#D97706",
-                                  color: "white",
+                                  ...getTypeChipStyle(isPlayer),
                                   fontSize: 11,
                                   fontWeight: 700,
                                   padding: "3px 9px",
@@ -2663,11 +2876,7 @@ export default function PlayerBoard() {
                               </span>
                               <span
                                 style={{
-                                  background:
-                                    post.sport === "softball"
-                                      ? "#7C3AED"
-                                      : "#0B1F3A",
-                                  color: "white",
+                                  ...getSportChipStyle(post.sport),
                                   fontSize: 11,
                                   fontWeight: 700,
                                   padding: "3px 9px",
