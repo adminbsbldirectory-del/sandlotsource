@@ -77,6 +77,56 @@ function normalizeStreetForGeocode(value) {
     .trim()
 }
 
+function normalizeRoadText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/street/g, 'st')
+    .replace(/st/g, 'st')
+    .replace(/road/g, 'rd')
+    .replace(/rd/g, 'rd')
+    .replace(/avenue/g, 'ave')
+    .replace(/ave/g, 'ave')
+    .replace(/boulevard/g, 'blvd')
+    .replace(/blvd/g, 'blvd')
+    .replace(/drive/g, 'dr')
+    .replace(/dr/g, 'dr')
+    .replace(/lane/g, 'ln')
+    .replace(/ln/g, 'ln')
+    .replace(/court/g, 'ct')
+    .replace(/ct/g, 'ct')
+    .replace(/circle/g, 'cir')
+    .replace(/cir/g, 'cir')
+    .replace(/parkway/g, 'pkwy')
+    .replace(/pkwy/g, 'pkwy')
+    .replace(/highway/g, 'hwy')
+    .replace(/hwy/g, 'hwy')
+    .replace(/northwest/g, 'nw')
+    .replace(/northeast/g, 'ne')
+    .replace(/southwest/g, 'sw')
+    .replace(/southeast/g, 'se')
+    .replace(/north/g, 'n')
+    .replace(/south/g, 's')
+    .replace(/east/g, 'e')
+    .replace(/west/g, 'w')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function scoreStreetMatch(inputStreet, resolvedRoad) {
+  const input = normalizeRoadText(inputStreet)
+  const resolved = normalizeRoadText(resolvedRoad)
+  if (!input || !resolved) return 0
+  if (input === resolved) return 1
+  if (input.includes(resolved) || resolved.includes(input)) return 0.92
+
+  const a = input.split(' ').filter(Boolean)
+  const bSet = new Set(resolved.split(' ').filter(Boolean))
+  if (!a.length || !bSet.size) return 0
+  const overlap = a.filter((token) => bSet.has(token)).length
+  return overlap / Math.max(a.length, bSet.size)
+}
+
 async function geocodeAddress(address, city, state, zip) {
   const rawStreet = String(address || '').trim()
   if (!rawStreet) return null
@@ -89,7 +139,8 @@ async function geocodeAddress(address, city, state, zip) {
 
   const streetNumber = (cleanStreet.match(/^\s*(\d+[A-Z\-]*)\b/i) || [])[1] || ''
   const streetBody = cleanStreet.replace(/^\s*\d+[A-Z\-]*\s*/i, '').trim().toLowerCase()
-  const streetTokens = streetBody.split(/[^a-z0-9]+/).filter(Boolean)
+  const normalizedStreetBody = normalizeRoadText(streetBody)
+  const streetTokens = normalizedStreetBody.split(/[^a-z0-9]+/).filter(Boolean)
 
   const queries = []
   const seen = new Set()
@@ -166,6 +217,7 @@ async function geocodeAddress(address, city, state, zip) {
         const resolvedZip = normalizeZipCode(addr.postcode || '')
         const resolvedRoad = String(addr.road || '').toLowerCase()
         const resolvedHouseNumber = String(addr.house_number || '').trim()
+        const roadSimilarity = scoreStreetMatch(normalizedStreetBody, resolvedRoad)
 
         if (streetNumber && resolvedHouseNumber && resolvedHouseNumber !== streetNumber) continue
         if (cleanState && resolvedState && resolvedState !== cleanState) continue
@@ -174,15 +226,15 @@ async function geocodeAddress(address, city, state, zip) {
         let score = 0
 
         if (streetNumber) {
-          if (resolvedHouseNumber === streetNumber) score += 18
-          else if (!resolvedHouseNumber) score -= 8
+          if (resolvedHouseNumber === streetNumber) score += 24
+          else if (!resolvedHouseNumber) score -= 12
         }
 
-        if (streetTokens.length) {
-          const overlap = streetTokens.filter((token) => resolvedRoad.includes(token)).length
-          score += overlap * 4
-          if (overlap === 0) score -= 12
-        }
+        if (roadSimilarity >= 0.99) score += 28
+        else if (roadSimilarity >= 0.9) score += 20
+        else if (roadSimilarity >= 0.75) score += 12
+        else if (roadSimilarity >= 0.5) score += 4
+        else score -= 24
 
         if (cleanZip) {
           if (resolvedZip === cleanZip) score += 20
@@ -214,6 +266,7 @@ async function geocodeAddress(address, city, state, zip) {
           lat,
           lng,
           score,
+          roadSimilarity,
           city: resolvedCity || cleanCity || null,
           state: normalizeStateValue(resolvedState || cleanState) || null,
           zip_code: resolvedZip || cleanZip || null,
@@ -227,6 +280,13 @@ async function geocodeAddress(address, city, state, zip) {
   if (!candidates.length) return null
   candidates.sort((a, b) => b.score - a.score)
   const best = candidates[0]
+  const hasStrictLocality = Boolean(cleanZip || (cleanCity && cleanState))
+  const minimumScore = hasStrictLocality ? 32 : 38
+  const minimumRoadSimilarity = hasStrictLocality ? 0.75 : 0.9
+
+  if (best.score < minimumScore) return null
+  if (normalizedStreetBody && (best.roadSimilarity || 0) < minimumRoadSimilarity) return null
+  if (streetNumber && !String(best.zip_code || '').trim() && hasStrictLocality) return null
 
   return {
     lat: best.lat,
