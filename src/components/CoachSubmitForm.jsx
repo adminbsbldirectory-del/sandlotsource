@@ -284,6 +284,7 @@ async function geocodeAddress(address, city, state, zip) {
           city: resolvedCity || cleanCity || null,
           state: normalizeStateValue(resolvedState || cleanState) || null,
           zip_code: resolvedZip || cleanZip || null,
+          hasHouseNumber: !!(streetNumber && resolvedHouseNumber && resolvedHouseNumber === streetNumber),
         })
       }
     } catch (err) {
@@ -301,18 +302,25 @@ async function geocodeAddress(address, city, state, zip) {
     city: best.city || cleanCity || null,
     state: normalizeStateValue(best.state || cleanState) || null,
     zip_code: best.zip_code || cleanZip || null,
+    confidence: best.hasHouseNumber ? 'house' : 'street',
   }
 }
 
 async function resolveBestLocation(address, city, state, zip) {
   const street = String(address || '').trim()
   if (street) {
-    // Tier 1: Nominatim structured + freetext
+    // Tier 1: Nominatim — only accept if it matched the actual house number
+    // (or the address has no street number, e.g. "Wills Park Field 3")
+    const hasStreetNumber = /^\d/.test(street.trim())
     const exact = await geocodeAddress(street, city, state, zip)
-    if (exact) return { ...exact, source: 'address' }
-    // Tier 2: Photon (better street-level interpolation than Nominatim)
+    if (exact && (!hasStreetNumber || exact.confidence === 'house')) {
+      return { ...exact, source: 'address' }
+    }
+    // Tier 2: Photon — better address interpolation for numbered street addresses
     const photon = await geocodePhoton(street, city, state, zip)
     if (photon) return { ...photon, source: 'address' }
+    // Tier 1 street-level fallback: use Nominatim result if Photon also failed
+    if (exact) return { ...exact, source: 'address' }
   }
 
   // Tier 3: zip centroid — last resort
@@ -334,12 +342,17 @@ async function resolveBestLocation(address, city, state, zip) {
 async function resolveFacilityLocation(address, city, state, zip) {
   const street = String(address || '').trim()
   if (street) {
-    // Tier 1: Nominatim
+    // Tier 1: Nominatim — only accept if house number matched
+    const hasStreetNumber = /^\d/.test(street.trim())
     const exact = await geocodeAddress(street, city, state, zip)
-    if (exact) return { ...exact, source: 'address' }
+    if (exact && (!hasStreetNumber || exact.confidence === 'house')) {
+      return { ...exact, source: 'address' }
+    }
     // Tier 2: Photon
     const photon = await geocodePhoton(street, city, state, zip)
     if (photon) return { ...photon, source: 'address' }
+    // Nominatim street-level fallback if Photon also failed
+    if (exact) return { ...exact, source: 'address' }
     return null
   }
 
