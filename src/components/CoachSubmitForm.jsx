@@ -2402,9 +2402,11 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-        if (facilityLocation) {
-          resolvedForm = applyResolvedFacilityCoordsPreservingLocality(resolvedForm, facilityLocation)
-        }
+      let resolvedForm = { ...form }
+      const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+      if (resolvedLocation) {
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
+      }
 
       const payload = {
         name: resolvedForm.name.trim(),
