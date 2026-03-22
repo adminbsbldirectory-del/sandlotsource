@@ -14,7 +14,7 @@ async function geocodeZip(zip) {
       lat: parseFloat(place.latitude),
       lng: parseFloat(place.longitude),
       city: place['place name'],
-      state: place['state abbreviation'],
+      state: normalizeStateValue(place['state abbreviation'] || place['state']),
     }
   } catch {
     return null
@@ -36,7 +36,7 @@ function getResolvedCity(addr = {}) {
 }
 
 function getResolvedState(addr = {}) {
-  return addr.state_code || addr.state || null
+  return normalizeStateValue(addr.state_code || addr.state || null) || null
 }
 
 function normalizeZipCode(value) {
@@ -44,17 +44,52 @@ function normalizeZipCode(value) {
   return match ? match[0] : ''
 }
 
-async function geocodeAddress(address, city, state, zip) {
-  const street = String(address || '').trim()
-  if (!street) return null
+function normalizeStateValue(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const upper = raw.toUpperCase()
+  if (/^[A-Z]{2}$/.test(upper)) return upper
 
+  const map = {
+    ALABAMA: 'AL', ALASKA: 'AK', ARIZONA: 'AZ', ARKANSAS: 'AR', CALIFORNIA: 'CA', COLORADO: 'CO',
+    CONNECTICUT: 'CT', DELAWARE: 'DE', FLORIDA: 'FL', GEORGIA: 'GA', HAWAII: 'HI', IDAHO: 'ID',
+    ILLINOIS: 'IL', INDIANA: 'IN', IOWA: 'IA', KANSAS: 'KS', KENTUCKY: 'KY', LOUISIANA: 'LA',
+    MAINE: 'ME', MARYLAND: 'MD', MASSACHUSETTS: 'MA', MICHIGAN: 'MI', MINNESOTA: 'MN', MISSISSIPPI: 'MS',
+    MISSOURI: 'MO', MONTANA: 'MT', NEBRASKA: 'NE', NEVADA: 'NV', 'NEW HAMPSHIRE': 'NH', 'NEW JERSEY': 'NJ',
+    'NEW MEXICO': 'NM', 'NEW YORK': 'NY', 'NORTH CAROLINA': 'NC', 'NORTH DAKOTA': 'ND', OHIO: 'OH',
+    OKLAHOMA: 'OK', OREGON: 'OR', PENNSYLVANIA: 'PA', 'RHODE ISLAND': 'RI', 'SOUTH CAROLINA': 'SC',
+    'SOUTH DAKOTA': 'SD', TENNESSEE: 'TN', TEXAS: 'TX', UTAH: 'UT', VERMONT: 'VT', VIRGINIA: 'VA',
+    WASHINGTON: 'WA', 'WEST VIRGINIA': 'WV', WISCONSIN: 'WI', WYOMING: 'WY',
+  }
+
+  return map[upper] || upper
+}
+
+function normalizeStreetForGeocode(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+
+  return raw
+    .replace(/,\s*(ste|suite|unit|#|bldg|building|fl|floor)\b.*$/i, '')
+    .replace(/\s+(ste|suite|unit|#|bldg|building|fl|floor)\b.*$/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+,/g, ',')
+    .trim()
+}
+
+async function geocodeAddress(address, city, state, zip) {
+  const rawStreet = String(address || '').trim()
+  if (!rawStreet) return null
+
+  const street = normalizeStreetForGeocode(rawStreet) || rawStreet
   const zipGeo = zip && zip.length === 5 ? await geocodeZip(zip) : null
-  const queries = Array.from(new Set([
-    [street, zip].filter(Boolean).join(', '),
-    [street, state, zip].filter(Boolean).join(', '),
-    [street, city, state].filter(Boolean).join(', '),
-    [street, city, state, zip].filter(Boolean).join(', '),
-  ].filter(Boolean)))
+  const streetVariants = Array.from(new Set([street, rawStreet].filter(Boolean)))
+  const queries = Array.from(new Set(streetVariants.flatMap((streetLine) => [
+    [streetLine, zip].filter(Boolean).join(', '),
+    [streetLine, normalizeStateValue(state), zip].filter(Boolean).join(', '),
+    [streetLine, city, normalizeStateValue(state)].filter(Boolean).join(', '),
+    [streetLine, city, normalizeStateValue(state), zip].filter(Boolean).join(', '),
+  ].filter(Boolean))))
 
   const candidates = []
 
@@ -113,7 +148,7 @@ async function geocodeAddress(address, city, state, zip) {
     lat: candidates[0].lat,
     lng: candidates[0].lng,
     city: candidates[0].city || String(city || '').trim() || null,
-    state: candidates[0].state || String(state || '').trim() || null,
+    state: normalizeStateValue(candidates[0].state || state) || null,
     zip_code: candidates[0].zip_code || normalizeZipCode(zip) || null,
   }
 }
@@ -131,7 +166,7 @@ async function resolveBestLocation(address, city, state, zip) {
       lat: zipGeo.lat,
       lng: zipGeo.lng,
       city: String(city || '').trim() || zipGeo.city || null,
-      state: String(state || '').trim() || zipGeo.state || null,
+      state: normalizeStateValue(state) || zipGeo.state || null,
       zip_code: normalizeZipCode(zip) || null,
       source: 'zip',
     }
@@ -422,7 +457,7 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
     sport: form.sport || null,
     sport_served: form.sport || null,
     city: form.city.trim() || null,
-    state: form.state || null,
+    state: normalizeStateValue(form.state) || null,
     zip_code: form.zip_code || null,
     lat: form.lat != null ? parseFloat(form.lat) : null,
     lng: form.lng != null ? parseFloat(form.lng) : null,
@@ -457,7 +492,7 @@ async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = n
   if (selectedExistingFacilityId) return selectedExistingFacilityId
 
   const facilityCity = String(form.facility_city || form.city || '').trim()
-  const facilityState = String(form.facility_state || form.state || '').trim()
+  const facilityState = normalizeStateValue(form.facility_state || form.state)
   const facilityZip = String(form.facility_zip_code || form.zip_code || '').trim()
 
   const existing = await findMatchingFacility({
@@ -497,7 +532,7 @@ async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = n
     sport: form.sport || null,
     sport_served: form.sport || null,
     city: facilityCity || null,
-    state: facilityState || null,
+    state: normalizeStateValue(facilityState) || null,
     zip_code: facilityZip || null,
     lat,
     lng,
@@ -813,24 +848,31 @@ function CoachForm({ isMobile }) {
         ...f,
         lat: f.lat || geo.lat,
         lng: f.lng || geo.lng,
-        city: f.city || geo.city,
-        state: f.state || geo.state || 'GA',
+        city: geo.city || f.city,
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || 'GA',
       }))
     }
   }
 
   async function handleAddressBlur() {
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-    if (!resolved) return
-
     setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
+
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
 
     setForm((f) => ({
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
       city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
-      state: resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state),
+      state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state)) || '',
       zip_code: resolved.zip_code || f.zip_code,
     }))
 
@@ -1256,8 +1298,8 @@ function TeamForm({ isMobile }) {
         ...f,
         lat: geo.lat,
         lng: geo.lng,
-        city: f.city || geo.city,
-        state: f.state || geo.state || 'GA',
+        city: geo.city || f.city,
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || 'GA',
       }))
     } else {
       setForm((f) => ({ ...f, lat: null, lng: null }))
@@ -1265,17 +1307,24 @@ function TeamForm({ isMobile }) {
   }
 
   async function handlePracticeAddressBlur() {
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-    if (!resolved) return
-
     setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
+
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
 
     setForm((f) => ({
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
       city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
-      state: resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state),
+      state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state)) || '',
       zip_code: resolved.zip_code || f.zip_code,
     }))
 
@@ -1288,29 +1337,31 @@ function TeamForm({ isMobile }) {
         ...f,
         facility_lat: f.facility_lat || geo.lat,
         facility_lng: f.facility_lng || geo.lng,
-        facility_city: f.facility_city || geo.city,
-        facility_state: f.facility_state || geo.state || 'GA',
+        facility_city: geo.city || f.facility_city,
+        facility_state: normalizeStateValue(geo.state) || normalizeStateValue(f.facility_state) || 'GA',
       }))
     }
   }
 
   async function handleFacilityAddressBlur() {
+    setFacilityAddrStatus('locating')
     const resolved = await resolveBestLocation(
       form.facility_address,
       form.facility_city,
       form.facility_state,
       form.facility_zip_code
     )
-    if (!resolved) return
-
-    setFacilityAddrStatus('locating')
+    if (!resolved) {
+      setFacilityAddrStatus('')
+      return
+    }
 
     setForm((f) => ({
       ...f,
       facility_lat: resolved.lat,
       facility_lng: resolved.lng,
       facility_city: resolved.source === 'address' ? (resolved.city || f.facility_city) : (f.facility_city || resolved.city),
-      facility_state: resolved.source === 'address' ? (resolved.state || f.facility_state) : (f.facility_state || resolved.state),
+      facility_state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.facility_state) : (f.facility_state || resolved.state)) || '',
       facility_zip_code: resolved.zip_code || f.facility_zip_code,
     }))
 
@@ -1361,7 +1412,7 @@ function TeamForm({ isMobile }) {
           lat: practiceLocation.lat,
           lng: practiceLocation.lng,
           city: practiceLocation.city || resolvedForm.city,
-          state: practiceLocation.state || resolvedForm.state,
+          state: normalizeStateValue(practiceLocation.state || resolvedForm.state),
           zip_code: practiceLocation.zip_code || resolvedForm.zip_code,
         }
       }
@@ -1379,7 +1430,7 @@ function TeamForm({ isMobile }) {
             facility_lat: facilityLocation.lat,
             facility_lng: facilityLocation.lng,
             facility_city: facilityLocation.city || resolvedForm.facility_city,
-            facility_state: facilityLocation.state || resolvedForm.facility_state,
+            facility_state: normalizeStateValue(facilityLocation.state || resolvedForm.facility_state),
             facility_zip_code: facilityLocation.zip_code || resolvedForm.facility_zip_code,
           }
         }
@@ -1407,7 +1458,7 @@ function TeamForm({ isMobile }) {
         age_group: resolvedForm.age_group,
         practice_location_name: resolvedForm.practice_location_name.trim() || null,
         city: resolvedForm.city.trim(),
-        state: resolvedForm.state,
+        state: normalizeStateValue(resolvedForm.state),
         zip_code: resolvedForm.zip_code || null,
         lat: finalLat,
         lng: finalLng,
@@ -2243,24 +2294,31 @@ function FacilityForm({ isMobile }) {
         ...f,
         lat: f.lat || geo.lat,
         lng: f.lng || geo.lng,
-        city: f.city || geo.city,
-        state: f.state || geo.state || 'GA',
+        city: geo.city || f.city,
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || 'GA',
       }))
     }
   }
 
   async function handleAddressBlur() {
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-    if (!resolved) return
-
     setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
+
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
 
     setForm((f) => ({
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
       city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
-      state: resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state),
+      state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state)) || '',
       zip_code: resolved.zip_code || f.zip_code,
     }))
 
