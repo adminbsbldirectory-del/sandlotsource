@@ -175,6 +175,12 @@ async function resolveBestLocation(address, city, state, zip) {
   return null
 }
 
+function hasLocationContext(city, state, zip) {
+  const cleanZip = normalizeZipCode(zip)
+  if (cleanZip && cleanZip.length === 5) return true
+  return Boolean(String(city || '').trim() && normalizeStateValue(state))
+}
+
 function normalizeFacilityName(value) {
   return String(value || '')
     .toLowerCase()
@@ -1048,6 +1054,7 @@ function CoachForm({ isMobile }) {
             {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
             {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
             {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+            {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
           </label>
           <input
             value={form.address}
@@ -1307,13 +1314,18 @@ function TeamForm({ isMobile }) {
   }
 
   async function handlePracticeAddressBlur() {
-    setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-    if (!resolved) {
+    if (!String(form.address || '').trim()) {
       setAddrStatus('')
       return
     }
 
+    if (!hasLocationContext(form.city, form.state, form.zip_code)) {
+      setAddrStatus('needs_location')
+      return
+    }
+
+    setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
     if (!resolved) {
       setAddrStatus('')
       return
@@ -1323,9 +1335,9 @@ function TeamForm({ isMobile }) {
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
-      city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
-      state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state)) || '',
-      zip_code: resolved.zip_code || f.zip_code,
+      city: f.city || resolved.city || '',
+      state: normalizeStateValue(f.state || resolved.state) || '',
+      zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
@@ -1344,6 +1356,16 @@ function TeamForm({ isMobile }) {
   }
 
   async function handleFacilityAddressBlur() {
+    if (!String(form.facility_address || '').trim()) {
+      setFacilityAddrStatus('')
+      return
+    }
+
+    if (!hasLocationContext(form.facility_city, form.facility_state, form.facility_zip_code)) {
+      setFacilityAddrStatus('needs_location')
+      return
+    }
+
     setFacilityAddrStatus('locating')
     const resolved = await resolveBestLocation(
       form.facility_address,
@@ -1360,9 +1382,9 @@ function TeamForm({ isMobile }) {
       ...f,
       facility_lat: resolved.lat,
       facility_lng: resolved.lng,
-      facility_city: resolved.source === 'address' ? (resolved.city || f.facility_city) : (f.facility_city || resolved.city),
-      facility_state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.facility_state) : (f.facility_state || resolved.state)) || '',
-      facility_zip_code: resolved.zip_code || f.facility_zip_code,
+      facility_city: f.facility_city || resolved.city || '',
+      facility_state: normalizeStateValue(f.facility_state || resolved.state) || '',
+      facility_zip_code: f.facility_zip_code || resolved.zip_code || '',
     }))
 
     setFacilityAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
@@ -1656,6 +1678,7 @@ function TeamForm({ isMobile }) {
       {facilityAddrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
       {facilityAddrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
       {facilityAddrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using facility zip pin</span>}
+      {facilityAddrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
     </label>
     <input
       value={form.facility_address}
@@ -2502,6 +2525,7 @@ function FacilityForm({ isMobile }) {
             {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
             {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
             {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+            {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
           </label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
           <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
