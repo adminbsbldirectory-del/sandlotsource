@@ -482,6 +482,7 @@ function EmptyState({ hasFilters, stateName, zipActive, radius }) {
 
 export default function TravelTeams() {
   const cardRefs = useRef({})
+  const popupRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
   const [teams, setTeams] = useState([])
@@ -489,6 +490,16 @@ export default function TravelTeams() {
   const [loadError, setLoadError] = useState('')
   const [profileTeam, setProfileTeam] = useState(null)
   const [selectedTeam, setSelectedTeam] = useState(null)
+
+  const closeAllPopups = () => {
+    Object.values(popupRefs.current).forEach((popup) => {
+      try {
+        popup?.remove && popup.remove()
+      } catch {
+        // ignore
+      }
+    })
+  }
 
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
@@ -1076,7 +1087,12 @@ export default function TravelTeams() {
                               },
                             }}
                           >
-                            <Popup>
+                            <Popup
+                              ref={(el) => {
+                                if (el) popupRefs.current[team.id] = el
+                                else delete popupRefs.current[team.id]
+                              }}
+                            >
                               <div style={{ fontFamily: 'var(--font-body)', minWidth: 170 }}>
                                 <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
                                   {team.name}
@@ -1101,7 +1117,7 @@ export default function TravelTeams() {
                                 )}
                                 <button
                                   type="button"
-                                  onClick={() => { setSelectedTeam(team); setProfileTeam(team) }}
+                                  onClick={() => { closeAllPopups(); setSelectedTeam(team); setProfileTeam(team) }}
                                   style={{
                                     marginTop: 8,
                                     width: '100%',
@@ -1228,6 +1244,7 @@ export default function TravelTeams() {
                       selected={selectedTeam?.id === team.id}
                       onOpen={() => setProfileTeam(team)}
                       onFocusMap={() => {
+                        closeAllPopups()
                         setSelectedTeam(team)
                         setShowMap(true)
                         window.scrollTo({ top: 0, behavior: 'smooth' })
