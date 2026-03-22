@@ -861,13 +861,18 @@ function CoachForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-    setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-    if (!resolved) {
+    if (!String(form.address || '').trim()) {
       setAddrStatus('')
       return
     }
 
+    if (!hasLocationContext(form.city, form.state, form.zip_code)) {
+      setAddrStatus('needs_location')
+      return
+    }
+
+    setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
     if (!resolved) {
       setAddrStatus('')
       return
@@ -877,9 +882,9 @@ function CoachForm({ isMobile }) {
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
-      city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
-      state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state)) || '',
-      zip_code: resolved.zip_code || f.zip_code,
+      city: f.city || resolved.city || '',
+      state: normalizeStateValue(f.state || resolved.state) || '',
+      zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
@@ -2324,13 +2329,18 @@ function FacilityForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-    setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-    if (!resolved) {
+    if (!String(form.address || '').trim()) {
       setAddrStatus('')
       return
     }
 
+    if (!hasLocationContext(form.city, form.state, form.zip_code)) {
+      setAddrStatus('needs_location')
+      return
+    }
+
+    setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
     if (!resolved) {
       setAddrStatus('')
       return
@@ -2340,9 +2350,9 @@ function FacilityForm({ isMobile }) {
       ...f,
       lat: resolved.lat,
       lng: resolved.lng,
-      city: resolved.source === 'address' ? (resolved.city || f.city) : (f.city || resolved.city),
-      state: normalizeStateValue(resolved.source === 'address' ? (resolved.state || f.state) : (f.state || resolved.state)) || '',
-      zip_code: resolved.zip_code || f.zip_code,
+      city: f.city || resolved.city || '',
+      state: normalizeStateValue(f.state || resolved.state) || '',
+      zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
