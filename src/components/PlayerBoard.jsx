@@ -2332,19 +2332,20 @@ export default function PlayerBoard() {
                     {!isMobile && selectedPost && (
                       <div
                         style={{
-                          position: "absolute",
-                          right: 14,
-                          top: 14,
-                          width: "min(380px, calc(100% - 28px))",
-                          maxHeight: "calc(100vh - 240px)",
+                          position: "fixed",
+                          top: 128,
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          width: "min(440px, calc(100vw - 48px))",
+                          maxHeight: "calc(100vh - 156px)",
                           overflowY: "auto",
-                          background: "rgba(255,255,255,0.98)",
-                          border: "1px solid rgba(15,23,42,0.08)",
-                          borderRadius: 16,
-                          boxShadow: "0 16px 40px rgba(15,23,42,0.18)",
-                          padding: 16,
-                          zIndex: 6,
-                          backdropFilter: "blur(6px)",
+                          background: "rgba(255,255,255,0.985)",
+                          border: "1px solid rgba(15,23,42,0.10)",
+                          borderRadius: 18,
+                          boxShadow: "0 22px 56px rgba(15,23,42,0.24)",
+                          padding: 18,
+                          zIndex: 60,
+                          backdropFilter: "blur(8px)",
                         }}
                       >
                         <div
