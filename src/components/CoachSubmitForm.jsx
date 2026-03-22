@@ -302,29 +302,35 @@ async function geocodeAddress(address, city, state, zip) {
     city: best.city || cleanCity || null,
     state: normalizeStateValue(best.state || cleanState) || null,
     zip_code: best.zip_code || cleanZip || null,
-    confidence: best.hasHouseNumber ? 'house' : 'street',
   }
 }
 
 async function resolveBestLocation(address, city, state, zip) {
   const street = String(address || '').trim()
-  if (street) {
-    // Tier 1: Nominatim — only accept if it matched the actual house number
-    // (or the address has no street number, e.g. "Wills Park Field 3")
-    const hasStreetNumber = /^\d/.test(street.trim())
-    const exact = await geocodeAddress(street, city, state, zip)
-    if (exact && (!hasStreetNumber || exact.confidence === 'house')) {
-      return { ...exact, source: 'address' }
-    }
-    // Tier 2: Photon — better address interpolation for numbered street addresses
-    const photon = await geocodePhoton(street, city, state, zip)
-    if (photon) return { ...photon, source: 'address' }
-    // Tier 1 street-level fallback: use Nominatim result if Photon also failed
-    if (exact) return { ...exact, source: 'address' }
+  const cleanZipStr = String(zip || '').trim()
+
+  // Get zip centroid upfront — used as a sanity constraint (max 3 miles)
+  const zipGeo = cleanZipStr.length === 5 ? await geocodeZip(cleanZipStr) : null
+
+  function withinZipBounds(lat, lng) {
+    if (!zipGeo) return true  // no zip to check against, allow it
+    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 3
   }
 
-  // Tier 3: zip centroid — last resort
-  const zipGeo = await geocodeZip(String(zip || '').trim())
+  if (street) {
+    // Tier 1: Nominatim
+    const exact = await geocodeAddress(street, city, state, zip)
+    if (exact && withinZipBounds(exact.lat, exact.lng)) {
+      return { ...exact, source: 'address' }
+    }
+    // Tier 2: Photon (better interpolation; same zip-bounds check)
+    const photon = await geocodePhoton(street, city, state, zip)
+    if (photon && withinZipBounds(photon.lat, photon.lng)) {
+      return { ...photon, source: 'address' }
+    }
+  }
+
+  // Tier 3: zip centroid
   if (zipGeo) {
     return {
       lat: zipGeo.lat,
@@ -341,22 +347,29 @@ async function resolveBestLocation(address, city, state, zip) {
 
 async function resolveFacilityLocation(address, city, state, zip) {
   const street = String(address || '').trim()
+  const cleanZipStr = String(zip || '').trim()
+
+  const zipGeo = cleanZipStr.length === 5 ? await geocodeZip(cleanZipStr) : null
+
+  function withinZipBounds(lat, lng) {
+    if (!zipGeo) return true
+    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 3
+  }
+
   if (street) {
-    // Tier 1: Nominatim — only accept if house number matched
-    const hasStreetNumber = /^\d/.test(street.trim())
+    // Tier 1: Nominatim
     const exact = await geocodeAddress(street, city, state, zip)
-    if (exact && (!hasStreetNumber || exact.confidence === 'house')) {
+    if (exact && withinZipBounds(exact.lat, exact.lng)) {
       return { ...exact, source: 'address' }
     }
     // Tier 2: Photon
     const photon = await geocodePhoton(street, city, state, zip)
-    if (photon) return { ...photon, source: 'address' }
-    // Nominatim street-level fallback if Photon also failed
-    if (exact) return { ...exact, source: 'address' }
+    if (photon && withinZipBounds(photon.lat, photon.lng)) {
+      return { ...photon, source: 'address' }
+    }
     return null
   }
 
-  const zipGeo = await geocodeZip(String(zip || '').trim())
   if (zipGeo) {
     return {
       lat: zipGeo.lat,
