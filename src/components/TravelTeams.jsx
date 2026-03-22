@@ -70,6 +70,20 @@ const STATE_CENTERS = {
   WI: [44.3, -89.8], WY: [43.0, -107.6],
 }
 
+const STATE_NAME_TO_ABBR = Object.fromEntries(
+  US_STATES.flatMap((s) => [
+    [s.abbr, s.abbr],
+    [s.name.toUpperCase(), s.abbr],
+  ])
+)
+
+function normalizeStateValue(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const upper = raw.toUpperCase()
+  return STATE_NAME_TO_ABBR[upper] || upper
+}
+
 function normalizeSportValue(value) {
   const raw = String(value || '').trim().toLowerCase()
   if (!raw) return 'baseball'
@@ -140,6 +154,8 @@ function normalizeTeamRecord(team, facilityMap = {}) {
     facility_name: facility?.name || team.facility_name || '',
     facility_city: facility?.city || '',
     facility_state: facility?.state || '',
+    state_abbr: normalizeStateValue(team.state || facility?.state || ''),
+    facility_state_abbr: normalizeStateValue(facility?.state || ''),
     lat: teamLat != null && teamLng != null ? teamLat : facilityLat,
     lng: teamLat != null && teamLng != null ? teamLng : facilityLng,
     display_city: team.city || facility?.city || '',
@@ -609,7 +625,7 @@ export default function TravelTeams() {
 
   const filtered = useMemo(() => {
     return teams.filter((t) => {
-      const teamState = String(t.display_state || t.state || '').toUpperCase()
+      const teamState = normalizeStateValue(t.display_state || t.state || t.facility_state)
       const teamSport = String(t.sport || '').toLowerCase()
 
       const haystack = [
