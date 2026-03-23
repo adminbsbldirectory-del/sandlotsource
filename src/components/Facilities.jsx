@@ -17,7 +17,6 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All Location Types' },
   { value: 'park_field', label: 'Park / Rec Field' },
   { value: 'training_facility', label: 'Indoor Training Facility' },
-  { value: 'private_facility', label: 'Private Facility' },
   { value: 'travel_team_facility', label: 'Team Facility' },
   { value: 'school_field', label: 'School Field' },
   { value: 'other', label: 'Other' },
