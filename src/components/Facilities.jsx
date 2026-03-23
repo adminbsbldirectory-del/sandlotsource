@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
 
@@ -107,9 +107,9 @@ function getSportLabel(sport) {
 }
 
 function getSportBadgeMeta(sport) {
-  if (sport === 'softball') return { bg: '#FEF3C7', color: '#854D0E', label: 'Softball' }
-  if (sport === 'both') return { bg: '#DCEAFE', color: '#1E3A8A', label: 'Baseball & Softball' }
-  if (sport === 'baseball') return { bg: '#DBEAFE', color: '#1D4ED8', label: 'Baseball' }
+  if (sport === 'softball') return { bg: '#F3F0D7', color: '#5F5A17', label: 'Softball', border: '#DDD59A' }
+  if (sport === 'both') return { bg: '#E7EEF9', color: '#1D3E73', label: 'Baseball & Softball', border: '#C8D5E8' }
+  if (sport === 'baseball') return { bg: '#E8EEF8', color: '#173B73', label: 'Baseball', border: '#C7D3E8' }
   return null
 }
 
@@ -175,12 +175,26 @@ function FlyTo({ lat, lng }) {
   return null
 }
 
+function AdBox({ compact = false }) {
+  return (
+    <div style={{ background: '#F7F3ED', border: '1px dashed #D8D0C5', borderRadius: 14, padding: compact ? '16px 14px' : '24px 16px', textAlign: 'center', minHeight: compact ? 90 : 150 }}>
+      <div style={{ fontSize: compact ? 13 : 16, fontWeight: 700, color: '#7A6B57', fontFamily: 'var(--font-head)', marginBottom: 8 }}>ADVERTISE HERE</div>
+      <div style={{ fontSize: compact ? 12 : 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 10 }}>Reach baseball &amp; softball families</div>
+      <a href="mailto:admin.bsbldirectory@gmail.com?subject=Sandlot%20Source%20Ad%20Inquiry" style={{ color: 'var(--red)', fontWeight: 700, fontSize: compact ? 12 : 13, textDecoration: 'none' }}>Contact Us</a>
+    </div>
+  )
+}
+
+function formatFacilityLocation(facility) {
+  const cityState = [facility.city, facility.state].filter(Boolean).join(', ')
+  const zip = getFacilityZip(facility)
+  return [cityState, zip].filter(Boolean).join(' ')
+}
+
 function FacilityCard({ facility, selected, onClick, distanceMi }) {
   const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
   const facilityTypeLabel = getFacilityTypeLabel(facility.facility_type)
-  const zip = getFacilityZip(facility)
-  const cityState = [facility.city, facility.state].filter(Boolean).join(', ')
-  const locationFull = zip ? cityState + ' ' + zip : cityState
+  const locationFull = formatFacilityLocation(facility)
   const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
   const websiteUrl = normalizeUrl(facility.website)
   const instagramUrl = normalizeInstagramHandle(facility.instagram)
@@ -230,28 +244,12 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
 
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 8 }}>
             {facilityTypeLabel && (
-              <span
-                style={{
-                  background: '#F3F4F6',
-                  color: getFacilityTypeColor(facility.facility_type),
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: '2px 7px',
-                  borderRadius: 20,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  fontFamily: 'var(--font-head)',
-                  flexShrink: 0,
-                }}
-              >
+              <span style={{ background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-head)', flexShrink: 0 }}>
                 {facilityTypeLabel}
               </span>
             )}
             {sportMeta && (
-              <span
-                className="badge"
-                style={{ background: selected ? 'rgba(255,255,255,0.18)' : sportMeta.bg, color: selected ? '#fff' : sportMeta.color }}
-              >
+              <span className="badge" style={{ background: selected ? 'rgba(255,255,255,0.18)' : sportMeta.bg, color: selected ? '#fff' : sportMeta.color }}>
                 {sportMeta.label}
               </span>
             )}
@@ -261,30 +259,12 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
         {amenities.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
             {amenities.slice(0, 5).map((a) => (
-              <span
-                key={a}
-                style={{
-                  background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
-                  color: selected ? 'white' : 'var(--gray)',
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 20,
-                  textTransform: 'capitalize',
-                }}
-              >
+              <span key={a} style={{ background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)', color: selected ? 'white' : 'var(--gray)', fontSize: 11, padding: '2px 8px', borderRadius: 20, textTransform: 'capitalize' }}>
                 {a}
               </span>
             ))}
             {amenities.length > 5 && (
-              <span
-                style={{
-                  background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
-                  color: selected ? 'white' : 'var(--gray)',
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 20,
-                }}
-              >
+              <span style={{ background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)', color: selected ? 'white' : 'var(--gray)', fontSize: 11, padding: '2px 8px', borderRadius: 20 }}>
                 +{amenities.length - 5} more
               </span>
             )}
@@ -300,36 +280,17 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
         {(facility.phone || websiteUrl || instagramUrl) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 10 }}>
             {facility.phone && (
-              <a
-                href={'tel:' + facility.phone.replace(/\D/g, '')}
-                className="contact-link"
-                onClick={(e) => e.stopPropagation()}
-                style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}
-              >
+              <a href={'tel:' + facility.phone.replace(/\D/g, '')} className="contact-link" onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}>
                 📞 {facility.phone}
               </a>
             )}
             {websiteUrl && (
-              <a
-                href={websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="contact-link"
-                onClick={(e) => e.stopPropagation()}
-                style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}
-              >
+              <a href={websiteUrl} target="_blank" rel="noopener noreferrer" className="contact-link" onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}>
                 🌐 Website
               </a>
             )}
             {instagramUrl && (
-              <a
-                href={instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="contact-link"
-                onClick={(e) => e.stopPropagation()}
-                style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}
-              >
+              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="contact-link" onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 13 }}>
                 📸 {facility.instagram}
               </a>
             )}
@@ -344,18 +305,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
               🕐 {facility.hours}
             </div>
           ) : <span />}
-          <Link
-            to={`/facilities/${facility.id}`}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              color: selected ? '#f0a500' : '#1D4ED8',
-              fontSize: 12,
-              fontWeight: 700,
-              textDecoration: 'none',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-            }}
-          >
+          <Link to={`/facilities/${facility.id}`} onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 12, fontWeight: 700, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             View Facility →
           </Link>
         </div>
@@ -364,18 +314,116 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
   )
 }
 
-function AdBox({ compact = false }) {
+function FacilityPreviewCard({ facility, onClose }) {
+  const facilityTypeLabel = getFacilityTypeLabel(facility.facility_type)
+  const sportLabel = getSportLabel(getFacilitySport(facility))
+  const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
+  const typeColor = getFacilityTypeColor(facility.facility_type)
+  const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
+  const locationLine = formatFacilityLocation(facility)
+  const fullAddress = [facility.address, [facility.city, facility.state].filter(Boolean).join(', '), getFacilityZip(facility)].filter(Boolean).join(', ')
+  const websiteUrl = normalizeUrl(facility.website)
+  const instagramUrl = normalizeInstagramHandle(facility.instagram)
+  const facebookUrl = normalizeUrl(facility.facebook)
+  const email = facility.contact_email || facility.email
+  const phone = facility.phone || facility.contact_phone
+  const mapQuery = encodeURIComponent(fullAddress || facility.name)
+
   return (
-    <div style={{ background: '#F7F3ED', border: '1px dashed #D8D0C5', borderRadius: 14, padding: compact ? '16px 14px' : '24px 16px', textAlign: 'center', minHeight: compact ? 90 : 150 }}>
-      <div style={{ fontSize: compact ? 13 : 16, fontWeight: 700, color: '#7A6B57', fontFamily: 'var(--font-head)', marginBottom: 8 }}>ADVERTISE HERE</div>
-      <div style={{ fontSize: compact ? 12 : 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 10 }}>Reach baseball &amp; softball families</div>
-      <a href="mailto:admin.bsbldirectory@gmail.com?subject=Sandlot%20Source%20Ad%20Inquiry" style={{ color: 'var(--red)', fontWeight: 700, fontSize: compact ? 12 : 13, textDecoration: 'none' }}>Contact Us</a>
+    <div style={{ position: 'fixed', top: 128, left: '50%', transform: 'translateX(-50%)', width: 'min(720px, calc(100vw - 48px))', maxHeight: 'calc(100vh - 156px)', overflowY: 'auto', background: 'rgba(255,255,255,0.985)', border: '1px solid rgba(15,23,42,0.10)', borderRadius: 18, boxShadow: '0 22px 56px rgba(15,23,42,0.24)', padding: 18, zIndex: 60, backdropFilter: 'blur(8px)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {facilityTypeLabel && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: typeColor, border: '1px solid #E5E7EB' }}>
+                {facilityTypeLabel}
+              </span>
+            )}
+            {sportMeta && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}` }}>
+                {sportMeta.label}
+              </span>
+            )}
+          </div>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 800, color: 'var(--navy)', lineHeight: 1.1 }}>{facility.name}</div>
+          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--gray)', lineHeight: 1.45 }}>{fullAddress || locationLine || 'Location not listed'}</div>
+        </div>
+
+        <button type="button" onClick={onClose} style={{ width: 30, height: 30, borderRadius: 999, border: '1px solid rgba(15,23,42,0.12)', background: '#fff', color: 'var(--gray)', fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>×</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(240px, 260px)', gap: 14, marginTop: 14 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Facility Details</div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+              {facilityTypeLabel && <div><strong>Type:</strong> {facilityTypeLabel}</div>}
+              {sportLabel && <div><strong>Sport:</strong> {sportLabel}</div>}
+              {facility.hours && <div><strong>Hours:</strong> {facility.hours}</div>}
+              {facility.contact_name && <div><strong>Contact:</strong> {facility.contact_name}</div>}
+            </div>
+          </div>
+
+          {facility.description && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>About Facility</div>
+              <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>{facility.description}</div>
+            </div>
+          )}
+
+          {amenities.length > 0 && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Amenities</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {amenities.map((item) => (
+                  <span key={item} style={{ background: '#EEF2F7', color: 'var(--navy)', fontSize: 12, padding: '5px 9px', borderRadius: 999, textTransform: 'capitalize' }}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Contact / Details</div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.75 }}>
+              {phone && <div><a href={`tel:${String(phone).replace(/\D/g, '')}`} style={{ color: 'var(--navy)', textDecoration: 'none', fontWeight: 700 }}>{phone}</a></div>}
+              {email && <div><a href={`mailto:${email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>{email}</a></div>}
+              {!phone && !email && <div>Contact details not listed.</div>}
+            </div>
+          </div>
+
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Location</div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+              <div>{fullAddress || locationLine || 'Location not listed.'}</div>
+              {(fullAddress || locationLine) && (
+                <a href={`https://maps.google.com/?q=${mapQuery}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+                  Open in Maps
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Links</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
+              <Link to={`/facilities/${facility.id}`} onClick={onClose} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>View Facility Page</Link>
+              {websiteUrl && <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Facility Website</a>}
+              {instagramUrl && <a href={instagramUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Instagram</a>}
+              {facebookUrl && <a href={facebookUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Facebook</a>}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 export default function Facilities() {
-  const cardRefs = useRef({})
+  const rowRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
   const [searchParams] = useSearchParams()
@@ -395,7 +443,11 @@ export default function Facilities() {
   const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (!mobile) setShowMap(true)
+    }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -496,28 +548,15 @@ export default function Facilities() {
       })
   }, [facilities, sport, facilityType, search, geoCenter, radius])
 
-  const displayedFacilities = useMemo(() => {
-    if (!selected) return filtered
-    const idx = filtered.findIndex((f) => f.id === selected)
-    if (idx <= 0) return filtered
-    const next = [...filtered]
-    const [selectedItem] = next.splice(idx, 1)
-    next.unshift(selectedItem)
-    return next
-  }, [filtered, selected])
-
   useEffect(() => {
     if (!selected) return
-    const listEl = isMobile ? mobileListRef.current : desktopListRef.current
-    const cardEl = cardRefs.current[selected]
-    if (!listEl || !cardEl) return
+    const rowEl = rowRefs.current[selected]
+    if (!rowEl) return
     const t = setTimeout(() => {
-      if (typeof cardEl.scrollIntoView === 'function') {
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
-      }
+      rowEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, 120)
     return () => clearTimeout(t)
-  }, [selected, isMobile, filtered])
+  }, [selected, isMobile])
 
   const mappable = filtered.filter((f) => f.lat != null && f.lng != null)
 
@@ -553,8 +592,17 @@ export default function Facilities() {
     display: 'block',
   }
 
+  const desktopRowTemplate = '150px 130px minmax(0,1.05fr) minmax(0,1fr) 84px'
+  const desktopHeaderCellStyle = {
+    fontSize: 10,
+    fontWeight: 800,
+    color: 'var(--gray)',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+  }
+
   function EmptyState() {
-    const hasFilters = sport !== 'Both' || search || zipStatus === 'ok'
+    const hasFilters = sport !== 'Both' || search || zipStatus === 'ok' || facilityType !== 'all'
     return (
       <div className="empty-state">
         <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities listed yet'}</h3>
@@ -582,18 +630,18 @@ export default function Facilities() {
               <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
             </div>
             {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 240, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} selectedId={selected} />{selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => setSelected(f.id) }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div><Link to={`/facilities/${f.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
-            <div ref={mobileListRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>{loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}{!loading && filtered.length === 0 && <EmptyState />}{!loading && displayedFacilities.map((f) => <div key={f.id} ref={(el) => { if (el) cardRefs.current[f.id] = el; else delete cardRefs.current[f.id] }}><FacilityCard facility={f} selected={selected === f.id} onClick={() => setSelected(selected === f.id ? null : f.id)} distanceMi={getDistance(f)} /></div>)}</div>
+            <div ref={mobileListRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>{loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}{!loading && filtered.length === 0 && <EmptyState />}{!loading && filtered.map((f) => <div key={f.id} ref={(el) => { if (el) rowRefs.current[f.id] = el; else delete rowRefs.current[f.id] }}><FacilityCard facility={f} selected={selected === f.id} onClick={() => setSelected(selected === f.id ? null : f.id)} distanceMi={getDistance(f)} /></div>)}</div>
           </div>
         </div>
       ) : (
         <div style={{ padding: '16px 14px 20px', background: 'var(--cream)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 18, alignItems: 'start', width: '100%' }}>
             <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', background: 'var(--white)', borderRight: '1px solid rgba(15,23,42,0.06)', zIndex: 2 }}>
-              <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{displayedFacilities.length} facilit{displayedFacilities.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>Parks, private facilities, and training locations</div></div>
+              <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{filtered.length} facilit{filtered.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>Parks, private facilities, and training locations</div></div>
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
                 <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
-                <div><div style={sectionLabel}>Location type</div><select value={facilityType} onChange={(e) => setFacilityType(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
+                <div><div style={sectionLabel}>Location type</div><select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 40 }}>{FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => { setSport((s) => (s === 'baseball' ? 'Both' : 'baseball')); setSelected(null) }} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => { setSport((s) => (s === 'softball' ? 'Both' : 'softball')); setSelected(null) }} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
                 <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
                 <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Facility</a></div>
@@ -604,14 +652,62 @@ export default function Facilities() {
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 22, alignItems: 'start' }}>
                 <main style={{ minWidth: 0 }}>
                   <div style={{ position: 'sticky', top: 76, zIndex: 1, background: 'var(--page-bg, #f5f3ef)', paddingTop: 8, paddingBottom: 10 }}>
-                    {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 390, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} selectedId={selected} />{selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => setSelected(f.id) }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div>{f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}{getFacilityTypeLabel(f.facility_type) && <div style={{ fontSize: 12, marginTop: 2 }}>{getFacilityTypeLabel(f.facility_type)}</div>}<Link to={`/facilities/${f.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
+                    {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 360, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} selectedId={selected} />{selFacility?.lat != null && selFacility?.lng != null && <FlyTo lat={selFacility.lat} lng={selFacility.lng} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => setSelected(f.id) }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div>{f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}{getFacilityTypeLabel(f.facility_type) && <div style={{ fontSize: 12, marginTop: 2 }}>{getFacilityTypeLabel(f.facility_type)}</div>}<button type="button" onClick={() => setSelected(f.id)} style={{ display: 'inline-block', marginTop: 8, background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '8px 10px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Preview Facility</button></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
                     {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, marginTop: 10, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view facility locations.</div>}
-                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{displayedFacilities.length} Facilit{displayedFacilities.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>Browse parks, schools, and training facilities</div></div>
+                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{filtered.length} Facilit{filtered.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>Compact list below. Click a row or pin to preview, then use View Facility for the full page.</div></div>
                   </div>
-                  <div ref={desktopListRef} style={{ marginTop: 6, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 14, alignItems: 'stretch' }}>
-                    {loading && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities...</div>}
-                    {!loading && filtered.length === 0 && <div style={{ gridColumn: '1 / -1' }}><EmptyState /></div>}
-                    {!loading && displayedFacilities.map((f) => <div key={f.id} ref={(el) => { if (el) cardRefs.current[f.id] = el; else delete cardRefs.current[f.id] }}><FacilityCard facility={f} selected={selected === f.id} onClick={() => setSelected(selected === f.id ? null : f.id)} distanceMi={getDistance(f)} /></div>)}
+
+                  <div style={{ marginTop: 8, background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, overflow: 'hidden', position: 'relative' }}>
+                    <div ref={desktopListRef} style={{ maxHeight: 'min(560px, calc(100vh - 215px))', overflowY: 'auto' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: desktopRowTemplate, gap: 10, alignItems: 'center', padding: '11px 14px', background: '#EEF3FA', borderBottom: '1px solid rgba(15,23,42,0.08)', position: 'sticky', top: 0, zIndex: 2 }}>
+                        <div style={desktopHeaderCellStyle}>Type</div>
+                        <div style={desktopHeaderCellStyle}>Sport</div>
+                        <div style={desktopHeaderCellStyle}>Facility</div>
+                        <div style={desktopHeaderCellStyle}>Location</div>
+                        <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
+                      </div>
+
+                      {loading && <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities...</div>}
+                      {!loading && filtered.length === 0 && <div style={{ padding: '16px 14px' }}><EmptyState /></div>}
+                      {!loading && filtered.map((f) => {
+                        const isSelected = selected === f.id
+                        const typeLabel = getFacilityTypeLabel(f.facility_type)
+                        const sportMeta = getSportBadgeMeta(getFacilitySport(f))
+                        const locationFull = formatFacilityLocation(f)
+                        const subtitle = f.address || locationFull || 'Location not listed'
+                        return (
+                          <div key={f.id} ref={(el) => { if (el) rowRefs.current[f.id] = el; else delete rowRefs.current[f.id] }} style={{ borderBottom: '1px solid rgba(15,23,42,0.06)', background: isSelected ? '#FCFCFD' : 'var(--white)' }}>
+                            <div onClick={() => setSelected(f.id)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelected(f.id) } }} style={{ display: 'grid', gridTemplateColumns: desktopRowTemplate, gap: 10, alignItems: 'center', padding: '10px 14px', cursor: 'pointer' }}>
+                              <div style={{ minWidth: 0 }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', background: '#F3F4F6', color: getFacilityTypeColor(f.facility_type), border: '1px solid #E5E7EB' }}>
+                                  {typeLabel || 'Other'}
+                                </span>
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                {sportMeta ? (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}` }}>
+                                    {sportMeta.label}
+                                  </span>
+                                ) : <span style={{ fontSize: 12, color: 'var(--gray)' }}>—</span>}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={f.name}>{f.name}</div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={Array.isArray(f.amenities) ? f.amenities.join(', ') : ''}>{Array.isArray(f.amenities) && f.amenities.length ? f.amenities.slice(0, 3).join(' · ') : 'No amenities listed'}</div>
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={subtitle}>{subtitle}</div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={locationFull}>{locationFull || 'Location not listed'}</div>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <button type="button" onClick={(event) => { event.stopPropagation(); setSelected(isSelected ? null : f.id) }} style={{ minWidth: 64, padding: '7px 8px', borderRadius: 9, border: '1.5px solid var(--navy)', background: isSelected ? 'var(--navy)' : 'var(--white)', color: isSelected ? 'var(--white)' : 'var(--navy)', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-head)' }}>{isSelected ? 'Close' : 'Open'}</button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {selFacility && <FacilityPreviewCard facility={selFacility} onClose={() => setSelected(null)} />}
                   </div>
                 </main>
                 <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
