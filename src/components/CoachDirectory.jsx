@@ -638,7 +638,7 @@ function EmptyState({ facilityContextName }) {
   )
 }
 
-function CoachRow({ coach, selected, onOpen, onViewProfile }) {
+function CoachRow({ coach, selected, onOpen }) {
   const sportBadge = getSportBadgeMeta(coach.sport)
   const specialties = parseSpecialties(coach.specialty)
   const location = formatCoachLocation(coach)
@@ -1111,11 +1111,14 @@ export default function CoachDirectory() {
   return (
     <>
       {profileCoach && <CoachProfile coach={profileCoach} onClose={() => setProfileCoach(null)} />}
-      {!isMobile && sel && (
+      {!isMobile && !profileCoach && sel && (
         <CoachDetailPanel
           coach={sel}
           onClose={() => setSelected(null)}
-          onViewProfile={setProfileCoach}
+          onViewProfile={(coach) => {
+            setSelected(null)
+            setProfileCoach(coach)
+          }}
           distanceMi={getDistance(sel)}
         />
       )}
@@ -1134,7 +1137,10 @@ export default function CoachDirectory() {
               </div>
               <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
             </div>
-            {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 260, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={setProfileCoach} /></MapContainer></div><MapLegend /></div>}
+            {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 260, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={(coach) => {
+                setSelected(null)
+                setProfileCoach(coach)
+              }} /></MapContainer></div><MapLegend /></div>}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
               {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
               {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
@@ -1165,34 +1171,38 @@ export default function CoachDirectory() {
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 22, alignItems: 'start' }}>
                 <main style={{ minWidth: 0 }}>
-                  {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 355, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={setProfileCoach} /></MapContainer></div><MapLegend /></div>}
+                  {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 355, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={(coach) => {
+                      setSelected(null)
+                      setProfileCoach(coach)
+                    }} /></MapContainer></div><MapLegend /></div>}
                   {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view coach locations.</div>}
 
                   <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                     <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>{displayedCoaches.length} Coach{displayedCoaches.length !== 1 ? 'es' : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>Compact list below. Click a row or pin to open the detail card.</div>
+                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>Compact list below. Click a row or pin to preview, then use View Profile & Reviews for the full coach card.</div>
                   </div>
 
-                  <div style={{ marginTop: 8, border: '1px solid #E7E5E1', borderRadius: 16, overflow: 'hidden', background: '#fff' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(210px, 1.25fr) minmax(220px, 1.2fr) minmax(180px, 1fr) 96px', gap: 12, alignItems: 'center', padding: '12px 14px', background: '#F8FAFC', borderBottom: '1px solid #E7E5E1', position: 'sticky', top: 76, zIndex: 3 }}>
-                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Sport</div>
-                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Capabilities</div>
-                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Location / Facility</div>
-                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Coach</div>
-                      <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'right' }}>View</div>
-                    </div>
+                  <div style={{ marginTop: 8, border: '1px solid #DCE5F0', borderRadius: 16, overflow: 'hidden', background: '#fff', boxShadow: '0 8px 24px rgba(15,23,42,0.04)' }}>
+                    <div style={{ maxHeight: 'min(62vh, 760px)', overflowY: 'auto' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '118px minmax(190px, 1fr) minmax(220px, 1.1fr) minmax(240px, 1.2fr) 96px', gap: 14, alignItems: 'center', padding: '13px 14px', background: 'linear-gradient(180deg, #EEF4FB 0%, #E7EEF8 100%)', borderBottom: '1px solid #DCE5F0', position: 'sticky', top: 0, zIndex: 4, boxShadow: '0 1px 0 #DCE5F0' }}>
+                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sport</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Coach</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Facility</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Capabilities</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'right' }}>View</div>
+                      </div>
 
-                    {loading && <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
-                    {!loading && displayedCoaches.length === 0 && <div style={{ padding: 18 }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
-                    {!loading && displayedCoaches.map((coach) => (
-                      <CoachRow
-                        key={coach.id}
-                        coach={coach}
-                        selected={selected === coach.id}
-                        onOpen={() => handleSelectCoach(coach.id)}
-                        onViewProfile={setProfileCoach}
-                      />
-                    ))}
+                      {loading && <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
+                      {!loading && displayedCoaches.length === 0 && <div style={{ padding: 18 }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
+                      {!loading && displayedCoaches.map((coach) => (
+                        <CoachRow
+                          key={coach.id}
+                          coach={coach}
+                          selected={selected === coach.id}
+                          onOpen={() => handleSelectCoach(coach.id)}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </main>
                 <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
