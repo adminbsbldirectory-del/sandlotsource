@@ -995,7 +995,7 @@ export default function TravelTeams() {
             alignSelf: 'start',
             background: 'var(--white)',
             borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-            zIndex: 2,
+            zIndex: 4,
           }}
         >
           <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
@@ -1248,9 +1248,8 @@ export default function TravelTeams() {
             <main style={{ minWidth: 0 }}>
               <div
                 style={{
-                  position: isMobile ? 'static' : 'sticky',
-                  top: isMobile ? 'auto' : 76,
-                  zIndex: 1,
+                  position: 'static',
+                  zIndex: 0,
                   background: 'var(--page-bg, #f5f3ef)',
                   paddingTop: isMobile ? 0 : 8,
                   paddingBottom: 10,
@@ -1484,7 +1483,7 @@ export default function TravelTeams() {
                         borderBottom: '1px solid rgba(15,23,42,0.08)',
                         position: 'sticky',
                         top: 0,
-                        zIndex: 2,
+                        zIndex: 4,
                       }}
                     >
                       <div style={desktopHeaderCellStyle}>Sport</div>
