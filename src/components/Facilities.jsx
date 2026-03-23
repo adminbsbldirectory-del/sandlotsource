@@ -121,6 +121,15 @@ function getSportBadgeMeta(sport) {
   return null
 }
 
+
+function matchesSportFilter(facilitySport, selectedSport) {
+  if (!selectedSport) return true
+  if (selectedSport === 'both') return facilitySport === 'both'
+  if (selectedSport === 'baseball') return facilitySport === 'baseball' || facilitySport === 'both'
+  if (selectedSport === 'softball') return facilitySport === 'softball' || facilitySport === 'both'
+  return true
+}
+
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
   try {
@@ -440,7 +449,7 @@ export default function Facilities() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(() => searchParams.get('select') || null)
   const [mapFocus, setMapFocus] = useState(null)
-  const [sport, setSport] = useState('Both')
+  const [sport, setSport] = useState('')
   const [facilityType, setFacilityType] = useState('all')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -533,8 +542,7 @@ export default function Facilities() {
     return facilities
       .filter((f) => {
         const facilitySport = getFacilitySport(f)
-        if (sport === 'baseball' && facilitySport !== 'baseball' && facilitySport !== 'both') return false
-        if (sport === 'softball' && facilitySport !== 'softball' && facilitySport !== 'both') return false
+        if (!matchesSportFilter(facilitySport, sport)) return false
         if (facilityType !== 'all' && (f.facility_type || '') !== facilityType) return false
 
         if (search) {
@@ -641,7 +649,7 @@ export default function Facilities() {
   }
 
   function EmptyState() {
-    const hasFilters = sport !== 'Both' || search || zipStatus === 'ok' || facilityType !== 'all'
+    const hasFilters = sport || search || zipStatus === 'ok' || facilityType !== 'all'
     return (
       <div className="empty-state">
         <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities listed yet'}</h3>
@@ -667,6 +675,43 @@ export default function Facilities() {
             <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
               <input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={inputStyle} />
               <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
+              <div>
+                <div style={sectionLabel}>Sport</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+                    onClick={() => { setSport((s) => (s === 'baseball' ? '' : 'baseball')); setSelected(null) }}
+                    style={{ minHeight: 38 }}
+                  >
+                    ⚾ Baseball
+                  </button>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+                    onClick={() => { setSport((s) => (s === 'softball' ? '' : 'softball')); setSelected(null) }}
+                    style={{ minHeight: 38 }}
+                  >
+                    🥎 Softball
+                  </button>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'both' ? 'active-baseball' : '')}
+                    onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }}
+                    style={{
+                      gridColumn: '1 / -1',
+                      minHeight: 38,
+                      borderColor: sport === 'both' ? '#C9D4E5' : undefined,
+                      background: sport === 'both'
+                        ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)'
+                        : undefined,
+                      color: sport === 'both' ? '#173B73' : undefined,
+                    }}
+                  >
+                    ⚾🥎 Baseball &amp; Softball
+                  </button>
+                </div>
+              </div>
             </div>
             {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 240, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} />{mapFocus?.lat != null && mapFocus?.lng != null && <FlyTo target={mapFocus} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => openFacilityById(f.id, 'map') }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div><Link to={`/facilities/${f.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280'],['Other', '#9A6B2F']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
             <div ref={mobileListRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>{loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}{!loading && filtered.length === 0 && <EmptyState />}{!loading && filtered.map((f) => <div key={f.id} ref={(el) => { if (el) rowRefs.current[f.id] = el; else delete rowRefs.current[f.id] }}><FacilityCard facility={f} selected={selected === f.id} onClick={() => (selected === f.id ? closeFacilityPreview() : openFacilityById(f.id, 'list'))} distanceMi={getDistance(f)} /></div>)}</div>
@@ -680,7 +725,43 @@ export default function Facilities() {
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
                 <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
                 <div><div style={sectionLabel}>Location type</div><select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 40 }}>{FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => { setSport((s) => (s === 'baseball' ? 'Both' : 'baseball')); setSelected(null) }} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => { setSport((s) => (s === 'softball' ? 'Both' : 'softball')); setSelected(null) }} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
+                <div>
+                  <div style={sectionLabel}>Sport</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <button
+                      type="button"
+                      className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+                      onClick={() => { setSport((s) => (s === 'baseball' ? '' : 'baseball')); setSelected(null) }}
+                      style={{ minHeight: 38 }}
+                    >
+                      ⚾ Baseball
+                    </button>
+                    <button
+                      type="button"
+                      className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+                      onClick={() => { setSport((s) => (s === 'softball' ? '' : 'softball')); setSelected(null) }}
+                      style={{ minHeight: 38 }}
+                    >
+                      🥎 Softball
+                    </button>
+                    <button
+                      type="button"
+                      className={'pill-toggle ' + (sport === 'both' ? 'active-baseball' : '')}
+                      onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }}
+                      style={{
+                        gridColumn: '1 / -1',
+                        minHeight: 38,
+                        borderColor: sport === 'both' ? '#C9D4E5' : undefined,
+                        background: sport === 'both'
+                          ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)'
+                          : undefined,
+                        color: sport === 'both' ? '#173B73' : undefined,
+                      }}
+                    >
+                      ⚾🥎 Baseball &amp; Softball
+                    </button>
+                  </div>
+                </div>
                 <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
                 <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Facility</a></div>
