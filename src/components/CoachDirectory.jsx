@@ -366,7 +366,7 @@ function RatingRow({ coach, selected }) {
         {half ? '◐' : ''}
         {empty > 0 ? '○'.repeat(Math.max(0, empty)) : ''}
       </span>
-      <span style={{ fontWeight: 700, color: selected ? 'var(--gold)' : 'var(--navy)' }}>{avg.toFixed(1)}</span>
+      <span style={{ fontWeight: 700, color: selected ? (mobile ? 'var(--green)' : 'var(--gold)') : 'var(--navy)' }}>{avg.toFixed(1)}</span>
       <span style={{ opacity: 0.6, fontSize: 12 }}>({count} review{count !== 1 ? 's' : ''})</span>
     </div>
   )
@@ -389,15 +389,28 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
     : {}
 
   const cardStyle = selected
-    ? {
-        ...mobileBase,
-        color: 'var(--white)',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-        marginBottom: mobile ? 0 : 10,
-        display: 'flex',
-        flexDirection: 'column',
-      }
+    ? mobile
+      ? {
+          ...mobileBase,
+          color: 'var(--navy)',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+          marginBottom: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--white)',
+          border: '2px solid var(--gold)',
+          boxShadow: '0 12px 28px rgba(15,23,42,0.08)',
+        }
+      : {
+          ...mobileBase,
+          color: 'var(--white)',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+          marginBottom: 10,
+          display: 'flex',
+          flexDirection: 'column',
+        }
     : mobile
       ? {
           ...mobileBase,
@@ -410,22 +423,35 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
         }
 
   const bodyStyle = selected
-    ? { flex: 1, padding: mobile ? '18px 18px 16px' : '14px 16px' }
+    ? mobile
+      ? { flex: 1, padding: '18px 18px 16px' }
+      : { flex: 1, padding: '14px 16px' }
     : mobile
       ? { padding: '18px 18px 16px' }
       : undefined
 
   const footerStyle = selected
-    ? {
-        padding: mobile ? '14px 18px 18px' : '12px 16px',
-        borderTop: '1px solid rgba(255,255,255,0.15)',
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: mobile ? '0 0 18px 18px' : '0 0 var(--card-radius) var(--card-radius)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 'auto',
-      }
+    ? mobile
+      ? {
+          padding: '0 18px 18px',
+          borderTop: 'none',
+          background: 'transparent',
+          borderRadius: '0 0 18px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 'auto',
+        }
+      : {
+          padding: '12px 16px',
+          borderTop: '1px solid rgba(255,255,255,0.15)',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '0 0 var(--card-radius) var(--card-radius)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 'auto',
+        }
     : mobile
       ? { padding: '0 18px 18px' }
       : undefined
@@ -466,19 +492,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
           </div>
 
           <span
-            style={selected ? {
-              background: 'rgba(255,255,255,0.15)',
-              color: 'white',
-              fontSize: mobile ? 11.5 : 11,
-              fontWeight: 700,
-              padding: mobile ? '5px 10px' : '4px 10px',
-              borderRadius: 20,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              fontFamily: 'var(--font-head)',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            } : {
+            style={{
               background: sportBadge.bg,
               color: sportBadge.color,
               fontSize: mobile ? 11.5 : 11,
@@ -504,8 +518,8 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
             <span
               key={s}
               style={{
-                background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
-                color: selected ? 'white' : 'var(--gray)',
+                background: selected ? (mobile ? '#EEF2F7' : 'rgba(255,255,255,0.15)') : 'var(--lgray)',
+                color: selected ? (mobile ? 'var(--navy)' : 'white') : 'var(--gray)',
                 fontSize: mobile ? 11.5 : 11,
                 padding: mobile ? '4px 9px' : '2px 8px',
                 borderRadius: 20,
@@ -534,7 +548,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
           )}
         </div>
 
-        {(coach.email || firstPhone || coach.website) && (
+        {!mobile && (coach.email || firstPhone || coach.website) && (
           <div
             style={{
               marginTop: 12,
@@ -590,7 +604,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
           }}
           style={{
             width: '100%',
-            background: selected ? 'var(--gold)' : 'var(--navy)',
+            background: selected ? (mobile ? 'var(--navy)' : 'var(--gold)') : 'var(--navy)',
             color: 'white',
             border: 'none',
             borderRadius: mobile ? 12 : 'var(--btn-radius)',
@@ -1190,7 +1204,7 @@ export default function CoachDirectory() {
     return count
   }, [sport, specialty, state, geoCenter])
 
-  const showMobileSpotlight = !!(isMobile && selectedFromUrl && sel)
+  const showMobileSpotlight = !!(isMobile && sel)
 
   const mobileCoachesToRender = useMemo(() => {
     if (!showMobileSpotlight || !sel) return displayedCoaches
@@ -1221,7 +1235,11 @@ export default function CoachDirectory() {
   }
 
   const handleSelectCoach = (coachId) => {
-    setSelected((prev) => (prev === coachId ? null : coachId))
+    const nextId = selected === coachId ? null : coachId
+    setSelected(nextId)
+    if (typeof window !== 'undefined' && nextId) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   return (
@@ -1243,13 +1261,12 @@ export default function CoachDirectory() {
         <div style={{ background: 'var(--cream)', minHeight: '100vh' }}>
           <div
             style={{
-              position: 'sticky',
-              top: HEADER_H,
+              position: 'relative',
               zIndex: 100,
               padding: '10px 12px 8px',
-              background: 'linear-gradient(180deg, rgba(250,247,242,0.98) 0%, rgba(250,247,242,0.92) 100%)',
-              borderBottom: '1px solid rgba(15,23,42,0.06)',
-              backdropFilter: 'blur(8px)',
+              background: 'transparent',
+              borderBottom: 'none',
+              backdropFilter: 'none',
             }}
           >
             <div
