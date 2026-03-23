@@ -1157,7 +1157,7 @@ export default function PlayerBoard() {
     );
   }
 
-  function getPostCapabilities(post) {
+  function getPostPositionDetails(post) {
     const positions =
       post.post_type === "player_available"
         ? Array.isArray(post.player_position)
@@ -1171,27 +1171,23 @@ export default function PlayerBoard() {
 
     if (positions.length) parts.push(positions.join(", "));
 
-    if (post.post_type === "player_available") {
-      if (post.bats || post.throws) {
-        parts.push(
-          [
-            post.bats ? `Bats ${post.bats}` : "",
-            post.throws ? `Throws ${post.throws}` : "",
-          ]
-            .filter(Boolean)
-            .join(" · "),
-        );
-      }
-
-      const travelCap = extractTravelMiles(post.additional_notes);
-      if (travelCap === 999) parts.push("Travel: anywhere");
-      else if (travelCap != null)
-        parts.push(`Travel: up to ${travelCap} miles`);
-    } else if (post.event_date) {
-      parts.push(`Date ${formatDate(post.event_date)}`);
+    if (post.post_type === "player_available" && (post.bats || post.throws)) {
+      parts.push(
+        [
+          post.bats ? `Bats ${post.bats}` : "",
+          post.throws ? `Throws ${post.throws}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      );
     }
 
     return parts.filter(Boolean).join(" • ") || "Details pending";
+  }
+
+  function getPostDateLabel(post) {
+    if (!post?.event_date) return "";
+    return `${post.post_type === "player_available" ? "Available" : "Needed"} ${formatDate(post.event_date)}`;
   }
 
   function getPostDetailLines(post) {
@@ -1472,7 +1468,7 @@ export default function PlayerBoard() {
   const isEditing = editingId !== null;
   const g2 = isMobile ? "1fr" : "1fr 1fr";
   const desktopRowTemplate =
-    "minmax(120px, 0.82fr) minmax(95px, 0.65fr) minmax(250px, 1.55fr) minmax(220px, 1.2fr) minmax(190px, 1.05fr) 82px";
+    "minmax(120px, 0.78fr) minmax(95px, 0.6fr) minmax(220px, 1.3fr) minmax(150px, 0.9fr) minmax(220px, 1.15fr) minmax(190px, 1fr) 82px";
   const desktopHeaderCellStyle = {
     fontSize: 11,
     fontWeight: 800,
@@ -2066,8 +2062,9 @@ export default function PlayerBoard() {
                         <div style={desktopHeaderCellStyle}>Type</div>
                         <div style={desktopHeaderCellStyle}>Sport</div>
                         <div style={desktopHeaderCellStyle}>
-                          Capabilities / Need
+                          Position / Details
                         </div>
+                        <div style={desktopHeaderCellStyle}>Date</div>
                         <div style={desktopHeaderCellStyle}>Location</div>
                         <div style={desktopHeaderCellStyle}>Listing</div>
                         <div
@@ -2215,9 +2212,24 @@ export default function PlayerBoard() {
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                   }}
-                                  title={getPostCapabilities(post)}
+                                  title={getPostPositionDetails(post)}
                                 >
-                                  {getPostCapabilities(post)}
+                                  {getPostPositionDetails(post)}
+                                </div>
+
+                                <div
+                                  style={{
+                                    minWidth: 0,
+                                    fontSize: 12,
+                                    color: "var(--gray)",
+                                    lineHeight: 1.35,
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                  title={getPostDateLabel(post)}
+                                >
+                                  {getPostDateLabel(post) || "—"}
                                 </div>
 
                                 <div
@@ -2447,7 +2459,7 @@ export default function PlayerBoard() {
                                     fontWeight: 700,
                                   }}
                                 >
-                                  {formatDate(selectedPost.event_date)}
+                                  {getPostDateLabel(selectedPost)}
                                 </span>
                               )}
                             </div>
@@ -2519,7 +2531,7 @@ export default function PlayerBoard() {
                                 marginBottom: 8,
                               }}
                             >
-                              Capabilities / need
+                              Position / details
                             </div>
                             <div
                               style={{
@@ -2529,8 +2541,27 @@ export default function PlayerBoard() {
                                 fontWeight: 600,
                               }}
                             >
-                              {getPostCapabilities(selectedPost)}
+                              {getPostPositionDetails(selectedPost)}
                             </div>
+                            {selectedPost.event_date && (
+                              <div
+                                style={{
+                                  marginTop: 10,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  background: "#FEF3C7",
+                                  color: "#92400E",
+                                  border: "1px solid #FDE68A",
+                                  borderRadius: 999,
+                                  padding: "6px 10px",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                }}
+                              >
+                                <span>{getPostDateLabel(selectedPost)}</span>
+                              </div>
+                            )}
                             {selectedTravelLabel && (
                               <div
                                 style={{
