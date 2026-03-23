@@ -576,7 +576,7 @@ export default function Facilities() {
     return () => clearTimeout(t)
   }, [selected, isMobile])
 
-  const mappable = filtered.filter((f) => f.lat != null && f.lng != null)
+  const mappable = useMemo(() => filtered.filter((f) => f.lat != null && f.lng != null), [filtered])
 
   function getDistance(f) {
     if (!geoCenter || f.lat == null || f.lng == null) return null
