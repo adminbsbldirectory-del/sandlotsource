@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 
 const LISTING_TYPES = ['Coach / Trainer', 'Travel Team', 'Facility']
@@ -37,6 +37,7 @@ function RequiredMark() {
 }
 
 export default function ClaimListing() {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [form, setForm] = useState({
     listing_type: '',
     listing_name: '',
@@ -55,6 +56,15 @@ export default function ClaimListing() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [validationError, setValidationError] = useState('')
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function set(field, value) {
     setForm(f => ({ ...f, [field]: value }))
@@ -113,7 +123,7 @@ export default function ClaimListing() {
     return (
       <div style={{ maxWidth:600, margin:'48px auto', padding:'32px 24px', background:'white', borderRadius:12, border:'2px solid #86EFAC', textAlign:'center' }}>
         <div style={{ fontSize:36, marginBottom:12 }}>✅</div>
-        <div style={{ fontFamily:'var(--font-head)', fontSize:22, fontWeight:700, color:'var(--navy)', marginBottom:10 }}>
+        <div style={{ fontFamily:'var(--font-head)', fontSize:isMobile ? 20 : 22, fontWeight:700, color:'var(--navy)', marginBottom:10 }}>
           Request Received
         </div>
         <div style={{ fontSize:14, color:'var(--gray)', lineHeight:1.6 }}>
@@ -124,12 +134,12 @@ export default function ClaimListing() {
   }
 
   return (
-    <div style={{ maxWidth:640, margin:'32px auto', padding:'0 16px' }}>
-      <div style={{ background:'white', borderRadius:12, border:'2px solid var(--lgray)', padding:'28px 24px' }}>
-        <div style={{ fontFamily:'var(--font-head)', fontSize:22, fontWeight:700, color:'var(--navy)', marginBottom:6 }}>
+    <div style={{ maxWidth:640, margin:'32px auto', padding:isMobile ? '0 12px 96px' : '0 16px' }}>
+      <div style={{ background:'white', borderRadius:12, border:'2px solid var(--lgray)', padding:isMobile ? '22px 16px' : '28px 24px' }}>
+        <div style={{ fontFamily:'var(--font-head)', fontSize:isMobile ? 20 : 22, fontWeight:700, color:'var(--navy)', marginBottom:6 }}>
           Claim or Update a Listing
         </div>
-        <div style={{ fontSize:13, color:'var(--gray)', marginBottom:24, lineHeight:1.5 }}>
+        <div style={{ fontSize:isMobile ? 14 : 13, color:'var(--gray)', marginBottom:24, lineHeight:1.5 }}>
           Use this form to claim a listing, correct information, or request a change.
           We review all requests manually and will contact you to verify.
         </div>
@@ -144,7 +154,7 @@ export default function ClaimListing() {
         </div>
 
         {/* Listing name + city */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+        <div style={{ display:'grid', gridTemplateColumns:isMobile ? '1fr' : '1fr 1fr', gap:12, marginBottom:14 }}>
           <div>
             <label style={labelStyle}>Listing Name <RequiredMark /></label>
             <input value={form.listing_name} onChange={e => set('listing_name', e.target.value)}
@@ -162,7 +172,7 @@ export default function ClaimListing() {
           <div style={{ fontSize:12, fontWeight:700, color:'var(--navy)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>
             Your Information
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:isMobile ? '1fr' : '1fr 1fr', gap:12, marginBottom:14 }}>
             <div>
               <label style={labelStyle}>Your Name <RequiredMark /></label>
               <input value={form.requester_name} onChange={e => set('requester_name', e.target.value)}
@@ -177,7 +187,7 @@ export default function ClaimListing() {
           <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Phone (optional)</label>
             <input type="tel" value={form.requester_phone} onChange={e => set('requester_phone', e.target.value)}
-              placeholder="e.g. 770-555-0100" style={{ ...inputStyle, maxWidth:240 }} />
+              placeholder="e.g. 770-555-0100" style={{ ...inputStyle, maxWidth:isMobile ? '100%' : 240 }} />
           </div>
           <div style={{ marginBottom:14 }}>
             <label style={labelStyle}>Your Relationship to This Listing <RequiredMark /></label>
@@ -255,7 +265,7 @@ export default function ClaimListing() {
 
         <button onClick={handleSubmit} disabled={submitting} style={{
           background:'var(--navy)', color:'white', border:'none',
-          borderRadius:8, padding:'12px 28px',
+          borderRadius:8, padding:isMobile ? '14px 20px' : '12px 28px',
           fontFamily:'var(--font-head)', fontSize:16, fontWeight:700,
           letterSpacing:'0.04em', textTransform:'uppercase',
           opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
