@@ -753,22 +753,17 @@ export default function Facilities() {
                     >
                       🥎 Softball
                     </button>
-                    <button
-                      type="button"
-                      className={'pill-toggle ' + (sport === 'both' ? 'active-baseball' : '')}
-                      onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }}
-                      style={{
-                        gridColumn: '1 / -1',
-                        minHeight: 38,
-                        borderColor: sport === 'both' ? '#C9D4E5' : undefined,
-                        background: sport === 'both'
-                          ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)'
-                          : undefined,
-                        color: sport === 'both' ? '#173B73' : undefined,
-                      }}
-                    >
-                      ⚾🥎 Baseball &amp; Softball
-                    </button>
+                   <button
+  type="button"
+  className={'pill-toggle ' + (sport === 'both' ? 'active-both' : '')}
+  onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }}
+  style={{
+    gridColumn: '1 / -1',
+    minHeight: 38,
+  }}
+>
+  ⚾🥎 Baseball &amp; Softball
+</button>
                   </div>
                 </div>
                 <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
