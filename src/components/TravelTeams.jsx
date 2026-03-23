@@ -553,7 +553,7 @@ function TeamPreviewCard({ team, onClose, onOpenFull }) {
       style={{
         position: 'fixed',
         top: 128,
-        left: '50%',
+        left: '56%',
         transform: 'translateX(-50%)',
         width: 'min(720px, calc(100vw - 48px))',
         maxHeight: 'calc(100vh - 156px)',
@@ -754,8 +754,6 @@ export default function TravelTeams() {
   const [showMap, setShowMap] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   )
-  const [detectingLoc, setDetectingLoc] = useState(true)
-
   const [sport, setSport] = useState('Both')
   const [state, setState] = useState('')
   const [zip, setZip] = useState('')
@@ -783,22 +781,6 @@ export default function TravelTeams() {
     }
   }
 
-  useEffect(() => {
-    async function detectState() {
-      try {
-        const res = await fetch('https://ipapi.co/json/')
-        if (res.ok) {
-          const data = await res.json()
-          setState(data.region_code || '')
-        }
-      } catch {
-        // ignore
-      } finally {
-        setDetectingLoc(false)
-      }
-    }
-    detectState()
-  }, [])
 
   useEffect(() => {
     const handler = () => {
@@ -817,7 +799,7 @@ export default function TravelTeams() {
 
       const { data: teamRows, error: teamError } = await supabase
         .from('travel_teams')
-        .select('id, name, sport, org_affiliation, classification, sanctioning_body, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, active, claimed, claimed_status')
+        .select('id, name, sport, org_affiliation, classification, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, active')
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
@@ -1107,11 +1089,6 @@ export default function TravelTeams() {
                   </option>
                 ))}
               </select>
-              {detectingLoc && (
-                <div style={{ marginTop: 4, fontSize: 11, color: '#999' }}>
-                  Detecting your state...
-                </div>
-              )}
             </div>
 
             <div>
@@ -1322,7 +1299,7 @@ export default function TravelTeams() {
                           zoom={mapZoom}
                           enabled={!selectedTeam && mappable.length === 0}
                         />
-                        <FitBounds teams={mappable} enabled={!selectedTeam && mappable.length > 0} />
+                        <FitBounds teams={mappable} enabled={mappable.length > 0} />
                         <FlyToTeam team={selectedTeam} />
 
                         {mappable.map((team) => (
