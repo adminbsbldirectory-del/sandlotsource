@@ -135,13 +135,28 @@ function normalizeFacility(facility) {
     lat: toNumber(facility.lat),
     lng: toNumber(facility.lng),
     zip: facility.zip_code || '',
+    website: facility.website || '',
   }
+}
+
+function normalizeUrl(url) {
+  if (!url) return null
+  const trimmed = String(url).trim()
+  if (!trimmed) return null
+  if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return 'https://' + trimmed
 }
 
 function formatCoachLocation(coach) {
   const zip = getCoachZip(coach)
   const line = [coach.city, coach.state].filter(Boolean).join(', ')
   return [line, zip].filter(Boolean).join(' ')
+}
+
+function formatCoachFullAddress(coach) {
+  const cityState = [coach.city, coach.state].filter(Boolean).join(', ')
+  return [coach.address, cityState, getCoachZip(coach)].filter(Boolean).join(' ')
 }
 
 function priceLabel(coach) {
@@ -641,15 +656,15 @@ function EmptyState({ facilityContextName }) {
 function CoachRow({ coach, selected, onOpen }) {
   const sportBadge = getSportBadgeMeta(coach.sport)
   const specialties = parseSpecialties(coach.specialty)
+  const specialization = specialties.length ? specialties.join(' · ') : 'General coaching'
   const location = formatCoachLocation(coach)
-  const capabilities = specialties.length ? specialties.join(' · ') : 'General coaching'
 
   return (
     <div
       onClick={onOpen}
       style={{
         display: 'grid',
-        gridTemplateColumns: '120px minmax(210px, 1.25fr) minmax(220px, 1.2fr) minmax(180px, 1fr) 96px',
+        gridTemplateColumns: '120px minmax(220px, 1.1fr) minmax(250px, 1.15fr) minmax(240px, 1.1fr) 96px',
         gap: 12,
         alignItems: 'center',
         padding: '10px 14px',
@@ -682,14 +697,14 @@ function CoachRow({ coach, selected, onOpen }) {
       </div>
 
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, color: 'var(--navy)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {capabilities}
+        <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--navy)', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {coach.name}
         </div>
-        {coach.credentials && (
-          <div style={{ fontSize: 11.5, color: 'var(--gray)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {credentialSnippet(coach.credentials)}
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          {coach.verified_status && <span className="badge" style={{ background: '#E8F1FF', color: '#1D4ED8' }}>Verified</span>}
+          {coach.featured_status && <span className="badge" style={{ background: '#FDF0D5', color: '#A16207' }}>Featured</span>}
+          <span style={{ fontSize: 11.5, color: 'var(--gray)' }}>{reviewLabel(coach)}</span>
+        </div>
       </div>
 
       <div style={{ minWidth: 0 }}>
@@ -702,14 +717,14 @@ function CoachRow({ coach, selected, onOpen }) {
       </div>
 
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--navy)', fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {coach.name}
+        <div style={{ fontSize: 12.5, color: 'var(--navy)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {specialization}
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-          {coach.verified_status && <span className="badge" style={{ background: '#E8F1FF', color: '#1D4ED8' }}>Verified</span>}
-          {coach.featured_status && <span className="badge" style={{ background: '#FDF0D5', color: '#A16207' }}>Featured</span>}
-          <span style={{ fontSize: 11.5, color: 'var(--gray)' }}>{reviewLabel(coach)}</span>
-        </div>
+        {coach.credentials && (
+          <div style={{ fontSize: 11.5, color: 'var(--gray)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {credentialSnippet(coach.credentials)}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -745,10 +760,10 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
   const sportBadge = getSportBadgeMeta(coach.sport)
   const specialties = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
-  const website = coach.website
-    ? (coach.website.startsWith('http') ? coach.website : `https://${coach.website}`)
-    : null
+  const website = normalizeUrl(coach.website)
+  const facilityWebsite = normalizeUrl(coach.facility_website)
   const location = formatCoachLocation(coach)
+  const fullAddress = formatCoachFullAddress(coach)
 
   return (
     <>
@@ -787,8 +802,8 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
               {coach.recommendation_count > 0 && <span className="badge" style={{ background: '#ECFDF3', color: '#166534' }}>{coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}</span>}
             </div>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 32, lineHeight: 1.05, color: 'var(--navy)', fontWeight: 800 }}>{coach.name}</div>
-            <div style={{ marginTop: 6, fontSize: 14, color: 'var(--gray)' }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
-            {location && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--gray)' }}>{location}</div>}
+            <div style={{ marginTop: 6, fontSize: 15, color: 'var(--navy)', fontWeight: 700 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+            {(fullAddress || location) && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--gray)' }}>{fullAddress || location}</div>}
           </div>
 
           <button
@@ -813,7 +828,7 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(260px, 0.9fr)', gap: 16, marginTop: 18 }}>
           <div style={{ display: 'grid', gap: 12 }}>
             <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 16, padding: '14px 16px' }}>
-              <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Capabilities</div>
+              <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Specialization</div>
               <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {specialties.length > 0 ? specialties.map((item) => (
                   <span key={item} style={{ background: '#EEF2F7', color: '#334155', borderRadius: 999, padding: '5px 10px', fontSize: 12, fontWeight: 700 }}>
@@ -854,7 +869,7 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
                 )}
                 {website && (
                   <a href={website} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
-                    Visit website
+                    Coach website
                   </a>
                 )}
                 {!coach.email && !firstPhone && !website && (
@@ -867,7 +882,12 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
               <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Location</div>
               <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
                 <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 800 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
-                {location && <div style={{ fontSize: 13, color: 'var(--gray)' }}>{location}</div>}
+                {(fullAddress || location) && <div style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.45 }}>{fullAddress || location}</div>}
+                {facilityWebsite && (
+                  <a href={facilityWebsite} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
+                    Facility website
+                  </a>
+                )}
               </div>
             </div>
 
@@ -973,7 +993,7 @@ export default function CoachDirectory() {
             .in('approval_status', ['approved', 'seeded']),
           supabase
             .from('facilities')
-            .select('id, name, lat, lng, address, city, state, zip_code')
+            .select('id, name, lat, lng, address, city, state, zip_code, website')
             .eq('active', true)
             .in('approval_status', ['approved', 'seeded']),
         ])
@@ -1014,13 +1034,18 @@ export default function CoachDirectory() {
 
       const linkedFacility = facilityMap.get(coach.facility_id)
       if (!linkedFacility) return coach
-      if (linkedFacility.lat == null || linkedFacility.lng == null) return coach
 
       return {
         ...coach,
-        lat: linkedFacility.lat,
-        lng: linkedFacility.lng,
-        coord_source: 'facility',
+        lat: linkedFacility.lat != null ? linkedFacility.lat : coach.lat,
+        lng: linkedFacility.lng != null ? linkedFacility.lng : coach.lng,
+        coord_source: linkedFacility.lat != null && linkedFacility.lng != null ? 'facility' : coach.coord_source,
+        facility_name: coach.facility_name || linkedFacility.name || '',
+        address: linkedFacility.address || coach.address || '',
+        city: linkedFacility.city || coach.city || '',
+        state: linkedFacility.state || coach.state || '',
+        zip: linkedFacility.zip || coach.zip || coach.zip_code || '',
+        facility_website: linkedFacility.website || coach.facility_website || '',
       }
     })
   }, [coaches, facilityMap])
@@ -1188,7 +1213,7 @@ export default function CoachDirectory() {
                         <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sport</div>
                         <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Coach</div>
                         <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Facility</div>
-                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Capabilities</div>
+                        <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Specialization</div>
                         <div style={{ fontSize: 10.5, fontWeight: 900, color: '#516172', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'right' }}>View</div>
                       </div>
 
