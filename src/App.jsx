@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
@@ -19,6 +20,17 @@ const RED = '#e63329'
 const DARK = '#1a1a1a'
 
 function SiteFooter() {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const footerColumns = [
     {
       heading: 'Directory',
@@ -54,7 +66,7 @@ function SiteFooter() {
       style={{
         background: '#fff',
         borderTop: `1px solid ${BORDER}`,
-        padding: '28px 20px 0',
+        padding: isMobile ? '24px 14px 0' : '28px 20px 0',
         marginTop: 'auto',
       }}
     >
@@ -62,15 +74,15 @@ function SiteFooter() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
-            gap: 24,
+            gridTemplateColumns: isMobile ? '1fr 1fr' : '1.5fr 1fr 1fr 1fr',
+            gap: isMobile ? 18 : 24,
             paddingBottom: 20,
           }}
         >
           <div>
             <div
               style={{
-                fontSize: 13,
+                fontSize: isMobile ? 11 : 13,
                 fontWeight: 600,
                 letterSpacing: '0.07em',
                 color: DARK,
@@ -84,7 +96,7 @@ function SiteFooter() {
             </div>
             <p
               style={{
-                fontSize: 12,
+                fontSize: isMobile ? 11 : 12,
                 color: '#aaa',
                 lineHeight: 1.65,
                 margin: 0,
@@ -98,7 +110,7 @@ function SiteFooter() {
             <div key={col.heading}>
               <h5
                 style={{
-                  fontSize: 11,
+                  fontSize: isMobile ? 10 : 11,
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
@@ -116,7 +128,7 @@ function SiteFooter() {
                     href={link.href}
                     style={{
                       display: 'block',
-                      fontSize: 12,
+                      fontSize: isMobile ? 11 : 12,
                       color: '#777',
                       textDecoration: 'none',
                       marginBottom: 6,
@@ -130,7 +142,7 @@ function SiteFooter() {
                     to={link.to}
                     style={{
                       display: 'block',
-                      fontSize: 12,
+                      fontSize: isMobile ? 11 : 12,
                       color: '#777',
                       textDecoration: 'none',
                       marginBottom: 6,
@@ -150,7 +162,9 @@ function SiteFooter() {
             padding: '14px 0',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 6 : 0,
           }}
         >
           <span style={{ fontSize: 11, color: FAINT }}>
