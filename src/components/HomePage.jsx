@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AdSlot from './AdSlot'
 
@@ -60,6 +60,16 @@ export default function HomePage() {
   const [listingType, setListingType] = useState('')
   const [ageGroup,    setAgeGroup]    = useState('')
   const [radius,      setRadius]      = useState(25)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function handleSearch(e) {
     e.preventDefault()
@@ -82,18 +92,22 @@ export default function HomePage() {
   }
   const selectStyle = { border: 'none', outline: 'none', background: 'none', fontSize: 12, color: '#444', cursor: 'pointer', padding: 0 }
   const sepStyle = { color: '#ccc', fontSize: 12, flexShrink: 0 }
+  const pathwaysColumns = isMobile ? '1fr 1fr' : 'repeat(4, 1fr)'
+  const featuredColumns = isMobile ? '1fr' : '1fr 1fr'
+  const urgentColumns = isMobile ? '1fr' : 'repeat(3, 1fr)'
+  const howItWorksColumns = isMobile ? '1fr 1fr' : 'repeat(4, 1fr)'
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px 48px', background: '#fff', color: DARK }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '0 12px 96px' : '0 20px 48px', background: '#fff', color: DARK }}>
 
       {/* ── AD: Top leaderboard ───────────────────────────────────────────── */}
       <div style={{ marginTop: 16 }}>
-        <AdSlot position="leaderboard-top" />
+        <AdSlot position={isMobile ? "mobile-inline-top" : "leaderboard-top"} />
       </div>
 
       {/* ── SEARCH HERO ───────────────────────────────────────────────────── */}
-      <section style={{ background: '#fff', borderRadius: 14, padding: '28px 28px 22px', marginTop: 16, borderTop: `4px solid ${RED}`, border: `1px solid ${BORDER}`, borderTopWidth: 4, borderTopColor: RED }}>
-        <h1 style={{ fontSize: 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
+      <section style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '20px 14px 16px' : '28px 28px 22px', marginTop: 16, borderTop: `4px solid ${RED}`, border: `1px solid ${BORDER}`, borderTopWidth: 4, borderTopColor: RED }}>
+        <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
           Find{' '}
           <span style={{ color: RED }}>coaches, teams & facilities</span>
           {' '}near you.
@@ -105,7 +119,7 @@ export default function HomePage() {
         {/* Search bar */}
         <form
           onSubmit={handleSearch}
-          style={{ display: 'flex', alignItems: 'center', background: '#fff', border: `1.5px solid #d8d8d2`, borderRadius: 10, padding: '0 6px 0 14px', height: 48, gap: 8, marginBottom: 12 }}
+          style={{ display: 'flex', alignItems: 'center', background: '#fff', border: `1.5px solid #d8d8d2`, borderRadius: 10, padding: isMobile ? '0 5px 0 10px' : '0 6px 0 14px', height: isMobile ? 50 : 48, gap: 8, marginBottom: 12 }}
         >
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.35 }}>
             <circle cx="6.5" cy="6.5" r="4.5" stroke={DARK} strokeWidth="1.5" />
@@ -116,11 +130,11 @@ export default function HomePage() {
             placeholder="Search coaches, teams, facilities, positions…"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: DARK, background: 'none', minWidth: 0 }}
+            style={{ flex: 1, border: 'none', outline: 'none', fontSize: isMobile ? 16 : 15, color: DARK, background: 'none', minWidth: 0 }}
           />
           <button
             type="submit"
-            style={{ background: RED, color: '#fff', border: 'none', borderRadius: 7, height: 36, padding: '0 20px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}
+            style={{ background: RED, color: '#fff', border: 'none', borderRadius: 7, height: isMobile ? 40 : 36, padding: isMobile ? '0 16px' : '0 20px', fontSize: 14, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}
           >
             Search
           </button>
@@ -135,7 +149,7 @@ export default function HomePage() {
               <option value="softball">Softball</option>
             </select>
           </div>
-          <span style={sepStyle}>·</span>
+          {!isMobile && <span style={sepStyle}>·</span>}
           <div style={pillStyle}>
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
               <path d="M6 1C4.067 1 2.5 2.567 2.5 4.5c0 2.776 3.5 6.5 3.5 6.5s3.5-3.724 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="#aaa" strokeWidth="1.2" fill="none" />
@@ -147,7 +161,7 @@ export default function HomePage() {
               style={{ ...selectStyle, width: 68 }}
             />
           </div>
-          <span style={sepStyle}>·</span>
+          {!isMobile && <span style={sepStyle}>·</span>}
           <div style={pillStyle}>
             <select value={listingType} onChange={e => setListingType(e.target.value)} style={selectStyle}>
               <option value="">All types</option>
@@ -158,7 +172,7 @@ export default function HomePage() {
               <option value="pickup">Pickup</option>
             </select>
           </div>
-          <span style={sepStyle}>·</span>
+          {!isMobile && <span style={sepStyle}>·</span>}
           <div style={pillStyle}>
             <select value={ageGroup} onChange={e => setAgeGroup(e.target.value)} style={selectStyle}>
               <option value="">All ages</option>
@@ -167,7 +181,7 @@ export default function HomePage() {
               ))}
             </select>
           </div>
-          <span style={sepStyle}>·</span>
+          {!isMobile && <span style={sepStyle}>·</span>}
           <div style={{ ...pillStyle, gap: 6 }}>
             <span style={{ fontSize: 12, color: '#444' }}>Within</span>
             <input
@@ -176,14 +190,14 @@ export default function HomePage() {
               style={{ width: 72, accentColor: RED, cursor: 'pointer' }}
             />
             <span style={{ fontSize: 12, fontWeight: 500, color: DARK, minWidth: 32 }}>{radius} mi</span>
-          </div>
+          </div>}
         </div>
       </section>
 
       {/* ── PATHWAYS ──────────────────────────────────────────────────────── */}
       <section style={{ marginTop: 26 }}>
         <SectionHeader title="What are you looking for?" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: pathwaysColumns, gap: 10 }}>
           {[
             { to: '/coaches',    icon: '🎯', iconBg: '#fef0ee', title: 'Find Instruction',  body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.', cta: 'Browse coaches →' },
             { to: '/teams',      icon: '🏆', iconBg: '#eaf3de', title: 'Find a Team',        body: 'Travel teams, open rosters, and tryout opportunities by age group and area.',                  cta: 'Browse teams →' },
@@ -205,14 +219,14 @@ export default function HomePage() {
       <Divider />
 
       {/* ── TWO-COLUMN: listings + sidebar ads ────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 190px', gap: 22, alignItems: 'start', marginTop: 26 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 190px', gap: isMobile ? 18 : 22, alignItems: 'start', marginTop: 26 }}>
 
         {/* Main column */}
         <div style={{ minWidth: 0 }}>
           <SectionHeader title="Featured near you" linkTo="/search" linkLabel="View all →" />
 
           {/* Featured listing cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: featuredColumns, gap: 10 }}>
             {FEATURED_LISTINGS.map(l => (
               <Link key={l.id} to={l.link} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 15px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
@@ -234,13 +248,13 @@ export default function HomePage() {
 
           {/* AD: Inline rectangle */}
           <div style={{ marginTop: 16 }}>
-            <AdSlot position="inline-rectangle" />
+            <AdSlot position={isMobile ? "mobile-inline-mid" : "inline-rectangle"} />
           </div>
 
           {/* Urgent pickup posts */}
           <div style={{ marginTop: 20 }}>
             <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: urgentColumns, gap: 10 }}>
               {URGENT_POSTS.map(p => (
                 <Link key={p.id} to="/find" style={{ border: '1px solid #f5cfc9', borderRadius: 12, padding: '13px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
                   <span style={{ fontSize: 10, fontWeight: 500, color: '#b93025', background: '#fdf0ee', padding: '2px 7px', borderRadius: 4, display: 'inline-block', marginBottom: 7 }}>
@@ -255,7 +269,7 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Sidebar ad column */}
@@ -272,7 +286,7 @@ export default function HomePage() {
       {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
       <section style={{ marginTop: 26 }}>
         <SectionHeader title="How it works" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: howItWorksColumns, gap: 10 }}>
           {[
             { n: '01', title: 'Enter your zip',  body: "Set your location and how far you're willing to travel." },
             { n: '02', title: 'Browse listings', body: 'Filter by sport, age group, listing type, and specialty.' },
@@ -292,7 +306,7 @@ export default function HomePage() {
 
       {/* ── TRUST BAR ─────────────────────────────────────────────────────── */}
       <section style={{ marginTop: 26 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, background: LIGHT, borderRadius: 12, padding: '18px 20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: howItWorksColumns, gap: 10, background: LIGHT, borderRadius: 12, padding: isMobile ? '14px 14px' : '18px 20px' }}>
           {[
             { num: '200+', label: 'Coaches listed' },
             { num: '80+',  label: 'Travel teams' },
