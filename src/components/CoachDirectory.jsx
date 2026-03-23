@@ -802,7 +802,17 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
               {coach.recommendation_count > 0 && <span className="badge" style={{ background: '#ECFDF3', color: '#166534' }}>{coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}</span>}
             </div>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 32, lineHeight: 1.05, color: 'var(--navy)', fontWeight: 800 }}>{coach.name}</div>
-            <div style={{ marginTop: 6, fontSize: 15, color: 'var(--navy)', fontWeight: 700 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+            {coach.facility_id ? (
+              <Link
+                to={`/facilities/${coach.facility_id}`}
+                onClick={onClose}
+                style={{ marginTop: 6, display: 'inline-block', fontSize: 15, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none' }}
+              >
+                {coach.facility_name || 'Independent / Private Lessons'}
+              </Link>
+            ) : (
+              <div style={{ marginTop: 6, fontSize: 15, color: 'var(--navy)', fontWeight: 700 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+            )}
             {(fullAddress || location) && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--gray)' }}>{fullAddress || location}</div>}
           </div>
 
@@ -881,8 +891,27 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
             <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '14px 16px' }}>
               <div style={{ fontSize: 11, color: 'var(--gray)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>Location</div>
               <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
-                <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 800 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+                {coach.facility_id ? (
+                  <Link
+                    to={`/facilities/${coach.facility_id}`}
+                    onClick={onClose}
+                    style={{ fontSize: 14, color: '#1D4ED8', fontWeight: 800, textDecoration: 'none' }}
+                  >
+                    {coach.facility_name || 'Independent / Private Lessons'}
+                  </Link>
+                ) : (
+                  <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 800 }}>{coach.facility_name || 'Independent / Private Lessons'}</div>
+                )}
                 {(fullAddress || location) && <div style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.45 }}>{fullAddress || location}</div>}
+                {coach.facility_id && (
+                  <Link
+                    to={`/facilities/${coach.facility_id}`}
+                    onClick={onClose}
+                    style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}
+                  >
+                    View facility page
+                  </Link>
+                )}
                 {facilityWebsite && (
                   <a href={facilityWebsite} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 14 }}>
                     Facility website
