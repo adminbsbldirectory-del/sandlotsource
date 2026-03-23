@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AdSlot from './AdSlot'
 
@@ -43,6 +43,26 @@ function SectionHeader({ title, linkTo, linkLabel }) {
   )
 }
 
+function FeaturedCard({ listing, isMobile }) {
+  return (
+    <Link key={listing.id} to={listing.link} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 15px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 10 }}>
+        <span style={{ fontSize: isMobile ? 16 : 14, fontWeight: 600, color: DARK, lineHeight: 1.28 }}>{listing.name}</span>
+        <span style={{ fontSize: isMobile ? 11 : 10, fontWeight: 600, padding: '3px 8px', borderRadius: 8, whiteSpace: 'nowrap', flexShrink: 0, ...listing.badgeStyle }}>{listing.badge}</span>
+      </div>
+      <div style={{ fontSize: isMobile ? 14 : 12, color: '#777', marginBottom: 3 }}>{listing.meta}</div>
+      <div style={{ fontSize: isMobile ? 12 : 11, color: FAINT, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ddd', flexShrink: 0 }} />
+        {listing.location} · {listing.distance}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f2f2ee', paddingTop: 8 }}>
+        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: RED }}>{listing.type === 'coach' ? 'View profile' : 'View team'} →</span>
+        <span style={{ fontSize: isMobile ? 12 : 10, color: FAINT }}>{SPORT_ICON[listing.sport]} {listing.sport.charAt(0).toUpperCase() + listing.sport.slice(1)}</span>
+      </div>
+    </Link>
+  )
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
 
@@ -75,6 +95,9 @@ export default function HomePage() {
     navigate(`/search?${params.toString()}`)
   }
 
+  const featuredCoaches = useMemo(() => FEATURED_LISTINGS.filter((l) => l.type === 'coach').slice(0, 2), [])
+  const featuredTeams = useMemo(() => FEATURED_LISTINGS.filter((l) => l.type === 'team').slice(0, 2), [])
+
   const pillStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -100,10 +123,7 @@ export default function HomePage() {
     width: '100%',
   }
 
-  const pathwaysColumns = isMobile ? '1fr' : 'repeat(2, 1fr)'
-  const featuredColumns = '1fr'
   const urgentColumns = isMobile ? '1fr' : 'repeat(3, 1fr)'
-  const howItWorksColumns = isMobile ? '1fr' : 'repeat(3, 1fr)'
 
   const actionRows = [
     { to: '/coaches', icon: '🎯', iconBg: '#fef0ee', title: 'Find Instruction', body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.' },
@@ -232,25 +252,9 @@ export default function HomePage() {
             </select>
           </div>
 
-          <div
-            style={{
-              ...pillStyle,
-              gridColumn: isMobile ? '1 / -1' : 'auto',
-              justifyContent: 'space-between',
-              gap: 8,
-              padding: isMobile ? '10px 14px' : '5px 11px',
-            }}
-          >
+          <div style={{ ...pillStyle, gridColumn: isMobile ? '1 / -1' : 'auto', justifyContent: 'space-between', gap: 8, padding: isMobile ? '10px 14px' : '5px 11px' }}>
             <span style={{ fontSize: isMobile ? 14 : 12, color: '#444', flexShrink: 0 }}>Within</span>
-            <input
-              type="range"
-              min={5}
-              max={100}
-              step={5}
-              value={radius}
-              onChange={(e) => setRadius(Number(e.target.value))}
-              style={{ flex: 1, minWidth: 70, accentColor: RED, cursor: 'pointer' }}
-            />
+            <input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ flex: 1, minWidth: 70, accentColor: RED, cursor: 'pointer' }} />
             <span style={{ fontSize: isMobile ? 14 : 12, fontWeight: 600, color: DARK, minWidth: 44 }}>{radius} mi</span>
           </div>
         </div>
@@ -258,39 +262,51 @@ export default function HomePage() {
 
       <section style={{ marginTop: 22 }}>
         <SectionHeader title="How it works" />
-        <div style={{ display: 'grid', gridTemplateColumns: howItWorksColumns, gap: 10 }}>
-          {howItWorks.map((s) => (
-            <div key={s.n} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: isMobile ? '16px 14px' : '15px 13px', background: '#fff' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: RED, letterSpacing: '0.05em', marginBottom: 7 }}>{s.n}</div>
-              <h4 style={{ fontSize: isMobile ? 18 : 13, fontWeight: 600, color: DARK, margin: '0 0 6px' }}>{s.title}</h4>
-              <p style={{ fontSize: isMobile ? 14 : 11, color: MUTED, lineHeight: 1.55, margin: 0 }}>{s.body}</p>
+        <div
+          style={{
+            background: isMobile ? '#fbfbf8' : 'transparent',
+            border: isMobile ? `1px solid ${BORDER}` : 'none',
+            borderRadius: 14,
+            padding: isMobile ? '4px 10px' : 0,
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: isMobile ? 0 : 10,
+          }}
+        >
+          {howItWorks.map((s, idx) => (
+            <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: isMobile ? '14px 4px' : '15px 13px', borderBottom: isMobile && idx !== howItWorks.length - 1 ? `1px solid ${BORDER}` : 'none', border: !isMobile ? `1px solid ${BORDER}` : 'none', borderRadius: !isMobile ? 12 : 0, background: !isMobile ? '#fff' : 'transparent' }}>
+              <div style={{ minWidth: 34, height: 34, borderRadius: 999, background: '#fff1ee', color: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{s.n}</div>
+              <div>
+                <h4 style={{ fontSize: isMobile ? 16 : 13, fontWeight: 600, color: DARK, margin: '0 0 4px' }}>{s.title}</h4>
+                <p style={{ fontSize: isMobile ? 13 : 11, color: MUTED, lineHeight: 1.5, margin: 0 }}>{s.body}</p>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section style={{ marginTop: 22 }}>
+      <section style={{ marginTop: 24 }}>
         <SectionHeader title="What are you looking for?" />
-        <div style={{ display: 'grid', gridTemplateColumns: pathwaysColumns, gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
           {actionRows.map((card) => (
             <Link
               key={card.to}
               to={card.to}
               style={{
                 border: `1px solid ${BORDER}`,
-                borderRadius: 12,
-                padding: isMobile ? '14px 14px' : '18px 16px 14px',
+                borderRadius: 14,
+                padding: isMobile ? '16px 14px' : '18px 16px 14px',
                 background: '#fff',
                 textDecoration: 'none',
                 color: 'inherit',
                 display: 'flex',
-                alignItems: isMobile ? 'center' : 'flex-start',
+                alignItems: 'center',
                 justifyContent: 'space-between',
                 gap: 14,
               }}
             >
-              <div style={{ display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', gap: 12, minWidth: 0 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                <div style={{ width: isMobile ? 44 : 38, height: isMobile ? 44 : 38, borderRadius: 12, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 22 : 17, flexShrink: 0 }}>
                   {card.icon}
                 </div>
                 <div style={{ minWidth: 0 }}>
@@ -298,7 +314,7 @@ export default function HomePage() {
                   <p style={{ fontSize: isMobile ? 13 : 12, color: MUTED, lineHeight: 1.5, margin: 0 }}>{card.body}</p>
                 </div>
               </div>
-              <span style={{ fontSize: isMobile ? 18 : 14, color: RED, flexShrink: 0 }}>→</span>
+              <span style={{ fontSize: isMobile ? 22 : 14, color: RED, flexShrink: 0 }}>→</span>
             </Link>
           ))}
         </div>
@@ -306,63 +322,54 @@ export default function HomePage() {
 
       <Divider />
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 190px', gap: isMobile ? 18 : 22, alignItems: 'start', marginTop: 26 }}>
-        <div style={{ minWidth: 0 }}>
-          <SectionHeader title="Featured near you" linkTo="/search" linkLabel="View all →" />
-
-          <div style={{ display: 'grid', gridTemplateColumns: featuredColumns, gap: 10 }}>
-            {FEATURED_LISTINGS.map((l) => (
-              <Link key={l.id} to={l.link} style={{ border: `1px solid ${BORDER}`, borderRadius: 12, padding: '14px 15px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 10 }}>
-                  <span style={{ fontSize: isMobile ? 17 : 14, fontWeight: 600, color: DARK, lineHeight: 1.3 }}>{l.name}</span>
-                  <span style={{ fontSize: isMobile ? 12 : 10, fontWeight: 600, padding: '3px 8px', borderRadius: 5, whiteSpace: 'nowrap', flexShrink: 0, ...l.badgeStyle }}>{l.badge}</span>
-                </div>
-                <div style={{ fontSize: isMobile ? 15 : 12, color: '#777', marginBottom: 3 }}>{l.meta}</div>
-                <div style={{ fontSize: isMobile ? 13 : 11, color: FAINT, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 10 }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ddd', flexShrink: 0 }} />
-                  {l.location} · {l.distance}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f2f2ee', paddingTop: 9 }}>
-                  <span style={{ fontSize: isMobile ? 14 : 12, fontWeight: 600, color: RED }}>{l.type === 'coach' ? 'View profile' : 'View team'} →</span>
-                  <span style={{ fontSize: isMobile ? 12 : 10, color: FAINT }}>{SPORT_ICON[l.sport]} {l.sport.charAt(0).toUpperCase() + l.sport.slice(1)}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <AdSlot position={isMobile ? 'mobile-inline-mid' : 'inline-rectangle'} />
-          </div>
-
-          <div style={{ marginTop: 20 }}>
-            <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
-            <div style={{ display: 'grid', gridTemplateColumns: urgentColumns, gap: 10 }}>
-              {URGENT_POSTS.map((p) => (
-                <Link key={p.id} to="/find" style={{ border: '1px solid #f5cfc9', borderRadius: 12, padding: '13px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                  <span style={{ fontSize: isMobile ? 12 : 10, fontWeight: 600, color: '#b93025', background: '#fdf0ee', padding: '2px 7px', borderRadius: 4, display: 'inline-block', marginBottom: 7 }}>
-                    {p.postType}
-                  </span>
-                  <div style={{ fontSize: isMobile ? 16 : 13, fontWeight: 600, color: DARK, marginBottom: 4, lineHeight: 1.3 }}>{p.title}</div>
-                  <div style={{ fontSize: isMobile ? 14 : 11, color: MUTED, marginBottom: 6 }}>{p.meta}</div>
-                  <div style={{ fontSize: isMobile ? 12 : 10, color: FAINT, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: RED, flexShrink: 0 }} />
-                    {p.expires}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+      <section style={{ marginTop: 26 }}>
+        <SectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all →" />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 10 }}>
+          {featuredCoaches.map((listing) => <FeaturedCard key={listing.id} listing={listing} isMobile={isMobile} />)}
         </div>
+      </section>
 
-        {!isMobile && (
+      <div style={{ marginTop: 16 }}>
+        <AdSlot position={isMobile ? 'mobile-inline-mid' : 'inline-rectangle'} />
+      </div>
+
+      <section style={{ marginTop: 20 }}>
+        <SectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all →" />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 10 }}>
+          {featuredTeams.map((listing) => <FeaturedCard key={listing.id} listing={listing} isMobile={isMobile} />)}
+        </div>
+      </section>
+
+      <section style={{ marginTop: 20 }}>
+        <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
+        <div style={{ display: 'grid', gridTemplateColumns: urgentColumns, gap: 10 }}>
+          {URGENT_POSTS.map((p) => (
+            <Link key={p.id} to="/find" style={{ border: '1px solid #f5cfc9', borderRadius: 12, padding: '13px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
+              <span style={{ fontSize: isMobile ? 12 : 10, fontWeight: 600, color: '#b93025', background: '#fdf0ee', padding: '2px 7px', borderRadius: 4, display: 'inline-block', marginBottom: 7 }}>
+                {p.postType}
+              </span>
+              <div style={{ fontSize: isMobile ? 16 : 13, fontWeight: 600, color: DARK, marginBottom: 4, lineHeight: 1.3 }}>{p.title}</div>
+              <div style={{ fontSize: isMobile ? 14 : 11, color: MUTED, marginBottom: 6 }}>{p.meta}</div>
+              <div style={{ fontSize: isMobile ? 12 : 10, color: FAINT, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: RED, flexShrink: 0 }} />
+                {p.expires}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {!isMobile && (
+        <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 190px', gap: 22, alignItems: 'start' }}>
+          <div />
           <aside style={{ width: 190, flexShrink: 0 }}>
             <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <AdSlot position="sidebar-half-page" />
               <AdSlot position="sidebar-square" />
             </div>
           </aside>
-        )}
-      </div>
+        </div>
+      )}
 
       <Divider />
 
@@ -390,18 +397,18 @@ export default function HomePage() {
         style={{
           background: DARK,
           borderRadius: 14,
-          padding: isMobile ? '20px' : '26px 28px',
+          padding: isMobile ? '22px 18px' : '26px 28px',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
           justifyContent: 'space-between',
           alignItems: isMobile ? 'stretch' : 'center',
-          gap: isMobile ? 16 : 24,
+          gap: isMobile ? 18 : 24,
           marginTop: 24,
           marginBottom: 8,
         }}
       >
-        <div>
-          <h2 style={{ fontSize: isMobile ? 28 : 18, fontWeight: 600, color: '#fff', margin: '0 0 6px' }}>Are you a coach or team?</h2>
+        <div style={{ maxWidth: isMobile ? '100%' : 420 }}>
+          <h2 style={{ fontSize: isMobile ? 22 : 18, fontWeight: 600, color: '#fff', margin: '0 0 8px', lineHeight: 1.2 }}>Are you a coach or team?</h2>
           <p style={{ fontSize: isMobile ? 15 : 13, color: '#a8a8a8', lineHeight: 1.55, margin: 0 }}>
             Add a free listing or claim an existing one to manage your profile.
           </p>
