@@ -1,17 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
-import L from 'leaflet'
 import { supabase } from '../supabase.js'
 import DuplicateWarning from './DuplicateWarning.jsx'
-
-if (typeof window !== 'undefined') {
-  delete L.Icon.Default.prototype._getIconUrl
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  })
-}
 
 async function geocodeZip(zip) {
   if (!zip || zip.length !== 5) return null
@@ -30,82 +19,6 @@ async function geocodeZip(zip) {
   } catch {
     return null
   }
-}
-
-
-async function geocodePhoton(address, city, state, zip) {
-  const cleanState = normalizeStateValue(state)
-  const cleanZip = normalizeZipCode(zip)
-
-  function scoreFeature(feature) {
-    const props = feature.properties || {}
-    const coords = feature.geometry && feature.geometry.coordinates
-    if (!coords || coords.length < 2) return -Infinity
-    const cc = (props.country_code || props.countrycode || '').toLowerCase()
-    if (cc && cc !== 'us') return -Infinity
-    let score = 0
-    const featureState = normalizeStateValue(props.state || props.state_code || '')
-    const featureZip = normalizeZipCode(props.postcode || '')
-    if (cleanState && featureState === cleanState) score += 20
-    else if (cleanState && featureState && featureState !== cleanState) score -= 50
-    if (cleanZip && featureZip === cleanZip) score += 25
-    else if (cleanZip && featureZip && featureZip !== cleanZip) score -= 10
-    const osm = (props.type || props.osm_value || '').toLowerCase()
-    if (osm === 'house' || osm === 'building') score += 10
-    return score
-  }
-
-  async function tryPhoton(streetQuery) {
-    try {
-      const q = [streetQuery, city, state, zip].filter(Boolean).join(', ')
-      const url = new URL('https://photon.komoot.io/api/')
-      url.searchParams.set('q', q)
-      url.searchParams.set('limit', '5')
-      const res = await fetch(url.toString(), { headers: { 'Accept-Language': 'en-US,en;q=0.9' } })
-      if (!res.ok) return null
-      const data = await res.json()
-      const features = (data.features || [])
-      let best = null
-      let bestScore = -Infinity
-      for (const f of features) {
-        const s = scoreFeature(f)
-        if (s > bestScore) { bestScore = s; best = f }
-      }
-      if (!best || bestScore < 0) return null
-      const coords = best.geometry.coordinates
-      const props = best.properties || {}
-      return {
-        lat: coords[1],
-        lng: coords[0],
-        city: props.city || props.town || props.village || String(city || '').trim() || null,
-        state: normalizeStateValue(props.state || props.state_code || state) || null,
-        zip_code: normalizeZipCode(props.postcode || zip) || null,
-      }
-    } catch { return null }
-  }
-
-  if (!address) return null
-  const street = String(address).trim()
-
-  // Attempt 1: full address as given
-  const r1 = await tryPhoton(street)
-  if (r1) return r1
-
-  // Attempt 2: strip directional suffix (NW/SW/NE/SE/N/S/E/W) — common in Atlanta, DC, etc.
-  const stripped = street.replace(/\s+(NW|SW|NE|SE|North|South|East|West|N|S|E|W)\.?\s*$/i, '').trim()
-  if (stripped !== street) {
-    const r2 = await tryPhoton(stripped)
-    if (r2) return r2
-  }
-
-  // Attempt 3: strip suite/unit/apt suffix
-  const noSuite = street.replace(/[,\s]+(ste|suite|apt|unit|#|bldg|fl|floor).*/i, '').trim()
-  if (noSuite !== street && noSuite !== stripped) {
-    const r3 = await tryPhoton(noSuite)
-    if (r3) return r3
-  }
-
-  return null
 }
 
 function distanceMiles(lat1, lng1, lat2, lng2) {
@@ -168,145 +81,62 @@ async function geocodeAddress(address, city, state, zip) {
   const rawStreet = String(address || '').trim()
   if (!rawStreet) return null
 
-  const cleanStreet = normalizeStreetForGeocode(rawStreet) || rawStreet
-  const cleanCity = String(city || '').trim()
-  const cleanState = normalizeStateValue(state)
-  const cleanZip = normalizeZipCode(zip)
-  const zipGeo = cleanZip && cleanZip.length === 5 ? await geocodeZip(cleanZip) : null
-
-  const streetNumber = (cleanStreet.match(/^\s*(\d+[A-Z\-]*)\b/i) || [])[1] || ''
-  const streetBody = cleanStreet.replace(/^\s*\d+[A-Z\-]*\s*/i, '').trim().toLowerCase()
-  const streetTokens = streetBody.split(/[^a-z0-9]+/).filter(Boolean)
-
-  const queries = []
-  const seen = new Set()
-
-  const addStructured = (streetLine, cityValue, stateValue, zipValue) => {
-    const payload = {
-      format: 'jsonv2',
-      addressdetails: '1',
-      countrycodes: 'us',
-      limit: '5',
-    }
-    if (streetLine) payload.street = streetLine
-    if (cityValue) payload.city = cityValue
-    if (stateValue) payload.state = stateValue
-    if (zipValue) payload.postalcode = zipValue
-    const key = JSON.stringify({ mode: 'structured', ...payload })
-    if (!seen.has(key)) {
-      seen.add(key)
-      queries.push({ mode: 'structured', payload })
-    }
-  }
-
-  const addFreeText = (value) => {
-    const q = String(value || '').trim()
-    if (!q) return
-    const key = JSON.stringify({ mode: 'q', q })
-    if (!seen.has(key)) {
-      seen.add(key)
-      queries.push({
-        mode: 'q',
-        payload: {
-          format: 'jsonv2',
-          addressdetails: '1',
-          countrycodes: 'us',
-          limit: '5',
-          q,
-        },
-      })
-    }
-  }
-
-  addStructured(cleanStreet, cleanCity, cleanState, cleanZip)
-  addStructured(cleanStreet, cleanCity, cleanState, '')
-  addStructured(cleanStreet, '', cleanState, cleanZip)
-
-  addFreeText([cleanStreet, cleanCity, cleanState, cleanZip].filter(Boolean).join(', '))
-  addFreeText([cleanStreet, cleanCity, cleanState].filter(Boolean).join(', '))
-  addFreeText([cleanStreet, cleanState, cleanZip].filter(Boolean).join(', '))
-  addFreeText([cleanStreet, cleanZip].filter(Boolean).join(', '))
+  const street = normalizeStreetForGeocode(rawStreet) || rawStreet
+  const zipGeo = zip && zip.length === 5 ? await geocodeZip(zip) : null
+  const streetVariants = Array.from(new Set([street, rawStreet].filter(Boolean)))
+  const queries = Array.from(new Set(streetVariants.flatMap((streetLine) => [
+    [streetLine, zip].filter(Boolean).join(', '),
+    [streetLine, normalizeStateValue(state), zip].filter(Boolean).join(', '),
+    [streetLine, city, normalizeStateValue(state)].filter(Boolean).join(', '),
+    [streetLine, city, normalizeStateValue(state), zip].filter(Boolean).join(', '),
+  ].filter(Boolean))))
 
   const candidates = []
 
   for (const query of queries) {
     try {
       const url = new URL('https://nominatim.openstreetmap.org/search')
-      Object.entries(query.payload).forEach(([k, v]) => {
-        if (v) url.searchParams.set(k, v)
-      })
+      url.searchParams.set('format', 'jsonv2')
+      url.searchParams.set('addressdetails', '1')
+      url.searchParams.set('countrycodes', 'us')
+      url.searchParams.set('limit', '5')
+      url.searchParams.set('q', query)
 
       const res = await fetch(url.toString(), {
         headers: { 'Accept-Language': 'en-US,en;q=0.9' },
       })
       if (!res.ok) continue
       const data = await res.json()
-
       for (const row of Array.isArray(data) ? data : []) {
         const lat = parseFloat(row.lat)
         const lng = parseFloat(row.lon)
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
 
         const addr = row.address || {}
-        const resolvedCity = getResolvedCity(addr)
-        const resolvedState = getResolvedState(addr)
-        const resolvedZip = normalizeZipCode(addr.postcode || '')
-        const resolvedRoad = String(addr.road || '').toLowerCase()
-        const resolvedHouseNumber = String(addr.house_number || '').trim()
-
-        if (streetNumber && resolvedHouseNumber && resolvedHouseNumber !== streetNumber) continue
-        if (cleanState && resolvedState && resolvedState !== cleanState) continue
-        if (cleanZip && resolvedZip && resolvedZip !== cleanZip) continue
-
         let score = 0
-
-        if (streetNumber) {
-          if (resolvedHouseNumber === streetNumber) score += 18
-          else if (!resolvedHouseNumber) score -= 8
-        }
-
-        if (streetTokens.length) {
-          const overlap = streetTokens.filter((token) => resolvedRoad.includes(token)).length
-          score += overlap * 4
-          if (overlap === 0) score -= 12
-        }
-
-        if (cleanZip) {
-          if (resolvedZip === cleanZip) score += 20
-          else if (!resolvedZip) score -= 4
-        }
-
-        if (cleanState) {
-          if (resolvedState === cleanState) score += 12
-          else if (!resolvedState) score -= 2
-        }
-
-        const cityNeedle = cleanCity.toLowerCase()
-        const cityHay = [resolvedCity, row.display_name].filter(Boolean).join(' ').toLowerCase()
-        if (cityNeedle) {
-          if (cityHay.includes(cityNeedle)) score += 10
-          else score -= 8
-        }
-
+        if (addr.house_number) score += 6
+        if (addr.road) score += 5
+        if (zip && String(addr.postcode || '').includes(zip)) score += 6
+        const cityNeedle = String(city || '').trim().toLowerCase()
+        const cityHay = [addr.city, addr.town, addr.village, addr.hamlet, row.display_name].filter(Boolean).join(' ').toLowerCase()
+        if (cityNeedle && cityHay.includes(cityNeedle)) score += 4
+        if (state && String(addr.state || addr.state_code || row.display_name || '').toLowerCase().includes(String(state).toLowerCase())) score += 3
         if (zipGeo) {
           const dist = distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng)
-          score -= Math.min(dist, 15)
-          if (dist <= 2) score += 10
-          else if (dist > 8) score -= 10
+          score -= Math.min(dist, 25) / 2
+          if (dist > 20) score -= 10
         }
-
-        if (query.mode === 'structured') score += 6
 
         candidates.push({
           lat,
           lng,
           score,
-          city: resolvedCity || cleanCity || null,
-          state: normalizeStateValue(resolvedState || cleanState) || null,
-          zip_code: resolvedZip || cleanZip || null,
-          hasHouseNumber: !!(streetNumber && resolvedHouseNumber && resolvedHouseNumber === streetNumber),
+          city: getResolvedCity(addr),
+          state: getResolvedState(addr),
+          zip_code: normalizeZipCode(addr.postcode || zip),
         })
       }
+      if (candidates.length) break
     } catch (err) {
       console.error('Geocode error', err)
     }
@@ -314,85 +144,23 @@ async function geocodeAddress(address, city, state, zip) {
 
   if (!candidates.length) return null
   candidates.sort((a, b) => b.score - a.score)
-  const best = candidates[0]
-
   return {
-    lat: best.lat,
-    lng: best.lng,
-    city: best.city || cleanCity || null,
-    state: normalizeStateValue(best.state || cleanState) || null,
-    zip_code: best.zip_code || cleanZip || null,
+    lat: candidates[0].lat,
+    lng: candidates[0].lng,
+    city: candidates[0].city || String(city || '').trim() || null,
+    state: normalizeStateValue(candidates[0].state || state) || null,
+    zip_code: candidates[0].zip_code || normalizeZipCode(zip) || null,
   }
 }
 
 async function resolveBestLocation(address, city, state, zip) {
   const street = String(address || '').trim()
-  const cleanZipStr = String(zip || '').trim()
-
-  // Zip centroid — used as sanity constraint (8-mile radius for rural zip codes)
-  const zipGeo = cleanZipStr.length === 5 ? await geocodeZip(cleanZipStr) : null
-
-  function withinZipBounds(lat, lng) {
-    if (!zipGeo) return true
-    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 8
-  }
-
   if (street) {
-    // Tier 1: Nominatim
     const exact = await geocodeAddress(street, city, state, zip)
-    if (exact && withinZipBounds(exact.lat, exact.lng)) {
-      return { ...exact, source: 'address' }
-    }
-
-    // Tier 2: Photon — retries directional/suite variants automatically
-    const photon = await geocodePhoton(street, city, state, zip)
-    if (photon && withinZipBounds(photon.lat, photon.lng)) {
-      return { ...photon, source: 'address' }
-    }
+    if (exact) return { ...exact, source: 'address' }
   }
 
-  // Tier 3: zip centroid — last resort, always within the right area
-  if (zipGeo) {
-    return {
-      lat: zipGeo.lat,
-      lng: zipGeo.lng,
-      city: String(city || '').trim() || zipGeo.city || null,
-      state: normalizeStateValue(state) || zipGeo.state || null,
-      zip_code: normalizeZipCode(zip) || null,
-      source: 'zip',
-    }
-  }
-
-  return null
-}
-
-async function resolveFacilityLocation(address, city, state, zip) {
-  const street = String(address || '').trim()
-  const cleanZipStr = String(zip || '').trim()
-
-  const zipGeo = cleanZipStr.length === 5 ? await geocodeZip(cleanZipStr) : null
-
-  function withinZipBounds(lat, lng) {
-    if (!zipGeo) return true
-    return distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng) <= 8
-  }
-
-  if (street) {
-    // Tier 1: Nominatim
-    const exact = await geocodeAddress(street, city, state, zip)
-    if (exact && withinZipBounds(exact.lat, exact.lng)) {
-      return { ...exact, source: 'address' }
-    }
-
-    // Tier 2: Photon
-    const photon = await geocodePhoton(street, city, state, zip)
-    if (photon && withinZipBounds(photon.lat, photon.lng)) {
-      return { ...photon, source: 'address' }
-    }
-
-    return null
-  }
-
+  const zipGeo = await geocodeZip(String(zip || '').trim())
   if (zipGeo) {
     return {
       lat: zipGeo.lat,
@@ -921,105 +689,6 @@ function SuccessBanner({ message }) {
   )
 }
 
-// ── PIN CONFIRM MAP ───────────────────────────────────────
-// Desktop: draggable marker
-// Mobile: tap-to-place (no drag, no scroll trap)
-
-function DraggableMarker({ lat, lng, onMove }) {
-  const markerRef = useRef(null)
-  const eventHandlers = useMemo(() => ({
-    dragend() {
-      const marker = markerRef.current
-      if (marker) {
-        const pos = marker.getLatLng()
-        onMove(pos.lat, pos.lng)
-      }
-    },
-  }), [onMove])
-  return (
-    <Marker draggable eventHandlers={eventHandlers} position={[lat, lng]} ref={markerRef} />
-  )
-}
-
-function TapToPlaceMarker({ lat, lng, onMove }) {
-  useMapEvents({
-    click(e) {
-      onMove(e.latlng.lat, e.latlng.lng)
-    },
-  })
-  return <Marker position={[lat, lng]} />
-}
-
-function RecenterMap({ lat, lng }) {
-  const map = useMapEvents({})
-  useEffect(() => { map.setView([lat, lng], 16) }, [lat, lng, map])
-  return null
-}
-
-function PinConfirmMap({ lat, lng, onMove, isMobile }) {
-  if (lat == null || lng == null) return null
-
-  if (isMobile) {
-    // Mobile: static map (no scroll trap), tap anywhere to move pin
-    // dragging={false} prevents the map from intercepting page scroll
-    return (
-      <div style={{ marginTop: 10, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--lgray)' }}>
-        <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid var(--lgray)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 2 }}>
-            📍 Confirm Pin Location
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--gray)' }}>
-            Tap the map to move the pin to the correct spot
-          </div>
-        </div>
-        <div style={{ height: 260 }}>
-          <MapContainer
-            center={[lat, lng]}
-            zoom={16}
-            style={{ height: '100%', width: '100%' }}
-            scrollWheelZoom={false}
-            dragging={false}
-            touchZoom={false}
-            doubleClickZoom={false}
-          >
-            <TileLayer attribution='&copy; OpenStreetMap' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-            <RecenterMap lat={lat} lng={lng} />
-            <TapToPlaceMarker lat={lat} lng={lng} onMove={onMove} />
-          </MapContainer>
-        </div>
-        <div style={{ padding: '6px 12px', background: '#F8FAFC', borderTop: '1px solid var(--lgray)', fontSize: 11, color: 'var(--gray)', textAlign: 'center' }}>
-          Pin position is saved on submit
-        </div>
-      </div>
-    )
-  }
-
-  // Desktop: draggable marker, full pan/zoom
-  return (
-    <div style={{ marginTop: 10, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--lgray)' }}>
-      <div style={{ padding: '8px 12px', background: '#F8FAFC', borderBottom: '1px solid var(--lgray)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confirm Pin Location</span>
-        <span style={{ fontSize: 11, color: 'var(--gray)' }}>Drag pin to adjust if needed</span>
-      </div>
-      <div style={{ height: 300 }}>
-        <MapContainer
-          center={[lat, lng]}
-          zoom={16}
-          style={{ height: '100%', width: '100%' }}
-          scrollWheelZoom={false}
-        >
-          <TileLayer attribution='&copy; OpenStreetMap' url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' />
-          <RecenterMap lat={lat} lng={lng} />
-          <DraggableMarker lat={lat} lng={lng} onMove={onMove} />
-        </MapContainer>
-      </div>
-      <div style={{ padding: '6px 12px', background: '#F8FAFC', borderTop: '1px solid var(--lgray)', fontSize: 11, color: 'var(--gray)', textAlign: 'center' }}>
-        Zoom in for more precision. Your adjusted pin is saved on submit.
-      </div>
-    </div>
-  )
-}
-
 function ZipField({ value, onChange, onGeocode, label, hint, required }) {
   const [status, setStatus] = useState('')
   const lastLookupRef = useRef('')
@@ -1220,7 +889,7 @@ function CoachForm({ isMobile }) {
         lat: f.lat || geo.lat,
         lng: f.lng || geo.lng,
         city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || 'GA',
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
       }))
     }
   }
@@ -1255,8 +924,6 @@ function CoachForm({ isMobile }) {
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
   
-  function handlePinMove(lat, lng) { setForm((f) => ({ ...f, lat, lng })) }
-
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -1288,9 +955,12 @@ function CoachForm({ isMobile }) {
       }
 
       let resolvedForm = { ...form }
-      const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-      if (resolvedLocation) {
-        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
+      // Only geocode on submit if coordinates not already set from form interaction
+      if (resolvedForm.lat == null || resolvedForm.lng == null) {
+        const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+        if (resolvedLocation) {
+          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
+        }
       }
 
       const facilityId = await findOrCreateFacilityFromCoach(resolvedForm, selectedFacilityMatch?.id || null)
@@ -1428,7 +1098,6 @@ function CoachForm({ isMobile }) {
             placeholder="Optional street address for more accurate map placement"
             style={inputStyle}
           />
-          <PinConfirmMap lat={form.lat} lng={form.lng} onMove={handlePinMove} isMobile={isMobile} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
@@ -1672,7 +1341,7 @@ function TeamForm({ isMobile }) {
         lat: geo.lat,
         lng: geo.lng,
         city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || 'GA',
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
       }))
     } else {
       setForm((f) => ({ ...f, lat: null, lng: null }))
@@ -1716,7 +1385,7 @@ function TeamForm({ isMobile }) {
         facility_lat: f.facility_lat || geo.lat,
         facility_lng: f.facility_lng || geo.lng,
         facility_city: geo.city || f.facility_city,
-        facility_state: normalizeStateValue(geo.state) || normalizeStateValue(f.facility_state) || 'GA',
+        facility_state: normalizeStateValue(geo.state) || normalizeStateValue(f.facility_state) || '',
       }))
     }
   }
@@ -1733,7 +1402,7 @@ function TeamForm({ isMobile }) {
     }
 
     setFacilityAddrStatus('locating')
-    const resolved = await resolveFacilityLocation(
+    const resolved = await resolveBestLocation(
       form.facility_address,
       form.facility_city,
       form.facility_state,
@@ -1755,8 +1424,6 @@ function TeamForm({ isMobile }) {
 
     setFacilityAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
-
-  function handlePinMove(lat, lng) { setForm((f) => ({ ...f, lat, lng })) }
 
   function validate() {
     if (!form.name.trim()) return 'Team name is required.'
@@ -1795,9 +1462,12 @@ function TeamForm({ isMobile }) {
       }
 
       let resolvedForm = { ...form }
-      const practiceLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-      if (practiceLocation) {
-        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, practiceLocation)
+      // Only geocode on submit if coordinates not already set from form interaction
+      if (resolvedForm.lat == null || resolvedForm.lng == null) {
+        const practiceLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+        if (practiceLocation) {
+          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, practiceLocation)
+        }
       }
 
       if (form.facility_name.trim()) {
@@ -1992,7 +1662,6 @@ function TeamForm({ isMobile }) {
     {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
   </label>
   <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handlePracticeAddressBlur} placeholder="Required field or park address" style={inputStyle} />
-  <PinConfirmMap lat={form.lat} lng={form.lng} onMove={handlePinMove} isMobile={isMobile} />
 </div>
 
 <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
@@ -2602,7 +2271,7 @@ function FacilityForm({ isMobile }) {
     facility_type: '',
     sport: 'both',
     city: '',
-    state: 'GA',
+    state: '',
     zip_code: '',
     lat: null,
     lng: null,
@@ -2673,7 +2342,7 @@ function FacilityForm({ isMobile }) {
         lat: f.lat || geo.lat,
         lng: f.lng || geo.lng,
         city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || 'GA',
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
       }))
     }
   }
@@ -2708,8 +2377,6 @@ function FacilityForm({ isMobile }) {
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
 
-  function handlePinMove(lat, lng) { setForm((f) => ({ ...f, lat, lng })) }
-
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
@@ -2742,9 +2409,12 @@ function FacilityForm({ isMobile }) {
 
     try {
       let resolvedForm = { ...form }
-      const resolvedLocation = await resolveFacilityLocation(form.address, form.city, form.state, form.zip_code)
-      if (resolvedLocation) {
-        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
+      // Only geocode on submit if coordinates not already set from form interaction
+      if (resolvedForm.lat == null || resolvedForm.lng == null) {
+        const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+        if (resolvedLocation) {
+          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
+        }
       }
 
       const payload = {
@@ -2883,8 +2553,7 @@ function FacilityForm({ isMobile }) {
             {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
           </label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
-          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Tab out of address to see your pin below. Drag it if needed.</div>
-          <PinConfirmMap lat={form.lat} lng={form.lng} onMove={handlePinMove} isMobile={isMobile} />
+          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
