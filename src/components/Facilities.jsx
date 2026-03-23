@@ -682,7 +682,7 @@ export default function Facilities() {
                     type="button"
                     className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
                     onClick={() => { setSport((s) => (s === 'baseball' ? '' : 'baseball')); setSelected(null) }}
-                    style={{ minHeight: 38 }}
+                    style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', lineHeight: 1.1, padding: '0 10px', fontSize: 12, whiteSpace: 'nowrap', minWidth: 0 }}
                   >
                     ⚾ Baseball
                   </button>
@@ -690,7 +690,7 @@ export default function Facilities() {
                     type="button"
                     className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
                     onClick={() => { setSport((s) => (s === 'softball' ? '' : 'softball')); setSelected(null) }}
-                    style={{ minHeight: 38 }}
+                    style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', lineHeight: 1.1, padding: '0 10px', fontSize: 12, whiteSpace: 'nowrap', minWidth: 0 }}
                   >
                     🥎 Softball
                   </button>
@@ -700,7 +700,16 @@ export default function Facilities() {
                     onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }}
                     style={{
                       gridColumn: '1 / -1',
-                      minHeight: 38,
+                      minHeight: 44,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      lineHeight: 1.1,
+                      padding: '0 10px',
+                      fontSize: 12,
+                      whiteSpace: 'nowrap',
+                      minWidth: 0,
                       borderColor: sport === 'both' ? '#C9D4E5' : undefined,
                       background: sport === 'both'
                         ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)'
