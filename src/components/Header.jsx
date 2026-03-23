@@ -147,9 +147,9 @@ export default function Header() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '10px 0',
+            padding: isMobile ? '8px 0' : '10px 0',
             gap: 16,
-            minHeight: 72,
+            minHeight: isMobile ? 60 : 72,
           }}
         >
           <button
@@ -170,7 +170,7 @@ export default function Header() {
               src="/logo.png"
               alt="Sandlot Source"
               style={{
-                height: 56,
+                height: isMobile ? 46 : 56,
                 width: 'auto',
                 display: 'block',
                 objectFit: 'contain',
@@ -188,8 +188,8 @@ export default function Header() {
                 border: '2px solid var(--lgray)',
                 background: '#fff',
                 color: '#1a1a1a',
-                borderRadius: 8,
-                padding: '10px 12px',
+                borderRadius: 10,
+                padding: '9px 11px',
                 fontSize: 18,
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -223,13 +223,14 @@ export default function Header() {
         </div>
 
         {isMobile && menuOpen && (
-          <div style={{ padding: '0 0 14px' }}>
+          <div style={{ padding: '0 0 12px' }}>
             <div
               style={{
                 display: 'grid',
                 gap: 8,
                 borderTop: '1px solid var(--lgray)',
-                paddingTop: 12,
+                paddingTop: 10,
+                background: '#fff',
               }}
             >
               {NAV_TABS.map((tab) => (
