@@ -118,14 +118,19 @@ input:focus, select:focus, textarea:focus {
 .pill-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
   gap: 6px;
   padding: 6px 14px;
   border-radius: 99px;
   border: 1.5px solid var(--lgray);
   background: var(--white);
+  color: var(--navy);
+  font-weight: 700;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--gray);
+  line-height: 1.1;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -138,6 +143,11 @@ input:focus, select:focus, textarea:focus {
   background: #FEF9C3;
   border-color: #FDE047;
   color: #854D0E;
+}
+.pill-toggle.active-both {
+  background: linear-gradient(90deg, #DBEAFE 0%, #DBEAFE 48%, #FEF9C3 52%, #FEF9C3 100%);
+  border-color: #C7D2FE;
+  color: #1E3A8A;
 }
 
 /* ── Filter bar ──────────────────────────────────────── */
