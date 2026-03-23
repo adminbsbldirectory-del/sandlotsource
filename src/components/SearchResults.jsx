@@ -583,6 +583,16 @@ export default function SearchResults() {
   const [coachesCollapsed, setCoachesCollapsed] = useState(false)
   const [teamsCollapsed, setTeamsCollapsed] = useState(false)
   const [facilitiesCollapsed, setFacilitiesCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     setQuery(searchParams.get('q') || '')
@@ -752,12 +762,15 @@ export default function SearchResults() {
     padding: 0,
   }
 
+  const resultsGridColumns = isMobile ? '1fr' : '1fr 1fr'
+  const pageColumns = isMobile ? '1fr' : '1fr minmax(180px, 200px)'
+
   return (
     <div
       style={{
         maxWidth: 1200,
         margin: '0 auto',
-        padding: '0 20px 48px',
+        padding: isMobile ? '0 12px 96px' : '0 20px 48px',
         background: '#fff',
         color: DARK,
       }}
@@ -766,7 +779,7 @@ export default function SearchResults() {
         style={{
           background: '#fff',
           borderRadius: 14,
-          padding: '20px 24px 16px',
+          padding: isMobile ? '16px 14px 14px' : '20px 24px 16px',
           marginTop: 16,
           border: `1px solid ${BORDER}`,
           borderTop: `4px solid ${RED}`,
@@ -780,8 +793,8 @@ export default function SearchResults() {
             background: '#fff',
             border: '1.5px solid #d8d8d2',
             borderRadius: 10,
-            padding: '0 6px 0 12px',
-            height: 46,
+            padding: isMobile ? '0 5px 0 10px' : '0 6px 0 12px',
+            height: isMobile ? 50 : 46,
             gap: 8,
             marginBottom: 11,
           }}
@@ -806,7 +819,7 @@ export default function SearchResults() {
               flex: 1,
               border: 'none',
               outline: 'none',
-              fontSize: 14,
+              fontSize: isMobile ? 15 : 14,
               color: DARK,
               background: 'none',
               minWidth: 0,
@@ -820,9 +833,9 @@ export default function SearchResults() {
               color: '#fff',
               border: 'none',
               borderRadius: 7,
-              height: 34,
-              padding: '0 18px',
-              fontSize: 13,
+              height: isMobile ? 40 : 34,
+              padding: isMobile ? '0 16px' : '0 18px',
+              fontSize: isMobile ? 14 : 13,
               fontWeight: 500,
               cursor: 'pointer',
               flexShrink: 0,
@@ -832,7 +845,7 @@ export default function SearchResults() {
           </button>
         </form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 7, flexWrap: 'wrap' }}>
           <div style={pillStyle}>
             <select value={sport} onChange={(e) => setSport(e.target.value)} style={selectStyle}>
               <option value="">All sports</option>
@@ -841,7 +854,7 @@ export default function SearchResults() {
             </select>
           </div>
 
-          <span style={{ color: '#ccc', fontSize: 12 }}>·</span>
+          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
 
           <div style={pillStyle}>
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
@@ -864,7 +877,7 @@ export default function SearchResults() {
             />
           </div>
 
-          <span style={{ color: '#ccc', fontSize: 12 }}>·</span>
+          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
 
           <div style={pillStyle}>
             <select
@@ -880,7 +893,7 @@ export default function SearchResults() {
             </select>
           </div>
 
-          <span style={{ color: '#ccc', fontSize: 12 }}>·</span>
+          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
 
           <div style={pillStyle}>
             <select
@@ -897,7 +910,7 @@ export default function SearchResults() {
             </select>
           </div>
 
-          <span style={{ color: '#ccc', fontSize: 12 }}>·</span>
+          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
 
           <div style={{ ...pillStyle, gap: 6 }}>
             <span>Within</span>
@@ -1004,7 +1017,7 @@ export default function SearchResults() {
                 />
                 {!coachesCollapsed && (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: resultsGridColumns, gap: isMobile ? 12 : 10 }}>
                       {filteredCoaches.map((coach) => (
                         <CoachCard
                           key={coach.id}
@@ -1026,6 +1039,13 @@ export default function SearchResults() {
                         View all coaches →
                       </Link>
                     </div>
+                    {isMobile && (
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ border: `1px dashed ${BORDER}`, borderRadius: 12, padding: '16px 14px', textAlign: 'center', color: MUTED, fontSize: 12, background: '#fcfcfa' }}>
+                          Sponsored placement
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1041,7 +1061,7 @@ export default function SearchResults() {
                 />
                 {!teamsCollapsed && (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: resultsGridColumns, gap: isMobile ? 12 : 10 }}>
                       {filteredTeams.map((team) => (
                         <TeamCard
                           key={team.id}
@@ -1063,6 +1083,13 @@ export default function SearchResults() {
                         View all teams →
                       </Link>
                     </div>
+                    {isMobile && (
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ border: `1px dashed ${BORDER}`, borderRadius: 12, padding: '16px 14px', textAlign: 'center', color: MUTED, fontSize: 12, background: '#fcfcfa' }}>
+                          Sponsored placement
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1078,7 +1105,7 @@ export default function SearchResults() {
                 />
                 {!facilitiesCollapsed && (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: resultsGridColumns, gap: isMobile ? 12 : 10 }}>
                       {filteredFacilities.map((facility) => (
                         <FacilityCard
                           key={facility.id}
@@ -1106,7 +1133,7 @@ export default function SearchResults() {
             )}
           </div>
 
-          <aside style={{ width: 200, flexShrink: 0 }}>
+          {!isMobile && <aside style={{ width: 200, flexShrink: 0 }}>
             <div
               style={{
                 position: 'sticky',
@@ -1169,7 +1196,7 @@ export default function SearchResults() {
                 </div>
               ))}
             </div>
-          </aside>
+          </aside>}
         </div>
       )}
     </div>
