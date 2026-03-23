@@ -372,50 +372,78 @@ function RatingRow({ coach, selected }) {
   )
 }
 
-function CoachCard({ coach, selected, onClick, onViewProfile }) {
+function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) {
   const specs = parseSpecialties(coach.specialty)
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
   const sportBadge = getSportBadgeMeta(coach.sport)
 
+  const mobileBase = mobile
+    ? {
+        borderRadius: 18,
+        overflow: 'hidden',
+        border: selected ? '2px solid var(--gold)' : '1px solid rgba(15,23,42,0.08)',
+        boxShadow: '0 10px 24px rgba(15,23,42,0.05)',
+        background: selected ? 'var(--navy)' : 'var(--white)',
+      }
+    : {}
+
   const cardStyle = selected
     ? {
-        background: 'var(--navy)',
+        ...mobileBase,
         color: 'var(--white)',
-        border: '2px solid var(--gold)',
-        borderRadius: 'var(--card-radius)',
         cursor: 'pointer',
         transition: 'all 0.15s',
-        marginBottom: 10,
+        marginBottom: mobile ? 0 : 10,
         display: 'flex',
         flexDirection: 'column',
       }
-    : { marginBottom: 10, cursor: 'pointer' }
+    : mobile
+      ? {
+          ...mobileBase,
+          marginBottom: 0,
+          cursor: 'pointer',
+        }
+      : {
+          marginBottom: 10,
+          cursor: 'pointer',
+        }
+
+  const bodyStyle = selected
+    ? { flex: 1, padding: mobile ? '18px 18px 16px' : '14px 16px' }
+    : mobile
+      ? { padding: '18px 18px 16px' }
+      : undefined
 
   const footerStyle = selected
     ? {
-        padding: '12px 16px',
+        padding: mobile ? '14px 18px 18px' : '12px 16px',
         borderTop: '1px solid rgba(255,255,255,0.15)',
         background: 'rgba(255,255,255,0.05)',
-        borderRadius: '0 0 var(--card-radius) var(--card-radius)',
+        borderRadius: mobile ? '0 0 18px 18px' : '0 0 var(--card-radius) var(--card-radius)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginTop: 'auto',
       }
-    : undefined
+    : mobile
+      ? { padding: '0 18px 18px' }
+      : undefined
+
+  const titleSize = mobile ? 19 : 17
+  const metaSize = mobile ? 14 : 13
 
   return (
-    <div className={selected ? '' : 'card'} style={cardStyle} onClick={onClick}>
-      <div className={selected ? '' : 'card-body'} style={selected ? { flex: 1, padding: '14px 16px' } : undefined}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '0.02em' }}>
+    <div className={!mobile && !selected ? 'card' : ''} style={cardStyle} onClick={onClick}>
+      <div className={!mobile && !selected ? 'card-body' : ''} style={bodyStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: titleSize, fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.15 }}>
               {coach.name}
             </div>
 
             {(coach.verified_status || coach.featured_status) && (
-              <div style={{ display: 'flex', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
                 {coach.verified_status && (
                   <span className="badge" style={{ background: '#DBEAFE', color: '#1D4ED8' }}>
                     ✓ Verified
@@ -429,9 +457,9 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
               </div>
             )}
 
-            {coach.facility_name && <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>{coach.facility_name}</div>}
+            {coach.facility_name && <div style={{ fontSize: metaSize, opacity: 0.76, marginTop: 6 }}>{coach.facility_name}</div>}
 
-            <div style={{ fontSize: 13, marginTop: 4, opacity: 0.8 }}>
+            <div style={{ fontSize: metaSize, marginTop: 5, opacity: 0.84, lineHeight: 1.35 }}>
               📍 {[coach.city, coach.state].filter(Boolean).join(', ')}
               {zip ? ` ${zip}` : ''}
             </div>
@@ -441,9 +469,9 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             style={selected ? {
               background: 'rgba(255,255,255,0.15)',
               color: 'white',
-              fontSize: 11,
+              fontSize: mobile ? 11.5 : 11,
               fontWeight: 700,
-              padding: '4px 10px',
+              padding: mobile ? '5px 10px' : '4px 10px',
               borderRadius: 20,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
@@ -453,15 +481,16 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             } : {
               background: sportBadge.bg,
               color: sportBadge.color,
-              fontSize: 11,
+              fontSize: mobile ? 11.5 : 11,
               fontWeight: 700,
-              padding: '4px 10px',
+              padding: mobile ? '5px 10px' : '4px 10px',
               borderRadius: 20,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               fontFamily: 'var(--font-head)',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+              border: mobile ? `1px solid ${sportBadge.border}` : undefined,
             }}
           >
             {sportBadge.label}
@@ -470,15 +499,15 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
 
         <RatingRow coach={coach} selected={selected} />
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: mobile ? 10 : 8 }}>
           {specs.map((s) => (
             <span
               key={s}
               style={{
                 background: selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)',
                 color: selected ? 'white' : 'var(--gray)',
-                fontSize: 11,
-                padding: '2px 8px',
+                fontSize: mobile ? 11.5 : 11,
+                padding: mobile ? '4px 9px' : '2px 8px',
                 borderRadius: 20,
                 textTransform: 'capitalize',
               }}
@@ -489,17 +518,17 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
         </div>
 
         {coach.credentials && (
-          <div style={{ fontSize: 12, marginTop: 8, opacity: 0.75, lineHeight: 1.4 }}>
-            {coach.credentials.length > 80 ? coach.credentials.slice(0, 80) + '…' : coach.credentials}
+          <div style={{ fontSize: mobile ? 13 : 12, marginTop: 10, opacity: 0.78, lineHeight: 1.45 }}>
+            {coach.credentials.length > (mobile ? 130 : 80) ? coach.credentials.slice(0, mobile ? 130 : 80) + '…' : coach.credentials}
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 12 }}>
-          <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight: 600 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10, fontSize: mobile ? 13 : 12, flexWrap: 'wrap' }}>
+          <span style={{ color: selected ? 'var(--gold)' : 'var(--green)', fontWeight: 700 }}>
             {priceLabel(coach)}
           </span>
           {coach.recommendation_count > 0 && (
-            <span style={{ opacity: 0.6 }}>
+            <span style={{ opacity: 0.68 }}>
               👍 {coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}
             </span>
           )}
@@ -508,12 +537,12 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
         {(coach.email || firstPhone || coach.website) && (
           <div
             style={{
-              marginTop: 10,
-              paddingTop: 10,
+              marginTop: 12,
+              paddingTop: 12,
               borderTop: '1px solid ' + (selected ? 'rgba(255,255,255,0.15)' : 'var(--lgray)'),
               display: 'flex',
               flexDirection: 'column',
-              gap: 3,
+              gap: mobile ? 6 : 3,
             }}
           >
             {coach.email && (
@@ -521,7 +550,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
                 href={'mailto:' + coach.email}
                 className="contact-link"
                 onClick={(e) => e.stopPropagation()}
-                style={{ color: selected ? 'var(--gold)' : '#1D4ED8' }}
+                style={{ color: selected ? 'var(--gold)' : '#1D4ED8', fontSize: mobile ? 13.5 : undefined }}
               >
                 📧 {coach.email}
               </a>
@@ -531,7 +560,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
                 href={'tel:' + firstPhone.replace(/\D/g, '')}
                 className="contact-link"
                 onClick={(e) => e.stopPropagation()}
-                style={{ color: selected ? 'var(--gold)' : 'var(--navy)' }}
+                style={{ color: selected ? 'var(--gold)' : 'var(--navy)', fontSize: mobile ? 13.5 : undefined }}
               >
                 📞 {firstPhone}
               </a>
@@ -543,7 +572,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
                 rel="noopener noreferrer"
                 className="contact-link"
                 onClick={(e) => e.stopPropagation()}
-                style={{ color: selected ? 'var(--gold)' : '#1D4ED8' }}
+                style={{ color: selected ? 'var(--gold)' : '#1D4ED8', fontSize: mobile ? 13.5 : undefined }}
               >
                 🌐 Website
               </a>
@@ -552,7 +581,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
         )}
       </div>
 
-      <div className={selected ? '' : 'card-footer'} style={footerStyle}>
+      <div className={!mobile && !selected ? 'card-footer' : ''} style={footerStyle}>
         <button
           type="button"
           onClick={(e) => {
@@ -564,9 +593,10 @@ function CoachCard({ coach, selected, onClick, onViewProfile }) {
             background: selected ? 'var(--gold)' : 'var(--navy)',
             color: 'white',
             border: 'none',
-            borderRadius: 'var(--btn-radius)',
-            padding: '8px 0',
-            fontSize: 13,
+            borderRadius: mobile ? 12 : 'var(--btn-radius)',
+            padding: mobile ? '12px 0' : '8px 0',
+            minHeight: mobile ? 46 : undefined,
+            fontSize: mobile ? 14 : 13,
             fontWeight: 700,
             cursor: 'pointer',
             fontFamily: 'var(--font-head)',
@@ -964,6 +994,7 @@ export default function CoachDirectory() {
   const [zipStatus, setZipStatus] = useState('')
   const [radius, setRadius] = useState(25)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const selectedFromUrl = searchParams.get('select') || null
   const facilityFromUrl = searchParams.get('facility') || null
@@ -973,6 +1004,14 @@ export default function CoachDirectory() {
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
   }, [])
+
+  useEffect(() => {
+    if (!isMobile) return
+    if (selectedFromUrl) {
+      setShowMap(false)
+      setShowMobileFilters(false)
+    }
+  }, [isMobile, selectedFromUrl])
 
   const applySearch = () => setSearch(searchInput.trim())
 
@@ -1005,6 +1044,13 @@ export default function CoachDirectory() {
     setGeoCenter(null)
     setZipStatus('')
     setRadius(25)
+  }
+
+  function clearAllMobileFilters() {
+    setSport('Both')
+    setSpecialty('All Specialties')
+    setState('All States')
+    clearZipFilter()
   }
 
   useEffect(() => {
@@ -1135,6 +1181,22 @@ export default function CoachDirectory() {
     return distanceMiles(geoCenter.lat, geoCenter.lng, coach.lat, coach.lng)
   }
 
+  const mobileActiveFilterCount = useMemo(() => {
+    let count = 0
+    if (sport !== 'Both') count += 1
+    if (specialty !== 'All Specialties') count += 1
+    if (state !== 'All States') count += 1
+    if (geoCenter) count += 1
+    return count
+  }, [sport, specialty, state, geoCenter])
+
+  const showMobileSpotlight = !!(isMobile && selectedFromUrl && sel)
+
+  const mobileCoachesToRender = useMemo(() => {
+    if (!showMobileSpotlight || !sel) return displayedCoaches
+    return displayedCoaches.filter((coach) => coach.id !== sel.id)
+  }, [displayedCoaches, showMobileSpotlight, sel])
+
   const inputStyle = {
     width: '100%',
     padding: '8px 10px',
@@ -1178,27 +1240,363 @@ export default function CoachDirectory() {
       )}
 
       {isMobile ? (
-        <div>
-          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
-            <button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button>
-            <a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a>
-          </div>
-          <div style={{ padding: 12 }}>
-            <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
-              <div>
-                <span style={sectionLabel}>Search</span>
-                <input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={inputStyle} />
+        <div style={{ background: 'var(--cream)', minHeight: '100vh' }}>
+          <div
+            style={{
+              position: 'sticky',
+              top: HEADER_H,
+              zIndex: 100,
+              padding: '10px 12px 8px',
+              background: 'linear-gradient(180deg, rgba(250,247,242,0.98) 0%, rgba(250,247,242,0.92) 100%)',
+              borderBottom: '1px solid rgba(15,23,42,0.06)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--white)',
+                border: '1px solid rgba(15,23,42,0.07)',
+                borderRadius: 18,
+                padding: '14px 14px 12px',
+                boxShadow: '0 10px 24px rgba(15,23,42,0.06)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, lineHeight: 1.05, fontWeight: 800, color: 'var(--navy)' }}>Coach Directory</div>
+                  <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4, lineHeight: 1.35 }}>
+                    {displayedCoaches.length} coach{displayedCoaches.length !== 1 ? 'es' : ''}
+                    {showMobileSpotlight ? ' matching this selection' : ' ready to browse'}
+                  </div>
+                </div>
+                {sel && (
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    style={{
+                      border: '1.5px solid #CBD5E1',
+                      background: '#fff',
+                      color: 'var(--navy)',
+                      borderRadius: 999,
+                      padding: '8px 12px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-head)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    All Coaches
+                  </button>
+                )}
               </div>
-              <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
+
+              {facilityContext && (
+                <div style={{ marginTop: 12, padding: '11px 12px', borderRadius: 14, background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--gray)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Facility context</div>
+                  <div style={{ fontSize: 14, color: 'var(--navy)', fontWeight: 800, marginTop: 4 }}>{facilityContext.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--gray)', marginTop: 3 }}>Showing only coaches linked to this facility.</div>
+                  <Link to={`/facilities/${facilityContext.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 13 }}>
+                    ← Back to Facility
+                  </Link>
+                </div>
+              )}
+
+              <div style={{ marginTop: 12 }}>
+                <span style={sectionLabel}>Search</span>
+                <input
+                  placeholder="Name, city, facility, zip..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={onSearchKeyDown}
+                  style={{ ...inputStyle, minHeight: 48, fontSize: 16, padding: '12px 14px' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={applySearch}
+                  style={{
+                    minHeight: 46,
+                    borderRadius: 12,
+                    border: 'none',
+                    background: 'var(--navy)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  Search
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileFilters((prev) => !prev)}
+                  style={{
+                    minHeight: 46,
+                    borderRadius: 12,
+                    border: '1.5px solid var(--navy)',
+                    background: '#fff',
+                    color: 'var(--navy)',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  {showMobileFilters ? 'Hide Filters' : `Filters${mobileActiveFilterCount ? ` (${mobileActiveFilterCount})` : ''}`}
+                </button>
+              </div>
+
+              {showMobileFilters && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #E5E7EB', display: 'grid', gap: 12 }}>
+                  <div>
+                    <div style={sectionLabel}>Sport</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ minHeight: 42 }}>⚾ Baseball</button>
+                      <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ minHeight: 42 }}>🥎 Softball</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel}>Specialty</div>
+                    <select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>
+                      {SPECIALTIES.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel}>State</div>
+                    <select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>
+                      {US_STATES.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div style={sectionLabel}>Near zip code</div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="e.g. 30004"
+                      maxLength={5}
+                      value={zip}
+                      onChange={(e) => {
+                        const next = e.target.value.replace(/\D/g, '').slice(0, 5)
+                        setZip(next)
+                        if (next.length < 5) {
+                          setGeoCenter(null)
+                          setZipStatus('')
+                        }
+                      }}
+                      onBlur={handleZipBlur}
+                      style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}
+                    />
+                    {zipStatus === 'error' && (
+                      <div style={{ marginTop: 6, fontSize: 12.5, color: '#B91C1C' }}>ZIP not recognized. Please check and try again.</div>
+                    )}
+                    {zip.length === 5 && zipStatus === 'ok' && (
+                      <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--gray)' }}>
+                          <span>Radius</span>
+                          <span style={{ fontWeight: 700, color: 'var(--navy)' }}>{radius} mi</span>
+                        </div>
+                        <input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} />
+                        <button
+                          type="button"
+                          onClick={clearZipFilter}
+                          style={{
+                            minHeight: 42,
+                            borderRadius: 12,
+                            background: '#fff',
+                            color: 'var(--navy)',
+                            border: '1.5px solid #CBD5E1',
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-head)',
+                          }}
+                        >
+                          Clear ZIP filter
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {mobileActiveFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearAllMobileFilters}
+                      style={{
+                        minHeight: 42,
+                        borderRadius: 12,
+                        border: '1.5px solid #CBD5E1',
+                        background: '#fff',
+                        color: 'var(--navy)',
+                        fontWeight: 700,
+                        fontFamily: 'var(--font-head)',
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMap((m) => !m)}
+                  style={{
+                    minHeight: 46,
+                    borderRadius: 12,
+                    border: '1.5px solid var(--navy)',
+                    background: showMap ? 'var(--navy)' : '#fff',
+                    color: showMap ? '#fff' : 'var(--navy)',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  {showMap ? 'Hide Map' : 'Show Map'}
+                </button>
+                <a
+                  href="/submit"
+                  style={{
+                    minHeight: 46,
+                    borderRadius: 12,
+                    background: 'var(--red)',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  + Add a Coach
+                </a>
+              </div>
             </div>
-            {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 260, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={(coach) => {
-                setSelected(null)
-                setProfileCoach(coach)
-              }} /></MapContainer></div><MapLegend /></div>}
+          </div>
+
+          <div style={{ padding: '12px 12px 112px' }}>
+            {showMobileSpotlight && sel && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gray)' }}>
+                    Selected coach
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#1D4ED8',
+                      fontWeight: 800,
+                      fontSize: 13,
+                      fontFamily: 'var(--font-head)',
+                      padding: 0,
+                    }}
+                  >
+                    Back to full list
+                  </button>
+                </div>
+                <CoachCard
+                  coach={sel}
+                  selected
+                  mobile
+                  onClick={() => {}}
+                  onViewProfile={setProfileCoach}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: sel.lat != null && sel.lng != null ? '1fr 1fr' : '1fr', gap: 8, marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    style={{
+                      minHeight: 44,
+                      borderRadius: 12,
+                      background: '#fff',
+                      color: 'var(--navy)',
+                      border: '1.5px solid #CBD5E1',
+                      fontWeight: 800,
+                      fontFamily: 'var(--font-head)',
+                    }}
+                  >
+                    Show all coaches
+                  </button>
+                  {sel.lat != null && sel.lng != null && (
+                    <button
+                      type="button"
+                      onClick={() => setShowMap((m) => !m)}
+                      style={{
+                        minHeight: 44,
+                        borderRadius: 12,
+                        background: showMap ? 'var(--navy)' : '#fff',
+                        color: showMap ? '#fff' : 'var(--navy)',
+                        border: '1.5px solid var(--navy)',
+                        fontWeight: 800,
+                        fontFamily: 'var(--font-head)',
+                      }}
+                    >
+                      {showMap ? 'Hide map' : 'Show on map'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {showMap && (
+              <div style={{ background: 'var(--white)', marginBottom: 14, borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.07)', boxShadow: '0 10px 24px rgba(15,23,42,0.05)' }}>
+                <div style={{ height: showMobileSpotlight ? 240 : 270, overflow: 'hidden' }}>
+                  <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <FitBounds points={markerGroups} selectedId={selected} />
+                    {sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}
+                    <MapMarkers
+                      groups={markerGroups}
+                      selected={selected}
+                      setSelected={setSelected}
+                      onViewCoach={(coach) => {
+                        setSelected(null)
+                        setProfileCoach(coach)
+                      }}
+                    />
+                  </MapContainer>
+                </div>
+                <MapLegend />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>
+                  {showMobileSpotlight ? 'More coaches' : 'Browse coaches'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>
+                  {showMobileSpotlight ? `${mobileCoachesToRender.length} more match${mobileCoachesToRender.length === 1 ? '' : 'es'}` : 'Tap a card for a larger selected view.'}
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
               {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
               {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
-              {!loading && displayedCoaches.map((coach) => <div key={coach.id}><CoachCard coach={coach} selected={selected === coach.id} onClick={() => handleSelectCoach(coach.id)} onViewProfile={setProfileCoach} /></div>)}
+              {!loading && mobileCoachesToRender.map((coach) => (
+                <div key={coach.id}>
+                  <CoachCard
+                    coach={coach}
+                    mobile
+                    selected={selected === coach.id}
+                    onClick={() => handleSelectCoach(coach.id)}
+                    onViewProfile={setProfileCoach}
+                  />
+                </div>
+              ))}
+              {!loading && showMobileSpotlight && mobileCoachesToRender.length === 0 && displayedCoaches.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '18px 16px', color: 'var(--gray)', fontSize: 14, lineHeight: 1.5 }}>
+                  No additional coaches match the current filters.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1216,7 +1614,7 @@ export default function CoachDirectory() {
                 <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
                 <div><div style={sectionLabel}>Specialty</div><select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{SPECIALTIES.map((s) => <option key={s}>{s}</option>)}</select></div>
                 <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
-                <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
+                <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop: 8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
                 <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a></div>
               </div>
