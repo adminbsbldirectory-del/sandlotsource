@@ -29,8 +29,19 @@ function normalizeInstagramHandle(value) {
   return 'https://instagram.com/' + trimmed.replace(/^@/, '')
 }
 
+function normalizeSportValue(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
+  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
+  if (raw.includes('softball')) return 'softball'
+  if (raw.includes('baseball')) return 'baseball'
+  return raw
+}
+
 function getFacilitySport(facility) {
-  return facility?.sport_served || facility?.sport || ''
+  const raw = facility?.sport_served || facility?.sport || ''
+  return normalizeSportValue(raw)
 }
 
 function getFacilityTypeLabel(value) {
@@ -437,11 +448,11 @@ export default function FacilityProfile() {
           <div className="card" style={{ padding: 18 }}>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 12 }}>Contact & Links</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {facility.phone && (
-                <a href={`tel:${String(facility.phone).replace(/\D/g, '')}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📞 {facility.phone}</a>
+              {(facility.phone || facility.contact_phone) && (
+                <a href={'tel:' + String(facility.phone || facility.contact_phone).replace(/\D/g, '')} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📞 {facility.phone || facility.contact_phone}</a>
               )}
-              {facility.contact_phone && (
-                <a href={`tel:${String(facility.contact_phone).replace(/\D/g, '')}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📞 Contact: {facility.contact_phone}</a>
+              {facility.contact_phone && facility.phone && facility.contact_phone !== facility.phone && (
+                <a href={'tel:' + String(facility.contact_phone).replace(/\D/g, '')} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📞 {facility.contact_phone}</a>
               )}
               {(facility.contact_email || facility.email) && (
                 <a href={`mailto:${facility.contact_email || facility.email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>📧 {facility.contact_email || facility.email}</a>
