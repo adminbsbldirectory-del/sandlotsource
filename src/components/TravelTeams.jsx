@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { Link } from 'react-router-dom'
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
@@ -18,10 +19,11 @@ const PIN_COLORS = {
 }
 
 const STATUS_STYLE = {
-  open: { bg: 'var(--open-bg)', color: 'var(--open-text)', label: 'Open Tryouts' },
-  closed: { bg: 'var(--closed-bg)', color: 'var(--closed-text)', label: 'Closed' },
-  by_invite: { bg: 'var(--urgent-bg)', color: 'var(--urgent-text)', label: 'By Invite' },
-  year_round: { bg: '#DBEAFE', color: '#2563EB', label: 'Year Round' },
+  open: { bg: '#DCFCE7', color: '#15803D', label: 'Open Tryouts' },
+  closed: { bg: '#FEE2E2', color: '#B91C1C', label: 'Closed' },
+  by_invite: { bg: '#FEF3C7', color: '#B45309', label: 'By Invite' },
+  year_round: { bg: '#DBEAFE', color: '#1D4ED8', label: 'Year Round' },
+  unknown: { bg: '#F3F4F6', color: '#4B5563', label: 'Status Unknown' },
 }
 
 const AGE_OPTIONS = ['All Ages', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
@@ -141,6 +143,58 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+function getSportChipStyle(sport) {
+  const normalized = normalizeSportValue(sport)
+  if (normalized === 'softball') {
+    return { background: '#F3F0D7', color: '#5F5A17', border: '1px solid #DDD59A' }
+  }
+  if (normalized === 'both') {
+    return { background: '#E7EEF9', color: '#1D3E73', border: '1px solid #C8D5E8' }
+  }
+  return { background: '#E8EEF8', color: '#173B73', border: '1px solid #C7D3E8' }
+}
+
+function getStatusChipStyle(status) {
+  const info = STATUS_STYLE[status] || STATUS_STYLE.unknown
+  return { background: info.bg, color: info.color, label: info.label }
+}
+
+function getTeamZip(team) {
+  return team.zip_code || team.zip || ''
+}
+
+function formatTryoutDate(value) {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatTeamLocation(team) {
+  const locationParts = [team.display_city, team.display_state].filter(Boolean)
+  const line = locationParts.join(', ')
+  return [line, getTeamZip(team)].filter(Boolean).join(' ')
+}
+
+function formatPracticeLocation(team) {
+  const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
+  const full = [team.address, cityState, getTeamZip(team)].filter(Boolean).join(', ')
+  return full || [team.practice_location_name, cityState].filter(Boolean).join(' · ') || cityState || ''
+}
+
+function normalizeUrl(url) {
+  if (!url) return null
+  const trimmed = String(url).trim()
+  if (!trimmed) return null
+  if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return 'https://' + trimmed
+}
+
 function normalizeTeamRecord(team, facilityMap = {}) {
   const facility = team.facility_id ? facilityMap[team.facility_id] || null : null
   const facilityLat = facility?.lat != null ? Number(facility.lat) : null
@@ -154,6 +208,9 @@ function normalizeTeamRecord(team, facilityMap = {}) {
     facility_name: facility?.name || team.facility_name || '',
     facility_city: facility?.city || '',
     facility_state: facility?.state || '',
+    facility_address: facility?.address || '',
+    facility_zip: facility?.zip_code || '',
+    facility_website: facility?.website || '',
     state_abbr: normalizeStateValue(team.state || facility?.state || ''),
     facility_state_abbr: normalizeStateValue(facility?.state || ''),
     lat: teamLat != null && teamLng != null ? teamLat : facilityLat,
@@ -299,9 +356,9 @@ function AdBox({ compact = false }) {
 }
 
 function TeamCard({ team, selected, onOpen, onFocusMap }) {
-  const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.closed
+  const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.unknown
   const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
-  const locationFull = team.zip_code ? `${cityState} ${team.zip_code}` : cityState
+  const locationFull = getTeamZip(team) ? `${cityState} ${getTeamZip(team)}` : cityState
   const practiceLabel = team.practice_location_name
     ? [team.practice_location_name, team.address?.trim() || ''].filter(Boolean).join(' · ')
     : team.address?.trim() ? team.address.trim() : locationFull
@@ -480,8 +537,198 @@ function EmptyState({ hasFilters, stateName, zipActive, radius }) {
   )
 }
 
+function TeamPreviewCard({ team, onClose, onOpenFull }) {
+  const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.unknown
+  const sportChip = getSportChipStyle(team.sport)
+  const locationLine = formatTeamLocation(team)
+  const practiceLocation = formatPracticeLocation(team)
+  const facilityLocation = [team.facility_address, [team.facility_city, team.facility_state].filter(Boolean).join(', '), team.facility_zip].filter(Boolean).join(', ')
+  const facilityWebsite = normalizeUrl(team.facility_website)
+  const teamWebsite = normalizeUrl(team.website)
+  const tryoutDate = formatTryoutDate(team.tryout_date)
+  const practiceMapQuery = encodeURIComponent(practiceLocation)
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 128,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'min(720px, calc(100vw - 48px))',
+        maxHeight: 'calc(100vh - 156px)',
+        overflowY: 'auto',
+        background: 'rgba(255,255,255,0.985)',
+        border: '1px solid rgba(15,23,42,0.10)',
+        borderRadius: 18,
+        boxShadow: '0 22px 56px rgba(15,23,42,0.24)',
+        padding: 18,
+        zIndex: 60,
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', ...sportChip }}>
+              {normalizeSportValue(team.sport) === 'both' ? 'Baseball & Softball' : team.sport}
+            </span>
+            {team.age_group && (
+              <span style={{ background: '#F3F4F6', color: 'var(--navy)', border: '1px solid #E5E7EB', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
+                {team.age_group}
+              </span>
+            )}
+            {team.classification && (
+              <span style={{ background: '#EEF2FF', color: '#1D4ED8', border: '1px solid #C7D2FE', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
+                {team.classification}
+              </span>
+            )}
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: statusInfo.bg, color: statusInfo.color }}>
+              {statusInfo.label}
+            </span>
+          </div>
+
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 800, color: 'var(--navy)', lineHeight: 1.1 }}>
+            {team.name}
+          </div>
+          <div style={{ marginTop: 6, fontSize: 13, color: 'var(--gray)', lineHeight: 1.45 }}>
+            {locationLine || 'Location not listed'}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 999,
+            border: '1px solid rgba(15,23,42,0.12)',
+            background: '#fff',
+            color: 'var(--gray)',
+            fontWeight: 800,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(240px, 260px)', gap: 14, marginTop: 14 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Team Details
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+              {team.org_affiliation && <div><strong>Organization:</strong> {team.org_affiliation}</div>}
+              {team.classification && <div><strong>Classification:</strong> {team.classification}</div>}
+              {team.sanctioning_body && <div><strong>Sanctioning:</strong> {team.sanctioning_body}</div>}
+              {!team.org_affiliation && !team.classification && !team.sanctioning_body && <div>Team details not listed.</div>}
+            </div>
+          </div>
+
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Practice Location
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+              <div>{practiceLocation || 'Practice location not listed.'}</div>
+              {practiceLocation && (
+                <a href={`https://maps.google.com/?q=${practiceMapQuery}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+                  Open in Maps
+                </a>
+              )}
+            </div>
+          </div>
+
+          {team.description && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+                About Team
+              </div>
+              <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+                {team.description}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Tryouts
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+              <div><strong>Status:</strong> {statusInfo.label}</div>
+              {tryoutDate && <div><strong>Date:</strong> {tryoutDate}</div>}
+              {team.tryout_notes && <div style={{ marginTop: 8 }}>{team.tryout_notes}</div>}
+              {!tryoutDate && !team.tryout_notes && <div>No tryout notes listed.</div>}
+            </div>
+          </div>
+
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Primary Facility
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
+              <div>{team.facility_name || 'No linked facility yet.'}</div>
+              {facilityLocation && <div style={{ color: 'var(--gray)', marginTop: 4 }}>{facilityLocation}</div>}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
+                {team.facility_id && (
+                  <Link to={`/facilities/${team.facility_id}`} onClick={onClose} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+                    View Facility Page
+                  </Link>
+                )}
+                {facilityWebsite && (
+                  <a href={facilityWebsite} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+                    Facility Website
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+              Contact / Details
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.75 }}>
+              {team.contact_name && <div>{team.contact_name}</div>}
+              {team.contact_phone && <a href={`tel:${String(team.contact_phone).replace(/\D/g, '')}`} style={{ color: 'var(--navy)', textDecoration: 'none', fontWeight: 700 }}>{team.contact_phone}</a>}
+              {team.contact_email && <div><a href={`mailto:${team.contact_email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>{team.contact_email}</a></div>}
+              {teamWebsite && <div><a href={teamWebsite} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Team Website</a></div>}
+              {!team.contact_name && !team.contact_phone && !team.contact_email && !teamWebsite && <div>Contact details not listed.</div>}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenFull}
+            style={{
+              width: '100%',
+              padding: '12px 14px',
+              borderRadius: 12,
+              border: 'none',
+              background: 'var(--navy)',
+              color: 'white',
+              fontWeight: 800,
+              fontSize: 13,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-head)',
+            }}
+          >
+            View Team &amp; Claim
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TravelTeams() {
-  const cardRefs = useRef({})
+  const rowRefs = useRef({})
   const popupRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
@@ -489,7 +736,7 @@ export default function TravelTeams() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [profileTeam, setProfileTeam] = useState(null)
-  const [selectedTeam, setSelectedTeam] = useState(null)
+  const [selectedTeamId, setSelectedTeamId] = useState(null)
 
   const closeAllPopups = () => {
     Object.values(popupRefs.current).forEach((popup) => {
@@ -555,7 +802,9 @@ export default function TravelTeams() {
 
   useEffect(() => {
     const handler = () => {
-      setIsMobile(window.innerWidth < 768)
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (!mobile) setShowMap(true)
     }
     window.addEventListener('resize', handler)
     return () => window.removeEventListener('resize', handler)
@@ -568,7 +817,7 @@ export default function TravelTeams() {
 
       const { data: teamRows, error: teamError } = await supabase
         .from('travel_teams')
-        .select('id, name, sport, org_affiliation, classification, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, active')
+        .select('id, name, sport, org_affiliation, classification, sanctioning_body, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, active, claimed, claimed_status')
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
@@ -586,7 +835,7 @@ export default function TravelTeams() {
       if (facilityIds.length > 0) {
         const { data: facilityRows, error: facilityError } = await supabase
           .from('facilities')
-          .select('id, name, lat, lng, city, state')
+          .select('id, name, lat, lng, city, state, address, zip_code, website')
           .in('id', facilityIds)
 
         if (facilityError) {
@@ -670,28 +919,19 @@ export default function TravelTeams() {
     })
   }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius])
 
-  const displayedTeams = useMemo(() => {
-    if (!selectedTeam?.id) return filtered
-    const idx = filtered.findIndex((t) => t.id === selectedTeam.id)
-    if (idx <= 0) return filtered
-    const next = [...filtered]
-    const [selectedItem] = next.splice(idx, 1)
-    next.unshift(selectedItem)
-    return next
-  }, [filtered, selectedTeam])
-
   useEffect(() => {
-    if (!selectedTeam?.id) return
-    const listEl = isMobile ? mobileListRef.current : desktopListRef.current
-    const cardEl = cardRefs.current[selectedTeam.id]
-    if (!listEl || !cardEl) return
+    if (!selectedTeamId) return
+    const rowEl = rowRefs.current[selectedTeamId]
+    if (!rowEl) return
     const t = setTimeout(() => {
-      if (typeof cardEl.scrollIntoView === 'function') {
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
-      }
+      rowEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, 120)
     return () => clearTimeout(t)
-  }, [selectedTeam, isMobile, filtered])
+  }, [selectedTeamId, isMobile])
+
+  const selectedTeam = useMemo(() => {
+    return filtered.find((team) => team.id === selectedTeamId) || teams.find((team) => team.id === selectedTeamId) || null
+  }, [filtered, teams, selectedTeamId])
 
   const mappable = filtered.filter((t) => t.lat != null && t.lng != null)
   const openTryoutCount = filtered.filter((t) => t.tryout_status === 'open').length
@@ -732,6 +972,15 @@ export default function TravelTeams() {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     marginBottom: 5,
+  }
+
+  const desktopRowTemplate = '110px minmax(0,1.15fr) minmax(0,1fr) 150px 150px 84px'
+  const desktopHeaderCellStyle = {
+    fontSize: 10,
+    fontWeight: 800,
+    color: 'var(--gray)',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
   }
 
   return (
@@ -847,7 +1096,7 @@ export default function TravelTeams() {
                 value={state}
                 onChange={(e) => {
                   setState(e.target.value)
-                  setSelectedTeam(null)
+                  setSelectedTeamId(null)
                 }}
                 style={filterSelectStyle}
               >
@@ -875,7 +1124,7 @@ export default function TravelTeams() {
                 value={zip}
                 onChange={(e) => {
                   setZip(e.target.value.replace(/\D/g, '').slice(0, 5))
-                  setSelectedTeam(null)
+                  setSelectedTeamId(null)
                 }}
                 style={{
                   width: '100%',
@@ -912,7 +1161,7 @@ export default function TravelTeams() {
                     value={radius}
                     onChange={(e) => {
                       setRadius(Number(e.target.value))
-                      setSelectedTeam(null)
+                      setSelectedTeamId(null)
                     }}
                     style={{ width: '100%', accentColor: 'var(--red)' }}
                   />
@@ -1056,7 +1305,7 @@ export default function TravelTeams() {
                   >
                     <div
                       style={{
-                        height: isMobile ? 260 : 390,
+                        height: isMobile ? 260 : 360,
                         width: '100%',
                         overflow: 'hidden',
                         borderRadius: isMobile ? 0 : 14,
@@ -1083,7 +1332,7 @@ export default function TravelTeams() {
                             icon={makeIcon(teamPinColor(team))}
                             eventHandlers={{
                               click: () => {
-                                setSelectedTeam(team)
+                                setSelectedTeamId(team.id)
                               },
                             }}
                           >
@@ -1117,7 +1366,7 @@ export default function TravelTeams() {
                                 )}
                                 <button
                                   type="button"
-                                  onClick={() => { closeAllPopups(); setSelectedTeam(team); setProfileTeam(team) }}
+                                  onClick={() => { closeAllPopups(); setSelectedTeamId(team.id) }}
                                   style={{
                                     marginTop: 8,
                                     width: '100%',
@@ -1131,7 +1380,7 @@ export default function TravelTeams() {
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  View Team
+                                  Preview Team
                                 </button>
                               </div>
                             </Popup>
@@ -1204,55 +1453,200 @@ export default function TravelTeams() {
                   </div>
 
                   <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-                    Browse teams, tryouts, and roster opportunities
+                    Compact list below. Click a row or pin to preview, then use View Team &amp; Claim for full details.
                   </div>
                 </div>
               </div>
 
-              <div
-                style={{
-                  marginTop: 6,
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(270px, 1fr))',
-                  gap: 14,
-                  alignItems: 'stretch',
-                }}
-              >
-                {loading && (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
-                    Loading teams...
-                  </div>
-                )}
-
-                {!loading && filtered.length === 0 && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <EmptyState
-                      hasFilters={hasFilters}
-                      stateName={selectedState?.name || ''}
-                      zipActive={!!geoCenter}
-                      radius={radius}
-                    />
-                  </div>
-                )}
-
-                {!loading &&
-                  displayedTeams.map((team) => (
-                    <div key={team.id} ref={(el) => { if (el) cardRefs.current[team.id] = el; else delete cardRefs.current[team.id] }}>
-                    <TeamCard
-                      key={team.id}
-                      team={team}
-                      selected={selectedTeam?.id === team.id}
-                      onOpen={() => setProfileTeam(team)}
-                      onFocusMap={() => {
-                        closeAllPopups()
-                        setSelectedTeam(team)
-                        setShowMap(true)
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                      }}
-                    />
+              {isMobile ? (
+                <div ref={mobileListRef} style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr', gap: 14, alignItems: 'stretch' }}>
+                  {loading && (
+                    <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+                      Loading teams...
+                    </div>
+                  )}
+                  {!loading && filtered.length === 0 && (
+                    <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
+                  )}
+                  {!loading && filtered.map((team) => (
+                    <div key={team.id} ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}>
+                      <TeamCard
+                        team={team}
+                        selected={selectedTeamId === team.id}
+                        onOpen={() => setProfileTeam(team)}
+                        onFocusMap={() => {
+                          closeAllPopups()
+                          setSelectedTeamId(team.id)
+                          setShowMap(true)
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                        }}
+                      />
                     </div>
                   ))}
-              </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    marginTop: 8,
+                    background: 'var(--white)',
+                    border: '1px solid rgba(15,23,42,0.06)',
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
+                >
+                  <div ref={desktopListRef} style={{ maxHeight: 'min(560px, calc(100vh - 215px))', overflowY: 'auto' }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: desktopRowTemplate,
+                        gap: 10,
+                        alignItems: 'center',
+                        padding: '11px 14px',
+                        background: '#EEF3FA',
+                        borderBottom: '1px solid rgba(15,23,42,0.08)',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 2,
+                      }}
+                    >
+                      <div style={desktopHeaderCellStyle}>Sport</div>
+                      <div style={desktopHeaderCellStyle}>Team</div>
+                      <div style={desktopHeaderCellStyle}>Facility</div>
+                      <div style={desktopHeaderCellStyle}>Age / Level</div>
+                      <div style={desktopHeaderCellStyle}>Tryouts</div>
+                      <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
+                    </div>
+
+                    {loading && (
+                      <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--gray)', fontSize: 14 }}>
+                        Loading teams...
+                      </div>
+                    )}
+
+                    {!loading && filtered.length === 0 && (
+                      <div style={{ padding: '16px 14px' }}>
+                        <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
+                      </div>
+                    )}
+
+                    {!loading && filtered.map((team) => {
+                      const isSelected = selectedTeamId === team.id
+                      const statusMeta = getStatusChipStyle(team.tryout_status)
+                      const sportChip = getSportChipStyle(team.sport)
+                      const practiceLine = formatPracticeLocation(team)
+                      const teamLine = formatTeamLocation(team)
+                      const tryoutDate = formatTryoutDate(team.tryout_date)
+
+                      return (
+                        <div
+                          key={team.id}
+                          ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}
+                          style={{ borderBottom: '1px solid rgba(15,23,42,0.06)', background: isSelected ? '#FCFCFD' : 'var(--white)' }}
+                        >
+                          <div
+                            onClick={() => setSelectedTeamId(team.id)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                setSelectedTeamId(team.id)
+                              }
+                            }}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: desktopRowTemplate,
+                              gap: 10,
+                              alignItems: 'center',
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', ...sportChip }}>
+                                {normalizeSportValue(team.sport) === 'both' ? 'Both' : team.sport}
+                              </span>
+                            </div>
+
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.name}>
+                                {team.name}
+                              </div>
+                              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={teamLine}>
+                                {teamLine || 'Location not listed'}
+                              </div>
+                            </div>
+
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.facility_name || practiceLine}>
+                                {team.facility_name || 'No linked facility'}
+                              </div>
+                              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={practiceLine}>
+                                {practiceLine || 'Practice area not listed'}
+                              </div>
+                            </div>
+
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
+                                {team.age_group || '—'}
+                              </div>
+                              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {team.classification || team.org_affiliation || 'Level not listed'}
+                              </div>
+                            </div>
+
+                            <div style={{ minWidth: 0 }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', background: statusMeta.bg, color: statusMeta.color }}>
+                                {statusMeta.label}
+                              </span>
+                              <div style={{ marginTop: 4, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tryoutDate || team.tryout_notes || ''}>
+                                {tryoutDate || team.tryout_notes || 'No date listed'}
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  setSelectedTeamId(isSelected ? null : team.id)
+                                }}
+                                style={{
+                                  minWidth: 64,
+                                  padding: '7px 8px',
+                                  borderRadius: 9,
+                                  border: '1.5px solid var(--navy)',
+                                  background: isSelected ? 'var(--navy)' : 'var(--white)',
+                                  color: isSelected ? 'var(--white)' : 'var(--navy)',
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  fontFamily: 'var(--font-head)',
+                                }}
+                              >
+                                {isSelected ? 'Close' : 'Open'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {selectedTeam && (
+                    <TeamPreviewCard
+                      team={selectedTeam}
+                      onClose={() => setSelectedTeamId(null)}
+                      onOpenFull={() => {
+                        const current = selectedTeam
+                        setSelectedTeamId(null)
+                        setTimeout(() => setProfileTeam(current), 0)
+                      }}
+                    />
+                  )}
+                </div>
+              )}
             </main>
 
             {!isMobile && (
