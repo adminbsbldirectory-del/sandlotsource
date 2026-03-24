@@ -292,6 +292,22 @@ function DaysRemaining({ expiresAt }) {
 
 
 function RosterRow({ spot, isMobile }) {
+  const actionLinkStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: isMobile ? '100%' : 'auto',
+    minHeight: isMobile ? 38 : 'auto',
+    padding: isMobile ? '9px 12px' : 0,
+    borderRadius: isMobile ? 999 : 0,
+    border: isMobile ? '1px solid #CBD5E1' : 'none',
+    background: isMobile ? 'white' : 'transparent',
+    color: '#1D4ED8',
+    textDecoration: 'none',
+    fontSize: 13,
+    fontWeight: 700,
+    boxSizing: 'border-box',
+  }
   const positions = Array.isArray(spot.positions_needed) ? spot.positions_needed : []
   const cityStateZip = getLocationLine(spot.city, spot.state, spot.zip_code)
   const linkedTeam = spot.travel_teams || null
@@ -455,6 +471,8 @@ function RosterRow({ spot, isMobile }) {
             alignItems: isMobile ? 'flex-start' : 'flex-end',
             gap: 8,
             textAlign: isMobile ? 'left' : 'right',
+            paddingTop: isMobile ? 10 : 0,
+            borderTop: isMobile ? '1px solid #E2E8F0' : 'none',
           }}
         >
           <DaysRemaining expiresAt={spot.expires_at} />
@@ -469,18 +487,20 @@ function RosterRow({ spot, isMobile }) {
             </div>
           )}
           {linkedTeamUrl && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
-              <a
-                href={linkedTeamUrl}
-                style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13, fontWeight: 700 }}
-              >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? (facilityUrl ? '1fr 1fr' : '1fr') : 'none',
+                gap: 10,
+                width: isMobile ? '100%' : 'auto',
+                justifyContent: isMobile ? 'stretch' : 'flex-end',
+              }}
+            >
+              <a href={linkedTeamUrl} style={actionLinkStyle}>
                 View Team →
               </a>
               {facilityUrl && (
-                <a
-                  href={facilityUrl}
-                  style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13, fontWeight: 700 }}
-                >
+                <a href={facilityUrl} style={actionLinkStyle}>
                   View Facility →
                 </a>
               )}
@@ -565,6 +585,7 @@ function RosterForm({ onSubmitted, isMobile }) {
   const [teamMatches, setTeamMatches] = useState([])
   const [selectedMatchId, setSelectedMatchId] = useState(null)
   const [matchChoiceMode, setMatchChoiceMode] = useState('auto')
+  const [showOtherMatches, setShowOtherMatches] = useState(false)
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -573,6 +594,7 @@ function RosterForm({ onSubmitted, isMobile }) {
   function handleLookupFieldChange(field, value) {
     set(field, value)
     setMatchChoiceMode('auto')
+    setShowOtherMatches(false)
   }
 
   function togglePos(pos) {
@@ -594,9 +616,11 @@ function RosterForm({ onSubmitted, isMobile }) {
         state: geo.state || f.state,
       }))
       setMatchChoiceMode('auto')
+      setShowOtherMatches(false)
     } else {
       setForm((f) => ({ ...f, lat: null, lng: null, state: '' }))
       setMatchChoiceMode('auto')
+      setShowOtherMatches(false)
     }
   }
 
@@ -703,6 +727,7 @@ function RosterForm({ onSubmitted, isMobile }) {
 
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
   const selectedMatch = teamMatches.find((row) => row.id === selectedMatchId) || null
+  const showCollapsedMatchChoices = isMobile && !!selectedMatch && teamMatches.length > 1 && !showOtherMatches
 
   return (
     <div
@@ -710,15 +735,17 @@ function RosterForm({ onSubmitted, isMobile }) {
         background: 'white',
         borderRadius: 12,
         border: '2px solid var(--lgray)',
-        padding: isMobile ? '20px 16px' : '28px 24px',
+        padding: isMobile ? '18px 12px' : '28px 24px',
         maxWidth: 720,
+        width: '100%',
         margin: '0 auto',
+        overflowX: 'hidden',
       }}
     >
       <div
         style={{
           fontFamily: 'var(--font-head)',
-          fontSize: 20,
+          fontSize: isMobile ? 18 : 20,
           fontWeight: 800,
           color: 'var(--navy)',
           marginBottom: 20,
@@ -760,7 +787,7 @@ function RosterForm({ onSubmitted, isMobile }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>Team Name</label>
           <input
@@ -769,7 +796,7 @@ function RosterForm({ onSubmitted, isMobile }) {
             placeholder="e.g. Cherokee Nationals"
             style={inputStyle}
           />
-          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, lineHeight: 1.45 }}>
             We will suggest similar Sandlot Source team listings so players and parents can research the team more easily.
           </div>
         </div>
@@ -838,7 +865,7 @@ function RosterForm({ onSubmitted, isMobile }) {
                   {selectedMatch.facility_name ? `Facility: ${selectedMatch.facility_name}` : ''}
                 </div>
               )}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 2 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, max-content)', gap: 10, marginTop: 2, alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -881,7 +908,18 @@ function RosterForm({ onSubmitted, isMobile }) {
                 </button>
                 <a
                   href={'/teams?select=' + selectedMatch.id}
-                  style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 12, fontWeight: 700, alignSelf: 'center' }}
+                  style={{
+                    color: '#1D4ED8',
+                    textDecoration: 'none',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    alignSelf: 'center',
+                    textAlign: isMobile ? 'center' : 'left',
+                    padding: isMobile ? '10px 12px' : 0,
+                    borderRadius: isMobile ? 999 : 0,
+                    border: isMobile ? '1px solid #CBD5E1' : 'none',
+                    background: isMobile ? 'white' : 'transparent',
+                  }}
                 >
                   Preview Team →
                 </a>
@@ -889,7 +927,28 @@ function RosterForm({ onSubmitted, isMobile }) {
             </div>
           )}
 
-          {!matchLoading && teamMatches.length > 1 && (
+          {!matchLoading && teamMatches.length > 1 && showCollapsedMatchChoices && (
+            <button
+              type="button"
+              onClick={() => setShowOtherMatches(true)}
+              style={{
+                justifySelf: 'start',
+                border: '1px solid #CBD5E1',
+                borderRadius: 999,
+                background: 'white',
+                color: 'var(--navy)',
+                padding: '8px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-head)',
+              }}
+            >
+              Change team match
+            </button>
+          )}
+
+          {!matchLoading && teamMatches.length > 1 && (!showCollapsedMatchChoices) && (
             <div style={{ display: 'grid', gap: 6 }}>
               <div style={{ fontSize: 12, color: '#64748B' }}>Other possible matches</div>
               <div style={{ display: 'grid', gap: 6 }}>
@@ -924,12 +983,32 @@ function RosterForm({ onSubmitted, isMobile }) {
                   </button>
                 ))}
               </div>
+              {isMobile && selectedMatch && (
+                <button
+                  type="button"
+                  onClick={() => setShowOtherMatches(false)}
+                  style={{
+                    justifySelf: 'start',
+                    marginTop: 2,
+                    background: 'none',
+                    border: 'none',
+                    color: '#1D4ED8',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  Hide other matches
+                </button>
+              )}
             </div>
           )}
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>
             Age Group <RequiredMark />
@@ -952,7 +1031,7 @@ function RosterForm({ onSubmitted, isMobile }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 12, marginBottom: 14 }}>
         <ZipFieldInline value={form.zip_code} onChange={(v) => handleLookupFieldChange('zip_code', v)} onGeocode={handleGeocode} required />
         <div>
           <label style={labelStyle}>State</label>
@@ -997,7 +1076,7 @@ function RosterForm({ onSubmitted, isMobile }) {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 12, marginBottom: 16 }}>
         <div>
           <label style={labelStyle}>Contact Name</label>
           <input
@@ -1272,7 +1351,8 @@ export default function RosterSpots() {
 
   if (view === 'post') {
     return (
-      <div style={{ padding: isMobile ? '20px 14px' : '32px 20px', overflowX: 'clip' }}>
+      <div style={{ padding: isMobile ? '16px 12px' : '32px 20px', overflowX: 'clip' }}>
+        <div style={{ maxWidth: 720, width: '100%', margin: '0 auto' }}>
         <button
           type="button"
           onClick={() => setView('browse')}
@@ -1291,6 +1371,7 @@ export default function RosterSpots() {
           ← Back to Roster Spots
         </button>
         <RosterForm onSubmitted={(info) => { setSubmittedInfo(info || null); setView('submitted') }} isMobile={isMobile} />
+        </div>
       </div>
     )
   }
@@ -1316,7 +1397,7 @@ export default function RosterSpots() {
             <div
               style={{
                 fontFamily: 'var(--font-head)',
-                fontSize: isMobile ? 24 : 26,
+                fontSize: isMobile ? 22 : 26,
                 fontWeight: 800,
                 color: 'var(--navy)',
                 marginBottom: 4,
@@ -1403,6 +1484,7 @@ export default function RosterSpots() {
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
                 whiteSpace: 'nowrap',
+                width: isMobile ? '100%' : 'auto',
               }}
             >
               {showMap ? 'Hide Map' : 'Show Map'}
@@ -1424,6 +1506,7 @@ export default function RosterSpots() {
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
+                width: isMobile ? '100%' : 'auto',
               }}
             >
               + Post a Roster Spot
@@ -1472,7 +1555,7 @@ export default function RosterSpots() {
 
       {showMap && hasLocalSearch && (
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '14px 14px 0' : '18px 24px 0' }}>
-          <div style={{ height: isMobile ? 240 : 320, width: '100%', border: '1px solid var(--lgray)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ height: isMobile ? 220 : 320, width: '100%', border: '1px solid var(--lgray)', borderRadius: 16, overflow: 'hidden' }}>
             <MapContainer center={zipGeo ? [zipGeo.lat, zipGeo.lng] : DEFAULT_CENTER} zoom={9} style={{ height: '100%', width: '100%' }}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
