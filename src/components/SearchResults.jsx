@@ -67,6 +67,8 @@ const BADGE_STYLES = {
   facility: { background: '#e8f4ff', color: '#1d4ed8' },
 }
 
+const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
+
 // ─── Sub-components ───────────────────────────────────────
 function ResultCount({ count }) {
   return (
@@ -127,13 +129,13 @@ function SectionHeader({ title, count, isCollapsed, onToggle }) {
   )
 }
 
-function CoachCard({ coach, distanceMi }) {
+function CoachCard({ coach, distanceMi, to }) {
   const specs = normalizeSpecialty(coach)
   const locationLine = getLocationLine(coach)
 
   return (
     <Link
-      to={`/coaches?select=${coach.id}`}
+      to={to}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
@@ -269,14 +271,14 @@ function CoachCard({ coach, distanceMi }) {
   )
 }
 
-function TeamCard({ team, distanceMi }) {
+function TeamCard({ team, distanceMi, to }) {
   const isOpen = team.roster_status === 'open' || team.open_spots > 0
   const isTryout = team.tryout_status === 'open' || team.tryout_date
   const locationLine = getLocationLine(team)
 
   return (
     <Link
-      to={`/teams?select=${team.id}`}
+      to={to}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
@@ -421,13 +423,13 @@ function TeamCard({ team, distanceMi }) {
   )
 }
 
-function FacilityCard({ facility, distanceMi }) {
+function FacilityCard({ facility, distanceMi, to }) {
   const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
   const locationLine = getLocationLine(facility)
 
   return (
     <Link
-      to={`/facilities/${facility.id}`}
+      to={to}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
@@ -727,6 +729,27 @@ export default function SearchResults() {
   const totalResults =
     filteredCoaches.length + filteredTeams.length + filteredFacilities.length
 
+
+  function buildDirectoryQuery(extra = {}) {
+    const params = new URLSearchParams()
+    if (zip) params.set('zip', zip)
+    if (radius) params.set('radius', String(radius))
+    if (sport) params.set('sport', sport)
+    if (ageGroup) params.set('age', ageGroup)
+
+    Object.entries(extra).forEach(([key, value]) => {
+      if (value == null || value === '') return
+      params.set(key, String(value))
+    })
+
+    const queryString = params.toString()
+    return queryString ? `?${queryString}` : ''
+  }
+
+  const coachBrowseLink = `/coaches${buildDirectoryQuery()}`
+  const teamBrowseLink = `/teams${buildDirectoryQuery()}`
+  const facilityBrowseLink = `/facilities${buildDirectoryQuery()}`
+
   function handleSearch(e) {
     e.preventDefault()
     const params = new URLSearchParams()
@@ -742,28 +765,33 @@ export default function SearchResults() {
   const pillStyle = {
     display: 'flex',
     alignItems: 'center',
-    gap: 5,
+    gap: 8,
     background: '#fff',
     border: '1px solid #ddddd8',
-    borderRadius: 7,
-    padding: '5px 11px',
-    fontSize: 12,
+    borderRadius: 10,
+    padding: isMobile ? '10px 12px' : '8px 11px',
+    fontSize: isMobile ? 14 : 12,
     color: '#444',
-    whiteSpace: 'nowrap',
+    minHeight: isMobile ? 48 : 42,
+    width: '100%',
   }
 
   const selectStyle = {
     border: 'none',
     outline: 'none',
     background: 'none',
-    fontSize: 12,
+    fontSize: isMobile ? 14 : 12,
     color: '#444',
     cursor: 'pointer',
     padding: 0,
+    width: '100%',
+    minWidth: 0,
   }
 
   const resultsGridColumns = isMobile ? '1fr' : '1fr 1fr'
-  const pageColumns = isMobile ? '1fr' : '1fr minmax(180px, 200px)'
+  const filterGridColumns = isMobile
+    ? '1fr 1fr'
+    : 'minmax(150px, 1.15fr) minmax(150px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr)'
 
   return (
     <div
@@ -773,6 +801,7 @@ export default function SearchResults() {
         padding: isMobile ? '0 12px 96px' : '0 20px 48px',
         background: '#fff',
         color: DARK,
+        overflowX: 'clip',
       }}
     >
       <section
@@ -845,19 +874,16 @@ export default function SearchResults() {
           </button>
         </form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 7, flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: filterGridColumns,
+            gap: 10,
+            alignItems: 'stretch',
+          }}
+        >
           <div style={pillStyle}>
-            <select value={sport} onChange={(e) => setSport(e.target.value)} style={selectStyle}>
-              <option value="">All sports</option>
-              <option value="baseball">Baseball</option>
-              <option value="softball">Softball</option>
-            </select>
-          </div>
-
-          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
-
-          <div style={pillStyle}>
-            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
               <path
                 d="M6 1C4.067 1 2.5 2.567 2.5 4.5c0 2.776 3.5 6.5 3.5 6.5s3.5-3.724 3.5-6.5C9.5 2.567 7.933 1 6 1z"
                 stroke="#aaa"
@@ -869,15 +895,35 @@ export default function SearchResults() {
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Zip code"
+              placeholder="Near zip code"
               maxLength={5}
               value={zip}
-              onChange={(e) => setZip(e.target.value)}
-              style={{ ...selectStyle, width: 68 }}
+              onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+              style={selectStyle}
             />
           </div>
 
-          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
+          <div style={pillStyle}>
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="6" cy="6" r="4.5" stroke="#aaa" strokeWidth="1.2" fill="none" />
+              <circle cx="6" cy="6" r="1.5" fill="#aaa" />
+            </svg>
+            <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={selectStyle}>
+              {RADIUS_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  Up to {r} miles
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={pillStyle}>
+            <select value={sport} onChange={(e) => setSport(e.target.value)} style={selectStyle}>
+              <option value="">All sports</option>
+              <option value="baseball">Baseball</option>
+              <option value="softball">Softball</option>
+            </select>
+          </div>
 
           <div style={pillStyle}>
             <select
@@ -893,8 +939,6 @@ export default function SearchResults() {
             </select>
           </div>
 
-          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
-
           <div style={pillStyle}>
             <select
               value={ageGroup}
@@ -909,32 +953,20 @@ export default function SearchResults() {
               ))}
             </select>
           </div>
+        </div>
 
-          {!isMobile && <span style={{ color: '#ccc', fontSize: 12 }}>·</span>}
-
-          <div style={{ ...pillStyle, gap: 6 }}>
-            <span>Within</span>
-            <input
-              type="range"
-              min={5}
-              max={100}
-              step={5}
-              value={radius}
-              onChange={(e) => setRadius(Number(e.target.value))}
-              style={{ width: 72, accentColor: RED, cursor: 'pointer' }}
-            />
-            <span style={{ fontSize: 12, fontWeight: 500, color: DARK, minWidth: 32 }}>
-              {radius} mi
-            </span>
-          </div>
+        <div style={{ fontSize: 12, color: MUTED, marginTop: 10, lineHeight: 1.45 }}>
+          Start with ZIP + distance to keep results local, then narrow by sport or listing type.
         </div>
       </section>
 
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'flex-start' : 'center',
           justifyContent: 'space-between',
+          gap: isMobile ? 8 : 16,
           margin: '20px 0 4px',
         }}
       >
@@ -1000,7 +1032,7 @@ export default function SearchResults() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 200px',
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 200px',
             gap: 22,
             alignItems: 'start',
             marginTop: 8,
@@ -1023,12 +1055,13 @@ export default function SearchResults() {
                           key={coach.id}
                           coach={coach}
                           distanceMi={getDistance(coach)}
+                          to={`/coaches${buildDirectoryQuery({ select: coach.id })}`}
                         />
                       ))}
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 12 }}>
                       <Link
-                        to={`/coaches${sport ? `?sport=${sport}` : ''}`}
+                        to={coachBrowseLink}
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
@@ -1067,12 +1100,13 @@ export default function SearchResults() {
                           key={team.id}
                           team={team}
                           distanceMi={getDistance(team)}
+                          to={`/teams${buildDirectoryQuery({ select: team.id })}`}
                         />
                       ))}
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 12 }}>
                       <Link
-                        to="/teams"
+                        to={teamBrowseLink}
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
@@ -1111,12 +1145,13 @@ export default function SearchResults() {
                           key={facility.id}
                           facility={facility}
                           distanceMi={getDistance(facility)}
+                          to={`/facilities/${facility.id}${buildDirectoryQuery()}`}
                         />
                       ))}
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 12 }}>
                       <Link
-                        to="/facilities"
+                        to={facilityBrowseLink}
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
