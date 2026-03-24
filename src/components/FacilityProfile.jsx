@@ -210,10 +210,70 @@ function CoachCard({ coach, facilityId }) {
   )
 }
 
+// Groups teams by org_affiliation (or falls back to team name) so that
+// Georgia Bombers 13U and 14U appear as one block under "Georgia Bombers".
+function groupTeamsByOrg(teams) {
+  const map = new Map()
+  for (const team of teams) {
+    const key = String(team.org_affiliation || team.name || '').trim() || team.name
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(team)
+  }
+  return Array.from(map.entries()).map(([org, items]) => ({ org, items }))
+}
+
+function tryoutBadgeStyle(status) {
+  if (status === 'open') return { background: '#DCFCE7', color: '#15803D' }
+  if (status === 'year_round') return { background: '#DBEAFE', color: '#1D4ED8' }
+  if (status === 'by_invite') return { background: '#FEF3C7', color: '#92400E' }
+  return { background: '#F1F5F9', color: '#64748B' }
+}
+
+function tryoutLabel(status) {
+  if (status === 'open') return 'Tryouts Open'
+  if (status === 'year_round') return 'Year Round'
+  if (status === 'by_invite') return 'By Invite'
+  return 'Closed'
+}
+
+function TeamCard({ team }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      padding: '10px 0',
+      borderBottom: '1px solid var(--lgray)',
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)', lineHeight: 1.3 }}>
+          {team.name}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>
+          {[team.age_group, team.sport ? (team.sport === 'both' ? 'Baseball & Softball' : team.sport.charAt(0).toUpperCase() + team.sport.slice(1)) : null].filter(Boolean).join(' · ')}
+        </div>
+      </div>
+      <span style={{
+        fontSize: 10,
+        fontWeight: 700,
+        padding: '3px 8px',
+        borderRadius: 999,
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        ...tryoutBadgeStyle(team.tryout_status),
+      }}>
+        {tryoutLabel(team.tryout_status)}
+      </span>
+    </div>
+  )
+}
+
 export default function FacilityProfile() {
   const { id } = useParams()
   const [facility, setFacility] = useState(null)
   const [coaches, setCoaches] = useState([])
+  const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -229,13 +289,18 @@ export default function FacilityProfile() {
         if (isActive) {
           setFacility(null)
           setCoaches([])
+          setTeams([])
           setError('Facility not found.')
           setLoading(false)
         }
         return
       }
 
-      const [{ data: facilityData, error: facilityError }, { data: coachData, error: coachError }] = await Promise.all([
+      const [
+        { data: facilityData, error: facilityError },
+        { data: coachData, error: coachError },
+        { data: teamData },
+      ] = await Promise.all([
         supabase
           .from('facilities')
           .select('*')
@@ -246,6 +311,13 @@ export default function FacilityProfile() {
         supabase
           .from('coaches')
           .select('*')
+          .eq('facility_id', normalizedId)
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .order('name'),
+        supabase
+          .from('travel_teams')
+          .select('id, name, facility_name, org_affiliation, age_group, sport, city, state, tryout_status')
           .eq('facility_id', normalizedId)
           .eq('active', true)
           .in('approval_status', ['approved', 'seeded'])
@@ -278,6 +350,7 @@ export default function FacilityProfile() {
         lat: facilityData.lat != null ? facilityData.lat : coach.lat,
         lng: facilityData.lng != null ? facilityData.lng : coach.lng,
       })))
+      setTeams((teamData || []).map((t) => ({ ...t, id: String(t.id) })))
       if (coachError) {
         setError('Facility loaded, but linked coaches could not be loaded.')
       }
@@ -438,6 +511,39 @@ export default function FacilityProfile() {
               <div style={{ display: 'grid', gap: 12 }}>
                 {coaches.map((coach) => (
                   <CoachCard key={coach.id} coach={coach} facilityId={facility.id} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Linked Teams — grouped by org so Georgia Bombers 13U + 14U show as one block */}
+          <div className="card" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>
+                Teams at this Facility
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--gray)', fontWeight: 700 }}>
+                {teams.length} team{teams.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {teams.length === 0 ? (
+              <div style={{ border: '1px dashed var(--lgray)', borderRadius: 12, padding: 16, color: 'var(--gray)', fontSize: 14 }}>
+                No linked teams yet for this facility.
+              </div>
+            ) : (
+              <div>
+                {groupTeamsByOrg(teams).map(({ org, items }) => (
+                  <div key={org} style={{ marginBottom: 16 }}>
+                    {items.length > 1 && (
+                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 4 }}>
+                        {org}
+                      </div>
+                    )}
+                    {items.map((team) => (
+                      <TeamCard key={team.id} team={team} />
+                    ))}
+                  </div>
                 ))}
               </div>
             )}
