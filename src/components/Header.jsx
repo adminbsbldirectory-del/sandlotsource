@@ -150,7 +150,6 @@ export default function Header() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
             padding: isMobile ? '8px 0' : '10px 0',
             gap: 16,
             minHeight: isMobile ? 60 : 84,
@@ -190,6 +189,7 @@ export default function Header() {
               aria-expanded={menuOpen}
               aria-label="Toggle navigation menu"
               style={{
+                marginLeft: 'auto',
                 border: '2px solid var(--lgray)',
                 background: '#fff',
                 color: '#1a1a1a',
@@ -215,8 +215,8 @@ export default function Header() {
                 scrollbarWidth: 'none',
               }}
             >
-              {/* Core browse tabs — left */}
-              <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+              {/* Core browse tabs */}
+              <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexShrink: 0 }}>
                 {coreTabs.map((tab) => (
                   <NavButton
                     key={tab.id}
@@ -227,34 +227,40 @@ export default function Header() {
                 ))}
               </div>
 
-              {/* Tagline — fills the gap between core nav and CTA tabs */}
+              {/* Tagline — fills the gap, larger and more flourished */}
               <div
                 style={{
                   flex: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '0 16px',
+                  padding: '0 20px',
                   pointerEvents: 'none',
-                  minWidth: 0,
+                  minWidth: 120,
                 }}
               >
                 <span
                   style={{
-                    fontSize: 11,
+                    fontSize: 15,
                     fontStyle: 'italic',
-                    color: '#a0a8b0',
-                    letterSpacing: '0.04em',
+                    fontWeight: 400,
+                    color: '#8a9bb0',
+                    letterSpacing: '0.02em',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    lineHeight: 1,
+                    background: 'linear-gradient(90deg, #8a9bb0 0%, #1b3a5c 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
                   }}
                 >
                   Your source for baseball &amp; softball
                 </span>
               </div>
 
-              {/* CTA tabs — right */}
+              {/* CTA tabs */}
               <div
                 style={{
                   display: 'flex',
