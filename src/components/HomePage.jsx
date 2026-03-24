@@ -26,10 +26,14 @@ const MUTED = '#888'
 const FAINT = '#bbb'
 
 const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
+
+// Rail is 300px wide; each ad slot is a 300x300 square
 const RAIL_WIDTH = 300
 const WIDE_BREAKPOINT = 1440
 
-// A full-bleed tinted band — used to visually separate sections
+// Header height — used for sticky top offset
+const HEADER_H = 90
+
 function Band({ children, style }) {
   return (
     <div style={{ background: LIGHT, borderTop: '1px solid ' + BORDER, borderBottom: '1px solid ' + BORDER, padding: '24px 0', marginTop: 24, ...style }}>
@@ -75,12 +79,27 @@ function FeaturedCard({ listing, isMobile }) {
   )
 }
 
+// Each rail holds two square 300x300 ad units stacked vertically.
+// The inner wrapper is sticky so the ads travel with the user as they scroll.
 function AdRail({ side }) {
   return (
-    <aside style={{ width: RAIL_WIDTH, flexShrink: 0 }}>
-      <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <AdSlot position={'rail-' + side + '-halfpage'} />
-        <AdSlot position={'rail-' + side + '-mrect'} />
+    <aside
+      style={{
+        width: RAIL_WIDTH,
+        flexShrink: 0,
+        alignSelf: 'flex-start',
+        position: 'sticky',
+        top: HEADER_H + 12,
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Two 300x300 medium-rectangle squares */}
+        <div style={{ width: RAIL_WIDTH, height: RAIL_WIDTH, overflow: 'hidden', borderRadius: 8 }}>
+          <AdSlot position={'rail-' + side + '-sq1'} />
+        </div>
+        <div style={{ width: RAIL_WIDTH, height: RAIL_WIDTH, overflow: 'hidden', borderRadius: 8 }}>
+          <AdSlot position={'rail-' + side + '-sq2'} />
+        </div>
       </div>
     </aside>
   )
@@ -161,14 +180,13 @@ export default function HomePage() {
   ]
 
   const pageShell = {
-    maxWidth: isWide ? (RAIL_WIDTH * 2 + 860 + 32) + 'px' : 1200,
+    maxWidth: isWide ? (RAIL_WIDTH * 2 + 860 + 64) + 'px' : 1200,
     margin: '0 auto',
     padding: isMobile ? '0 0 96px' : '0 0 48px',
     background: '#fff',
     color: DARK,
   }
 
-  // Inner content column — keeps horizontal padding consistent
   const col = { padding: isMobile ? '0 12px' : '0 20px' }
 
   return (
@@ -178,16 +196,15 @@ export default function HomePage() {
         <AdSlot position={isMobile ? 'mobile-inline-top' : 'leaderboard-top'} />
       </div>
 
-      <div style={{ display: isWide ? 'flex' : 'block', alignItems: 'flex-start', gap: isWide ? 16 : 0, marginTop: 16 }}>
-        {isWide && (
-          <div style={{ paddingLeft: 20 }}>
-            <AdRail side="left" />
-          </div>
-        )}
+      {/* Three-column wrapper — rails use alignSelf: flex-start + position: sticky */}
+      <div style={{ display: isWide ? 'flex' : 'block', alignItems: 'flex-start', gap: isWide ? 20 : 0, marginTop: 16, padding: isWide ? '0 20px' : 0 }}>
 
+        {isWide && <AdRail side="left" />}
+
+        {/* Main content column */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
-          {/* ── HERO / SEARCH ── white card with navy left accent */}
+          {/* HERO */}
           <div style={col}>
             <section style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '20px 14px 16px' : '28px 28px 22px', border: '1px solid ' + BORDER, borderLeft: '4px solid ' + NAVY }}>
               <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
@@ -248,7 +265,7 @@ export default function HomePage() {
                 <div style={pillStyle}>
                   <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} style={selectStyle}>
                     <option value="">All ages</option>
-                    {['7U', '8U', '9U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
+                    {['8U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
                       <option key={a} value={a}>{a}</option>
                     ))}
                   </select>
@@ -269,7 +286,7 @@ export default function HomePage() {
             </section>
           </div>
 
-          {/* ── HOW IT WORKS — tinted band ── */}
+          {/* HOW IT WORKS */}
           <Band>
             <div style={col}>
               <SectionHeader title="How it works" />
@@ -287,7 +304,7 @@ export default function HomePage() {
             </div>
           </Band>
 
-          {/* ── WHAT ARE YOU LOOKING FOR — white ── */}
+          {/* WHAT ARE YOU LOOKING FOR */}
           <div style={{ ...col, marginTop: 28 }}>
             <SectionHeader title="What are you looking for?" />
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
@@ -312,7 +329,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── FEATURED COACHES — tinted band ── */}
+          {/* FEATURED COACHES */}
           <Band style={{ marginTop: 28 }}>
             <div style={col}>
               <SectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all &rarr;" />
@@ -328,7 +345,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── FEATURED TEAMS — white ── */}
+          {/* FEATURED TEAMS */}
           <div style={{ ...col, marginTop: 28 }}>
             <SectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all &rarr;" />
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 10 }}>
@@ -336,7 +353,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── URGENT PICKUP — tinted band ── */}
+          {/* URGENT PICKUP */}
           <Band style={{ marginTop: 28 }}>
             <div style={col}>
               <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all &rarr;" />
@@ -358,7 +375,7 @@ export default function HomePage() {
             </div>
           </Band>
 
-          {/* ── STATS ── white ── */}
+          {/* STATS */}
           <div style={{ ...col, marginTop: 28 }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10, background: '#edf2f8', borderRadius: 12, padding: isMobile ? '14px' : '18px 20px' }}>
               {[
@@ -379,7 +396,7 @@ export default function HomePage() {
             <AdSlot position={isMobile ? 'mobile-inline-lower' : 'leaderboard-prefooter'} />
           </div>
 
-          {/* ── CTA BLOCK ── */}
+          {/* CTA */}
           <div style={{ ...col, marginTop: 24, paddingBottom: 8 }}>
             <section style={{ background: NAVY, borderRadius: 14, padding: isMobile ? '22px 18px' : '26px 28px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? 18 : 24 }}>
               <div style={{ maxWidth: isMobile ? '100%' : 420 }}>
@@ -400,14 +417,11 @@ export default function HomePage() {
           </div>
 
         </div>
+        {/* END MAIN CONTENT */}
 
-        {isWide && (
-          <div style={{ paddingRight: 20 }}>
-            <AdRail side="right" />
-          </div>
-        )}
+        {isWide && <AdRail side="right" />}
+
       </div>
-
     </div>
   )
 }
