@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       : subject;
 
     await resend.emails.send({
-  from: 'Sandlot Source <onboarding@resend.dev>',
+  from: 'Sandlot Source <noreply@sandlotsource.com>',
   to: ADMIN_EMAIL,
   subject: finalSubject,
   html,
