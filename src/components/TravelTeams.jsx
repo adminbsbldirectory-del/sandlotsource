@@ -911,6 +911,14 @@ export default function TravelTeams() {
     return () => clearTimeout(t)
   }, [selectedTeamId, isMobile])
 
+  // Auto-select a team when ?select=ID is in the URL (e.g. linked from FacilityProfile)
+  useEffect(() => {
+    if (!teams.length) return
+    const params = new URLSearchParams(window.location.search)
+    const selectId = params.get('select')
+    if (selectId) setSelectedTeamId(selectId)
+  }, [teams])
+
   const selectedTeam = useMemo(() => {
     return filtered.find((team) => team.id === selectedTeamId) || teams.find((team) => team.id === selectedTeamId) || null
   }, [filtered, teams, selectedTeamId])
