@@ -115,7 +115,7 @@ export default function ClaimListing() {
     } else {
       // If table doesn't exist yet, tell the admin and still show success to user
       console.error('claim_requests insert error:', error)
-      setValidationError('Something went wrong. Please email admin.bsbldirectory@gmail.com directly.')
+      setValidationError('Something went wrong. Please email admin@sandlotsource.com directly.')
     }
   }
 
