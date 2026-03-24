@@ -69,7 +69,7 @@ const RADIUS_OPTIONS = [
 
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value)
-  if (sport === 'both') return { key: 'both', label: 'Both', bg: '#E7EEF9', color: '#1D3E73', border: '#C8D5E8' }
+  if (sport === 'both') return { key: 'both', label: 'Baseball & Softball', bg: '#E7EEF9', color: '#1D3E73', border: '#C8D5E8' }
   if (sport === 'softball') return { key: 'softball', label: 'Softball', bg: '#F3F0D7', color: '#5F5A17', border: '#DDD59A' }
   return { key: 'baseball', label: 'Baseball', bg: '#E8EEF8', color: '#173B73', border: '#C7D3E8' }
 }
