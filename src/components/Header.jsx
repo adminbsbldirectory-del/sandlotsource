@@ -6,7 +6,7 @@ const NAV_TABS = [
   { id: 'coaches', label: 'Coaches', path: '/coaches' },
   { id: 'teams', label: 'Teams', path: '/teams' },
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
-  { id: 'board', label: 'Pickup Needed · Pickup Wanted', path: '/find' },
+  { id: 'board', label: 'Pickup Needed \u00b7 Pickup Wanted', path: '/find' },
   { id: 'roster', label: 'Open Roster Spots', path: '/roster' },
   { id: 'submit', label: '+ Add Listing', path: '/submit' },
   { id: 'claim', label: 'Claim a Listing', path: '/claim' },
@@ -17,13 +17,13 @@ function getActiveTab(pathname) {
     if (tab.path === '/') return pathname === '/'
     return pathname === tab.path || pathname.startsWith(tab.path + '/')
   })
-
   return match?.id || 'home'
 }
 
 function getTabStyles(tabId, isActive) {
   const isAdd = tabId === 'submit'
   const isRoster = tabId === 'roster'
+  const isClaim = tabId === 'claim'
 
   if (isAdd) {
     return {
@@ -38,6 +38,14 @@ function getTabStyles(tabId, isActive) {
       background: isActive ? '#15803d' : 'rgba(22,163,74,0.1)',
       color: isActive ? '#fff' : '#15803d',
       borderBottom: isActive ? '3px solid #15803d' : '3px solid transparent',
+    }
+  }
+
+  if (isClaim) {
+    return {
+      background: isActive ? '#c0392b' : 'rgba(230,51,41,0.07)',
+      color: isActive ? '#fff' : '#c0392b',
+      borderBottom: isActive ? '3px solid #c0392b' : '3px solid transparent',
     }
   }
 
@@ -116,7 +124,6 @@ export default function Header() {
       setIsMobile(mobile)
       if (!mobile) setMenuOpen(false)
     }
-
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -141,7 +148,8 @@ export default function Header() {
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
       }}
     >
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
+      {/* No maxWidth centering — logo sits flush to the left */}
+      <div style={{ padding: '0 24px' }}>
         <div
           style={{
             display: 'flex',
@@ -149,9 +157,10 @@ export default function Header() {
             justifyContent: 'space-between',
             padding: isMobile ? '8px 0' : '10px 0',
             gap: 16,
-            minHeight: isMobile ? 60 : 72,
+            minHeight: isMobile ? 60 : 84,
           }}
         >
+          {/* Logo — far left */}
           <button
             type="button"
             onClick={() => handleNavigate('/')}
@@ -170,7 +179,7 @@ export default function Header() {
               src="/logo.png"
               alt="Sandlot Source"
               style={{
-                height: isMobile ? 46 : 56,
+                height: isMobile ? 46 : 64,
                 width: 'auto',
                 display: 'block',
                 objectFit: 'contain',
@@ -196,7 +205,7 @@ export default function Header() {
                 lineHeight: 1,
               }}
             >
-              ☰
+              &#9776;
             </button>
           ) : (
             <div
@@ -204,20 +213,43 @@ export default function Header() {
                 display: 'flex',
                 gap: 2,
                 alignItems: 'flex-end',
+                flex: 1,
                 overflowX: 'auto',
                 overflowY: 'hidden',
                 WebkitOverflowScrolling: 'touch',
                 scrollbarWidth: 'none',
               }}
             >
-              {NAV_TABS.map((tab) => (
-                <NavButton
-                  key={tab.id}
-                  tab={tab}
-                  isActive={activeTab === tab.id}
-                  onClick={() => handleNavigate(tab.path)}
-                />
-              ))}
+              {NAV_TABS.map((tab) => {
+                if (tab.id === 'claim') {
+                  return (
+                    <div
+                      key={tab.id}
+                      style={{
+                        marginLeft: 'auto',
+                        paddingLeft: 12,
+                        borderLeft: '1px solid #e5e5e5',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                      }}
+                    >
+                      <NavButton
+                        tab={tab}
+                        isActive={activeTab === tab.id}
+                        onClick={() => handleNavigate(tab.path)}
+                      />
+                    </div>
+                  )
+                }
+                return (
+                  <NavButton
+                    key={tab.id}
+                    tab={tab}
+                    isActive={activeTab === tab.id}
+                    onClick={() => handleNavigate(tab.path)}
+                  />
+                )
+              })}
             </div>
           )}
         </div>
