@@ -108,7 +108,7 @@ const s = {
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
   },
-  body: { padding: '24px 20px', maxWidth: 1400, margin: '0 auto' },
+  body: { padding: '24px 20px', maxWidth: '100%', margin: '0 auto' },
   tabs: { display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #dde3ec' },
   tab: (active) => ({
     padding: '9px 20px',
@@ -156,9 +156,9 @@ const s = {
     color: '#888',
     marginLeft: 'auto',
   },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'auto' },
   th: {
-    padding: '10px 12px',
+    padding: '10px 14px',
     textAlign: 'left',
     fontSize: 11,
     fontWeight: 700,
@@ -168,12 +168,14 @@ const s = {
     background: '#f8f9fb',
     borderBottom: '1px solid #eef0f4',
     whiteSpace: 'nowrap',
+    minWidth: 100,
   },
   td: {
-    padding: '9px 12px',
+    padding: '9px 14px',
     borderBottom: '1px solid #f0f2f6',
     verticalAlign: 'middle',
     color: '#1a1a2e',
+    minWidth: 100,
   },
   inlineInput: {
     width: '100%',
