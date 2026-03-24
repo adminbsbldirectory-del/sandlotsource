@@ -78,10 +78,6 @@ const TABLE_CONFIG = {
 // ── Styles ──────────────────────────────────────────────────────────
 const s = {
   page: {
-    height: '100vh',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
     background: '#f4f6f9',
     fontFamily: 'var(--font-body, system-ui, sans-serif)',
   },
@@ -111,7 +107,7 @@ const s = {
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
   },
-  body: { padding: '24px 20px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+  body: { padding: '16px 20px' },
   tabs: { display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #dde3ec' },
   tab: (active) => ({
     padding: '9px 20px',
@@ -135,10 +131,6 @@ const s = {
     border: '1px solid #dde3ec',
     overflow: 'hidden',
     boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
   },
   toolbar: {
     padding: '14px 18px',
@@ -492,7 +484,7 @@ function AdminTable({ tabName }) {
   }
 
   return (
-    <div style={{ ...s.card, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div style={s.card}>
       <div style={s.toolbar}>
         <input
           value={search}
@@ -502,7 +494,7 @@ function AdminTable({ tabName }) {
         />
         <span style={s.countBadge}>{filtered.length} of {rows.length} records</span>
       </div>
-      <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 310px)' }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading…</div>
         ) : filtered.length === 0 ? (
