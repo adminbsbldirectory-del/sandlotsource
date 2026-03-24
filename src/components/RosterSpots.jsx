@@ -113,27 +113,73 @@ function normalizeLookupText(value) {
     .trim()
 }
 
-async function findMatchingTeamId({ teamName, sport, ageGroup, zipCode, state }) {
-  const normalizedName = normalizeLookupText(teamName)
-  if (!normalizedName) return null
+function formatSportLabel(value) {
+  if (!value) return ''
+  if (value === 'both') return 'Baseball & Softball'
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
 
-  const queryTerms = Array.from(
+function getLocationLine(city, state, zipCode) {
+  const base = [city, state].filter(Boolean).join(', ')
+  return base + (zipCode ? `${base ? ' ' : ''}${zipCode}` : '')
+}
+
+function scoreTeamCandidate(row, { teamName, sport, ageGroup, zipCode, state, orgAffiliation }) {
+  const normalizedName = normalizeLookupText(teamName)
+  const normalizedOrg = normalizeLookupText(orgAffiliation)
+  const rowName = normalizeLookupText(row.name)
+  const rowOrg = normalizeLookupText(row.org_affiliation)
+  const rowSport = String(row.sport || '').toLowerCase()
+  const rowState = String(row.state || '').trim().toUpperCase()
+  const rowZip = String(row.zip_code || '').trim()
+  const rowAge = String(row.age_group || '').trim()
+
+  let score = 0
+
+  if (normalizedName && rowName === normalizedName) score += 8
+  else if (normalizedName && (rowName.includes(normalizedName) || normalizedName.includes(rowName))) score += 4
+
+  if (normalizedOrg && rowOrg && rowOrg === normalizedOrg) score += 3
+  else if (normalizedOrg && rowOrg && (rowOrg.includes(normalizedOrg) || normalizedOrg.includes(rowOrg))) score += 1
+
+  if (sport && (rowSport === sport || rowSport === 'both')) score += 3
+  if (ageGroup && rowAge === ageGroup) score += 2
+  if (zipCode && rowZip && rowZip === zipCode) score += 3
+  if (state && rowState && rowState === String(state).trim().toUpperCase()) score += 1
+  if (row.approval_status === 'approved' || row.approval_status === 'seeded') score += 1
+  if (row.active === true) score += 1
+
+  return score
+}
+
+async function searchTeamMatches({ teamName, orgAffiliation, sport, ageGroup, zipCode, state }) {
+  const normalizedName = normalizeLookupText(teamName)
+  const normalizedOrg = normalizeLookupText(orgAffiliation)
+  if (!normalizedName || normalizedName.length < 3) return []
+
+  const lookupTerms = Array.from(
     new Set([
-      teamName?.trim(),
+      String(teamName || '').trim(),
       normalizedName,
-    ].filter(Boolean))
+      String(orgAffiliation || '').trim(),
+      normalizedOrg,
+    ].filter((value) => value && value.length >= 2))
   )
 
   let candidates = []
 
-  for (const term of queryTerms.slice(0, 2)) {
-    let query = supabase
-      .from('travel_teams')
-      .select('id, name, sport, age_group, zip_code, state, approval_status, active')
-      .ilike('name', `%${term}%`)
-      .limit(25)
+  for (const term of lookupTerms.slice(0, 4)) {
+    const safeTerm = String(term).replace(/[%_]/g, '').trim()
+    if (!safeTerm) continue
 
-    const { data } = await query
+    const { data } = await supabase
+      .from('travel_teams')
+      .select('id, name, sport, age_group, zip_code, city, state, org_affiliation, practice_location_name, facility_id, facility_name, approval_status, active')
+      .eq('active', true)
+      .in('approval_status', ['approved', 'seeded'])
+      .or(`name.ilike.%${safeTerm}%,org_affiliation.ilike.%${safeTerm}%`)
+      .limit(20)
+
     if (Array.isArray(data) && data.length) {
       candidates = candidates.concat(data)
     }
@@ -141,34 +187,17 @@ async function findMatchingTeamId({ teamName, sport, ageGroup, zipCode, state })
 
   const deduped = Array.from(new Map(candidates.map((row) => [row.id, row])).values())
 
-  let best = null
-
-  for (const row of deduped) {
-    const rowName = normalizeLookupText(row.name)
-    const rowSport = String(row.sport || '').toLowerCase()
-    const rowState = String(row.state || '').trim().toUpperCase()
-    const rowZip = String(row.zip_code || '').trim()
-    const rowAge = String(row.age_group || '').trim()
-
-    let score = 0
-
-    if (rowName === normalizedName) score += 8
-    else if (rowName.includes(normalizedName) || normalizedName.includes(rowName)) score += 4
-
-    if (sport && (rowSport === sport || rowSport === 'both')) score += 3
-    if (ageGroup && rowAge === ageGroup) score += 2
-    if (zipCode && rowZip && rowZip === zipCode) score += 3
-    if (state && rowState && rowState === String(state).trim().toUpperCase()) score += 1
-    if (row.approval_status === 'approved' || row.approval_status === 'seeded') score += 1
-    if (row.active === true) score += 1
-
-    if (!best || score > best.score) {
-      best = { id: row.id, score }
-    }
-  }
-
-  if (!best || best.score < 8) return null
-  return best.id
+  return deduped
+    .map((row) => ({
+      ...row,
+      score: scoreTeamCandidate(row, { teamName, sport, ageGroup, zipCode, state, orgAffiliation }),
+    }))
+    .filter((row) => row.score >= 6)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return String(a.name || '').localeCompare(String(b.name || ''))
+    })
+    .slice(0, 4)
 }
 
 function RequiredMark() {
@@ -261,9 +290,15 @@ function DaysRemaining({ expiresAt }) {
   )
 }
 
+
 function RosterRow({ spot, isMobile }) {
   const positions = Array.isArray(spot.positions_needed) ? spot.positions_needed : []
-  const cityStateZip = [spot.city, spot.state].filter(Boolean).join(', ') + (spot.zip_code ? ` ${spot.zip_code}` : '')
+  const cityStateZip = getLocationLine(spot.city, spot.state, spot.zip_code)
+  const linkedTeam = spot.travel_teams || null
+  const linkedTeamUrl = spot.team_id ? '/teams?select=' + spot.team_id : ''
+  const facilityUrl = linkedTeam?.facility_id ? '/facilities/' + linkedTeam.facility_id : ''
+  const linkedPracticeLocation = linkedTeam?.practice_location_name || ''
+  const linkedFacilityName = linkedTeam?.facility_name || ''
 
   return (
     <div
@@ -313,7 +348,7 @@ function RosterRow({ spot, isMobile }) {
                   fontFamily: 'var(--font-head)',
                 }}
               >
-                Team Match
+                Linked Team
               </span>
             )}
             <SportBadge sport={spot.sport} />
@@ -348,6 +383,31 @@ function RosterRow({ spot, isMobile }) {
           {spot.org_affiliation && (
             <div style={{ fontSize: 12, color: '#475569', marginBottom: 8, wordBreak: 'break-word' }}>
               {spot.org_affiliation}
+            </div>
+          )}
+
+          {(linkedPracticeLocation || linkedFacilityName) && (
+            <div
+              style={{
+                display: 'grid',
+                gap: 6,
+                marginBottom: 10,
+                padding: '10px 12px',
+                borderRadius: 12,
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+              }}
+            >
+              {linkedPracticeLocation && (
+                <div style={{ fontSize: 12, color: '#334155', wordBreak: 'break-word' }}>
+                  <strong>Practice:</strong> {linkedPracticeLocation}
+                </div>
+              )}
+              {linkedFacilityName && (
+                <div style={{ fontSize: 12, color: '#334155', wordBreak: 'break-word' }}>
+                  <strong>Facility:</strong> {linkedFacilityName}
+                </div>
+              )}
             </div>
           )}
 
@@ -408,11 +468,30 @@ function RosterRow({ spot, isMobile }) {
               {spot.contact_info}
             </div>
           )}
+          {linkedTeamUrl && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
+              <a
+                href={linkedTeamUrl}
+                style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13, fontWeight: 700 }}
+              >
+                View Team →
+              </a>
+              {facilityUrl && (
+                <a
+                  href={facilityUrl}
+                  style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13, fontWeight: 700 }}
+                >
+                  View Facility →
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
+
 
 function ZipFieldInline({ value, onChange, onGeocode, required }) {
   const [status, setStatus] = useState('')
@@ -461,6 +540,7 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
   )
 }
 
+
 function RosterForm({ onSubmitted, isMobile }) {
   const gridCols = isMobile ? '1fr' : '1fr 1fr'
 
@@ -481,9 +561,18 @@ function RosterForm({ onSubmitted, isMobile }) {
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [matchLoading, setMatchLoading] = useState(false)
+  const [teamMatches, setTeamMatches] = useState([])
+  const [selectedMatchId, setSelectedMatchId] = useState(null)
+  const [matchChoiceMode, setMatchChoiceMode] = useState('auto')
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
+  }
+
+  function handleLookupFieldChange(field, value) {
+    set(field, value)
+    setMatchChoiceMode('auto')
   }
 
   function togglePos(pos) {
@@ -504,10 +593,56 @@ function RosterForm({ onSubmitted, isMobile }) {
         city: f.city || geo.city,
         state: geo.state || f.state,
       }))
+      setMatchChoiceMode('auto')
     } else {
       setForm((f) => ({ ...f, lat: null, lng: null, state: '' }))
+      setMatchChoiceMode('auto')
     }
   }
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadMatches() {
+      const normalizedName = normalizeLookupText(form.team_name)
+      if (!normalizedName || normalizedName.length < 3) {
+        setTeamMatches([])
+        setSelectedMatchId(null)
+        setMatchLoading(false)
+        return
+      }
+
+      setMatchLoading(true)
+      const matches = await searchTeamMatches({
+        teamName: form.team_name,
+        orgAffiliation: form.org_affiliation,
+        sport: form.sport,
+        ageGroup: form.age_group,
+        zipCode: form.zip_code,
+        state: form.state,
+      })
+
+      if (cancelled) return
+      setTeamMatches(matches)
+      setMatchLoading(false)
+
+      if (matchChoiceMode === 'auto') {
+        setSelectedMatchId(matches[0]?.score >= 10 ? matches[0].id : null)
+      } else if (matchChoiceMode === 'linked') {
+        const stillThere = matches.some((row) => row.id === selectedMatchId)
+        if (!stillThere) {
+          setMatchChoiceMode('auto')
+          setSelectedMatchId(matches[0]?.score >= 10 ? matches[0].id : null)
+        }
+      }
+    }
+
+    const timer = setTimeout(loadMatches, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [form.team_name, form.org_affiliation, form.sport, form.age_group, form.zip_code, form.state, matchChoiceMode, selectedMatchId])
 
   function validate() {
     if (!form.sport) return 'Sport is required.'
@@ -527,13 +662,9 @@ function RosterForm({ onSubmitted, isMobile }) {
     setError('')
     setSubmitting(true)
 
-    const matchedTeamId = await findMatchingTeamId({
-      teamName: form.team_name,
-      sport: form.sport,
-      ageGroup: form.age_group,
-      zipCode: form.zip_code,
-      state: form.state,
-    })
+    const selectedMatch = matchChoiceMode === 'standalone'
+      ? null
+      : teamMatches.find((row) => row.id === selectedMatchId) || (teamMatches[0]?.score >= 10 ? teamMatches[0] : null)
 
     const payload = {
       sport: form.sport,
@@ -546,7 +677,7 @@ function RosterForm({ onSubmitted, isMobile }) {
       zip_code: form.zip_code || null,
       lat: form.lat || null,
       lng: form.lng || null,
-      team_id: matchedTeamId,
+      team_id: selectedMatch?.id || null,
       commitment: 'full_season',
       description: form.description.trim() || null,
       contact_name: form.contact_name.trim() || null,
@@ -560,11 +691,18 @@ function RosterForm({ onSubmitted, isMobile }) {
     const { error: sbError } = await supabase.from('roster_spots').insert(payload)
     setSubmitting(false)
 
-    if (sbError) setError('Submission error: ' + (sbError.message || 'Please try again.'))
-    else onSubmitted()
+    if (sbError) {
+      setError('Submission error: ' + (sbError.message || 'Please try again.'))
+    } else {
+      onSubmitted({
+        matchedTeam: selectedMatch,
+        postedStandalone: matchChoiceMode === 'standalone' || !selectedMatch,
+      })
+    }
   }
 
   const positions = form.sport === 'softball' ? POSITIONS_SB : POSITIONS_BB
+  const selectedMatch = teamMatches.find((row) => row.id === selectedMatchId) || null
 
   return (
     <div
@@ -599,7 +737,7 @@ function RosterForm({ onSubmitted, isMobile }) {
               key={s}
               type="button"
               onClick={() => {
-                set('sport', s)
+                handleLookupFieldChange('sport', s)
                 set('positions_needed', [])
               }}
               style={{
@@ -627,31 +765,176 @@ function RosterForm({ onSubmitted, isMobile }) {
           <label style={labelStyle}>Team Name</label>
           <input
             value={form.team_name}
-            onChange={(e) => set('team_name', e.target.value)}
+            onChange={(e) => handleLookupFieldChange('team_name', e.target.value)}
             placeholder="e.g. Cherokee Nationals"
             style={inputStyle}
           />
           <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-            If this matches an existing team listing, we will associate it automatically.
+            We will suggest similar Sandlot Source team listings so players and parents can research the team more easily.
           </div>
         </div>
         <div>
           <label style={labelStyle}>Org Affiliation</label>
           <input
             value={form.org_affiliation}
-            onChange={(e) => set('org_affiliation', e.target.value)}
+            onChange={(e) => handleLookupFieldChange('org_affiliation', e.target.value)}
             placeholder="e.g. USSSA, PGF, Perfect Game"
             style={inputStyle}
           />
         </div>
       </div>
 
+      {(matchLoading || teamMatches.length > 0 || matchChoiceMode === 'standalone') && (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: isMobile ? '12px 12px 10px' : '14px 14px 12px',
+            borderRadius: 12,
+            border: '1px solid ' + (selectedMatch ? '#BBF7D0' : '#E2E8F0'),
+            background: selectedMatch ? '#F0FDF4' : '#F8FAFC',
+            display: 'grid',
+            gap: 10,
+          }}
+        >
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--navy)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Existing Team Match
+            </div>
+            {matchLoading && <div style={{ fontSize: 12, color: '#64748B' }}>Checking existing team listings…</div>}
+            {!matchLoading && selectedMatch && (
+              <div style={{ fontSize: 12, color: '#166534', fontWeight: 700 }}>Linked for added team context</div>
+            )}
+            {!matchLoading && matchChoiceMode === 'standalone' && (
+              <div style={{ fontSize: 12, color: '#64748B' }}>Posting as a standalone roster spot</div>
+            )}
+          </div>
+
+          {!matchLoading && selectedMatch && (
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: 15 }}>{selectedMatch.name}</div>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: '#DCFCE7', color: '#166534' }}>
+                  Suggested Match
+                </span>
+                {selectedMatch.age_group && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: '#E2E8F0', color: '#334155' }}>
+                    {selectedMatch.age_group}
+                  </span>
+                )}
+                {selectedMatch.sport && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: '#DBEAFE', color: '#1D4ED8' }}>
+                    {formatSportLabel(selectedMatch.sport)}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: '#475569', wordBreak: 'break-word' }}>
+                {getLocationLine(selectedMatch.city, selectedMatch.state, selectedMatch.zip_code) || 'Location pending'}
+                {selectedMatch.org_affiliation ? ` · ${selectedMatch.org_affiliation}` : ''}
+              </div>
+              {(selectedMatch.practice_location_name || selectedMatch.facility_name) && (
+                <div style={{ fontSize: 12, color: '#334155', wordBreak: 'break-word' }}>
+                  {selectedMatch.practice_location_name ? `Practice: ${selectedMatch.practice_location_name}` : ''}
+                  {selectedMatch.practice_location_name && selectedMatch.facility_name ? ' · ' : ''}
+                  {selectedMatch.facility_name ? `Facility: ${selectedMatch.facility_name}` : ''}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 2 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMatchChoiceMode('linked')
+                    setSelectedMatchId(selectedMatch.id)
+                  }}
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    background: '#166534',
+                    color: 'white',
+                    padding: '8px 12px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  Link This Team
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMatchChoiceMode('standalone')
+                    setSelectedMatchId(null)
+                  }}
+                  style={{
+                    border: '1px solid #CBD5E1',
+                    borderRadius: 999,
+                    background: 'white',
+                    color: 'var(--navy)',
+                    padding: '8px 12px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  Keep Standalone
+                </button>
+                <a
+                  href={'/teams?select=' + selectedMatch.id}
+                  style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 12, fontWeight: 700, alignSelf: 'center' }}
+                >
+                  Preview Team →
+                </a>
+              </div>
+            </div>
+          )}
+
+          {!matchLoading && teamMatches.length > 1 && (
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div style={{ fontSize: 12, color: '#64748B' }}>Other possible matches</div>
+              <div style={{ display: 'grid', gap: 6 }}>
+                {teamMatches.filter((row) => row.id !== selectedMatchId).slice(0, 3).map((row) => (
+                  <button
+                    key={row.id}
+                    type="button"
+                    onClick={() => {
+                      setMatchChoiceMode('linked')
+                      setSelectedMatchId(row.id)
+                    }}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 10,
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      border: '1px solid #DCE7F3',
+                      background: 'white',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', wordBreak: 'break-word' }}>{row.name}</div>
+                      <div style={{ fontSize: 12, color: '#64748B', wordBreak: 'break-word' }}>
+                        {[row.age_group, formatSportLabel(row.sport), getLocationLine(row.city, row.state, row.zip_code)].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    <span style={{ color: '#1D4ED8', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Use</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, marginBottom: 14 }}>
         <div>
           <label style={labelStyle}>
             Age Group <RequiredMark />
           </label>
-          <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
+          <select value={form.age_group} onChange={(e) => handleLookupFieldChange('age_group', e.target.value)} style={selectStyle}>
             <option value="">Select</option>
             {AGE_GROUPS.map((a) => (
               <option key={a}>{a}</option>
@@ -670,7 +953,7 @@ function RosterForm({ onSubmitted, isMobile }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 12, marginBottom: 14 }}>
-        <ZipFieldInline value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required />
+        <ZipFieldInline value={form.zip_code} onChange={(v) => handleLookupFieldChange('zip_code', v)} onGeocode={handleGeocode} required />
         <div>
           <label style={labelStyle}>State</label>
           <input value={form.state} readOnly placeholder="Auto-filled from zip" style={{ ...inputStyle, background: '#F8FAFC' }} />
@@ -771,6 +1054,7 @@ function RosterForm({ onSubmitted, isMobile }) {
   )
 }
 
+
 export default function RosterSpots() {
   const [spots, setSpots] = useState([])
   const [loading, setLoading] = useState(true)
@@ -784,6 +1068,7 @@ export default function RosterSpots() {
   const [showMap, setShowMap] = useState(false)
   const [zipStatus, setZipStatus] = useState('idle')
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [submittedInfo, setSubmittedInfo] = useState(null)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768)
@@ -811,7 +1096,7 @@ export default function RosterSpots() {
     async function load() {
       const { data, error } = await supabase
         .from('roster_spots')
-        .select('*')
+        .select(`*, travel_teams (id, name, city, state, zip_code, practice_location_name, facility_id, facility_name)`)
         .eq('active', true)
         .in('approval_status', ['pending', 'approved'])
         .gt('expires_at', new Date().toISOString())
@@ -945,9 +1230,24 @@ export default function RosterSpots() {
           <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: '#15803D', marginBottom: 8 }}>
             Roster Spot Posted!
           </div>
-          <div style={{ fontSize: 14, color: '#166534', marginBottom: 20 }}>
+          <div style={{ fontSize: 14, color: '#166534', marginBottom: 10 }}>
             Your listing will appear here once reviewed. It will stay active for 15 days.
           </div>
+          {submittedInfo?.matchedTeam && (
+            <div style={{ fontSize: 13, color: '#166534', marginBottom: 16, lineHeight: 1.5 }}>
+              Linked to existing team listing: <strong>{submittedInfo.matchedTeam.name}</strong>
+              {(submittedInfo.matchedTeam.practice_location_name || submittedInfo.matchedTeam.facility_name) && (
+                <span>
+                  {' '}· {submittedInfo.matchedTeam.practice_location_name || submittedInfo.matchedTeam.facility_name}
+                </span>
+              )}
+            </div>
+          )}
+          {submittedInfo?.postedStandalone && !submittedInfo?.matchedTeam && (
+            <div style={{ fontSize: 13, color: '#166534', marginBottom: 16 }}>
+              Posted as a standalone roster spot with no team link selected.
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setView('browse')}
@@ -990,7 +1290,7 @@ export default function RosterSpots() {
         >
           ← Back to Roster Spots
         </button>
-        <RosterForm onSubmitted={() => setView('submitted')} isMobile={isMobile} />
+        <RosterForm onSubmitted={(info) => { setSubmittedInfo(info || null); setView('submitted') }} isMobile={isMobile} />
       </div>
     )
   }
