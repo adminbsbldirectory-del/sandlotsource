@@ -9,6 +9,7 @@ import {
   teamEmail,
   playerBoardEmail,
   facilityEmail,
+  claimEmail,
 } from '../lib/emailTemplates.js';
 import { findDuplicates } from '../lib/duplicateCheck.js';
 
@@ -27,6 +28,7 @@ const templateMap = {
   travel_teams: teamEmail,
   player_board: playerBoardEmail,
   facilities: facilityEmail,
+  claim_requests: (record) => claimEmail(record),
 };
 
 export default async function handler(req, res) {
