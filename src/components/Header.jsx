@@ -8,8 +8,6 @@ const NAV_TABS = [
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
   { id: 'board', label: 'Pickup Needed · Pickup Wanted', path: '/find' },
   { id: 'roster', label: 'Open Roster Spots', path: '/roster' },
-  
-
   { id: 'submit', label: '+ Add Listing', path: '/submit' },
   { id: 'claim', label: 'Claim a Listing', path: '/claim' },
 ]
