@@ -26,12 +26,9 @@ const MUTED = '#888'
 const FAINT = '#bbb'
 
 const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
-
-// Rail is 300px wide; each ad slot is a 300x300 square
-const RAIL_WIDTH = 300
+const RAIL_W = 300
+const AD_SQ = 300
 const WIDE_BREAKPOINT = 1440
-
-// Header height — used for sticky top offset
 const HEADER_H = 90
 
 function Band({ children, style }) {
@@ -79,13 +76,43 @@ function FeaturedCard({ listing, isMobile }) {
   )
 }
 
-// Each rail holds two square 300x300 ad units stacked vertically.
-// The inner wrapper is sticky so the ads travel with the user as they scroll.
+// AdSquare — a hard-clipped 300x300 box that prevents AdSlot from stretching taller
+function AdSquare({ position }) {
+  return (
+    <div
+      style={{
+        width: AD_SQ,
+        height: AD_SQ,
+        minHeight: AD_SQ,
+        maxHeight: AD_SQ,
+        overflow: 'hidden',
+        borderRadius: 8,
+        position: 'relative',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <AdSlot position={position} />
+      </div>
+    </div>
+  )
+}
+
+// Rail — sticky aside with two stacked 300x300 squares
 function AdRail({ side }) {
   return (
     <aside
       style={{
-        width: RAIL_WIDTH,
+        width: RAIL_W,
+        minWidth: RAIL_W,
         flexShrink: 0,
         alignSelf: 'flex-start',
         position: 'sticky',
@@ -93,13 +120,8 @@ function AdRail({ side }) {
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Two 300x300 medium-rectangle squares */}
-        <div style={{ width: RAIL_WIDTH, height: RAIL_WIDTH, overflow: 'hidden', borderRadius: 8 }}>
-          <AdSlot position={'rail-' + side + '-sq1'} />
-        </div>
-        <div style={{ width: RAIL_WIDTH, height: RAIL_WIDTH, overflow: 'hidden', borderRadius: 8 }}>
-          <AdSlot position={'rail-' + side + '-sq2'} />
-        </div>
+        <AdSquare position={'rail-' + side + '-sq1'} />
+        <AdSquare position={'rail-' + side + '-sq2'} />
       </div>
     </aside>
   )
@@ -180,7 +202,7 @@ export default function HomePage() {
   ]
 
   const pageShell = {
-    maxWidth: isWide ? (RAIL_WIDTH * 2 + 860 + 64) + 'px' : 1200,
+    maxWidth: isWide ? (RAIL_W * 2 + 860 + 64) + 'px' : 1200,
     margin: '0 auto',
     padding: isMobile ? '0 0 96px' : '0 0 48px',
     background: '#fff',
@@ -196,12 +218,10 @@ export default function HomePage() {
         <AdSlot position={isMobile ? 'mobile-inline-top' : 'leaderboard-top'} />
       </div>
 
-      {/* Three-column wrapper — rails use alignSelf: flex-start + position: sticky */}
       <div style={{ display: isWide ? 'flex' : 'block', alignItems: 'flex-start', gap: isWide ? 20 : 0, marginTop: 16, padding: isWide ? '0 20px' : 0 }}>
 
         {isWide && <AdRail side="left" />}
 
-        {/* Main content column */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* HERO */}
@@ -417,7 +437,6 @@ export default function HomePage() {
           </div>
 
         </div>
-        {/* END MAIN CONTENT */}
 
         {isWide && <AdRail side="right" />}
 
