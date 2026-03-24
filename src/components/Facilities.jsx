@@ -447,24 +447,28 @@ function FacilityPreviewCard({ facility, onClose }) {
 
 
 function MobileFacilityRow({ facility, distanceMi }) {
+  const amenities = Array.isArray(facility.amenities) ? facility.amenities.slice(0, 2) : []
   const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
   const typeLabel = getFacilityTypeLabel(facility.facility_type)
   const locationLine = formatFacilityLocation(facility)
-  const amenities = Array.isArray(facility.amenities) ? facility.amenities.slice(0, 2) : []
 
   return (
     <div
       style={{
         background: '#fff',
-        border: '1px solid rgba(15,23,42,0.08)',
-        borderRadius: 14,
+        border: '1px solid rgba(15,23,42,0.07)',
+        borderRadius: 18,
         boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
-        padding: '12px 12px 10px',
+        padding: '14px 14px 12px',
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1.08, color: 'var(--navy)' }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1.1, color: 'var(--navy)' }}>
             {facility.name}
           </div>
           <div style={{ fontSize: 13.5, color: 'var(--gray)', marginTop: 5, lineHeight: 1.25 }}>
@@ -473,35 +477,32 @@ function MobileFacilityRow({ facility, distanceMi }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
-          {sportMeta && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}` }}>
-              {sportMeta.label}
-            </span>
-          )}
-          {typeLabel && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), border: '1px solid #E5E7EB' }}>
-              {typeLabel}
-            </span>
-          )}
-        </div>
+        {sportMeta && (
+          <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}`, maxWidth: 150, textAlign: 'center' }}>
+            {sportMeta.label}
+          </span>
+        )}
       </div>
 
-      {amenities.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10 }}>
-          {amenities.map((item) => (
-            <span key={item} style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 12, padding: '4px 9px', borderRadius: 999, textTransform: 'capitalize' }}>
-              {item}
-            </span>
-          ))}
-        </div>
-      )}
+      <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--gray)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {facility.address || 'Tap through for facility details'}
+      </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 12 }}>
-        <div style={{ fontSize: 12.5, color: 'var(--gray)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {facility.address || 'Tap through for facility details'}
-        </div>
-        <Link to={`/facilities/${facility.id}`} style={{ flexShrink: 0, textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '10px 14px', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, alignItems: 'center' }}>
+        {typeLabel && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), border: '1px solid #E5E7EB' }}>
+            {typeLabel}
+          </span>
+        )}
+        {amenities.map((item) => (
+          <span key={item} style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 12, padding: '4px 9px', borderRadius: 999, textTransform: 'capitalize' }}>
+            {item}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+        <Link to={`/facilities/${facility.id}`} style={{ textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '10px 14px', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
           View Facility
         </Link>
       </div>
@@ -794,37 +795,37 @@ export default function Facilities() {
   return (
     <>
       {isMobile ? (
-        <div style={{ padding: 12, paddingBottom: 28, width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
+        <div style={{ padding: 12, paddingBottom: 28, overflowX: 'hidden', maxWidth: '100vw' }}>
           <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 20, padding: 16, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Directory</div>
                 <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : `${facilities.length} facilities ready to browse`}</div>
               </div>
-              <a href="/submit" style={{ textDecoration: 'none', padding: '10px 12px', borderRadius: 999, border: '1.5px solid #CBD5E1', color: 'var(--navy)', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
+              <a href="/submit" style={{ textDecoration: 'none', padding: '10px 12px', borderRadius: 999, background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 + Add a Facility
               </a>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14, width: '100%', maxWidth: '100%' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14, width: '100%' }}>
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel}>Location type</div>
-                <select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%' }}>
+                <select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
                   {FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel}>ZIP code</div>
-                <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%' }} />
+                <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, alignItems: 'end', width: '100%' }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={sectionLabel}>Radius</div>
-                  <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%' }}>
+                  <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
                     {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </div>
-                <button type="button" onClick={applyZipSearch} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 14px', whiteSpace: 'nowrap', minWidth: 0 }}>
+                <button type="button" onClick={applyZipSearch} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 14px', whiteSpace: 'nowrap' }}>
                   Show nearby facilities
                 </button>
               </div>
@@ -833,7 +834,7 @@ export default function Facilities() {
               {zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing facilities within ${radius} miles of ${zip}.` : 'Start with your ZIP code so local facilities show first.'}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr minmax(0, auto)', gap: 8, marginTop: 14, width: '100%', maxWidth: '100%' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 14, width: '100%' }}>
               <button
                 type="button"
                 onClick={() => {
@@ -857,7 +858,7 @@ export default function Facilities() {
               <button
                 type="button"
                 onClick={() => setShowMobileFilters((prev) => !prev)}
-                style={{ minHeight: 42, borderRadius: 12, border: '1.5px solid var(--navy)', background: showMobileFilters ? '#EEF2FF' : '#fff', color: 'var(--navy)', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 12px', whiteSpace: 'nowrap' }}
+                style={{ minHeight: 42, borderRadius: 12, border: '1.5px solid var(--navy)', background: showMobileFilters ? '#EEF2FF' : '#fff', color: 'var(--navy)', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 8px', whiteSpace: 'nowrap', minWidth: 0 }}
               >
                 Filters{mobileActiveFilterCount ? ` (${mobileActiveFilterCount})` : ''}
               </button>
@@ -903,7 +904,7 @@ export default function Facilities() {
             )}
           </div>
 
-          <div style={{ marginTop: 16, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+          <div style={{ marginTop: 16 }}>
             {mobileView === 'map' ? (
               <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 18, padding: 10, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
                 <div style={{ height: 320, overflow: 'hidden', borderRadius: 14 }}>
