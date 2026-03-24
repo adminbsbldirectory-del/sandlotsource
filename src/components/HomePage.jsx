@@ -248,7 +248,7 @@ export default function HomePage() {
                 <div style={pillStyle}>
                   <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} style={selectStyle}>
                     <option value="">All ages</option>
-                    {['8U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
+                    {['7U', '8U', '9U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
                       <option key={a} value={a}>{a}</option>
                     ))}
                   </select>
