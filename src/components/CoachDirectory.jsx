@@ -340,34 +340,40 @@ function MapMarkers({ groups, selected, setSelected, onViewCoach }) {
   })
 }
 
-function RatingRow({ coach, selected }) {
+function RatingRow({ coach, selected, mobile = false, compact = false }) {
   const avg = parseFloat(coach.rating_average) || 0
   const count = parseInt(coach.review_count, 10) || 0
-  const icon = normalizeSportValue(coach.sport) === 'softball' ? '🥎' : '⚾'
+  const sportValue = normalizeSportValue(coach.sport)
+  const icon = sportValue === 'softball' ? '🥎' : sportValue === 'both' ? '🥎⚾' : '⚾'
+  const accentColor = selected
+    ? (mobile ? 'var(--green)' : 'var(--gold)')
+    : 'var(--navy)'
 
-  if (count === 0) {
+  if (compact) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 13 }}>
-        <span>{icon}</span>
-        <span style={{ opacity: 0.45, fontSize: 12 }}>No reviews yet</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12.5, color: 'var(--gray)' }}>
+        <span style={{ fontSize: 14 }}>{icon}</span>
+        <span style={{ fontWeight: count ? 700 : 500, color: count ? accentColor : 'var(--gray)' }}>
+          {count ? `${count} review${count !== 1 ? 's' : ''}` : 'No reviews yet'}
+        </span>
       </div>
     )
   }
 
-  const full = Math.floor(avg)
-  const half = avg - full >= 0.3
-  const empty = 5 - full - (half ? 1 : 0)
+  if (count === 0) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: mobile ? 13 : 12.5, color: 'var(--gray)' }}>
+        <span style={{ fontSize: mobile ? 16 : 14 }}>{icon}</span>
+        <span style={{ opacity: 0.72 }}>No reviews yet</span>
+      </div>
+    )
+  }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 13 }}>
-      <span>{icon}</span>
-      <span>
-        {icon.repeat(Math.max(0, full))}
-        {half ? '◐' : ''}
-        {empty > 0 ? '○'.repeat(Math.max(0, empty)) : ''}
-      </span>
-      <span style={{ fontWeight: 700, color: selected ? (mobile ? 'var(--green)' : 'var(--gold)') : 'var(--navy)' }}>{avg.toFixed(1)}</span>
-      <span style={{ opacity: 0.6, fontSize: 12 }}>({count} review{count !== 1 ? 's' : ''})</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: mobile ? 13 : 12.5, color: 'var(--gray)', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: mobile ? 16 : 14 }}>{icon}</span>
+      <span style={{ fontWeight: 800, color: accentColor }}>{avg.toFixed(1)}</span>
+      <span>{count} review{count !== 1 ? 's' : ''}</span>
     </div>
   )
 }
@@ -377,6 +383,115 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
   const firstPhone = parseFirstPhone(coach.phone)
   const zip = getCoachZip(coach)
   const sportBadge = getSportBadgeMeta(coach.sport)
+  const locationLine = [coach.city, coach.state].filter(Boolean).join(', ')
+  const primarySpecialty = specs[0] || 'General coaching'
+  const secondarySpecialties = specs.slice(1, 3)
+
+  if (mobile && !selected) {
+    return (
+      <div
+        style={{
+          background: '#fff',
+          border: '1px solid rgba(15,23,42,0.08)',
+          borderRadius: 16,
+          boxShadow: '0 6px 18px rgba(15,23,42,0.04)',
+          padding: showMap ? '12px 14px 12px' : '14px 14px 12px',
+          cursor: 'pointer',
+        }}
+        onClick={onClick}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1.1, color: 'var(--navy)' }}>
+              {coach.name}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 6, lineHeight: 1.35 }}>
+              📍 {locationLine || 'Location not listed'}
+              {zip ? ` ${zip}` : ''}
+            </div>
+          </div>
+
+          <span
+            style={{
+              background: sportBadge.bg,
+              color: sportBadge.color,
+              fontSize: 11,
+              fontWeight: 800,
+              padding: '5px 10px',
+              borderRadius: 999,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontFamily: 'var(--font-head)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              border: `1px solid ${sportBadge.border}`,
+            }}
+          >
+            {sportBadge.label}
+          </span>
+        </div>
+
+        <div style={{ marginTop: 10, display: 'grid', gap: 7 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+            <span
+              style={{
+                background: '#EEF2F7',
+                color: 'var(--navy)',
+                fontSize: 12,
+                fontWeight: 700,
+                padding: '4px 10px',
+                borderRadius: 999,
+              }}
+            >
+              {primarySpecialty}
+            </span>
+            {secondarySpecialties.map((item) => (
+              <span
+                key={item}
+                style={{
+                  background: '#F6F7F9',
+                  color: 'var(--gray)',
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: '4px 9px',
+                  borderRadius: 999,
+                }}
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+
+          <RatingRow coach={coach} selected={false} mobile compact />
+        </div>
+
+        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-start' }}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onViewProfile(coach)
+            }}
+            style={{
+              background: 'var(--navy)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              padding: '9px 14px',
+              minHeight: 38,
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-head)',
+              letterSpacing: '0.03em',
+            }}
+          >
+            View Profile
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const mobileBase = mobile
     ? {
@@ -511,7 +626,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
           </span>
         </div>
 
-        <RatingRow coach={coach} selected={selected} />
+        <RatingRow coach={coach} selected={selected} mobile={mobile} />
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: mobile ? 10 : 8 }}>
           {specs.map((s) => (
@@ -603,21 +718,22 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
             onViewProfile(coach)
           }}
           style={{
-            width: '100%',
+            width: mobile ? 'auto' : '100%',
+            minWidth: mobile ? 168 : undefined,
             background: selected ? (mobile ? 'var(--navy)' : 'var(--gold)') : 'var(--navy)',
             color: 'white',
             border: 'none',
             borderRadius: mobile ? 12 : 'var(--btn-radius)',
-            padding: mobile ? '12px 0' : '8px 0',
-            minHeight: mobile ? 46 : undefined,
-            fontSize: mobile ? 14 : 13,
+            padding: mobile ? '11px 14px' : '8px 0',
+            minHeight: mobile ? 42 : undefined,
+            fontSize: mobile ? 13 : 13,
             fontWeight: 700,
             cursor: 'pointer',
             fontFamily: 'var(--font-head)',
             letterSpacing: '0.04em',
           }}
         >
-          View Profile &amp; Reviews
+          {mobile ? 'View Profile' : 'View Profile & Reviews'}
         </button>
       </div>
     </div>
@@ -1261,10 +1377,11 @@ export default function CoachDirectory() {
         <div style={{ background: 'var(--cream)', minHeight: '100vh' }}>
           <div
             style={{
-              position: 'relative',
-              zIndex: 100,
+              position: showMap ? 'sticky' : 'relative',
+              top: showMap ? 8 : undefined,
+              zIndex: showMap ? 140 : 100,
               padding: '10px 12px 8px',
-              background: 'transparent',
+              background: showMap ? 'var(--cream)' : 'transparent',
               borderBottom: 'none',
               backdropFilter: 'none',
             }}
@@ -1495,7 +1612,7 @@ export default function CoachDirectory() {
             </div>
           </div>
 
-          <div style={{ padding: '12px 12px 112px' }}>
+          <div style={{ padding: showMap ? '8px 12px 112px' : '12px 12px 112px' }}>
             {showMobileSpotlight && sel && (
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
@@ -1590,7 +1707,7 @@ export default function CoachDirectory() {
                   {showMobileSpotlight ? 'More coaches' : 'Browse coaches'}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>
-                  {showMobileSpotlight ? `${mobileCoachesToRender.length} more match${mobileCoachesToRender.length === 1 ? '' : 'es'}` : 'Tap a card for a larger selected view.'}
+                  {showMobileSpotlight ? `${mobileCoachesToRender.length} more match${mobileCoachesToRender.length === 1 ? '' : 'es'}` : 'Compact list view for faster browsing.'}
                 </div>
               </div>
             </div>
