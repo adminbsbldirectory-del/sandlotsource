@@ -23,6 +23,12 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
+const RADIUS_OPTIONS = [
+  { value: 10, label: 'Within 10 mi' },
+  { value: 25, label: 'Within 25 mi' },
+  { value: 50, label: 'Within 50 mi' },
+]
+
 function normalizeSportValue(value) {
   const raw = String(value || '').trim().toLowerCase()
   if (!raw) return ''
@@ -603,15 +609,37 @@ export default function Facilities() {
     setGeoCenter(null)
     setZipStatus('')
     setRadius(25)
+    setSelected(null)
+  }
+
+  async function applyZipSearch() {
+    if (zip.length !== 5) {
+      setGeoCenter(null)
+      setZipStatus(zip ? 'error' : '')
+      return false
+    }
+    const geo = await geocodeZip(zip)
+    if (geo) {
+      setGeoCenter(geo)
+      setZipStatus('ok')
+      setSelected(null)
+      return true
+    }
+    setGeoCenter(null)
+    setZipStatus('error')
+    return false
   }
 
   async function applyMobileFilters() {
     applySearch()
     if (zip.length === 5) {
-      await handleZipBlur()
+      await applyZipSearch()
     } else if (!zip) {
       setGeoCenter(null)
       setZipStatus('')
+    } else {
+      setGeoCenter(null)
+      setZipStatus('error')
     }
     setShowMobileFilters(false)
   }
@@ -627,8 +655,10 @@ export default function Facilities() {
 
   const mobileActiveFilterCount = [sport, facilityType !== 'all' ? facilityType : '', search || searchInput, zipStatus === 'ok' ? zip : '']
     .filter(Boolean).length
+  const hasLocationSearch = zipStatus === 'ok' && !!geoCenter
 
   const filtered = useMemo(() => {
+    if (!hasLocationSearch) return []
     return facilities
       .filter((f) => {
         const facilitySport = getFacilitySport(f)
@@ -662,7 +692,7 @@ export default function Facilities() {
         }
         return 0
       })
-  }, [facilities, sport, facilityType, search, geoCenter, radius])
+  }, [facilities, sport, facilityType, search, geoCenter, radius, hasLocationSearch])
 
   useEffect(() => {
     if (!selected) return
@@ -739,16 +769,24 @@ export default function Facilities() {
   }
 
   function EmptyState() {
-    const hasFilters = sport || search || zipStatus === 'ok' || facilityType !== 'all'
+    if (!hasLocationSearch) {
+      return (
+        <div className="empty-state">
+          <h3>Start with your ZIP code</h3>
+          <p>Enter a ZIP code and choose a radius to see facilities near you first.</p>
+        </div>
+      )
+    }
+
+    const hasFilters = sport || search || facilityType !== 'all'
     return (
       <div className="empty-state">
-        <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities listed yet'}</h3>
+        <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities found in this area'}</h3>
         <p>
           {hasFilters
             ? 'Try widening your search — clear a filter or increase the radius.'
-            : 'Know a great training facility? Help us grow the directory.'}
+            : 'Try a different ZIP code or a larger radius.'}
         </p>
-        {!hasFilters && <a href="/submit">Add a Facility</a>}
       </div>
     )
   }
@@ -761,11 +799,30 @@ export default function Facilities() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Directory</div>
-                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{filtered.length} facilit{filtered.length !== 1 ? 'ies' : 'y'} ready to browse</div>
+                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : `${facilities.length} facilities ready to browse`}</div>
               </div>
               <a href="/submit" style={{ textDecoration: 'none', padding: '10px 12px', borderRadius: 999, border: '1.5px solid #CBD5E1', color: 'var(--navy)', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
                 + Add a Facility
               </a>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr auto', gap: 8, marginTop: 14, alignItems: 'end' }}>
+              <div>
+                <div style={sectionLabel}>ZIP code</div>
+                <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }} />
+              </div>
+              <div>
+                <div style={sectionLabel}>Radius</div>
+                <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }}>
+                  {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
+              <button type="button" onClick={applyZipSearch} style={{ minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 14px', whiteSpace: 'nowrap' }}>
+                Go
+              </button>
+            </div>
+            <div style={{ marginTop: 6, fontSize: 12, color: zipStatus === 'error' ? 'var(--red)' : 'var(--gray)' }}>
+              {zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing facilities within ${radius} miles of ${zip}.` : 'Start with your ZIP code so local facilities show first.'}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginTop: 14 }}>
@@ -822,7 +879,12 @@ export default function Facilities() {
                   <div style={sectionLabel}>Near zip code</div>
                   <input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }} />
                   <div style={{ marginTop: 6, fontSize: 12, color: 'var(--gray)' }}>Use zip + radius so local facilities show first.</div>
-                  {zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /></div>}
+                  <div style={{ marginTop: 8 }}>
+                    <div style={sectionLabel}>Radius</div>
+                    <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }}>
+                      {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </div>
                   {zip.length === 5 && zipStatus === 'error' && <div style={{ marginTop: 6, fontSize: 12, color: 'var(--red)' }}>Could not locate that ZIP code.</div>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -864,7 +926,7 @@ export default function Facilities() {
               <div>
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Browse facilities</div>
-                  <div style={{ marginTop: 4, fontSize: 13, color: 'var(--gray)' }}>List-first mobile view for easier browsing.</div>
+                  <div style={{ marginTop: 4, fontSize: 13, color: 'var(--gray)' }}>{hasLocationSearch ? 'List-first mobile view for easier browsing.' : 'Enter your ZIP code above to load nearby facilities.'}</div>
                 </div>
                 <div ref={mobileListRef} style={{ display: 'grid', gap: 14 }}>
                   {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
@@ -883,8 +945,12 @@ export default function Facilities() {
         <div style={{ padding: '16px 14px 20px', background: 'var(--cream)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 18, alignItems: 'start', width: '100%' }}>
             <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', background: 'var(--white)', borderRight: '1px solid rgba(15,23,42,0.06)', zIndex: 2 }}>
-              <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{filtered.length} facilit{filtered.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>Parks, private facilities, and training locations</div></div>
+              <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : 'Start with ZIP + radius'}</div><div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>{hasLocationSearch ? 'Parks, private facilities, and training locations' : 'Enter a ZIP code to load nearby facilities first.'}</div></div>
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                <div><div style={sectionLabel}>ZIP code</div><input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 40 }} /></div>
+                <div><div style={sectionLabel}>Radius</div><select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 40 }}>{RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+                <button type="button" onClick={applyZipSearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Show nearby facilities</button>
+                <div style={{ fontSize: 12, color: zipStatus === 'error' ? 'var(--red)' : 'var(--gray)', lineHeight: 1.35 }}>{zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing facilities within ${radius} miles of ${zip}.` : 'Enter your ZIP code first so local facilities show before the full directory.'}</div>
                 <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
                 <div><div style={sectionLabel}>Location type</div><select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 40 }}>{FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
                 <div>
@@ -919,8 +985,7 @@ export default function Facilities() {
 </button>
                   </div>
                 </div>
-                <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
-                <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
+                <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={applySearch} style={{ flex: 1, background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button><button type="button" onClick={clearZipFilter} style={{ flex: 1, background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Clear ZIP</button></div>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Facility</a></div>
               </div>
               <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}><AdBox compact /></div>
@@ -931,7 +996,7 @@ export default function Facilities() {
                   <div style={{ background: 'var(--page-bg, #f5f3ef)', paddingTop: 8, paddingBottom: 10 }}>
                     {showMap && <div style={{ position: 'sticky', top: 76, zIndex: 3, background: 'var(--page-bg, #f5f3ef)', paddingBottom: 10 }}><div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 360, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} />{mapFocus?.lat != null && mapFocus?.lng != null && <FlyTo target={mapFocus} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => openFacilityById(f.id, 'map') }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 15 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div>{f.address && <div style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{f.address}</div>}{getFacilityTypeLabel(f.facility_type) && <div style={{ fontSize: 12, marginTop: 2 }}>{getFacilityTypeLabel(f.facility_type)}</div>}<button type="button" onClick={() => openFacilityById(f.id, 'map')} style={{ display: 'inline-block', marginTop: 8, background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '8px 10px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Preview Facility</button></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280'],['Other', '#9A6B2F']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div></div>}
                     {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, marginTop: 10, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view facility locations.</div>}
-                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{filtered.length} Facilit{filtered.length !== 1 ? 'ies' : 'y'}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>Compact list below. Click a row or pin to preview, then use View Facility for the full page.</div></div>
+                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'}` : 'Nearby facilities will appear here'}</div><div style={{ fontSize: 12, color: 'var(--gray)' }}>{hasLocationSearch ? 'Compact list below. Click a row or pin to preview, then use View Facility for the full page.' : 'Enter a ZIP code and radius first so the list starts with local results.'}</div></div>
                   </div>
 
                   <div style={{ marginTop: 8, background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, overflow: 'hidden', position: 'relative' }}>
