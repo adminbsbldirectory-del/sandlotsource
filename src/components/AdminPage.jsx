@@ -495,14 +495,14 @@ function AdminTable({ tabName }) {
         />
         <span style={s.countBadge}>{filtered.length} of {rows.length} records</span>
       </div>
-      <div style={{ overflowX: 'auto' }}>
+      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 280px)' }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading…</div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>No records found</div>
         ) : (
           <table style={s.table}>
-            <thead>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               <tr>
                 {cfg.fields.map(f => <th key={f.key} style={s.th}>{f.label}</th>)}
               </tr>
