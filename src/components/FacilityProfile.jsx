@@ -237,6 +237,8 @@ function tryoutLabel(status) {
 }
 
 function TeamCard({ team }) {
+  const teamSearchUrl = '/teams?q=' + encodeURIComponent(team.name || '')
+
   return (
     <div style={{
       display: 'flex',
@@ -254,17 +256,30 @@ function TeamCard({ team }) {
           {[team.age_group, team.sport ? (team.sport === 'both' ? 'Baseball & Softball' : team.sport.charAt(0).toUpperCase() + team.sport.slice(1)) : null].filter(Boolean).join(' · ')}
         </div>
       </div>
-      <span style={{
-        fontSize: 10,
-        fontWeight: 700,
-        padding: '3px 8px',
-        borderRadius: 999,
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-        ...tryoutBadgeStyle(team.tryout_status),
-      }}>
-        {tryoutLabel(team.tryout_status)}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <span style={{
+          fontSize: 10,
+          fontWeight: 700,
+          padding: '3px 8px',
+          borderRadius: 999,
+          whiteSpace: 'nowrap',
+          ...tryoutBadgeStyle(team.tryout_status),
+        }}>
+          {tryoutLabel(team.tryout_status)}
+        </span>
+        <Link
+          to={teamSearchUrl}
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: '#1D4ED8',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          View →
+        </Link>
+      </div>
     </div>
   )
 }
