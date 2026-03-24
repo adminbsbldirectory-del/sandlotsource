@@ -1056,7 +1056,12 @@ export default function PlayerBoard() {
         return;
       }
       const geo = await geocodeZip(nearbyZip);
-      if (!ignore) setSearchGeo(geo || null);
+      if (ignore) return;
+      setSearchGeo(geo || null);
+      if (geo?.state) {
+        setStateFilter(String(geo.state).toUpperCase());
+        setHasSearched(false);
+      }
     }
     locate();
     return () => {
@@ -1581,7 +1586,7 @@ export default function PlayerBoard() {
               >
                 {stateFilter
                   ? "Pickup-needed and player-available posts for this state."
-                  : "Choose a state to load pins and listings, then narrow by ZIP if needed."}
+                  : "Enter a ZIP or choose a state to load pins and listings, then narrow by distance if needed."}
               </div>
             </div>
 
@@ -1669,26 +1674,7 @@ export default function PlayerBoard() {
               </div>
 
               <div>
-                <div style={labelStyle}>State</div>
-                <select
-                  value={stateFilter}
-                  onChange={(e) => {
-                    setStateFilter(e.target.value);
-                    setHasSearched(false);
-                  }}
-                  style={selectStyle}
-                >
-                  <option value="">Select state first</option>
-                  {US_STATES.filter(Boolean).map((abbr) => (
-                    <option key={abbr} value={abbr}>
-                      {STATE_NAMES[abbr]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div style={labelStyle}>Nearby</div>
+                <div style={labelStyle}>Near Zip Code</div>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -1703,6 +1689,28 @@ export default function PlayerBoard() {
                 />
                 <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
                   Used for distance search matching
+                </div>
+              </div>
+
+              <div>
+                <div style={labelStyle}>State</div>
+                <select
+                  value={stateFilter}
+                  onChange={(e) => {
+                    setStateFilter(e.target.value);
+                    setHasSearched(false);
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">Select state</option>
+                  {US_STATES.filter(Boolean).map((abbr) => (
+                    <option key={abbr} value={abbr}>
+                      {STATE_NAMES[abbr]}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
+                  Auto-fills from ZIP when matched, or choose manually.
                 </div>
               </div>
 
@@ -2024,7 +2032,7 @@ export default function PlayerBoard() {
                   <div style={{ fontSize: 12, color: "var(--gray)" }}>
                     {stateFilter
                       ? "Compact list below. Click a row or pin to open the detail card."
-                      : "Start with a state, then narrow by ZIP only when needed."}
+                      : "Start with a ZIP or choose a state, then narrow by distance as needed."}
                   </div>
                 </div>
 
@@ -2098,8 +2106,8 @@ export default function PlayerBoard() {
                             fontSize: 13,
                           }}
                         >
-                          Select a state in the left panel to load posts and
-                          pins.
+                          Enter a ZIP or select a state in the left panel to
+                          load posts and pins.
                         </div>
                       )}
 
@@ -2816,7 +2824,7 @@ export default function PlayerBoard() {
                           fontSize: 13,
                         }}
                       >
-                        Select a state in the left panel to load posts and pins.
+                        Enter a ZIP or select a state in the left panel to load posts and pins.
                       </div>
                     )}
 
