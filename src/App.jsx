@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
@@ -14,7 +14,6 @@ import FacilityProfile from './components/FacilityProfile.jsx'
 import AdminGeocode from './components/AdminGeocode.jsx'
 import LegalPage from './components/LegalPage.jsx'
 import AdminPage from './components/AdminPage.jsx'
-// ...
 
 const BORDER = '#eaeae6'
 const FAINT = '#bbb'
@@ -28,7 +27,6 @@ function SiteFooter() {
     function handleResize() {
       setIsMobile(window.innerWidth < 768)
     }
-
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -67,7 +65,7 @@ function SiteFooter() {
     <footer
       style={{
         background: '#fff',
-        borderTop: `1px solid ${BORDER}`,
+        borderTop: '1px solid ' + BORDER,
         padding: isMobile ? '24px 14px 0' : '28px 20px 0',
         marginTop: 'auto',
       }}
@@ -96,14 +94,7 @@ function SiteFooter() {
             >
               <span style={{ color: RED }}>◆</span> SANDLOT SOURCE
             </div>
-            <p
-              style={{
-                fontSize: isMobile ? 11 : 12,
-                color: '#aaa',
-                lineHeight: 1.65,
-                margin: 0,
-              }}
-            >
+            <p style={{ fontSize: isMobile ? 11 : 12, color: '#aaa', lineHeight: 1.65, margin: 0 }}>
               Baseball &amp; softball coaches, teams, and roster connections — free to browse, anywhere in the country.
             </p>
           </div>
@@ -122,19 +113,12 @@ function SiteFooter() {
               >
                 {col.heading}
               </h5>
-
               {col.links.map((link) =>
                 link.href ? (
                   <a
                     key={link.label}
                     href={link.href}
-                    style={{
-                      display: 'block',
-                      fontSize: isMobile ? 11 : 12,
-                      color: '#777',
-                      textDecoration: 'none',
-                      marginBottom: 6,
-                    }}
+                    style={{ display: 'block', fontSize: isMobile ? 11 : 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}
                   >
                     {link.label}
                   </a>
@@ -142,13 +126,7 @@ function SiteFooter() {
                   <Link
                     key={link.label}
                     to={link.to}
-                    style={{
-                      display: 'block',
-                      fontSize: isMobile ? 11 : 12,
-                      color: '#777',
-                      textDecoration: 'none',
-                      marginBottom: 6,
-                    }}
+                    style={{ display: 'block', fontSize: isMobile ? 11 : 12, color: '#777', textDecoration: 'none', marginBottom: 6 }}
                   >
                     {link.label}
                   </Link>
@@ -160,7 +138,7 @@ function SiteFooter() {
 
         <div
           style={{
-            borderTop: `1px solid ${BORDER}`,
+            borderTop: '1px solid ' + BORDER,
             padding: '14px 0',
             display: 'flex',
             justifyContent: 'space-between',
@@ -183,17 +161,28 @@ function SiteFooter() {
 
 function AppRoutes() {
   const navigate = useNavigate()
+  const location = useLocation()
 
+  // Admin routes — no header or footer
+  if (location.pathname.startsWith('/admin')) {
+    return (
+      <Routes>
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/geocode" element={<AdminGeocode />} />
+      </Routes>
+    )
+  }
+
+  // Public routes — with header and footer
   return (
     <>
       <Header />
-
       <main style={{ flex: 1 }}>
         <Routes>
           <Route
             path="/"
             element={
-              <HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : `/${id}`)} />
+              <HomePage onNavigate={(id) => navigate(id === 'home' ? '/' : '/' + id)} />
             }
           />
           <Route path="/search" element={<SearchResults />} />
@@ -206,12 +195,9 @@ function AppRoutes() {
           <Route path="/submit" element={<CoachSubmitForm />} />
           <Route path="/claim" element={<ClaimListing />} />
           <Route path="/legal" element={<LegalPage />} />
-          <Route path="/admin/geocode" element={<AdminGeocode />} />
-          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-
       <SiteFooter />
     </>
   )
