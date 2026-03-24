@@ -289,8 +289,15 @@ export default function FacilityProfile() {
   const [facility, setFacility] = useState(null)
   const [coaches, setCoaches] = useState([])
   const [teams, setTeams] = useState([])
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     let isActive = true
@@ -388,7 +395,7 @@ export default function FacilityProfile() {
 
   if (loading) {
     return (
-      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '16px 12px 28px' : '24px 16px 40px', overflowX: 'hidden' }}>
         <div className="card" style={{ padding: 20 }}>Loading facility…</div>
       </div>
     )
@@ -396,7 +403,7 @@ export default function FacilityProfile() {
 
   if (!facility) {
     return (
-      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '16px 12px 28px' : '24px 16px 40px', overflowX: 'hidden' }}>
         <div className="card" style={{ padding: 20 }}>
           <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)' }}>Facility not found</div>
           <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 8 }}>{error || 'This facility may have been removed or is no longer active.'}</div>
@@ -411,7 +418,7 @@ export default function FacilityProfile() {
   }
 
   return (
-    <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 40px' }}>
+    <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '16px 12px 28px' : '24px 16px 40px', overflowX: 'hidden' }}>
       <div style={{ marginBottom: 18 }}>
         <Link to="/facilities" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
           ← Back to Facilities
@@ -423,14 +430,14 @@ export default function FacilityProfile() {
         style={{
           background: 'linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%)',
           color: 'white',
-          padding: '22px 22px 20px',
+          padding: isMobile ? '18px 16px 16px' : '22px 22px 20px',
           border: 'none',
           marginBottom: 18,
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 30, fontWeight: 800, lineHeight: 1.1 }}>{facility.name}</div>
+          <div style={{ flex: 1, minWidth: isMobile ? 0 : 260 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 24 : 30, fontWeight: 800, lineHeight: 1.1 }}>{facility.name}</div>
             {(facility.address || locationLine) && (
               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 10 }}>
                 📍 {facility.address || locationLine}
@@ -458,8 +465,8 @@ export default function FacilityProfile() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.25fr) minmax(320px, 0.75fr)', gap: 18, alignItems: 'start' }}>
-        <div style={{ display: 'grid', gap: 18 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'minmax(0, 1.25fr) minmax(320px, 0.75fr)', gap: 18, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gap: 18, minWidth: 0 }}>
           <div className="card" style={{ padding: 18 }}>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 12 }}>Facility Details</div>
 
@@ -467,7 +474,7 @@ export default function FacilityProfile() {
               <div style={{ fontSize: 14, color: '#333', lineHeight: 1.65, marginBottom: 16 }}>{facility.description}</div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
               {facility.address && (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)', marginBottom: 4 }}>Address</div>
@@ -565,7 +572,7 @@ export default function FacilityProfile() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gap: 18 }}>
+        <div style={{ display: 'grid', gap: 18, minWidth: 0 }}>
           <div className="card" style={{ padding: 18 }}>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 12 }}>Contact & Links</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -598,7 +605,7 @@ export default function FacilityProfile() {
               <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Map</div>
             </div>
             {facility.lat != null && facility.lng != null ? (
-              <div style={{ height: 320 }}>
+              <div style={{ height: isMobile ? 240 : 320 }}>
                 <MapContainer center={[facility.lat, facility.lng]} zoom={13} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
