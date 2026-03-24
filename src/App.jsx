@@ -48,7 +48,7 @@ function SiteFooter() {
         { label: 'Add a Listing', to: '/submit' },
         { label: 'Claim a Listing', to: '/claim' },
         { label: 'About', to: '/legal#about' },
-        { label: 'Contact', href: 'mailto:admin.bsbldirectory@gmail.com' },
+        { label: 'Contact', href: 'admin@sandlotsource.com' },
       ],
     },
     {
