@@ -526,78 +526,9 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
   return data?.id || null
 }
 
-async function findOrCreateFacilityFromTeam(form, selectedExistingFacilityId = null) {
-  const facilityName = String(form.facility_name || '').trim()
-  if (!facilityName) return null
-  if (selectedExistingFacilityId) return selectedExistingFacilityId
-
-  const facilityCity = String(form.facility_city || form.city || '').trim()
-  const facilityState = normalizeStateValue(form.facility_state || form.state)
-  const facilityZip = String(form.facility_zip_code || form.zip_code || '').trim()
-
-  const existing = await findMatchingFacility({
-    facilityName,
-    address: form.facility_address,
-    city: facilityCity,
-    state: facilityState,
-    zipCode: facilityZip,
-  })
-
-  if (existing) return existing.id
-
-  let lat = form.facility_lat != null ? parseFloat(form.facility_lat) : null
-  let lng = form.facility_lng != null ? parseFloat(form.facility_lng) : null
-
-  if ((lat == null || lng == null) && form.facility_address?.trim()) {
-    const geo = await geocodeAddress(
-      form.facility_address.trim(),
-      facilityCity,
-      facilityState,
-      facilityZip
-    )
-
-    if (geo) {
-      lat = geo.lat
-      lng = geo.lng
-    }
-  }
-
-  if ((lat == null || lng == null) && form.lat != null && form.lng != null) {
-    lat = parseFloat(form.lat)
-    lng = parseFloat(form.lng)
-  }
-
-  const facilityPayload = {
-    name: facilityName,
-    sport: form.sport || null,
-    sport_served: form.sport || null,
-    city: facilityCity || null,
-    state: normalizeStateValue(facilityState) || null,
-    zip_code: facilityZip || null,
-    lat,
-    lng,
-    address: String(form.facility_address || '').trim() || null,
-    website: form.website.trim() || null,
-    phone: form.contact_phone.trim() || null,
-    email: form.contact_email.trim() || null,
-    contact_name: form.contact_name.trim() || null,
-    contact_email: form.contact_email.trim() || null,
-    contact_phone: form.contact_phone.trim() || null,
-    submission_notes: 'Auto-created from travel team submission',
-    source: 'travel_team_submission_auto_create',
-    approval_status: 'pending',
-    active: true,
-  }
-
-  const { data, error } = await supabase
-    .from('facilities')
-    .insert([facilityPayload])
-    .select('id')
-    .single()
-
-  if (error) throw error
-  return data?.id || null
-}
+// findOrCreateFacilityFromTeam removed — teams now link to existing facilities
+// via checkbox + live search. Facility records are only created through the
+// dedicated Facility tab, never auto-created from team submissions.
 
 function parseAgeGroupsInput(value) {
   const raw = String(value || '').trim()
@@ -806,6 +737,181 @@ function SocialInput({ prefix, value, onChange, placeholder }) {
   )
 }
 
+// ── FACILITY SEARCH SELECT ────────────────────────────────
+// Shared component used by TeamForm and CoachForm.
+// Renders a live-search input querying approved facilities
+// from Supabase. On selection stores id + display name.
+function FacilitySearchSelect({ selectedFacility, onSelect, onClear }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const wrapRef = useRef(null)
+
+  useEffect(() => {
+    const trimmed = String(query || '').trim()
+    if (!trimmed) {
+      setResults([])
+      setShowResults(false)
+      return
+    }
+    let cancelled = false
+    setSearching(true)
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('facilities')
+          .select('id, name, city, state, zip_code, address')
+          .ilike('name', '%' + trimmed + '%')
+          .in('approval_status', ['approved', 'seeded'])
+          .eq('active', true)
+          .order('name')
+          .limit(8)
+        if (!cancelled) {
+          setResults(data || [])
+          setShowResults(true)
+          setSearching(false)
+        }
+      } catch {
+        if (!cancelled) { setResults([]); setSearching(false) }
+      }
+    }, 280)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [query])
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setShowResults(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  if (selectedFacility) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: '#EFF6FF',
+        border: '2px solid #BFDBFE',
+        borderRadius: 8,
+        padding: '10px 14px',
+        gap: 12,
+      }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy)' }}>{selectedFacility.name}</div>
+          {(selectedFacility.city || selectedFacility.state) && (
+            <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>
+              {[selectedFacility.city, selectedFacility.state].filter(Boolean).join(', ')}
+              {selectedFacility.zip_code ? ' ' + selectedFacility.zip_code : ''}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--gray)',
+            cursor: 'pointer',
+            fontSize: 13,
+            fontFamily: 'var(--font-body)',
+            padding: '4px 8px',
+            borderRadius: 6,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Change
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => { if (results.length > 0) setShowResults(true) }}
+          placeholder="Search by facility name…"
+          style={{ ...inputStyle, paddingRight: 36 }}
+        />
+        {searching && (
+          <span style={{
+            position: 'absolute', right: 10, top: '50%',
+            transform: 'translateY(-50%)', fontSize: 11, color: '#888',
+          }}>
+            Searching…
+          </span>
+        )}
+      </div>
+
+      {showResults && results.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          background: '#fff',
+          border: '2px solid var(--lgray)',
+          borderRadius: 8,
+          marginTop: 4,
+          zIndex: 50,
+          maxHeight: 240,
+          overflowY: 'auto',
+        }}>
+          {results.map((f, idx) => (
+            <button
+              key={f.id}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                onSelect(f)
+                setQuery('')
+                setResults([])
+                setShowResults(false)
+              }}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                borderBottom: idx < results.length - 1 ? '1px solid var(--lgray)' : 'none',
+                padding: '10px 14px',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--navy)' }}>{f.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 2 }}>
+                {[f.city, f.state].filter(Boolean).join(', ')}
+                {f.zip_code ? ' · ' + f.zip_code : ''}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showResults && results.length === 0 && !searching && String(query || '').trim().length > 1 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          background: '#fff', border: '2px solid var(--lgray)', borderRadius: 8,
+          marginTop: 4, zIndex: 50, padding: '12px 14px',
+          fontSize: 13, color: 'var(--gray)',
+        }}>
+          No facilities found. If it doesn't exist yet, leave unchecked and submit a facility listing separately.
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── COACH FORM ────────────────────────────────────────────
 // ── COACH FORM ────────────────────────────────────────────
 function CoachForm({ isMobile }) {
@@ -963,7 +1069,9 @@ function CoachForm({ isMobile }) {
         }
       }
 
-      const facilityId = await findOrCreateFacilityFromCoach(resolvedForm, selectedFacilityMatch?.id || null)
+      // Use the matched facility ID if the user accepted an existing match.
+      // Do NOT auto-create facility records from coach submissions.
+      const facilityId = selectedFacilityMatch?.id || null
 
       const payload = {
         name: form.name.trim(),
@@ -1274,15 +1382,6 @@ function TeamForm({ isMobile }) {
     lat: null,
     lng: null,
     address: '',
-
-    facility_name: '',
-    facility_address: '',
-    facility_city: '',
-    facility_state: '',
-    facility_zip_code: '',
-    facility_lat: null,
-    facility_lng: null,
-
     contact_name: '',
     contact_email: '',
     contact_phone: '',
@@ -1298,37 +1397,13 @@ function TeamForm({ isMobile }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
-  const [facilityAddrStatus, setFacilityAddrStatus] = useState('')
-  const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
-  const [selectedFacilityId, setSelectedFacilityId] = useState(null)
-  const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
-
-  const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
-    facilityName: form.facility_name,
-    address: form.facility_address,
-    city: form.facility_city || form.city,
-    state: form.facility_state || form.state,
-    zipCode: form.facility_zip_code || form.zip_code,
-    enabled: !!String(form.facility_name || '').trim(),
-  })
-
-  const visibleFacilityMatches = useMemo(() => {
-    if (allowCreateNewFacility || selectedFacilityMatch) return []
-    return facilityMatches
-  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
+  // Facility association — checkbox + selected facility record
+  const [linkToFacility, setLinkToFacility] = useState(false)
+  const [selectedFacility, setSelectedFacility] = useState(null)
 
   function set(field, value) {
-    const facilityIdentityFields = ['facility_name', 'facility_address', 'facility_city', 'facility_state', 'facility_zip_code']
     setError('')
-    setForm((f) => {
-      const shouldReset = shouldResetAcceptedFacility(field, value, f[field], facilityIdentityFields)
-      if (shouldReset) {
-        setAllowCreateNewFacility(false)
-        setSelectedFacilityMatch(null)
-        setSelectedFacilityId(null)
-      }
-      return { ...f, [field]: value }
-    })
+    setForm((f) => ({ ...f, [field]: value }))
   }
 
   const classificationOptions =
@@ -1378,53 +1453,6 @@ function TeamForm({ isMobile }) {
     setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
   }
 
-  function handleFacilityZipGeocode(geo) {
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        facility_lat: f.facility_lat || geo.lat,
-        facility_lng: f.facility_lng || geo.lng,
-        facility_city: geo.city || f.facility_city,
-        facility_state: normalizeStateValue(geo.state) || normalizeStateValue(f.facility_state) || '',
-      }))
-    }
-  }
-
-  async function handleFacilityAddressBlur() {
-    if (!String(form.facility_address || '').trim()) {
-      setFacilityAddrStatus('')
-      return
-    }
-
-    if (!hasLocationContext(form.facility_city, form.facility_state, form.facility_zip_code)) {
-      setFacilityAddrStatus('needs_location')
-      return
-    }
-
-    setFacilityAddrStatus('locating')
-    const resolved = await resolveBestLocation(
-      form.facility_address,
-      form.facility_city,
-      form.facility_state,
-      form.facility_zip_code
-    )
-    if (!resolved) {
-      setFacilityAddrStatus('')
-      return
-    }
-
-    setForm((f) => ({
-      ...f,
-      facility_lat: resolved.lat,
-      facility_lng: resolved.lng,
-      facility_city: f.facility_city || resolved.city || '',
-      facility_state: normalizeStateValue(f.facility_state || resolved.state) || '',
-      facility_zip_code: f.facility_zip_code || resolved.zip_code || '',
-    }))
-
-    setFacilityAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
-  }
-
   function validate() {
     if (!form.name.trim()) return 'Team name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -1435,15 +1463,10 @@ function TeamForm({ isMobile }) {
     if (!form.contact_email.trim() && !form.contact_phone.trim()) {
       return 'At least one of contact email or phone is required.'
     }
-
-    if (form.facility_name.trim() && (!form.facility_zip_code || form.facility_zip_code.length !== 5)) {
-      return 'Primary facility zip code is required when a facility name is entered.'
-    }
-
     return ''
   }
 
-    async function handleSubmit() {
+  async function handleSubmit() {
     const err = validate()
     if (err) {
       setError(err)
@@ -1454,15 +1477,7 @@ function TeamForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      const blockingMatches = facilityMatches.filter((match) => match.id !== selectedFacilityMatch?.id)
-      if (form.facility_name.trim() && !allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
-        setError('Possible existing facility found. Please review the suggestion below before submitting.')
-        setSubmitting(false)
-        return
-      }
-
       let resolvedForm = { ...form }
-      // Only geocode on submit if coordinates not already set from form interaction
       if (resolvedForm.lat == null || resolvedForm.lng == null) {
         const practiceLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
         if (practiceLocation) {
@@ -1470,31 +1485,11 @@ function TeamForm({ isMobile }) {
         }
       }
 
-      if (form.facility_name.trim()) {
-        const facilityLocation = await resolveBestLocation(
-          form.facility_address,
-          form.facility_city || resolvedForm.city,
-          form.facility_state || resolvedForm.state,
-          form.facility_zip_code || resolvedForm.zip_code
-        )
-        if (facilityLocation) {
-          resolvedForm = applyResolvedFacilityCoordsPreservingLocality(resolvedForm, facilityLocation)
-        }
-      }
+      // facility_id comes directly from the search selection — no auto-create
+      const facilityId = selectedFacility?.id || null
 
-      const facilityId = resolvedForm.facility_name.trim()
-        ? await findOrCreateFacilityFromTeam(resolvedForm, selectedFacilityId || selectedFacilityMatch?.id || null)
-        : null
-
-      const finalLat =
-        resolvedForm.lat != null ? parseFloat(resolvedForm.lat)
-        : resolvedForm.facility_lat != null ? parseFloat(resolvedForm.facility_lat)
-        : null
-
-      const finalLng =
-        resolvedForm.lng != null ? parseFloat(resolvedForm.lng)
-        : resolvedForm.facility_lng != null ? parseFloat(resolvedForm.facility_lng)
-        : null
+      const finalLat = resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null
+      const finalLng = resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null
 
       const payload = {
         name: resolvedForm.name.trim(),
@@ -1511,7 +1506,7 @@ function TeamForm({ isMobile }) {
         address: resolvedForm.address.trim() || null,
 
         facility_id: facilityId,
-        facility_name: resolvedForm.facility_name.trim() || null,
+        facility_name: selectedFacility?.name || null,
 
         contact_name: resolvedForm.contact_name.trim(),
         contact_email: resolvedForm.contact_email.trim() || null,
@@ -1544,31 +1539,6 @@ function TeamForm({ isMobile }) {
 
   return (
     <div>
-      <DuplicateWarning
-        matches={visibleFacilityMatches}
-        loading={facilityMatchLoading}
-        mode="facility"
-        selectedId={selectedFacilityMatch?.id || null}
-        onUseExisting={(match) => {
-          setSelectedFacilityMatch(match)
-          setSelectedFacilityId(match.id || null)
-          setAllowCreateNewFacility(false)
-          setForm((f) => applyExistingFacilityToTeamForm(f, match))
-          setError('')
-        }}
-        onCreateNewAnyway={() => {
-          setSelectedFacilityMatch(null)
-          setSelectedFacilityId(null)
-          setAllowCreateNewFacility(true)
-          setError('')
-        }}
-        onDismiss={() => {
-          setSelectedFacilityMatch(null)
-          setSelectedFacilityId(null)
-          setAllowCreateNewFacility(true)
-          setError('')
-        }}
-      />
 
       <div className="form-section">
         <div className="form-section-title">1. The Basics</div>
@@ -1683,61 +1653,40 @@ function TeamForm({ isMobile }) {
       <div className="form-section">
         <div className="form-section-title">2. Primary / Home Facility</div>
 
-  <div style={{ marginBottom: 14 }}>
-    <label style={labelStyle}>Primary Facility Name</label>
-    <input
-      value={form.facility_name}
-      onChange={(e) => set('facility_name', e.target.value)}
-      placeholder="e.g. Grand Slam Johns Creek, Grit Academy Athletics"
-      style={inputStyle}
-    />
-    <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-      Use this for the organization home base, indoor training site, or primary facility. We will suggest an existing facility before you submit so you can reuse it if it already exists.
-    </div>
-  </div>
+        <div style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.5, marginBottom: 14 }}>
+          Does this team train or operate out of a dedicated facility? (e.g. Georgia Bombers → Grand Slam Johns Creek)
+          If not, leave this unchecked — independent teams that use parks or rotate fields don't need one.
+        </div>
 
-  <div style={{ marginBottom: 14 }}>
-    <label style={labelStyle}>
-      Primary Facility Street Address
-      {facilityAddrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-      {facilityAddrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-      {facilityAddrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using facility zip pin</span>}
-      {facilityAddrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
-    </label>
-    <input
-      value={form.facility_address}
-      onChange={(e) => set('facility_address', e.target.value)}
-      onBlur={handleFacilityAddressBlur}
-      placeholder="Optional but preferred for precise home-facility pin placement"
-      style={inputStyle}
-    />
-  </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 14 }}>
+          <input
+            type="checkbox"
+            checked={linkToFacility}
+            onChange={(e) => {
+              setLinkToFacility(e.target.checked)
+              if (!e.target.checked) setSelectedFacility(null)
+            }}
+            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--navy)' }}
+          />
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>
+            This team is associated with an existing facility
+          </span>
+        </label>
 
-  <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
-    <ZipField
-      value={form.facility_zip_code}
-      onChange={(v) => set('facility_zip_code', v)}
-      onGeocode={handleFacilityZipGeocode}
-      hint="Enter zip first to auto-fill the primary facility city and state"
-    />
-    <div>
-      <label style={labelStyle}>Primary Facility City</label>
-      <input
-        value={form.facility_city}
-        onChange={(e) => set('facility_city', e.target.value)}
-        placeholder="Auto-filled from zip"
-        style={inputStyle}
-      />
-    </div>
-    <div>
-      <label style={labelStyle}>Primary Facility State</label>
-      <select value={form.facility_state} onChange={(e) => set('facility_state', e.target.value)} style={selectStyle}>
-        <option value="">Select</option>
-        {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
-      </select>
-    </div>
-  </div>
-</div>
+        {linkToFacility && (
+          <div>
+            <label style={labelStyle}>Search for facility</label>
+            <FacilitySearchSelect
+              selectedFacility={selectedFacility}
+              onSelect={(f) => setSelectedFacility(f)}
+              onClear={() => setSelectedFacility(null)}
+            />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>
+              Only approved facilities appear in search. If yours isn't listed yet, submit it separately via the Facility tab — then come back and link your team.
+            </div>
+          </div>
+        )}
+      </div>
 
 
       <div className="form-section">
