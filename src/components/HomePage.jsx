@@ -26,9 +26,12 @@ const MUTED = '#888'
 const FAINT = '#bbb'
 
 const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
-const RAIL_W = 300
-const AD_SQ = 300
+
+// Rail is 300px wide; each ad slot is a 300x300 square
+const RAIL_WIDTH = 300
 const WIDE_BREAKPOINT = 1440
+
+// Header height — used for sticky top offset
 const HEADER_H = 90
 
 function Band({ children, style }) {
@@ -76,43 +79,13 @@ function FeaturedCard({ listing, isMobile }) {
   )
 }
 
-// AdSquare — a hard-clipped 300x300 box that prevents AdSlot from stretching taller
-function AdSquare({ position }) {
-  return (
-    <div
-      style={{
-        width: AD_SQ,
-        height: AD_SQ,
-        minHeight: AD_SQ,
-        maxHeight: AD_SQ,
-        overflow: 'hidden',
-        borderRadius: 8,
-        position: 'relative',
-        flexShrink: 0,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-        }}
-      >
-        <AdSlot position={position} />
-      </div>
-    </div>
-  )
-}
-
-// Rail — sticky aside with two stacked 300x300 squares
+// Each rail holds two square 300x300 ad units stacked vertically.
+// The inner wrapper is sticky so the ads travel with the user as they scroll.
 function AdRail({ side }) {
   return (
     <aside
       style={{
-        width: RAIL_W,
-        minWidth: RAIL_W,
+        width: RAIL_WIDTH,
         flexShrink: 0,
         alignSelf: 'flex-start',
         position: 'sticky',
@@ -120,8 +93,13 @@ function AdRail({ side }) {
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <AdSquare position={'rail-' + side + '-sq1'} />
-        <AdSquare position={'rail-' + side + '-sq2'} />
+        {/* Two 300x300 medium-rectangle squares */}
+        <div style={{ width: RAIL_WIDTH, height: RAIL_WIDTH, overflow: 'hidden', borderRadius: 8 }}>
+          <AdSlot position={'rail-' + side + '-sq1'} />
+        </div>
+        <div style={{ width: RAIL_WIDTH, height: RAIL_WIDTH, overflow: 'hidden', borderRadius: 8 }}>
+          <AdSlot position={'rail-' + side + '-sq2'} />
+        </div>
       </div>
     </aside>
   )
@@ -202,11 +180,12 @@ export default function HomePage() {
   ]
 
   const pageShell = {
-    maxWidth: isWide ? (RAIL_W * 2 + 860 + 64) + 'px' : 1200,
+    maxWidth: isWide ? (RAIL_WIDTH * 2 + 860 + 64) + 'px' : 1200,
     margin: '0 auto',
     padding: isMobile ? '0 0 96px' : '0 0 48px',
     background: '#fff',
     color: DARK,
+    overflowX: 'clip',
   }
 
   const col = { padding: isMobile ? '0 12px' : '0 20px' }
@@ -218,10 +197,12 @@ export default function HomePage() {
         <AdSlot position={isMobile ? 'mobile-inline-top' : 'leaderboard-top'} />
       </div>
 
+      {/* Three-column wrapper — rails use alignSelf: flex-start + position: sticky */}
       <div style={{ display: isWide ? 'flex' : 'block', alignItems: 'flex-start', gap: isWide ? 20 : 0, marginTop: 16, padding: isWide ? '0 20px' : 0 }}>
 
         {isWide && <AdRail side="left" />}
 
+        {/* Main content column */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* HERO */}
@@ -259,38 +240,13 @@ export default function HomePage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, minmax(0, 1fr))', gap: 10, alignItems: 'stretch' }}>
                 <div style={pillStyle}>
-                  <select value={sport} onChange={(e) => setSport(e.target.value)} style={selectStyle}>
-                    <option value="">All sports</option>
-                    <option value="baseball">Baseball</option>
-                    <option value="softball">Softball</option>
-                  </select>
-                </div>
-                <div style={pillStyle}>
                   <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
                     <path d="M6 1C4.067 1 2.5 2.567 2.5 4.5c0 2.776 3.5 6.5 3.5 6.5s3.5-3.724 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="#aaa" strokeWidth="1.2" fill="none" />
                     <circle cx="6" cy="4.5" r="1" fill="#aaa" />
                   </svg>
-                  <input type="text" inputMode="numeric" placeholder="Zip code" maxLength={5} value={zip} onChange={(e) => setZip(e.target.value)} style={selectStyle} />
+                  <input type="text" inputMode="numeric" placeholder="Near zip code" maxLength={5} value={zip} onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))} style={selectStyle} />
                 </div>
                 <div style={pillStyle}>
-                  <select value={listingType} onChange={(e) => setListingType(e.target.value)} style={selectStyle}>
-                    <option value="">All types</option>
-                    <option value="coach">Coach</option>
-                    <option value="team">Team</option>
-                    <option value="facility">Facility</option>
-                    <option value="roster">Open Roster</option>
-                    <option value="pickup">Pickup</option>
-                  </select>
-                </div>
-                <div style={pillStyle}>
-                  <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} style={selectStyle}>
-                    <option value="">All ages</option>
-                    {['8U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ ...pillStyle, gridColumn: isMobile ? '1 / -1' : 'auto' }}>
                   <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
                     <circle cx="6" cy="6" r="4.5" stroke="#aaa" strokeWidth="1.2" fill="none" />
                     <circle cx="6" cy="6" r="1.5" fill="#aaa" />
@@ -302,6 +258,33 @@ export default function HomePage() {
                     ))}
                   </select>
                 </div>
+                <div style={pillStyle}>
+                  <select value={sport} onChange={(e) => setSport(e.target.value)} style={selectStyle}>
+                    <option value="">All sports</option>
+                    <option value="baseball">Baseball</option>
+                    <option value="softball">Softball</option>
+                  </select>
+                </div>
+                <div style={pillStyle}>
+                  <select value={listingType} onChange={(e) => setListingType(e.target.value)} style={selectStyle}>
+                    <option value="">All types</option>
+                    <option value="coach">Coach</option>
+                    <option value="team">Team</option>
+                    <option value="facility">Facility</option>
+                    <option value="roster">Open Roster</option>
+                  </select>
+                </div>
+                <div style={pillStyle}>
+                  <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} style={selectStyle}>
+                    <option value="">All ages</option>
+                    {['8U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={{ fontSize: isMobile ? 13 : 12, color: MUTED, marginTop: 10, lineHeight: 1.45 }}>
+                Start with ZIP + distance for the cleanest nearby results. Keyword search is optional.
               </div>
             </section>
           </div>
@@ -437,6 +420,7 @@ export default function HomePage() {
           </div>
 
         </div>
+        {/* END MAIN CONTENT */}
 
         {isWide && <AdRail side="right" />}
 
