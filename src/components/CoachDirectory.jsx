@@ -82,7 +82,12 @@ async function geocodeZip(zip) {
     const data = await res.json()
     const place = data.places && data.places[0]
     if (!place) return null
-    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) }
+    return {
+      lat: parseFloat(place.latitude),
+      lng: parseFloat(place.longitude),
+      state: place['state abbreviation'] || '',
+      city: place['place name'] || '',
+    }
   } catch {
     return null
   }
@@ -1280,6 +1285,9 @@ export default function CoachDirectory() {
     if (geo) {
       setGeoCenter(geo)
       setZipStatus('ok')
+      if (state === 'All States' && geo.state) {
+        setState(geo.state)
+      }
       setSelected(null)
       if (isMobile) {
         setMobileView('list')
@@ -1560,7 +1568,7 @@ export default function CoachDirectory() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 12 }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={sectionLabel}>ZIP code</div>
-                    <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 46, fontSize: 15, minWidth: 0 }} />
+                    <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus(''); if (state !== 'All States') setState('All States') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 46, fontSize: 15, minWidth: 0 }} />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
                     <div style={{ minWidth: 0 }}>
@@ -1627,13 +1635,14 @@ export default function CoachDirectory() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ minHeight: 42 }}>⚾ Baseball</button>
                       <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ minHeight: 42 }}>🥎 Softball</button>
+                      <button type="button" className={'pill-toggle ' + (sport === 'both' ? 'active-both' : '')} onClick={() => setSport((s) => (s === 'both' ? 'Both' : 'both'))} style={{ gridColumn: '1 / -1', minHeight: 42, borderColor: sport === 'both' ? '#C9D4E5' : undefined, background: sport === 'both' ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)' : undefined, color: sport === 'both' ? '#173B73' : undefined }}>⚾🥎 Baseball &amp; Softball</button>
                     </div>
                   </div>
                   <div><div style={sectionLabel}>Specialty</div><select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>{SPECIALTIES.map((s) => <option key={s}>{s}</option>)}</select></div>
                   <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
                   <div>
                     <div style={sectionLabel}>Near zip code</div>
-                    <input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }} />
+                    <input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus(''); if (state !== 'All States') setState('All States') } }} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }} />
                     <div style={{ marginTop: 8 }}>
                       <div style={sectionLabel}>Radius</div>
                       <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>
@@ -1727,10 +1736,10 @@ export default function CoachDirectory() {
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
                 {facilityContext && <div style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--lgray)', background: '#f8fafc', color: 'var(--navy)' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>Facility context</div><div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div><div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>Showing only coaches linked to this facility</div><div style={{ marginTop: 8 }}><Link to={`/facilities/${facilityContext.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>← Back to Facility</Link></div></div>}
                 <div><div style={sectionLabel}>Search</div><input placeholder="Name, city, facility, zip..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 40 }} /></div>
-                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
                 <div><div style={sectionLabel}>Specialty</div><select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{SPECIALTIES.map((s) => <option key={s}>{s}</option>)}</select></div>
+                {!facilityContext && <><div><div style={sectionLabel}>ZIP code</div><input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus(''); if (state !== 'All States') setState('All States') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 40 }} /></div><div><div style={sectionLabel}>Radius</div><select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 40 }}>{RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div><button type="button" onClick={applyZipSearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Show nearby coaches</button><div style={{ fontSize: 12, color: zipStatus === 'error' ? 'var(--red)' : 'var(--gray)', lineHeight: 1.35 }}>{zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing coaches within ${radius} miles of ${zip}${state !== 'All States' ? `, ${state}` : ''}.` : 'Enter your ZIP code first so local coaches show before the full directory.'}</div></>}
+                <div><div style={sectionLabel}>Sport</div><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ minHeight: 38 }}>🥎 Softball</button><button type="button" className={'pill-toggle ' + (sport === 'both' ? 'active-both' : '')} onClick={() => setSport((s) => (s === 'both' ? 'Both' : 'both'))} style={{ gridColumn: '1 / -1', minHeight: 38, borderColor: sport === 'both' ? '#C9D4E5' : undefined, background: sport === 'both' ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)' : undefined, color: sport === 'both' ? '#173B73' : undefined }}>⚾🥎 Baseball &amp; Softball</button></div></div>
                 <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
-                {!facilityContext && <><div><div style={sectionLabel}>ZIP code</div><input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 40 }} /></div><div><div style={sectionLabel}>Radius</div><select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 40 }}>{RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div><button type="button" onClick={applyZipSearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Show nearby coaches</button><div style={{ fontSize: 12, color: zipStatus === 'error' ? 'var(--red)' : 'var(--gray)', lineHeight: 1.35 }}>{zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing coaches within ${radius} miles of ${zip}.` : 'Enter your ZIP code first so local coaches show before the full directory.'}</div></>}
                 <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a></div>
               </div>
