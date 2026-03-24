@@ -505,20 +505,20 @@ function MobileFacilityRow({ facility, distanceMi }) {
         </div>
 
         {amenities.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 9 }}>
             {amenities.map((item) => (
-              <span key={item} style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 11.5, padding: '4px 9px', borderRadius: 999, textTransform: 'capitalize', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span key={item} style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 11, padding: '4px 8px', borderRadius: 999, textTransform: 'capitalize', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {item}
               </span>
             ))}
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 12 }}>
-          <div style={{ fontSize: 12.5, color: 'var(--gray)' }}>
-            Tap through for facility details
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+            Open facility details
           </div>
-          <span style={{ flexShrink: 0, textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '9px 13px', fontSize: 12, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
+          <span style={{ flexShrink: 0, textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '8px 12px', fontSize: 11.5, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
             View Facility
           </span>
         </div>
@@ -818,7 +818,7 @@ export default function Facilities() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Directory</div>
-                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : `${facilities.length} facilities ready to browse`}</div>
+                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : 'Choose type and ZIP to browse nearby'}</div>
               </div>
               <a href="/submit" style={{ textDecoration: 'none', padding: '10px 12px', borderRadius: 999, border: '1.5px solid var(--red)', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
                 + Add a Facility
@@ -826,6 +826,12 @@ export default function Facilities() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel}>Location type</div>
+                <select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0 }}>
+                  {FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel}>ZIP code</div>
                 <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0 }} />
@@ -943,8 +949,7 @@ export default function Facilities() {
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, color: 'var(--gray)' }}>Tap a pin to open that facility.</div>
               </div>
-              </div>
-      ) : (
+            ) : (
               <div>
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Browse facilities</div>
