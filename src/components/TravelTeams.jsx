@@ -1132,7 +1132,7 @@ export default function TravelTeams() {
           onClose={() => setProfileTeam(null)}
           onClaim={(team) => {
             window.location.href =
-              'mailto:admin.bsbldirectory@gmail.com?subject=' +
+              'admin@sandlotsource.com?subject=' +
               encodeURIComponent('Claim Request: ' + team.name)
           }}
         />
