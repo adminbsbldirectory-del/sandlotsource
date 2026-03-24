@@ -395,7 +395,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
           border: '1px solid rgba(15,23,42,0.08)',
           borderRadius: 16,
           boxShadow: '0 6px 18px rgba(15,23,42,0.04)',
-          padding: showMap ? '12px 14px 12px' : '14px 14px 12px',
+          padding: '14px 14px 12px',
           cursor: 'pointer',
         }}
         onClick={onClick}
