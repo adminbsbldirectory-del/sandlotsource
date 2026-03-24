@@ -61,6 +61,12 @@ const US_STATES = [
   'VA', 'WA', 'WV', 'WI', 'WY',
 ]
 
+const RADIUS_OPTIONS = [
+  { value: 10, label: 'Within 10 mi' },
+  { value: 25, label: 'Within 25 mi' },
+  { value: 50, label: 'Within 50 mi' },
+]
+
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value)
   if (sport === 'both') return { key: 'both', label: 'Both', bg: '#E7EEF9', color: '#1D3E73', border: '#C8D5E8' }
@@ -895,14 +901,23 @@ function AdBox({ compact = false }) {
   )
 }
 
-function EmptyState({ facilityContextName }) {
+function EmptyState({ facilityContextName, hasLocationSearch }) {
+  if (!facilityContextName && !hasLocationSearch) {
+    return (
+      <div className="empty-state">
+        <h3>Start with your ZIP code</h3>
+        <p>Enter a ZIP code and choose a radius to see coaches near you first.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="empty-state">
       <h3>{facilityContextName ? 'No linked coaches found' : 'No coaches match your filters'}</h3>
       <p>
         {facilityContextName
           ? `We couldn’t find approved active coaches linked to ${facilityContextName}.`
-          : 'Try changing your search or clearing one of the filters.'}
+          : 'Try changing your search, widening the radius, or clearing one of the filters.'}
       </p>
     </div>
   )
@@ -1254,21 +1269,27 @@ export default function CoachDirectory() {
     }
   }
 
-  async function handleZipBlur() {
+  async function applyZipSearch() {
     if (zip.length !== 5) {
       setGeoCenter(null)
-      setZipStatus('')
-      return
+      setZipStatus(zip ? 'error' : '')
+      return false
     }
 
     const geo = await geocodeZip(zip)
     if (geo) {
       setGeoCenter(geo)
       setZipStatus('ok')
-    } else {
-      setGeoCenter(null)
-      setZipStatus('error')
+      setSelected(null)
+      if (isMobile) {
+        setMobileView('list')
+      }
+      return true
     }
+
+    setGeoCenter(null)
+    setZipStatus('error')
+    return false
   }
 
   function clearZipFilter() {
@@ -1282,6 +1303,8 @@ export default function CoachDirectory() {
     setSport('Both')
     setSpecialty('All Specialties')
     setState('All States')
+    setSearchInput('')
+    setSearch('')
     clearZipFilter()
   }
 
@@ -1358,6 +1381,8 @@ export default function CoachDirectory() {
   }, [coaches, facilityMap])
 
   const baseFiltered = useMemo(() => {
+    if (!geoCenter && !facilityFromUrl) return []
+
     return resolvedCoaches.filter((c) => {
       const specs = c.specialty || []
       const normalizedSport = normalizeSportValue(c.sport)
@@ -1383,8 +1408,13 @@ export default function CoachDirectory() {
       }
 
       return true
+    }).sort((a, b) => {
+      if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
+        return distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) - distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+      }
+      return 0
     })
-  }, [resolvedCoaches, sport, specialty, state, search, geoCenter, radius])
+  }, [resolvedCoaches, sport, specialty, state, search, geoCenter, radius, facilityFromUrl])
 
   const filtered = useMemo(() => {
     if (!facilityFromUrl) return baseFiltered
@@ -1422,6 +1452,7 @@ export default function CoachDirectory() {
     return count
   }, [sport, specialty, state, geoCenter])
 
+  const hasLocationSearch = !!geoCenter || !!facilityContext
   const mobileShowMap = isMobile ? mobileView === 'map' : showMap
 
   const inputStyle = {
@@ -1490,7 +1521,7 @@ export default function CoachDirectory() {
                 <div>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, lineHeight: 1.05, fontWeight: 800, color: 'var(--navy)' }}>Coach Directory</div>
                   <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 4, lineHeight: 1.35 }}>
-                    {displayedCoaches.length} coach{displayedCoaches.length !== 1 ? 'es' : ''} ready to browse
+                    {hasLocationSearch ? `${displayedCoaches.length} coach${displayedCoaches.length !== 1 ? 'es' : ''} near you` : `${resolvedCoaches.length} coaches ready to browse`}
                   </div>
                 </div>
                 <a
@@ -1522,6 +1553,29 @@ export default function CoachDirectory() {
                   <Link to={`/facilities/${facilityContext.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 13 }}>
                     ← Back to Facility
                   </Link>
+                </div>
+              )}
+
+              {!facilityContext && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={sectionLabel}>ZIP code</div>
+                    <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 46, fontSize: 15, minWidth: 0 }} />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel}>Radius</div>
+                      <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 46, fontSize: 15, minWidth: 0 }}>
+                        {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </div>
+                    <button type="button" onClick={applyZipSearch} style={{ minHeight: 46, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 14px', whiteSpace: 'nowrap', minWidth: 72 }}>
+                      Go
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 12, color: zipStatus === 'error' ? 'var(--red)' : 'var(--gray)' }}>
+                    {zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing coaches within ${radius} miles of ${zip}.` : 'Start with your ZIP code so local coaches show first.'}
+                  </div>
                 </div>
               )}
 
@@ -1579,18 +1633,20 @@ export default function CoachDirectory() {
                   <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
                   <div>
                     <div style={sectionLabel}>Near zip code</div>
-                    <input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }} />
-                    {zipStatus === 'error' && <div style={{ marginTop: 6, fontSize: 12.5, color: '#B91C1C' }}>ZIP not recognized. Please check and try again.</div>}
-                    {zip.length === 5 && zipStatus === 'ok' && (
-                      <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--gray)' }}><span>Radius</span><span style={{ fontWeight: 700, color: 'var(--navy)' }}>{radius} mi</span></div>
-                        <input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} />
-                        <button type="button" onClick={clearZipFilter} style={{ minHeight: 42, borderRadius: 12, background: '#fff', color: 'var(--navy)', border: '1.5px solid #CBD5E1', fontWeight: 700, fontFamily: 'var(--font-head)' }}>Clear ZIP filter</button>
-                      </div>
-                    )}
+                    <input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }} />
+                    <div style={{ marginTop: 8 }}>
+                      <div style={sectionLabel}>Radius</div>
+                      <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}>
+                        {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 12.5, color: zipStatus === 'error' ? '#B91C1C' : 'var(--gray)' }}>
+                      {zipStatus === 'error' ? 'ZIP not recognized. Please check and try again.' : 'Use ZIP + radius so local coaches show first.'}
+                    </div>
+                    {(zipStatus === 'ok' || zip) && <button type="button" onClick={clearZipFilter} style={{ marginTop: 8, minHeight: 42, width: '100%', borderRadius: 12, background: '#fff', color: 'var(--navy)', border: '1.5px solid #CBD5E1', fontWeight: 700, fontFamily: 'var(--font-head)' }}>Clear ZIP filter</button>}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: mobileActiveFilterCount > 0 ? '1fr 1fr' : '1fr', gap: 8 }}>
-                    <button type="button" onClick={applySearch} style={{ minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontWeight: 800, fontFamily: 'var(--font-head)' }}>Apply</button>
+                    <button type="button" onClick={async () => { applySearch(); if (zip.length === 5) { await applyZipSearch() } else if (!zip) { setGeoCenter(null); setZipStatus('') } else { setGeoCenter(null); setZipStatus('error') } setShowMobileFilters(false) }} style={{ minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontWeight: 800, fontFamily: 'var(--font-head)' }}>Apply</button>
                     {mobileActiveFilterCount > 0 && <button type="button" onClick={clearAllMobileFilters} style={{ minHeight: 44, borderRadius: 12, border: '1.5px solid #CBD5E1', background: '#fff', color: 'var(--navy)', fontWeight: 700, fontFamily: 'var(--font-head)' }}>Clear</button>}
                   </div>
                 </div>
@@ -1614,7 +1670,7 @@ export default function CoachDirectory() {
 
             {mobileView === 'map' ? (
               <div style={{ display: 'grid', gap: 10 }}>
-                <div style={{ background: 'var(--white)', borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.07)', boxShadow: '0 10px 24px rgba(15,23,42,0.05)' }}>
+                {!hasLocationSearch ? <div className="empty-state"><h3>Start with your ZIP code</h3><p>Enter a ZIP code and choose a radius to see coaches near you on the map.</p></div> : <div style={{ background: 'var(--white)', borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(15,23,42,0.07)', boxShadow: '0 10px 24px rgba(15,23,42,0.05)' }}>
                   <div style={{ height: 360, overflow: 'hidden' }}>
                     <MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}>
                       <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -1624,7 +1680,7 @@ export default function CoachDirectory() {
                     </MapContainer>
                   </div>
                   <MapLegend />
-                </div>
+                </div>}
                 <button
                   type="button"
                   onClick={() => setMobileView('list')}
@@ -1638,14 +1694,14 @@ export default function CoachDirectory() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Browse coaches</div>
-                    <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>List-first mobile view for faster scanning.</div>
+                    <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 2 }}>{hasLocationSearch ? 'List-first mobile view for faster scanning.' : 'Enter your ZIP code above to load nearby coaches.'}</div>
                   </div>
                   <button type="button" onClick={() => setMobileView('map')} style={{ border: '1.5px solid #CBD5E1', background: '#fff', color: 'var(--navy)', borderRadius: 10, padding: '8px 10px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Open Map</button>
                 </div>
 
                 <div style={{ display: 'grid', gap: 10 }}>
                   {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches…</div>}
-                  {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} />}
+                  {!loading && displayedCoaches.length === 0 && <EmptyState facilityContextName={facilityContext?.name} hasLocationSearch={hasLocationSearch} />}
                   {!loading && displayedCoaches.map((coach) => (
                     <MobileCoachRow
                       key={coach.id}
@@ -1665,8 +1721,8 @@ export default function CoachDirectory() {
           <div style={{ display: 'grid', gridTemplateColumns: '300px minmax(0, 1fr)', gap: 18, alignItems: 'start', width: '100%' }}>
             <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', background: 'var(--white)', borderRight: '1px solid rgba(15,23,42,0.06)', zIndex: 2 }}>
               <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
-                <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{displayedCoaches.length} coach{displayedCoaches.length !== 1 ? 'es' : ''}</div>
-                <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>Private instructors, team coaches, and trainers</div>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>{hasLocationSearch ? `${displayedCoaches.length} coach${displayedCoaches.length !== 1 ? 'es' : ''} near you` : 'Start with ZIP + radius'}</div>
+                <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>{hasLocationSearch ? 'Private instructors, team coaches, and trainers' : 'Enter a ZIP code to load nearby coaches first.'}</div>
               </div>
               <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
                 {facilityContext && <div style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid var(--lgray)', background: '#f8fafc', color: 'var(--navy)' }}><div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--gray)' }}>Facility context</div><div style={{ fontSize: 14, fontWeight: 700, marginTop: 2 }}>{facilityContext.name}</div><div style={{ fontSize: 12, marginTop: 2, color: 'var(--gray)' }}>Showing only coaches linked to this facility</div><div style={{ marginTop: 8 }}><Link to={`/facilities/${facilityContext.id}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>← Back to Facility</Link></div></div>}
@@ -1674,7 +1730,7 @@ export default function CoachDirectory() {
                 <div><div style={sectionLabel}>Sport</div><div style={{ display: 'flex', gap: 8 }}><button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))} style={{ flex: 1, minHeight: 38 }}>⚾ Baseball</button><button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))} style={{ flex: 1, minHeight: 38 }}>🥎 Softball</button></div></div>
                 <div><div style={sectionLabel}>Specialty</div><select value={specialty} onChange={(e) => setSpecialty(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{SPECIALTIES.map((s) => <option key={s}>{s}</option>)}</select></div>
                 <div><div style={sectionLabel}>State</div><select value={state} onChange={(e) => setState(e.target.value)} style={{ ...inputStyle, minHeight: 40 }}>{US_STATES.map((s) => <option key={s}>{s}</option>)}</select></div>
-                <div><div style={sectionLabel}>Near zip code</div><input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onBlur={handleZipBlur} style={{ ...inputStyle, minHeight: 40 }} />{zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop: 8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /><button type="button" onClick={clearZipFilter} style={{ marginTop: 8, width: '100%', background: 'white', color: 'var(--navy)', border: '2px solid var(--lgray)', borderRadius: 8, padding: '7px 10px', fontSize: 12, fontWeight: 700 }}>Clear zip filter</button></div>}</div>
+                {!facilityContext && <><div><div style={sectionLabel}>ZIP code</div><input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 40 }} /></div><div><div style={sectionLabel}>Radius</div><select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 40 }}>{RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div><button type="button" onClick={applyZipSearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Show nearby coaches</button><div style={{ fontSize: 12, color: zipStatus === 'error' ? 'var(--red)' : 'var(--gray)', lineHeight: 1.35 }}>{zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing coaches within ${radius} miles of ${zip}.` : 'Enter your ZIP code first so local coaches show before the full directory.'}</div></>}
                 <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
                 <div style={{ display: 'flex', gap: 8 }}><button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button><a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Coach</a></div>
               </div>
@@ -1683,15 +1739,15 @@ export default function CoachDirectory() {
             <div style={{ minWidth: 0 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 230px', gap: 22, alignItems: 'start' }}>
                 <main style={{ minWidth: 0 }}>
-                  {showMap && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 355, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={(coach) => {
+                  {showMap && hasLocationSearch && <div style={{ background: 'var(--white)', width: '100%' }}><div style={{ height: 355, width: '100%', overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(15,23,42,0.06)' }}><MapContainer center={[33.5, -84.2]} zoom={8} style={{ height: '100%', width: '100%' }}><TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds points={markerGroups} selectedId={selected} />{sel && sel.lat != null && sel.lng != null && <FlyTo lat={sel.lat} lng={sel.lng} />}<MapMarkers groups={markerGroups} selected={selected} setSelected={setSelected} onViewCoach={(coach) => {
                       setSelected(null)
                       setProfileCoach(coach)
                     }} /></MapContainer></div><MapLegend /></div>}
-                  {!showMap && <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view coach locations.</div>}
+                  {!hasLocationSearch ? <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Enter a ZIP code and radius in the left panel to load nearby coaches and center the map.</div> : !showMap ? <div style={{ background: 'var(--white)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 14, padding: '16px', color: 'var(--gray)', fontSize: 13, width: '100%' }}>Map is hidden. Use “Show Map” in the left panel to view coach locations.</div> : null}
 
                   <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                    <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>{displayedCoaches.length} Coach{displayedCoaches.length !== 1 ? 'es' : ''}</div>
-                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>Compact list below. Click a row or pin to preview, then use View Profile & Reviews for the full coach card.</div>
+                    <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>{hasLocationSearch ? `${displayedCoaches.length} Coach${displayedCoaches.length !== 1 ? 'es' : ''}` : 'Nearby coaches will appear here'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>{hasLocationSearch ? 'Compact list below. Click a row or pin to preview, then use View Profile & Reviews for the full coach card.' : 'Enter a ZIP code and radius first so the list starts with local results.'}</div>
                   </div>
 
                   <div style={{ marginTop: 8, border: '1px solid #DCE5F0', borderRadius: 16, overflow: 'hidden', background: '#fff', boxShadow: '0 8px 24px rgba(15,23,42,0.04)' }}>
@@ -1705,7 +1761,7 @@ export default function CoachDirectory() {
                       </div>
 
                       {loading && <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>Loading coaches...</div>}
-                      {!loading && displayedCoaches.length === 0 && <div style={{ padding: 18 }}><EmptyState facilityContextName={facilityContext?.name} /></div>}
+                      {!loading && displayedCoaches.length === 0 && <div style={{ padding: 18 }}><EmptyState facilityContextName={facilityContext?.name} hasLocationSearch={hasLocationSearch} /></div>}
                       {!loading && displayedCoaches.map((coach) => (
                         <CoachRow
                           key={coach.id}
