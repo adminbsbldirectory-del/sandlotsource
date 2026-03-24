@@ -8,9 +8,11 @@ const NAV_TABS = [
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
   { id: 'board', label: 'Pickup Needed \u00b7 Pickup Wanted', path: '/find' },
   { id: 'roster', label: 'Open Roster Spots', path: '/roster' },
-  { id: 'submit', label: '+ Add Listing', path: '/submit' },
+  { id: 'submit', label: 'Add a Listing', path: '/submit' },
   { id: 'claim', label: 'Claim a Listing', path: '/claim' },
 ]
+
+const CTA_IDS = ['submit', 'claim']
 
 function getActiveTab(pathname) {
   const match = NAV_TABS.find((tab) => {
@@ -21,11 +23,7 @@ function getActiveTab(pathname) {
 }
 
 function getTabStyles(tabId, isActive) {
-  const isAdd = tabId === 'submit'
-  const isRoster = tabId === 'roster'
-  const isClaim = tabId === 'claim'
-
-  if (isAdd) {
+  if (tabId === 'submit') {
     return {
       background: isActive ? '#b07d00' : 'rgba(240,165,0,0.12)',
       color: isActive ? '#fff' : '#b07d00',
@@ -33,7 +31,7 @@ function getTabStyles(tabId, isActive) {
     }
   }
 
-  if (isRoster) {
+  if (tabId === 'roster') {
     return {
       background: isActive ? '#15803d' : 'rgba(22,163,74,0.1)',
       color: isActive ? '#fff' : '#15803d',
@@ -41,7 +39,7 @@ function getTabStyles(tabId, isActive) {
     }
   }
 
-  if (isClaim) {
+  if (tabId === 'claim') {
     return {
       background: isActive ? '#c0392b' : 'rgba(230,51,41,0.07)',
       color: isActive ? '#fff' : '#c0392b',
@@ -118,6 +116,9 @@ export default function Header() {
 
   const activeTab = getActiveTab(location.pathname)
 
+  const coreTabs = NAV_TABS.filter((t) => !CTA_IDS.includes(t.id))
+  const ctaTabs = NAV_TABS.filter((t) => CTA_IDS.includes(t.id))
+
   useEffect(() => {
     function handleResize() {
       const mobile = window.innerWidth < 900
@@ -148,7 +149,6 @@ export default function Header() {
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
       }}
     >
-      {/* No maxWidth centering — logo sits flush to the left */}
       <div style={{ padding: '0 24px' }}>
         <div
           style={{
@@ -211,7 +211,6 @@ export default function Header() {
             <div
               style={{
                 display: 'flex',
-                gap: 2,
                 alignItems: 'flex-end',
                 flex: 1,
                 overflowX: 'auto',
@@ -220,36 +219,38 @@ export default function Header() {
                 scrollbarWidth: 'none',
               }}
             >
-              {NAV_TABS.map((tab) => {
-                if (tab.id === 'claim') {
-                  return (
-                    <div
-                      key={tab.id}
-                      style={{
-                        marginLeft: 'auto',
-                        paddingLeft: 12,
-                        borderLeft: '1px solid #e5e5e5',
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                      }}
-                    >
-                      <NavButton
-                        tab={tab}
-                        isActive={activeTab === tab.id}
-                        onClick={() => handleNavigate(tab.path)}
-                      />
-                    </div>
-                  )
-                }
-                return (
+              {/* Core browse nav — left side */}
+              <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+                {coreTabs.map((tab) => (
                   <NavButton
                     key={tab.id}
                     tab={tab}
                     isActive={activeTab === tab.id}
                     onClick={() => handleNavigate(tab.path)}
                   />
-                )
-              })}
+                ))}
+              </div>
+
+              {/* CTA tabs — pushed to far right with separator */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 4,
+                  alignItems: 'flex-end',
+                  marginLeft: 'auto',
+                  paddingLeft: 16,
+                  borderLeft: '1px solid #e5e5e5',
+                }}
+              >
+                {ctaTabs.map((tab) => (
+                  <NavButton
+                    key={tab.id}
+                    tab={tab}
+                    isActive={activeTab === tab.id}
+                    onClick={() => handleNavigate(tab.path)}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
