@@ -13,6 +13,8 @@ import Facilities from './components/Facilities.jsx'
 import FacilityProfile from './components/FacilityProfile.jsx'
 import AdminGeocode from './components/AdminGeocode.jsx'
 import LegalPage from './components/LegalPage.jsx'
+import AdminPage from './components/AdminPage.jsx'
+// ...
 
 const BORDER = '#eaeae6'
 const FAINT = '#bbb'
@@ -48,7 +50,7 @@ function SiteFooter() {
         { label: 'Add a Listing', to: '/submit' },
         { label: 'Claim a Listing', to: '/claim' },
         { label: 'About', to: '/legal#about' },
-        { label: 'Contact', href: 'admin@sandlotsource.com' },
+        { label: 'Contact', href: 'mailto:admin@sandlotsource.com' },
       ],
     },
     {
@@ -205,6 +207,7 @@ function AppRoutes() {
           <Route path="/claim" element={<ClaimListing />} />
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/admin/geocode" element={<AdminGeocode />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
