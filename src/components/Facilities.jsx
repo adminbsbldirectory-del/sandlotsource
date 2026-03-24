@@ -794,7 +794,7 @@ export default function Facilities() {
   return (
     <>
       {isMobile ? (
-        <div style={{ padding: 12, paddingBottom: 28 }}>
+        <div style={{ padding: 12, paddingBottom: 28, width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
           <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 20, padding: 16, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
@@ -806,20 +806,26 @@ export default function Facilities() {
               </a>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginTop: 14, width: '100%', maxWidth: '100%' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel}>Location type</div>
+                <select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%' }}>
+                  {FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </div>
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel}>ZIP code</div>
-                <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0 }} />
+                <input type="text" inputMode="numeric" placeholder="e.g. 30350" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} onKeyDown={async (e) => { if (e.key === 'Enter') { e.preventDefault(); await applyZipSearch() } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%' }} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, alignItems: 'end', width: '100%' }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={sectionLabel}>Radius</div>
-                  <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0 }}>
+                  <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0, width: '100%' }}>
                     {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </div>
-                <button type="button" onClick={applyZipSearch} style={{ minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 14px', whiteSpace: 'nowrap', minWidth: 72 }}>
-                  Go
+                <button type="button" onClick={applyZipSearch} style={{ width: '100%', minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 14px', whiteSpace: 'nowrap', minWidth: 0 }}>
+                  Show nearby facilities
                 </button>
               </div>
             </div>
@@ -827,7 +833,7 @@ export default function Facilities() {
               {zipStatus === 'error' ? 'Enter a valid 5-digit ZIP code.' : hasLocationSearch ? `Showing facilities within ${radius} miles of ${zip}.` : 'Start with your ZIP code so local facilities show first.'}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginTop: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr minmax(0, auto)', gap: 8, marginTop: 14, width: '100%', maxWidth: '100%' }}>
               <button
                 type="button"
                 onClick={() => {
@@ -897,7 +903,7 @@ export default function Facilities() {
             )}
           </div>
 
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
             {mobileView === 'map' ? (
               <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 18, padding: 10, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
                 <div style={{ height: 320, overflow: 'hidden', borderRadius: 14 }}>
