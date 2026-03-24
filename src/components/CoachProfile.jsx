@@ -62,6 +62,9 @@ export default function CoachProfile({ coach, onClose }) {
     ? null
     : [coach.city, coach.state].filter(Boolean).join(', ') + (coach.zip ? ' ' + coach.zip : '')
 
+  const facilityHref = coach.facility_id ? `/facilities/${coach.facility_id}` : null
+  const facilityWebsite = coach.facility_website || coach.facility_url || null
+
   // Google Maps link — works with address or city/state
   const mapsQuery = coach.address
     ? encodeURIComponent(coach.address)
@@ -228,6 +231,62 @@ export default function CoachProfile({ coach, onClose }) {
                 </a>
               )}
             </div>
+
+            {(coach.facility_name || facilityHref || facilityWebsite) && (
+              <div style={{
+                marginTop:16,
+                paddingTop:16,
+                borderTop:'2px solid var(--lgray)',
+                display:'flex',
+                flexDirection:'column',
+                gap:6,
+              }}>
+                <div style={{
+                  fontSize:11,
+                  fontWeight:700,
+                  textTransform:'uppercase',
+                  letterSpacing:'0.08em',
+                  color:'#6b7280',
+                }}>
+                  Facility
+                </div>
+
+                {coach.facility_name && (
+                  facilityHref ? (
+                    <a
+                      href={facilityHref}
+                      style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:700 }}
+                    >
+                      📍 {coach.facility_name}
+                    </a>
+                  ) : (
+                    <div style={{ color:'var(--navy)', fontSize:14, fontWeight:700 }}>
+                      📍 {coach.facility_name}
+                    </div>
+                  )
+                )}
+
+                {facilityHref && (
+                  <a
+                    href={facilityHref}
+                    style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}
+                  >
+                    View facility page
+                  </a>
+                )}
+
+                {facilityWebsite && (
+                  <a
+                    href={facilityWebsite.startsWith('http') ? facilityWebsite : 'https://' + facilityWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}
+                  >
+                    Facility website
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Reviews */}
