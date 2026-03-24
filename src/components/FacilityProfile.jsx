@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -111,7 +111,7 @@ function CoachCard({ coach, facilityId }) {
             <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 3 }}>{coach.facility_name}</div>
           )}
           {(coach.address || getCoachLocationLine(coach)) && (
-            <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6 }}>
+            <div style={{ fontSize: 13, color: 'var(--gray)', marginTop: 6, overflowWrap: 'anywhere' }}>
               📍 {coach.address || getCoachLocationLine(coach)}
             </div>
           )}
@@ -173,7 +173,7 @@ function CoachCard({ coach, facilityId }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12, minWidth: 0 }}>
         <Link
           to={`/coaches?select=${coach.id}${facilityId ? `&facility=${facilityId}` : ''}`}
           style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
@@ -236,8 +236,72 @@ function tryoutLabel(status) {
   return 'Closed'
 }
 
-function TeamCard({ team }) {
+function TeamCard({ team, mobile = false }) {
   const teamSearchUrl = '/teams?select=' + team.id
+  const metaLine = [
+    team.age_group,
+    team.sport
+      ? (team.sport === 'both'
+          ? 'Baseball & Softball'
+          : team.sport.charAt(0).toUpperCase() + team.sport.slice(1))
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  if (mobile) {
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gap: 8,
+          padding: '10px 0',
+          borderBottom: '1px solid var(--lgray)',
+          minWidth: 0,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--navy)', lineHeight: 1.3, overflowWrap: 'anywhere' }}>
+              {team.name}
+            </div>
+            {metaLine && (
+              <div style={{ fontSize: 12.5, color: 'var(--gray)', marginTop: 2, lineHeight: 1.35 }}>
+                {metaLine}
+              </div>
+            )}
+          </div>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: 999,
+              whiteSpace: 'nowrap',
+              ...tryoutBadgeStyle(team.tryout_status),
+            }}
+          >
+            {tryoutLabel(team.tryout_status)}
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 12, color: 'var(--gray)' }}>Open team details</div>
+          <Link
+            to={teamSearchUrl}
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#1D4ED8',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            View →
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -253,7 +317,7 @@ function TeamCard({ team }) {
           {team.name}
         </div>
         <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 2 }}>
-          {[team.age_group, team.sport ? (team.sport === 'both' ? 'Baseball & Softball' : team.sport.charAt(0).toUpperCase() + team.sport.slice(1)) : null].filter(Boolean).join(' · ')}
+          {metaLine}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -286,6 +350,7 @@ function TeamCard({ team }) {
 
 export default function FacilityProfile() {
   const { id } = useParams()
+  const location = useLocation()
   const [facility, setFacility] = useState(null)
   const [coaches, setCoaches] = useState([])
   const [teams, setTeams] = useState([])
@@ -392,10 +457,11 @@ export default function FacilityProfile() {
   const amenityList = useMemo(() => (Array.isArray(facility?.amenities) ? facility.amenities.filter(Boolean) : []), [facility])
   const sportLabel = facility ? getSportLabel(getFacilitySport(facility)) : ''
   const mapsQuery = encodeURIComponent(facility?.address || locationLine || facility?.name || '')
+  const backHref = `/facilities${location.search || ''}`
 
   if (loading) {
     return (
-      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden' }}>
+      <div className="page-shell" style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <div className="card" style={{ padding: 20 }}>Loading facility…</div>
       </div>
     )
@@ -403,12 +469,12 @@ export default function FacilityProfile() {
 
   if (!facility) {
     return (
-      <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden' }}>
+      <div className="page-shell" style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <div className="card" style={{ padding: 20 }}>
           <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)' }}>Facility not found</div>
           <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 8 }}>{error || 'This facility may have been removed or is no longer active.'}</div>
           <div style={{ marginTop: 16 }}>
-            <Link to="/facilities" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+            <Link to={backHref} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
               ← Back to Facilities
             </Link>
           </div>
@@ -418,9 +484,9 @@ export default function FacilityProfile() {
   }
 
   return (
-    <div className="page-shell" style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden' }}>
+    <div className="page-shell" style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: 18 }}>
-        <Link to="/facilities" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+        <Link to={backHref} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
           ← Back to Facilities
         </Link>
       </div>
@@ -437,7 +503,7 @@ export default function FacilityProfile() {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: isMobile ? 0 : 260 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 22 : 30, fontWeight: 800, lineHeight: 1.1 }}>{facility.name}</div>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 22 : 30, fontWeight: 800, lineHeight: 1.1, overflowWrap: 'anywhere' }}>{facility.name}</div>
             {(facility.address || locationLine) && (
               <div style={{ fontSize: 14, opacity: 0.9, marginTop: 10 }}>
                 📍 {facility.address || locationLine}
@@ -563,7 +629,7 @@ export default function FacilityProfile() {
                       </div>
                     )}
                     {items.map((team) => (
-                      <TeamCard key={team.id} team={team} />
+                      <TeamCard key={team.id} team={team} mobile={isMobile} />
                     ))}
                   </div>
                 ))}
