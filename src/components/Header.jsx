@@ -215,7 +215,7 @@ export default function Header() {
                 scrollbarWidth: 'none',
               }}
             >
-              {/* Core browse tabs */}
+              {/* Core browse tabs — left */}
               <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexShrink: 0 }}>
                 {coreTabs.map((tab) => (
                   <NavButton
@@ -227,40 +227,10 @@ export default function Header() {
                 ))}
               </div>
 
-              {/* Tagline — fills the gap, larger and more flourished */}
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 20px',
-                  pointerEvents: 'none',
-                  minWidth: 120,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 15,
-                    fontStyle: 'italic',
-                    fontWeight: 400,
-                    color: '#8a9bb0',
-                    letterSpacing: '0.02em',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    lineHeight: 1,
-                    background: 'linear-gradient(90deg, #8a9bb0 0%, #1b3a5c 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  Your source for baseball &amp; softball
-                </span>
-              </div>
+              {/* Spacer */}
+              <div style={{ flex: 1 }} />
 
-              {/* CTA tabs */}
+              {/* CTA tabs — right */}
               <div
                 style={{
                   display: 'flex',
