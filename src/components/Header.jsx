@@ -14,6 +14,9 @@ const NAV_TABS = [
 
 const CTA_IDS = ['submit', 'claim']
 
+// Brand navy — matches the dark tone in the Sandlot Source logo
+const NAVY = '#1b3a5c'
+
 function getActiveTab(pathname) {
   const match = NAV_TABS.find((tab) => {
     if (tab.path === '/') return pathname === '/'
@@ -47,10 +50,11 @@ function getTabStyles(tabId, isActive) {
     }
   }
 
+  // Default nav tabs — navy active state
   return {
-    background: isActive ? '#1a1a1a' : 'transparent',
+    background: isActive ? NAVY : 'transparent',
     color: isActive ? '#fff' : '#555',
-    borderBottom: isActive ? '3px solid #1a1a1a' : '3px solid transparent',
+    borderBottom: isActive ? ('3px solid ' + NAVY) : '3px solid transparent',
   }
 }
 
@@ -145,7 +149,7 @@ export default function Header() {
         top: 0,
         zIndex: 900,
         background: '#fff',
-        borderBottom: '3px solid #e63329',
+        borderBottom: '2px solid #ddddd8',
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
       }}
     >
@@ -231,7 +235,7 @@ export default function Header() {
                 ))}
               </div>
 
-              {/* CTA tabs — pushed to far right with separator */}
+              {/* CTA tabs — pushed far right with subtle separator */}
               <div
                 style={{
                   display: 'flex',
