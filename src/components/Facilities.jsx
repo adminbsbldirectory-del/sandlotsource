@@ -9,7 +9,7 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+})a
 
 const HEADER_H = 75
 
@@ -439,6 +439,70 @@ function FacilityPreviewCard({ facility, onClose }) {
   )
 }
 
+
+function MobileFacilityRow({ facility, distanceMi }) {
+  const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
+  const typeLabel = getFacilityTypeLabel(facility.facility_type)
+  const locationLine = formatFacilityLocation(facility)
+  const amenities = Array.isArray(facility.amenities) ? facility.amenities.slice(0, 2) : []
+
+  return (
+    <div
+      style={{
+        background: '#fff',
+        border: '1px solid rgba(15,23,42,0.08)',
+        borderRadius: 14,
+        boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
+        padding: '12px 12px 10px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1.08, color: 'var(--navy)' }}>
+            {facility.name}
+          </div>
+          <div style={{ fontSize: 13.5, color: 'var(--gray)', marginTop: 5, lineHeight: 1.25 }}>
+            📍 {locationLine || 'Location not listed'}
+            {distanceMi != null ? <span style={{ marginLeft: 8, color: 'var(--red)', fontWeight: 700 }}>{Math.round(distanceMi)} mi</span> : null}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+          {sportMeta && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}` }}>
+              {sportMeta.label}
+            </span>
+          )}
+          {typeLabel && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), border: '1px solid #E5E7EB' }}>
+              {typeLabel}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {amenities.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10 }}>
+          {amenities.map((item) => (
+            <span key={item} style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 12, padding: '4px 9px', borderRadius: 999, textTransform: 'capitalize' }}>
+              {item}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <div style={{ fontSize: 12.5, color: 'var(--gray)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {facility.address || 'Tap through for facility details'}
+        </div>
+        <Link to={`/facilities/${facility.id}`} style={{ flexShrink: 0, textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '10px 14px', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
+          View Facility
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export default function Facilities() {
   const rowRefs = useRef({})
   const desktopListRef = useRef(null)
@@ -459,12 +523,15 @@ export default function Facilities() {
   const [zipStatus, setZipStatus] = useState('')
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+  const [mobileView, setMobileView] = useState('list')
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
       if (!mobile) setShowMap(true)
+      if (!mobile) setShowMobileFilters(false)
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -537,6 +604,29 @@ export default function Facilities() {
     setZipStatus('')
     setRadius(25)
   }
+
+  async function applyMobileFilters() {
+    applySearch()
+    if (zip.length === 5) {
+      await handleZipBlur()
+    } else if (!zip) {
+      setGeoCenter(null)
+      setZipStatus('')
+    }
+    setShowMobileFilters(false)
+  }
+
+  function clearAllMobileFilters() {
+    setSearchInput('')
+    setSearch('')
+    setSport('')
+    setFacilityType('all')
+    clearZipFilter()
+    setSelected(null)
+  }
+
+  const mobileActiveFilterCount = [sport, facilityType !== 'all' ? facilityType : '', search || searchInput, zipStatus === 'ok' ? zip : '']
+    .filter(Boolean).length
 
   const filtered = useMemo(() => {
     return facilities
@@ -666,64 +756,127 @@ export default function Facilities() {
   return (
     <>
       {isMobile ? (
-        <div>
-          <div style={{ background: 'var(--white)', borderBottom: '2px solid var(--lgray)', padding: '10px 12px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: HEADER_H, zIndex: 100 }}>
-            <button type="button" onClick={() => setShowMap((m) => !m)} style={{ flex: 1, padding: '9px 10px', borderRadius: 'var(--btn-radius)', border: '1.5px solid var(--navy)', background: showMap ? 'var(--navy)' : 'var(--white)', color: showMap ? 'var(--white)' : 'var(--navy)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40 }}>{showMap ? 'Hide Map' : 'Show Map'}</button>
-            <a href="/submit" style={{ flex: 1, textAlign: 'center', textDecoration: 'none', padding: '9px 10px', borderRadius: 'var(--btn-radius)', background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)', minHeight: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ Add a Facility</a>
-          </div>
-          <div style={{ padding: 12 }}>
-            <div style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
-              <input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={inputStyle} />
-              <button type="button" onClick={applySearch} style={{ background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, minHeight: 40, fontWeight: 700 }}>Search</button>
+        <div style={{ padding: 12, paddingBottom: 28 }}>
+          <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 20, padding: 16, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div>
-                <div style={sectionLabel}>Sport</div>
+                <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Directory</div>
+                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{filtered.length} facilit{filtered.length !== 1 ? 'ies' : 'y'} ready to browse</div>
+              </div>
+              <a href="/submit" style={{ textDecoration: 'none', padding: '10px 12px', borderRadius: 999, border: '1.5px solid #CBD5E1', color: 'var(--navy)', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
+                + Add a Facility
+              </a>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileView('list')
+                  setSelected(null)
+                }}
+                style={{ minHeight: 42, borderRadius: 12, border: mobileView === 'list' ? 'none' : '1.5px solid var(--navy)', background: mobileView === 'list' ? 'var(--navy)' : '#fff', color: mobileView === 'list' ? '#fff' : 'var(--navy)', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)' }}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileView('map')
+                  setSelected(null)
+                }}
+                style={{ minHeight: 42, borderRadius: 12, border: mobileView === 'map' ? 'none' : '1.5px solid var(--navy)', background: mobileView === 'map' ? 'var(--navy)' : '#fff', color: mobileView === 'map' ? '#fff' : 'var(--navy)', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)' }}
+              >
+                Map
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters((prev) => !prev)}
+                style={{ minHeight: 42, borderRadius: 12, border: '1.5px solid var(--navy)', background: showMobileFilters ? '#EEF2FF' : '#fff', color: 'var(--navy)', fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-head)', padding: '0 12px', whiteSpace: 'nowrap' }}
+              >
+                Filters{mobileActiveFilterCount ? ` (${mobileActiveFilterCount})` : ''}
+              </button>
+            </div>
+
+            {showMobileFilters && (
+              <div style={{ marginTop: 14, display: 'grid', gap: 12, borderTop: '1px solid rgba(15,23,42,0.08)', paddingTop: 14 }}>
+                <div>
+                  <div style={sectionLabel}>Search</div>
+                  <input placeholder="Name, city, address..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={onSearchKeyDown} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }} />
+                </div>
+                <div>
+                  <div style={sectionLabel}>Location type</div>
+                  <select value={facilityType} onChange={(e) => { setFacilityType(e.target.value); setSelected(null) }} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }}>
+                    {FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div style={sectionLabel}>Sport</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <button type="button" className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')} onClick={() => { setSport((s) => (s === 'baseball' ? '' : 'baseball')); setSelected(null) }} style={{ minHeight: 44, fontSize: 12 }}>⚾ Baseball</button>
+                    <button type="button" className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')} onClick={() => { setSport((s) => (s === 'softball' ? '' : 'softball')); setSelected(null) }} style={{ minHeight: 44, fontSize: 12 }}>🥎 Softball</button>
+                    <button type="button" className={'pill-toggle ' + (sport === 'both' ? 'active-both' : '')} onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }} style={{ gridColumn: '1 / -1', minHeight: 44, fontSize: 12, borderColor: sport === 'both' ? '#C9D4E5' : undefined, background: sport === 'both' ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)' : undefined, color: sport === 'both' ? '#173B73' : undefined }}>⚾🥎 Baseball &amp; Softball</button>
+                  </div>
+                </div>
+                <div>
+                  <div style={sectionLabel}>Near zip code</div>
+                  <input type="text" inputMode="numeric" placeholder="e.g. 30004" maxLength={5} value={zip} onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 5); setZip(next); if (next.length < 5) { setGeoCenter(null); setZipStatus('') } }} style={{ ...inputStyle, minHeight: 44, fontSize: 14 }} />
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--gray)' }}>Use zip + radius so local facilities show first.</div>
+                  {zip.length === 5 && zipStatus === 'ok' && <div><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray)', marginBottom: 4, marginTop:8 }}><span>Radius</span><span style={{ fontWeight: 600, color: 'var(--navy)' }}>{radius} mi</span></div><input type="range" min={5} max={100} step={5} value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ width: '100%', accentColor: 'var(--red)' }} /></div>}
+                  {zip.length === 5 && zipStatus === 'error' && <div style={{ marginTop: 6, fontSize: 12, color: 'var(--red)' }}>Could not locate that ZIP code.</div>}
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <button
-                    type="button"
-                    className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-                    onClick={() => { setSport((s) => (s === 'baseball' ? '' : 'baseball')); setSelected(null) }}
-                    style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', lineHeight: 1.1, padding: '0 10px', fontSize: 12, whiteSpace: 'nowrap', minWidth: 0 }}
-                  >
-                    ⚾ Baseball
-                  </button>
-                  <button
-                    type="button"
-                    className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-                    onClick={() => { setSport((s) => (s === 'softball' ? '' : 'softball')); setSelected(null) }}
-                    style={{ minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', lineHeight: 1.1, padding: '0 10px', fontSize: 12, whiteSpace: 'nowrap', minWidth: 0 }}
-                  >
-                    🥎 Softball
-                  </button>
-                  <button
-                    type="button"
-                    className={'pill-toggle ' + (sport === 'both' ? 'active-baseball' : '')}
-                    onClick={() => { setSport((s) => (s === 'both' ? '' : 'both')); setSelected(null) }}
-                    style={{
-                      gridColumn: '1 / -1',
-                      minHeight: 44,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      lineHeight: 1.1,
-                      padding: '0 10px',
-                      fontSize: 12,
-                      whiteSpace: 'nowrap',
-                      minWidth: 0,
-                      borderColor: sport === 'both' ? '#C9D4E5' : undefined,
-                      background: sport === 'both'
-                        ? 'linear-gradient(90deg, #E8EEF8 0%, #E8EEF8 48%, #F3F0D7 52%, #F3F0D7 100%)'
-                        : undefined,
-                      color: sport === 'both' ? '#173B73' : undefined,
-                    }}
-                  >
-                    ⚾🥎 Baseball &amp; Softball
-                  </button>
+                  <button type="button" onClick={applyMobileFilters} style={{ minHeight: 44, borderRadius: 12, border: 'none', background: 'var(--navy)', color: '#fff', fontWeight: 800, fontFamily: 'var(--font-head)' }}>Apply</button>
+                  <button type="button" onClick={clearAllMobileFilters} style={{ minHeight: 44, borderRadius: 12, border: '1.5px solid #CBD5E1', background: '#fff', color: 'var(--navy)', fontWeight: 800, fontFamily: 'var(--font-head)' }}>Clear</button>
                 </div>
               </div>
-            </div>
-            {showMap && <div style={{ background: 'var(--white)', marginBottom: 14 }}><div style={{ height: 240, overflow: 'hidden', borderRadius: 12 }}><MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><FitBounds facilities={mappable} />{mapFocus?.lat != null && mapFocus?.lng != null && <FlyTo target={mapFocus} />}{mappable.map((f) => <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, f.id === selected)} zIndexOffset={f.id === selected ? 1000 : 0} eventHandlers={{ click: () => openFacilityById(f.id, 'map') }}><Popup><div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}><strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div><Link to={`/facilities/${f.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link></div></Popup></Marker>)}</MapContainer></div><div style={{ display: 'flex', gap: 12, padding: '8px 2px 0', alignItems: 'center', flexWrap: 'wrap' }}><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>{[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280'],['Other', '#9A6B2F']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}</div></div>}
-            <div ref={mobileListRef} style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>{loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}{!loading && filtered.length === 0 && <EmptyState />}{!loading && filtered.map((f) => <div key={f.id} ref={(el) => { if (el) rowRefs.current[f.id] = el; else delete rowRefs.current[f.id] }}><FacilityCard facility={f} selected={selected === f.id} onClick={() => (selected === f.id ? closeFacilityPreview() : openFacilityById(f.id, 'list'))} distanceMi={getDistance(f)} /></div>)}</div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            {mobileView === 'map' ? (
+              <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 18, padding: 10, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
+                <div style={{ height: 320, overflow: 'hidden', borderRadius: 14 }}>
+                  <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <FitBounds facilities={mappable} />
+                    {mapFocus?.lat != null && mapFocus?.lng != null && <FlyTo target={mapFocus} />}
+                    {mappable.map((f) => (
+                      <Marker key={f.id} position={[f.lat, f.lng]} icon={makeIcon(f, false)} eventHandlers={{ click: () => openFacilityById(f.id, 'map') }}>
+                        <Popup>
+                          <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
+                            <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong>
+                            <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div>
+                            <Link to={`/facilities/${f.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MapContainer>
+                </div>
+                <div style={{ display: 'flex', gap: 12, padding: '10px 2px 2px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--gray)' }}>Map key</span>
+                  {[['Park / Rec Field', '#16A34A'],['Indoor Training Facility', '#D42B2B'],['Private Facility', '#8B5CF6'],['Team Facility', '#1D4ED8'],['School Field', '#6B7280'],['Other', '#9A6B2F']].map(([label, color]) => <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: color, border: '2px solid rgba(255,255,255,0.9)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} /><span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span></div>)}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: 'var(--gray)' }}>Tap a pin to open that facility.</div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Browse facilities</div>
+                  <div style={{ marginTop: 4, fontSize: 13, color: 'var(--gray)' }}>List-first mobile view for easier browsing.</div>
+                </div>
+                <div ref={mobileListRef} style={{ display: 'grid', gap: 14 }}>
+                  {loading && <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--gray)', fontSize: 14 }}>Loading facilities…</div>}
+                  {!loading && filtered.length === 0 && <EmptyState />}
+                  {!loading && filtered.map((f) => (
+                    <div key={f.id} ref={(el) => { if (el) rowRefs.current[f.id] = el; else delete rowRefs.current[f.id] }}>
+                      <MobileFacilityRow facility={f} distanceMi={getDistance(f)} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
