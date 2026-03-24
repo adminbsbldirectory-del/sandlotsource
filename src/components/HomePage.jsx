@@ -3,19 +3,19 @@ import { Link, useNavigate } from 'react-router-dom'
 import AdSlot from './AdSlot'
 
 const FEATURED_LISTINGS = [
-  { id: 1, type: 'coach', name: 'Mike Torres', meta: 'Pitching \u00b7 Baseball \u00b7 Ages 10\u201318', location: 'Roswell, GA', distance: '8 mi', sport: 'baseball', badge: 'Coach', badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' }, link: '/coaches' },
-  { id: 2, type: 'team', name: 'North Georgia Elite 13U', meta: 'Travel Baseball \u00b7 13U', location: 'Alpharetta, GA', distance: '12 mi', sport: 'baseball', badge: 'Open Roster', badgeStyle: { background: '#fff3e0', color: '#7a4200' }, link: '/teams' },
-  { id: 3, type: 'coach', name: 'Sarah Kim', meta: 'Hitting \u00b7 Softball \u00b7 All ages', location: 'Marietta, GA', distance: '14 mi', sport: 'softball', badge: 'Coach', badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' }, link: '/coaches' },
-  { id: 4, type: 'team', name: 'Cherokee 14U Gold', meta: 'Travel Baseball \u00b7 14U', location: 'Canton, GA', distance: '18 mi', sport: 'baseball', badge: 'Tryouts Open', badgeStyle: { background: '#f0eefe', color: '#3d2fa0' }, link: '/teams' },
+  { id: 1, type: 'coach', name: 'Mike Torres', meta: 'Pitching - Baseball - Ages 10-18', location: 'Roswell, GA', distance: '8 mi', sport: 'baseball', badge: 'Coach', badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' }, link: '/coaches' },
+  { id: 2, type: 'team', name: 'North Georgia Elite 13U', meta: 'Travel Baseball - 13U', location: 'Alpharetta, GA', distance: '12 mi', sport: 'baseball', badge: 'Open Roster', badgeStyle: { background: '#fff3e0', color: '#7a4200' }, link: '/teams' },
+  { id: 3, type: 'coach', name: 'Sarah Kim', meta: 'Hitting - Softball - All ages', location: 'Marietta, GA', distance: '14 mi', sport: 'softball', badge: 'Coach', badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' }, link: '/coaches' },
+  { id: 4, type: 'team', name: 'Cherokee 14U Gold', meta: 'Travel Baseball - 14U', location: 'Canton, GA', distance: '18 mi', sport: 'baseball', badge: 'Tryouts Open', badgeStyle: { background: '#f0eefe', color: '#3d2fa0' }, link: '/teams' },
 ]
 
 const URGENT_POSTS = [
-  { id: 1, postType: 'Need player', title: 'Catcher needed \u2014 Sun 3/17', meta: '12U \u00b7 Alpharetta \u00b7 Baseball', expires: 'Expires in 18 hrs' },
-  { id: 2, postType: 'Need team', title: 'Two 14U players available', meta: 'P / OF \u00b7 Marietta \u00b7 Baseball', expires: 'Expires in 2 days' },
-  { id: 3, postType: 'Need player', title: 'Utility player needed ASAP', meta: '10U \u00b7 Kennesaw \u00b7 Softball', expires: 'Expires in 3 days' },
+  { id: 1, postType: 'Need player', title: 'Catcher needed - Sun 3/17', meta: '12U - Alpharetta - Baseball', expires: 'Expires in 18 hrs' },
+  { id: 2, postType: 'Need team', title: 'Two 14U players available', meta: 'P / OF - Marietta - Baseball', expires: 'Expires in 2 days' },
+  { id: 3, postType: 'Need player', title: 'Utility player needed ASAP', meta: '10U - Kennesaw - Softball', expires: 'Expires in 3 days' },
 ]
 
-const SPORT_ICON = { baseball: '\u26be', softball: '\ud83e\udd4e' }
+const SPORT_LABEL = { baseball: 'Baseball', softball: 'Softball' }
 
 const RED = '#e63329'
 const NAVY = '#1b3a5c'
@@ -26,7 +26,6 @@ const MUTED = '#888'
 const FAINT = '#bbb'
 
 const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
-
 const RAIL_WIDTH = 300
 const WIDE_BREAKPOINT = 1440
 
@@ -42,7 +41,7 @@ function SectionHeader({ title, linkTo, linkLabel }) {
       </span>
       {linkTo && (
         <Link to={linkTo} style={{ fontSize: 12, fontWeight: 500, color: RED, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-          {linkLabel || 'View all \u2192'}
+          {linkLabel || 'View all'}
         </Link>
       )}
     </div>
@@ -51,7 +50,7 @@ function SectionHeader({ title, linkTo, linkLabel }) {
 
 function FeaturedCard({ listing, isMobile }) {
   return (
-    <Link key={listing.id} to={listing.link} style={{ border: '1px solid ' + BORDER, borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 15px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
+    <Link to={listing.link} style={{ border: '1px solid ' + BORDER, borderRadius: 12, padding: isMobile ? '12px 14px' : '14px 15px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 10 }}>
         <span style={{ fontSize: isMobile ? 16 : 14, fontWeight: 600, color: DARK, lineHeight: 1.28 }}>{listing.name}</span>
         <span style={{ fontSize: isMobile ? 11 : 10, fontWeight: 600, padding: '3px 8px', borderRadius: 8, whiteSpace: 'nowrap', flexShrink: 0, ...listing.badgeStyle }}>{listing.badge}</span>
@@ -59,11 +58,15 @@ function FeaturedCard({ listing, isMobile }) {
       <div style={{ fontSize: isMobile ? 14 : 12, color: '#777', marginBottom: 3 }}>{listing.meta}</div>
       <div style={{ fontSize: isMobile ? 12 : 11, color: FAINT, display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
         <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ddd', flexShrink: 0 }} />
-        {listing.location} \u00b7 {listing.distance}
+        {listing.location} &middot; {listing.distance}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f2f2ee', paddingTop: 8 }}>
-        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: RED }}>{listing.type === 'coach' ? 'View profile' : 'View team'} \u2192</span>
-        <span style={{ fontSize: isMobile ? 12 : 10, color: FAINT }}>{SPORT_ICON[listing.sport]} {listing.sport.charAt(0).toUpperCase() + listing.sport.slice(1)}</span>
+        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: RED }}>
+          {listing.type === 'coach' ? 'View profile' : 'View team'} &rarr;
+        </span>
+        <span style={{ fontSize: isMobile ? 12 : 10, color: FAINT }}>
+          {SPORT_LABEL[listing.sport]}
+        </span>
       </div>
     </Link>
   )
@@ -144,10 +147,10 @@ export default function HomePage() {
   const urgentColumns = isMobile ? '1fr' : 'repeat(3, 1fr)'
 
   const actionRows = [
-    { to: '/coaches', icon: '\ud83c\udfaf', iconBg: '#fef0ee', title: 'Find Instruction', body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.' },
-    { to: '/facilities', icon: '\ud83c\udfd9\ufe0f', iconBg: '#e8f4ff', title: 'Find a Facility', body: 'Training facilities, batting cages, indoor complexes, and practice venues near you.' },
-    { to: '/teams', icon: '\ud83c\udfc6', iconBg: '#eaf3de', title: 'Find a Team', body: 'Travel teams, open rosters, and tryout opportunities by age group and area.' },
-    { to: '/find', icon: '\u26a1', iconBg: '#fef9ee', title: 'Pickup Help / Looking to Play', body: 'Need a player, a team, or a game? Browse or post urgent needs fast.' },
+    { to: '/coaches', icon: 'Find Instruction', iconBg: '#fef0ee', iconEmoji: String.fromCodePoint(0x1F3AF), title: 'Find Instruction', body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.' },
+    { to: '/facilities', icon: 'Find a Facility', iconBg: '#e8f4ff', iconEmoji: String.fromCodePoint(0x1F3DF), title: 'Find a Facility', body: 'Training facilities, batting cages, indoor complexes, and practice venues near you.' },
+    { to: '/teams', icon: 'Find a Team', iconBg: '#eaf3de', iconEmoji: String.fromCodePoint(0x1F3C6), title: 'Find a Team', body: 'Travel teams, open rosters, and tryout opportunities by age group and area.' },
+    { to: '/find', icon: 'Pickup Help', iconBg: '#fef9ee', iconEmoji: String.fromCodePoint(0x26A1), title: 'Pickup Help / Looking to Play', body: 'Need a player, a team, or a game? Browse or post urgent needs fast.' },
   ]
 
   const howItWorks = [
@@ -171,48 +174,23 @@ export default function HomePage() {
         <AdSlot position={isMobile ? 'mobile-inline-top' : 'leaderboard-top'} />
       </div>
 
-      <div
-        style={{
-          display: isWide ? 'flex' : 'block',
-          alignItems: 'flex-start',
-          gap: isWide ? 16 : 0,
-          marginTop: 16,
-        }}
-      >
+      <div style={{ display: isWide ? 'flex' : 'block', alignItems: 'flex-start', gap: isWide ? 16 : 0, marginTop: 16 }}>
         {isWide && <AdRail side="left" />}
 
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* Hero / search */}
-          <section
-            style={{
-              background: '#fff',
-              borderRadius: 14,
-              padding: isMobile ? '20px 14px 16px' : '28px 28px 22px',
-              border: '1px solid ' + BORDER,
-              borderTop: '3px solid #d4cfc9',
-            }}
-          >
+          <section style={{ background: '#fff', borderRadius: 14, padding: isMobile ? '20px 14px 16px' : '28px 28px 22px', border: '1px solid ' + BORDER, borderLeft: '4px solid ' + NAVY }}>
             <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: 500, color: DARK, lineHeight: 1.22, margin: '0 0 6px' }}>
-              Find <span style={{ color: RED }}>coaches, teams &amp; facilities</span> near you.
+              Find <span style={{ color: NAVY }}>coaches, teams &amp; facilities</span> near you.
             </h1>
             <p style={{ fontSize: isMobile ? 14 : 15, color: MUTED, marginBottom: 18, lineHeight: 1.5 }}>
-              Baseball and softball \u2014 coaches, travel teams, training facilities, open rosters, and pickup help all in one place.
+              Baseball and softball &mdash; coaches, travel teams, training facilities, open rosters, and pickup help all in one place.
             </p>
 
             <form
               onSubmit={handleSearch}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: '#fff',
-                border: '1.5px solid #d8d8d2',
-                borderRadius: 10,
-                padding: isMobile ? '0 5px 0 10px' : '0 6px 0 14px',
-                height: isMobile ? 50 : 48,
-                gap: 8,
-                marginBottom: 12,
-              }}
+              style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1.5px solid #d8d8d2', borderRadius: 10, padding: isMobile ? '0 5px 0 10px' : '0 6px 0 14px', height: isMobile ? 50 : 48, gap: 8, marginBottom: 12 }}
             >
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.35 }}>
                 <circle cx="6.5" cy="6.5" r="4.5" stroke={DARK} strokeWidth="1.5" />
@@ -220,33 +198,20 @@ export default function HomePage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search coaches, teams, facilities, positions\u2026"
+                placeholder="Search coaches, teams, facilities, positions..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 style={{ flex: 1, border: 'none', outline: 'none', fontSize: isMobile ? 16 : 15, color: DARK, background: 'none', minWidth: 0 }}
               />
               <button
                 type="submit"
-                style={{
-                  background: NAVY,
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 8,
-                  height: isMobile ? 40 : 36,
-                  padding: isMobile ? '0 16px' : '0 20px',
-                  fontSize: isMobile ? 15 : 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
+                style={{ background: NAVY, color: '#fff', border: 'none', borderRadius: 8, height: isMobile ? 40 : 36, padding: isMobile ? '0 16px' : '0 20px', fontSize: isMobile ? 15 : 14, fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
               >
                 Search
               </button>
             </form>
 
-            {/* Filter pills */}
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, minmax(0, 1fr))', gap: 10, alignItems: 'stretch' }}>
-
               <div style={pillStyle}>
                 <select value={sport} onChange={(e) => setSport(e.target.value)} style={selectStyle}>
                   <option value="">All sports</option>
@@ -267,7 +232,7 @@ export default function HomePage() {
                   maxLength={5}
                   value={zip}
                   onChange={(e) => setZip(e.target.value)}
-                  style={{ ...selectStyle }}
+                  style={selectStyle}
                 />
               </div>
 
@@ -291,44 +256,28 @@ export default function HomePage() {
                 </select>
               </div>
 
-              {/* Radius dropdown — replaces the range slider */}
               <div style={{ ...pillStyle, gridColumn: isMobile ? '1 / -1' : 'auto' }}>
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
                   <circle cx="6" cy="6" r="4.5" stroke="#aaa" strokeWidth="1.2" fill="none" />
                   <circle cx="6" cy="6" r="1.5" fill="#aaa" />
                 </svg>
                 <span style={{ fontSize: isMobile ? 14 : 12, color: '#888', flexShrink: 0, marginRight: 2 }}>Within</span>
-                <select
-                  value={radius}
-                  onChange={(e) => setRadius(Number(e.target.value))}
-                  style={{ ...selectStyle, flex: 1 }}
-                >
+                <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...selectStyle, flex: 1 }}>
                   {RADIUS_OPTIONS.map((r) => (
                     <option key={r} value={r}>{r} mi</option>
                   ))}
                 </select>
               </div>
-
             </div>
           </section>
 
           {/* How it works */}
           <section style={{ marginTop: 22 }}>
             <SectionHeader title="How it works" />
-            <div
-              style={{
-                background: isMobile ? '#fbfbf8' : 'transparent',
-                border: isMobile ? '1px solid ' + BORDER : 'none',
-                borderRadius: 14,
-                padding: isMobile ? '4px 10px' : 0,
-                display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-                gap: isMobile ? 0 : 10,
-              }}
-            >
+            <div style={{ background: isMobile ? '#fbfbf8' : 'transparent', border: isMobile ? '1px solid ' + BORDER : 'none', borderRadius: 14, padding: isMobile ? '4px 10px' : 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 0 : 10 }}>
               {howItWorks.map((s, idx) => (
                 <div key={s.n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: isMobile ? '14px 4px' : '15px 13px', borderBottom: isMobile && idx !== howItWorks.length - 1 ? '1px solid ' + BORDER : 'none', border: !isMobile ? '1px solid ' + BORDER : 'none', borderRadius: !isMobile ? 12 : 0, background: !isMobile ? '#fff' : 'transparent' }}>
-                  <div style={{ minWidth: 34, height: 34, borderRadius: 999, background: '#fff1ee', color: RED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{s.n}</div>
+                  <div style={{ minWidth: 34, height: 34, borderRadius: 999, background: '#edf2f8', color: NAVY, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{s.n}</div>
                   <div>
                     <h4 style={{ fontSize: isMobile ? 16 : 13, fontWeight: 600, color: DARK, margin: '0 0 4px' }}>{s.title}</h4>
                     <p style={{ fontSize: isMobile ? 13 : 11, color: MUTED, lineHeight: 1.5, margin: 0 }}>{s.body}</p>
@@ -346,29 +295,18 @@ export default function HomePage() {
                 <Link
                   key={card.to}
                   to={card.to}
-                  style={{
-                    border: '1px solid ' + BORDER,
-                    borderRadius: 14,
-                    padding: isMobile ? '16px 14px' : '18px 16px 14px',
-                    background: '#fff',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 14,
-                  }}
+                  style={{ border: '1px solid ' + BORDER, borderRadius: 14, padding: isMobile ? '16px 14px' : '18px 16px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
                     <div style={{ width: isMobile ? 44 : 38, height: isMobile ? 44 : 38, borderRadius: 12, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 22 : 17, flexShrink: 0 }}>
-                      {card.icon}
+                      {card.iconEmoji}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <h3 style={{ fontSize: isMobile ? 18 : 14, fontWeight: 600, color: DARK, margin: '0 0 4px' }}>{card.title}</h3>
                       <p style={{ fontSize: isMobile ? 13 : 12, color: MUTED, lineHeight: 1.5, margin: 0 }}>{card.body}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize: isMobile ? 22 : 14, color: RED, flexShrink: 0 }}>\u2192</span>
+                  <span style={{ fontSize: isMobile ? 22 : 14, color: RED, flexShrink: 0 }}>&rarr;</span>
                 </Link>
               ))}
             </div>
@@ -378,7 +316,7 @@ export default function HomePage() {
 
           {/* Featured coaches */}
           <section style={{ marginTop: 26 }}>
-            <SectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all \u2192" />
+            <SectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all &rarr;" />
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 10 }}>
               {featuredCoaches.map((listing) => <FeaturedCard key={listing.id} listing={listing} isMobile={isMobile} />)}
             </div>
@@ -390,7 +328,7 @@ export default function HomePage() {
 
           {/* Featured teams */}
           <section style={{ marginTop: 20 }}>
-            <SectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all \u2192" />
+            <SectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all &rarr;" />
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 10 }}>
               {featuredTeams.map((listing) => <FeaturedCard key={listing.id} listing={listing} isMobile={isMobile} />)}
             </div>
@@ -398,7 +336,7 @@ export default function HomePage() {
 
           {/* Urgent pickup needs */}
           <section style={{ marginTop: 20 }}>
-            <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all \u2192" />
+            <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all &rarr;" />
             <div style={{ display: 'grid', gridTemplateColumns: urgentColumns, gap: 10 }}>
               {URGENT_POSTS.map((p) => (
                 <Link key={p.id} to="/find" style={{ border: '1px solid #f5cfc9', borderRadius: 12, padding: '13px 14px', background: '#fff', textDecoration: 'none', color: 'inherit', display: 'block' }}>
@@ -440,23 +378,10 @@ export default function HomePage() {
           </div>
 
           {/* CTA block */}
-          <section
-            style={{
-              background: DARK,
-              borderRadius: 14,
-              padding: isMobile ? '22px 18px' : '26px 28px',
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              justifyContent: 'space-between',
-              alignItems: isMobile ? 'stretch' : 'center',
-              gap: isMobile ? 18 : 24,
-              marginTop: 24,
-              marginBottom: 8,
-            }}
-          >
+          <section style={{ background: NAVY, borderRadius: 14, padding: isMobile ? '22px 18px' : '26px 28px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? 18 : 24, marginTop: 24, marginBottom: 8 }}>
             <div style={{ maxWidth: isMobile ? '100%' : 420 }}>
               <h2 style={{ fontSize: isMobile ? 22 : 18, fontWeight: 600, color: '#fff', margin: '0 0 8px', lineHeight: 1.2 }}>Are you a coach or team?</h2>
-              <p style={{ fontSize: isMobile ? 15 : 13, color: '#a8a8a8', lineHeight: 1.55, margin: 0 }}>
+              <p style={{ fontSize: isMobile ? 15 : 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.55, margin: 0 }}>
                 Add a free listing or claim an existing one to manage your profile.
               </p>
             </div>
@@ -464,19 +389,16 @@ export default function HomePage() {
               <Link to="/submit" style={{ background: RED, color: '#fff', borderRadius: 10, padding: isMobile ? '13px 18px' : '9px 20px', fontSize: isMobile ? 16 : 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', textAlign: 'center' }}>
                 Add a listing
               </Link>
-              <Link to="/claim" style={{ background: 'transparent', color: '#fff', border: '1px solid #444', borderRadius: 10, padding: isMobile ? '13px 18px' : '9px 20px', fontSize: isMobile ? 16 : 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', textAlign: 'center' }}>
+              <Link to="/claim" style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: isMobile ? '13px 18px' : '9px 20px', fontSize: isMobile ? 16 : 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap', textAlign: 'center' }}>
                 Claim a listing
               </Link>
             </div>
           </section>
 
         </div>
-        {/* END MAIN CONTENT */}
 
         {isWide && <AdRail side="right" />}
-
       </div>
-      {/* END THREE-COLUMN WRAPPER */}
 
     </div>
   )
