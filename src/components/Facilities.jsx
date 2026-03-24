@@ -214,7 +214,7 @@ function formatFacilityLocation(facility) {
   return [cityState, zip].filter(Boolean).join(' ')
 }
 
-function FacilityCard({ facility, selected, onClick, distanceMi }) {
+function FacilityCard({ facility, selected, onClick, distanceMi, detailHref }) {
   const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
   const facilityTypeLabel = getFacilityTypeLabel(facility.facility_type)
   const locationFull = formatFacilityLocation(facility)
@@ -328,7 +328,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
               🕐 {facility.hours}
             </div>
           ) : <span />}
-          <Link to={`/facilities/${facility.id}`} onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 12, fontWeight: 700, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <Link to={detailHref} onClick={(e) => e.stopPropagation()} style={{ color: selected ? '#f0a500' : '#1D4ED8', fontSize: 12, fontWeight: 700, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             View Facility →
           </Link>
         </div>
@@ -337,7 +337,7 @@ function FacilityCard({ facility, selected, onClick, distanceMi }) {
   )
 }
 
-function FacilityPreviewCard({ facility, onClose }) {
+function FacilityPreviewCard({ facility, onClose, detailHref }) {
   const facilityTypeLabel = getFacilityTypeLabel(facility.facility_type)
   const sportLabel = getSportLabel(getFacilitySport(facility))
   const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
@@ -433,7 +433,7 @@ function FacilityPreviewCard({ facility, onClose }) {
           <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Links</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>
-              <Link to={`/facilities/${facility.id}`} onClick={onClose} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>View Facility Page</Link>
+              <Link to={detailHref} onClick={onClose} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>View Facility Page</Link>
               {websiteUrl && <a href={websiteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Facility Website</a>}
               {instagramUrl && <a href={instagramUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Instagram</a>}
               {facebookUrl && <a href={facebookUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>Facebook</a>}
@@ -446,7 +446,7 @@ function FacilityPreviewCard({ facility, onClose }) {
 }
 
 
-function MobileFacilityRow({ facility, distanceMi }) {
+function MobileFacilityRow({ facility, distanceMi, detailHref }) {
   const sportMeta = getSportBadgeMeta(getFacilitySport(facility))
   const typeLabel = getFacilityTypeLabel(facility.facility_type)
   const locationLine = formatFacilityLocation(facility)
@@ -454,7 +454,7 @@ function MobileFacilityRow({ facility, distanceMi }) {
 
   return (
     <Link
-      to={`/facilities/${facility.id}`}
+      to={detailHref}
       style={{
         display: 'block',
         textDecoration: 'none',
@@ -468,7 +468,7 @@ function MobileFacilityRow({ facility, distanceMi }) {
           border: '1px solid rgba(15,23,42,0.08)',
           borderRadius: 14,
           boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
-          padding: '12px 12px 10px',
+          padding: '10px 12px',
           maxWidth: '100%',
           overflow: 'hidden',
           boxSizing: 'border-box',
@@ -476,50 +476,42 @@ function MobileFacilityRow({ facility, distanceMi }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1.08, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 15.5, fontWeight: 800, letterSpacing: '0.01em', lineHeight: 1.12, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {facility.name}
             </div>
-            <div style={{ fontSize: 13.5, color: 'var(--gray)', marginTop: 5, lineHeight: 1.25 }}>
+            <div style={{ fontSize: 12.75, color: 'var(--gray)', marginTop: 4, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               📍 {locationLine || 'Location not listed'}
-              {distanceMi != null ? <span style={{ marginLeft: 8, color: 'var(--red)', fontWeight: 700 }}>{Math.round(distanceMi)} mi</span> : null}
             </div>
-            {facility.address && (
-              <div style={{ marginTop: 8, fontSize: 12.5, color: 'var(--gray)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {facility.address}
-              </div>
-            )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
-            {sportMeta && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}`, maxWidth: 150 }}>
-                {sportMeta.label}
-              </span>
-            )}
+          {distanceMi != null ? (
+            <div style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: 'var(--red)', whiteSpace: 'nowrap' }}>
+              {Math.round(distanceMi)} mi
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
             {typeLabel && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), border: '1px solid #E5E7EB', maxWidth: 150, textAlign: 'center' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), border: '1px solid #E5E7EB', maxWidth: '100%' }}>
                 {typeLabel}
               </span>
             )}
-          </div>
-        </div>
-
-        {amenities.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 9 }}>
-            {amenities.map((item) => (
-              <span key={item} style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 11, padding: '4px 8px', borderRadius: 999, textTransform: 'capitalize', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {item}
+            {sportMeta && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}`, maxWidth: '100%' }}>
+                {sportMeta.label}
               </span>
-            ))}
+            )}
+            {amenities.length > 0 && (
+              <span style={{ background: '#F1F5F9', color: 'var(--navy)', fontSize: 10.5, fontWeight: 700, padding: '4px 8px', borderRadius: 999, textTransform: 'capitalize', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {amenities[0]}
+              </span>
+            )}
           </div>
-        )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10 }}>
-          <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-            Open facility details
-          </div>
-          <span style={{ flexShrink: 0, textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 12, padding: '8px 12px', fontSize: 11.5, fontWeight: 800, fontFamily: 'var(--font-head)' }}>
-            View Facility
+          <span style={{ flexShrink: 0, textDecoration: 'none', background: 'var(--navy)', color: '#fff', borderRadius: 10, padding: '7px 10px', fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap' }}>
+            Open
           </span>
         </div>
       </div>
@@ -531,23 +523,37 @@ export default function Facilities() {
   const rowRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const initialSport = (() => {
+    const raw = String(searchParams.get('sport') || '').trim().toLowerCase()
+    return ['baseball', 'softball', 'both'].includes(raw) ? raw : ''
+  })()
+  const initialFacilityType = (() => {
+    const raw = String(searchParams.get('type') || '').trim()
+    return FACILITY_TYPE_OPTIONS.some((option) => option.value === raw) ? raw : 'all'
+  })()
+  const initialSearch = String(searchParams.get('q') || '').trim()
+  const initialZip = String(searchParams.get('zip') || '').replace(/\D/g, '').slice(0, 5)
+  const initialRadiusValue = Number(searchParams.get('radius') || 25)
+  const initialRadius = RADIUS_OPTIONS.some((option) => option.value === initialRadiusValue) ? initialRadiusValue : 25
+  const initialMobileView = searchParams.get('view') === 'map' ? 'map' : 'list'
 
   const [facilities, setFacilities] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(() => searchParams.get('select') || null)
   const [mapFocus, setMapFocus] = useState(null)
-  const [sport, setSport] = useState('')
-  const [facilityType, setFacilityType] = useState('all')
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [zip, setZip] = useState('')
-  const [radius, setRadius] = useState(25)
+  const [sport, setSport] = useState(initialSport)
+  const [facilityType, setFacilityType] = useState(initialFacilityType)
+  const [searchInput, setSearchInput] = useState(initialSearch)
+  const [search, setSearch] = useState(initialSearch)
+  const [zip, setZip] = useState(initialZip)
+  const [radius, setRadius] = useState(initialRadius)
   const [geoCenter, setGeoCenter] = useState(null)
   const [zipStatus, setZipStatus] = useState('')
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [showMap, setShowMap] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
-  const [mobileView, setMobileView] = useState('list')
+  const [mobileView, setMobileView] = useState(initialMobileView)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   useEffect(() => {
@@ -561,7 +567,10 @@ export default function Facilities() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const applySearch = () => setSearch(searchInput.trim())
+  const applySearch = () => {
+    setSearch(searchInput.trim())
+    setSelected(null)
+  }
 
   const onSearchKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -570,10 +579,9 @@ export default function Facilities() {
     }
   }
 
-  useEffect(() => {
-    const selectedFromUrl = searchParams.get('select') || null
-    setSelected(selectedFromUrl)
-  }, [searchParams])
+
+
+
 
   useEffect(() => {
     async function load() {
@@ -587,27 +595,75 @@ export default function Facilities() {
       if (!error && data) {
         const normalized = data.map((f) => ({ ...f, id: String(f.id) }))
         setFacilities(normalized)
-
-        const selectedFromUrl = searchParams.get('select')
-        if (selectedFromUrl && normalized.some((f) => f.id === selectedFromUrl)) {
-          setSelected(selectedFromUrl)
-        }
       }
 
       setLoading(false)
     }
 
     load()
-  }, [searchParams])
+  }, [])
 
   useEffect(() => {
-    const selectedFromUrl = searchParams.get('select')
-    if (!selectedFromUrl || facilities.length === 0) return
-    const match = facilities.find((f) => f.id === String(selectedFromUrl))
-    if (match?.lat != null && match?.lng != null) {
-      setMapFocus({ id: String(selectedFromUrl), lat: match.lat, lng: match.lng, nonce: Date.now() })
+    let active = true
+
+    async function hydrateZipSearch() {
+      if (initialZip.length !== 5) return
+      setZipStatus('loading')
+      const geo = await geocodeZip(initialZip)
+      if (!active) return
+      if (geo) {
+        setGeoCenter(geo)
+        setZipStatus('ok')
+      } else {
+        setGeoCenter(null)
+        setZipStatus('error')
+      }
     }
-  }, [searchParams, facilities])
+
+    hydrateZipSearch()
+    return () => {
+      active = false
+    }
+  }, [initialZip])
+
+  useEffect(() => {
+    if (!selected || facilities.length === 0) return
+    const match = facilities.find((f) => f.id === String(selected))
+    if (match?.lat != null && match?.lng != null) {
+      setMapFocus({ id: String(selected), lat: match.lat, lng: match.lng, nonce: Date.now() })
+    }
+  }, [selected, facilities])
+
+  const browseParamsString = useMemo(() => {
+    const params = new URLSearchParams()
+    if (search) params.set('q', search)
+    if (sport) params.set('sport', sport)
+    if (facilityType !== 'all') params.set('type', facilityType)
+    if (zip) params.set('zip', zip)
+    if (zip || radius !== 25) params.set('radius', String(radius))
+    if (selected) params.set('select', selected)
+    if (mobileView === 'map') params.set('view', 'map')
+    return params.toString()
+  }, [search, sport, facilityType, zip, radius, selected, mobileView])
+
+  useEffect(() => {
+    const currentParamsString = searchParams.toString()
+    if (browseParamsString === currentParamsString) return
+    setSearchParams(browseParamsString ? new URLSearchParams(browseParamsString) : new URLSearchParams(), { replace: true })
+  }, [browseParamsString, searchParams, setSearchParams])
+
+  function buildFacilityDetailHref(facilityId) {
+    const params = new URLSearchParams()
+    if (search) params.set('q', search)
+    if (sport) params.set('sport', sport)
+    if (facilityType !== 'all') params.set('type', facilityType)
+    if (zip) params.set('zip', zip)
+    if (zip || radius !== 25) params.set('radius', String(radius))
+    if (facilityId) params.set('select', String(facilityId))
+    if (mobileView === 'map') params.set('view', 'map')
+    const suffix = params.toString()
+    return `/facilities/${facilityId}${suffix ? `?${suffix}` : ''}`
+  }
 
   async function handleZipBlur() {
     if (!zip || zip.length !== 5) return
@@ -812,7 +868,7 @@ export default function Facilities() {
   return (
     <>
       {isMobile ? (
-        <div style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+        <div style={{ maxWidth: '100%', width: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <div style={{ padding: 12, paddingBottom: 28 }}>
           <div style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 20, padding: 16, boxShadow: '0 6px 18px rgba(15,23,42,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -820,7 +876,7 @@ export default function Facilities() {
                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>Facility Directory</div>
                 <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--gray)' }}>{hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : 'Choose type and ZIP to browse nearby'}</div>
               </div>
-              <a href="/submit" style={{ textDecoration: 'none', padding: '10px 12px', borderRadius: 999, border: '1.5px solid var(--red)', background: 'var(--red)', color: '#fff', fontSize: 12.5, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
+              <a href="/submit" style={{ textDecoration: 'none', borderRadius: 999, background: 'var(--red)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '9px 12px', fontSize: 12, fontWeight: 800, fontFamily: 'var(--font-head)', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
                 + Add a Facility
               </a>
             </div>
@@ -936,7 +992,7 @@ export default function Facilities() {
                           <div style={{ fontFamily: 'var(--font-body)', minWidth: 180 }}>
                             <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>{f.name}</strong>
                             <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>📍 {[f.city, f.state].filter(Boolean).join(', ')}{getFacilityZip(f) ? ' ' + getFacilityZip(f) : ''}</div>
-                            <Link to={`/facilities/${f.id}`} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link>
+                            <Link to={buildFacilityDetailHref(f.id)} style={{ display: 'inline-block', marginTop: 8, color: '#1D4ED8', fontWeight: 700, textDecoration: 'none', fontSize: 12 }}>View Facility</Link>
                           </div>
                         </Popup>
                       </Marker>
@@ -960,7 +1016,7 @@ export default function Facilities() {
                   {!loading && filtered.length === 0 && <EmptyState />}
                   {!loading && filtered.map((f) => (
                     <div key={f.id} ref={(el) => { if (el) rowRefs.current[f.id] = el; else delete rowRefs.current[f.id] }}>
-                      <MobileFacilityRow facility={f} distanceMi={getDistance(f)} />
+                      <MobileFacilityRow facility={f} distanceMi={getDistance(f)} detailHref={buildFacilityDetailHref(f.id)} />
                     </div>
                   ))}
                 </div>
@@ -1077,7 +1133,7 @@ export default function Facilities() {
                       })}
                     </div>
 
-                    {selFacility && <FacilityPreviewCard facility={selFacility} onClose={closeFacilityPreview} />}
+                    {selFacility && <FacilityPreviewCard facility={selFacility} onClose={closeFacilityPreview} detailHref={buildFacilityDetailHref(selFacility?.id)} />}
                   </div>
                 </main>
                 <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
