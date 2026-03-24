@@ -237,7 +237,7 @@ function tryoutLabel(status) {
 }
 
 function TeamCard({ team }) {
-  const teamSearchUrl = '/teams?q=' + encodeURIComponent(team.name || '')
+  const teamSearchUrl = '/teams?select=' + team.id
 
   return (
     <div style={{
