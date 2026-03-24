@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
@@ -355,13 +355,151 @@ function AdBox({ compact = false }) {
   )
 }
 
-function TeamCard({ team, selected, onOpen, onFocusMap }) {
+function TeamCard({ team, selected, onOpen, onFocusMap, mobile = false }) {
   const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.unknown
   const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
   const locationFull = getTeamZip(team) ? `${cityState} ${getTeamZip(team)}` : cityState
   const practiceLabel = team.practice_location_name
     ? [team.practice_location_name, team.address?.trim() || ''].filter(Boolean).join(' · ')
     : team.address?.trim() ? team.address.trim() : locationFull
+  const sportLabel = normalizeSportValue(team.sport) === 'both' ? 'Baseball & Softball' : (team.sport || 'Baseball')
+
+  if (mobile) {
+    return (
+      <div
+        className="card"
+        onClick={onOpen}
+        style={{
+          cursor: 'pointer',
+          border: selected ? '2px solid var(--red)' : '1px solid rgba(15,23,42,0.08)',
+          boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.10)' : '0 2px 10px rgba(0,0,0,0.05)',
+        }}
+      >
+        <div className="card-body" style={{ padding: '12px 12px 10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 16,
+                  fontWeight: 800,
+                  lineHeight: 1.15,
+                  color: 'var(--navy)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {team.name}
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--gray)', marginTop: 4, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                📍 {locationFull || 'Location not listed'}
+              </div>
+            </div>
+            <span
+              className="badge"
+              style={{
+                background: statusInfo.bg,
+                color: statusInfo.color,
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {statusInfo.label}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
+            {team.age_group && (
+              <span
+                style={{
+                  background: 'var(--navy)',
+                  color: 'white',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 20,
+                  fontFamily: 'var(--font-head)',
+                }}
+              >
+                {team.age_group}
+              </span>
+            )}
+            <span className={'badge badge-sport-' + (team.sport || 'baseball')}>
+              {sportLabel}
+            </span>
+            {team.classification && (
+              <span
+                style={{
+                  background: '#EFF6FF',
+                  color: '#1D4ED8',
+                  fontSize: 10,
+                  padding: '2px 7px',
+                  borderRadius: 20,
+                  fontWeight: 700,
+                }}
+              >
+                {team.classification}
+              </span>
+            )}
+          </div>
+
+          <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 8, lineHeight: 1.35 }}>
+            {practiceLabel ? `Practice: ${practiceLabel}` : 'Practice location not listed'}
+          </div>
+
+          <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 12, color: 'var(--gray)' }}>Open team details</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {team.lat != null && team.lng != null && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onFocusMap()
+                  }}
+                  style={{
+                    background: 'var(--white)',
+                    color: 'var(--navy)',
+                    border: '1.5px solid var(--lgray)',
+                    borderRadius: 10,
+                    padding: '8px 10px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  View Map
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpen()
+                }}
+                style={{
+                  background: 'var(--navy)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '8px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-head)',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                View Team
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -435,7 +573,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
           )}
 
           <span className={'badge badge-sport-' + (team.sport || 'baseball')}>
-            {team.sport}
+            {sportLabel}
           </span>
 
           {team.org_affiliation && (
@@ -522,12 +660,21 @@ function TeamCard({ team, selected, onOpen, onFocusMap }) {
 }
 
 function EmptyState({ hasFilters, stateName, zipActive, radius }) {
+  if (!zipActive) {
+    return (
+      <div className="empty-state" style={{ margin: 0 }}>
+        <h3>Start with your ZIP code</h3>
+        <p>Enter a ZIP code and choose a radius to see nearby teams first.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="empty-state" style={{ margin: 0 }}>
       <h3>{hasFilters ? 'No teams match your filters' : `No teams listed yet${stateName ? ' in ' + stateName : ''}`}</h3>
       <p>
         {zipActive
-          ? `No teams found within ${radius} miles. Try increasing the radius or removing the zip filter.`
+          ? `No teams found within ${radius} miles. Try increasing the radius or removing a filter.`
           : hasFilters
             ? 'Try widening your search — remove a filter or select a different state.'
             : 'Know a travel team in this area? Help grow the directory.'}
@@ -729,6 +876,7 @@ function TeamPreviewCard({ team, onClose, onOpenFull }) {
 
 export default function TravelTeams() {
   const rowRefs = useRef({})
+  const [searchParams] = useSearchParams()
   const popupRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
@@ -736,7 +884,7 @@ export default function TravelTeams() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [profileTeam, setProfileTeam] = useState(null)
-  const [selectedTeamId, setSelectedTeamId] = useState(null)
+  const [selectedTeamId, setSelectedTeamId] = useState(() => searchParams.get('select') || null)
 
   const closeAllPopups = () => {
     Object.values(popupRefs.current).forEach((popup) => {
@@ -865,7 +1013,14 @@ export default function TravelTeams() {
     [state]
   )
 
+  const hasLocationSearch = !!geoCenter
+
   const filtered = useMemo(() => {
+    if (!hasLocationSearch) {
+      const selectedSeed = selectedTeamId ? teams.find((team) => team.id === selectedTeamId) : null
+      return selectedSeed ? [selectedSeed] : []
+    }
+
     return teams.filter((t) => {
       const teamState = normalizeStateValue(t.display_state || t.state || t.facility_state)
       const teamSport = String(t.sport || '').toLowerCase()
@@ -899,7 +1054,7 @@ export default function TravelTeams() {
 
       return true
     })
-  }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius])
+  }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius, hasLocationSearch, selectedTeamId])
 
   useEffect(() => {
     if (!selectedTeamId) return
@@ -911,13 +1066,6 @@ export default function TravelTeams() {
     return () => clearTimeout(t)
   }, [selectedTeamId, isMobile])
 
-  // Auto-select a team when ?select=ID is in the URL (e.g. linked from FacilityProfile)
-  useEffect(() => {
-    if (!teams.length) return
-    const params = new URLSearchParams(window.location.search)
-    const selectId = params.get('select')
-    if (selectId) setSelectedTeamId(selectId)
-  }, [teams])
 
   const selectedTeam = useMemo(() => {
     return filtered.find((team) => team.id === selectedTeamId) || teams.find((team) => team.id === selectedTeamId) || null
@@ -1017,12 +1165,11 @@ export default function TravelTeams() {
                 lineHeight: 1.1,
               }}
             >
-              {filtered.length} team{filtered.length !== 1 ? 's' : ''}
-              {selectedState ? ` in ${selectedState.name}` : ''}
+              {hasLocationSearch ? `${filtered.length} team${filtered.length !== 1 ? 's' : ''}${selectedState ? ` in ${selectedState.name}` : ''}` : 'Start with ZIP + radius'}
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>
-              Travel teams, tryouts, and open roster opportunities
+              Enter a ZIP code to load nearby teams first.
             </div>
           </div>
 
@@ -1158,6 +1305,10 @@ export default function TravelTeams() {
                   {zipError}
                 </div>
               )}
+
+              <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--gray)', lineHeight: 1.4 }}>
+                {hasLocationSearch ? `Showing teams within ${radius} miles of ${zip}.` : 'Use ZIP + radius so nearby teams show first.'}
+              </div>
             </div>
 
             <div>
@@ -1432,12 +1583,11 @@ export default function TravelTeams() {
                       color: 'var(--navy)',
                     }}
                   >
-                    {filtered.length} Team{filtered.length !== 1 ? 's' : ''}
-                    {selectedState ? ` in ${selectedState.name}` : ''}
+                    {hasLocationSearch ? `${filtered.length} Team${filtered.length !== 1 ? 's' : ''}${selectedState ? ` in ${selectedState.name}` : ''}` : 'Browse nearby teams'}
                   </div>
 
                   <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-                    Compact list below. Click a row or pin to preview, then use View Team &amp; Claim for full details.
+                    {hasLocationSearch ? 'Compact list below. Click a row or pin to preview, then use View Team for full details.' : 'Enter your ZIP code above to load teams near you first.'}
                   </div>
                 </div>
               </div>
@@ -1457,6 +1607,7 @@ export default function TravelTeams() {
                       <TeamCard
                         team={team}
                         selected={selectedTeamId === team.id}
+                        mobile
                         onOpen={() => setProfileTeam(team)}
                         onFocusMap={() => {
                           closeAllPopups()
