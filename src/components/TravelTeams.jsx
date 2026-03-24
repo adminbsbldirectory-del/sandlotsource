@@ -26,7 +26,7 @@ const STATUS_STYLE = {
   unknown: { bg: '#F3F4F6', color: '#4B5563', label: 'Status Unknown' },
 }
 
-const AGE_OPTIONS = ['All Ages', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
+const AGE_OPTIONS = ['All Ages','6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
 
 const US_STATES = [
   { abbr: 'AL', name: 'Alabama' }, { abbr: 'AK', name: 'Alaska' },
