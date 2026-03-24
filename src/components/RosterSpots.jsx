@@ -103,6 +103,74 @@ const inputStyle = {
 const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
+
+function normalizeLookupText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+async function findMatchingTeamId({ teamName, sport, ageGroup, zipCode, state }) {
+  const normalizedName = normalizeLookupText(teamName)
+  if (!normalizedName) return null
+
+  const queryTerms = Array.from(
+    new Set([
+      teamName?.trim(),
+      normalizedName,
+    ].filter(Boolean))
+  )
+
+  let candidates = []
+
+  for (const term of queryTerms.slice(0, 2)) {
+    let query = supabase
+      .from('travel_teams')
+      .select('id, name, sport, age_group, zip_code, state, approval_status, active')
+      .ilike('name', `%${term}%`)
+      .limit(25)
+
+    const { data } = await query
+    if (Array.isArray(data) && data.length) {
+      candidates = candidates.concat(data)
+    }
+  }
+
+  const deduped = Array.from(new Map(candidates.map((row) => [row.id, row])).values())
+
+  let best = null
+
+  for (const row of deduped) {
+    const rowName = normalizeLookupText(row.name)
+    const rowSport = String(row.sport || '').toLowerCase()
+    const rowState = String(row.state || '').trim().toUpperCase()
+    const rowZip = String(row.zip_code || '').trim()
+    const rowAge = String(row.age_group || '').trim()
+
+    let score = 0
+
+    if (rowName === normalizedName) score += 8
+    else if (rowName.includes(normalizedName) || normalizedName.includes(rowName)) score += 4
+
+    if (sport && (rowSport === sport || rowSport === 'both')) score += 3
+    if (ageGroup && rowAge === ageGroup) score += 2
+    if (zipCode && rowZip && rowZip === zipCode) score += 3
+    if (state && rowState && rowState === String(state).trim().toUpperCase()) score += 1
+    if (row.approval_status === 'approved' || row.approval_status === 'seeded') score += 1
+    if (row.active === true) score += 1
+
+    if (!best || score > best.score) {
+      best = { id: row.id, score }
+    }
+  }
+
+  if (!best || best.score < 8) return null
+  return best.id
+}
+
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
 }
@@ -231,6 +299,23 @@ function RosterRow({ spot, isMobile }) {
             >
               {spot.team_name || 'Open roster spot'}
             </div>
+            {spot.team_id && (
+              <span
+                style={{
+                  background: '#F0FDF4',
+                  color: '#166534',
+                  border: '1px solid #BBF7D0',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: 20,
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'var(--font-head)',
+                }}
+              >
+                Team Match
+              </span>
+            )}
             <SportBadge sport={spot.sport} />
             {spot.age_group && (
               <span
@@ -442,6 +527,14 @@ function RosterForm({ onSubmitted, isMobile }) {
     setError('')
     setSubmitting(true)
 
+    const matchedTeamId = await findMatchingTeamId({
+      teamName: form.team_name,
+      sport: form.sport,
+      ageGroup: form.age_group,
+      zipCode: form.zip_code,
+      state: form.state,
+    })
+
     const payload = {
       sport: form.sport,
       team_name: form.team_name.trim() || null,
@@ -453,6 +546,7 @@ function RosterForm({ onSubmitted, isMobile }) {
       zip_code: form.zip_code || null,
       lat: form.lat || null,
       lng: form.lng || null,
+      team_id: matchedTeamId,
       commitment: 'full_season',
       description: form.description.trim() || null,
       contact_name: form.contact_name.trim() || null,
@@ -537,6 +631,9 @@ function RosterForm({ onSubmitted, isMobile }) {
             placeholder="e.g. Cherokee Nationals"
             style={inputStyle}
           />
+          <div style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+            If this matches an existing team listing, we will associate it automatically.
+          </div>
         </div>
         <div>
           <label style={labelStyle}>Org Affiliation</label>
