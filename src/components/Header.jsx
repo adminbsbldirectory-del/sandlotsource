@@ -6,7 +6,7 @@ const NAV_TABS = [
   { id: 'coaches', label: 'Coaches', path: '/coaches' },
   { id: 'teams', label: 'Teams', path: '/teams' },
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
-  { id: 'board', label: 'Pickup Needed \u00b7 Pickup Wanted', path: '/find' },
+  { id: 'board', label: 'Pickup Needed · Pickup Wanted', path: '/find' },
   { id: 'roster', label: 'Open Roster Spots', path: '/roster' },
   { id: 'submit', label: 'Add a Listing', path: '/submit' },
   { id: 'claim', label: 'Claim a Listing', path: '/claim' },
@@ -141,7 +141,7 @@ export default function Header() {
         top: 0,
         zIndex: 900,
         background: '#fff',
-        borderBottom: '2px solid #ccc9c2',
+        borderBottom: '2px solid ' + NAVY,
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
       }}
     >
@@ -156,6 +156,7 @@ export default function Header() {
             minHeight: isMobile ? 60 : 84,
           }}
         >
+          {/* Logo */}
           <button
             type="button"
             onClick={() => handleNavigate('/')}
@@ -214,6 +215,7 @@ export default function Header() {
                 scrollbarWidth: 'none',
               }}
             >
+              {/* Core browse tabs — left */}
               <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                 {coreTabs.map((tab) => (
                   <NavButton
@@ -224,14 +226,43 @@ export default function Header() {
                   />
                 ))}
               </div>
+
+              {/* Tagline — fills the gap between core nav and CTA tabs */}
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 16px',
+                  pointerEvents: 'none',
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontStyle: 'italic',
+                    color: '#a0a8b0',
+                    letterSpacing: '0.04em',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  Your source for baseball &amp; softball
+                </span>
+              </div>
+
+              {/* CTA tabs — right */}
               <div
                 style={{
                   display: 'flex',
                   gap: 4,
                   alignItems: 'flex-end',
-                  marginLeft: 'auto',
                   paddingLeft: 16,
                   borderLeft: '1px solid #e5e5e5',
+                  flexShrink: 0,
                 }}
               >
                 {ctaTabs.map((tab) => (
