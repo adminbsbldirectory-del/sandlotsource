@@ -13,8 +13,6 @@ const NAV_TABS = [
 ]
 
 const CTA_IDS = ['submit', 'claim']
-
-// Brand navy — matches the dark tone in the Sandlot Source logo
 const NAVY = '#1b3a5c'
 
 function getActiveTab(pathname) {
@@ -33,7 +31,6 @@ function getTabStyles(tabId, isActive) {
       borderBottom: isActive ? '3px solid #b07d00' : '3px solid transparent',
     }
   }
-
   if (tabId === 'roster') {
     return {
       background: isActive ? '#15803d' : 'rgba(22,163,74,0.1)',
@@ -41,7 +38,6 @@ function getTabStyles(tabId, isActive) {
       borderBottom: isActive ? '3px solid #15803d' : '3px solid transparent',
     }
   }
-
   if (tabId === 'claim') {
     return {
       background: isActive ? '#c0392b' : 'rgba(230,51,41,0.07)',
@@ -49,8 +45,6 @@ function getTabStyles(tabId, isActive) {
       borderBottom: isActive ? '3px solid #c0392b' : '3px solid transparent',
     }
   }
-
-  // Default nav tabs — navy active state
   return {
     background: isActive ? NAVY : 'transparent',
     color: isActive ? '#fff' : '#555',
@@ -60,7 +54,6 @@ function getTabStyles(tabId, isActive) {
 
 function NavButton({ tab, isActive, onClick, mobile = false }) {
   const styles = getTabStyles(tab.id, isActive)
-
   return (
     <button
       type="button"
@@ -119,7 +112,6 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   const activeTab = getActiveTab(location.pathname)
-
   const coreTabs = NAV_TABS.filter((t) => !CTA_IDS.includes(t.id))
   const ctaTabs = NAV_TABS.filter((t) => CTA_IDS.includes(t.id))
 
@@ -149,7 +141,7 @@ export default function Header() {
         top: 0,
         zIndex: 900,
         background: '#fff',
-        borderBottom: '2px solid #ddddd8',
+        borderBottom: '2px solid #ccc9c2',
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
       }}
     >
@@ -164,7 +156,6 @@ export default function Header() {
             minHeight: isMobile ? 60 : 84,
           }}
         >
-          {/* Logo — far left */}
           <button
             type="button"
             onClick={() => handleNavigate('/')}
@@ -223,7 +214,6 @@ export default function Header() {
                 scrollbarWidth: 'none',
               }}
             >
-              {/* Core browse nav — left side */}
               <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                 {coreTabs.map((tab) => (
                   <NavButton
@@ -234,8 +224,6 @@ export default function Header() {
                   />
                 ))}
               </div>
-
-              {/* CTA tabs — pushed far right with subtle separator */}
               <div
                 style={{
                   display: 'flex',
