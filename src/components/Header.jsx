@@ -145,14 +145,14 @@ export default function Header() {
         boxShadow: '0 1px 8px rgba(0,0,0,0.07)',
       }}
     >
-      <div style={{ padding: '0 24px' }}>
+      <div style={{ padding: isMobile ? '0 12px' : '0 24px' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            padding: isMobile ? '8px 0' : '10px 0',
+            padding: isMobile ? '7px 0' : '10px 0',
             gap: 16,
-            minHeight: isMobile ? 60 : 84,
+            minHeight: isMobile ? 58 : 84,
           }}
         >
           {/* Logo */}
@@ -174,7 +174,7 @@ export default function Header() {
               src="/logo.png"
               alt="Sandlot Source"
               style={{
-                height: isMobile ? 46 : 64,
+                height: isMobile ? 42 : 64,
                 width: 'auto',
                 display: 'block',
                 objectFit: 'contain',
@@ -194,7 +194,7 @@ export default function Header() {
                 background: '#fff',
                 color: '#1a1a1a',
                 borderRadius: 10,
-                padding: '9px 11px',
+                padding: '8px 10px',
                 fontSize: 18,
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -255,7 +255,7 @@ export default function Header() {
         </div>
 
         {isMobile && menuOpen && (
-          <div style={{ padding: '0 0 12px' }}>
+          <div style={{ padding: '0 0 12px', maxHeight: 'calc(100vh - 70px)', overflowY: 'auto' }}>
             <div
               style={{
                 display: 'grid',
