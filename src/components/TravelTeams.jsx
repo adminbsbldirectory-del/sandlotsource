@@ -125,6 +125,8 @@ async function geocodeZip(zip) {
     return {
       lat: parseFloat(place.latitude),
       lng: parseFloat(place.longitude),
+      state: place['state abbreviation'] || '',
+      city: place['place name'] || '',
     }
   } catch {
     return null
@@ -222,7 +224,7 @@ function normalizeTeamRecord(team, facilityMap = {}) {
   }
 }
 
-function FitBounds({ teams, enabled }) {
+function FitBounds({ teams, enabled, maxZoom = 10 }) {
   const map = useMap()
 
   useEffect(() => {
@@ -230,8 +232,8 @@ function FitBounds({ teams, enabled }) {
     const pts = teams.filter((t) => t.lat != null && t.lng != null)
     if (!pts.length) return
     const bounds = L.latLngBounds(pts.map((t) => [t.lat, t.lng]))
-    map.fitBounds(bounds, { padding: [28, 28], maxZoom: 10 })
-  }, [teams, enabled, map])
+    map.fitBounds(bounds, { padding: [28, 28], maxZoom })
+  }, [teams, enabled, maxZoom, map])
 
   return null
 }
@@ -997,6 +999,7 @@ export default function TravelTeams() {
       if (geo) {
         setGeoCenter(geo)
         setZipError('')
+        setState(geo.state || '')
       } else {
         setGeoCenter(null)
         setZipError('Zip not found')
@@ -1088,7 +1091,7 @@ export default function TravelTeams() {
       ? STATE_CENTERS[state]
       : [39.5, -98.35]
 
-  const mapZoom = geoCenter ? 10 : state ? 7 : 4
+  const mapZoom = geoCenter ? (isMobile ? 9 : 10) : state ? (isMobile ? 6 : 7) : 4
 
   const filterSelectStyle = {
     width: '100%',
@@ -1184,69 +1187,6 @@ export default function TravelTeams() {
             }}
           >
             <div>
-              <div style={sectionLabelStyle}>Search</div>
-              <input
-                type="text"
-                placeholder="Team, org, class, facility, city..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={onSearchKeyDown}
-                style={{
-                  width: '100%',
-                  padding: '9px 10px',
-                  borderRadius: 'var(--input-radius)',
-                  border: '1.5px solid var(--lgray)',
-                  fontSize: 13,
-                  color: 'var(--navy)',
-                  outline: 'none',
-                  background: 'var(--white)',
-                  minHeight: 40,
-                }}
-              />
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>Sport</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-                  onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-                  style={{ flex: 1, minHeight: 38 }}
-                >
-                  ⚾ Baseball
-                </button>
-                <button
-                  type="button"
-                  className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-                  onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-                  style={{ flex: 1, minHeight: 38 }}
-                >
-                  🥎 Softball
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>State</div>
-              <select
-                value={state}
-                onChange={(e) => {
-                  setState(e.target.value)
-                  setSelectedTeamId(null)
-                }}
-                style={filterSelectStyle}
-              >
-                <option value="">All States</option>
-                {US_STATES.map((s) => (
-                  <option key={s.abbr} value={s.abbr}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
               <div style={sectionLabelStyle}>Near Zip Code</div>
               <input
                 type="text"
@@ -1255,8 +1195,14 @@ export default function TravelTeams() {
                 placeholder="Zip code"
                 value={zip}
                 onChange={(e) => {
-                  setZip(e.target.value.replace(/\D/g, '').slice(0, 5))
+                  const nextZip = e.target.value.replace(/\D/g, '').slice(0, 5)
+                  setZip(nextZip)
                   setSelectedTeamId(null)
+                  if (nextZip.length < 5) {
+                    setGeoCenter(null)
+                    setZipError('')
+                    setState('')
+                  }
                 }}
                 style={{
                   width: '100%',
@@ -1312,6 +1258,47 @@ export default function TravelTeams() {
             </div>
 
             <div>
+              <div style={sectionLabelStyle}>State</div>
+              <select
+                value={state}
+                onChange={(e) => {
+                  setState(e.target.value)
+                  setSelectedTeamId(null)
+                }}
+                style={filterSelectStyle}
+              >
+                <option value="">All States</option>
+                {US_STATES.map((s) => (
+                  <option key={s.abbr} value={s.abbr}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div style={sectionLabelStyle}>Sport</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+                  onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
+                  style={{ flex: 1, minHeight: 38 }}
+                >
+                  ⚾ Baseball
+                </button>
+                <button
+                  type="button"
+                  className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+                  onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
+                  style={{ flex: 1, minHeight: 38 }}
+                >
+                  🥎 Softball
+                </button>
+              </div>
+            </div>
+
+            <div>
               <div style={sectionLabelStyle}>Age</div>
               <select
                 value={ageGroup}
@@ -1324,6 +1311,28 @@ export default function TravelTeams() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <div style={sectionLabelStyle}>Search</div>
+              <input
+                type="text"
+                placeholder="Team, org, class, facility, city..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={onSearchKeyDown}
+                style={{
+                  width: '100%',
+                  padding: '9px 10px',
+                  borderRadius: 'var(--input-radius)',
+                  border: '1.5px solid var(--lgray)',
+                  fontSize: 13,
+                  color: 'var(--navy)',
+                  outline: 'none',
+                  background: 'var(--white)',
+                  minHeight: 40,
+                }}
+              />
             </div>
 
             <div>
@@ -1411,7 +1420,8 @@ export default function TravelTeams() {
                   zIndex: 0,
                   background: 'var(--page-bg, #f5f3ef)',
                   paddingTop: isMobile ? 0 : 8,
-                  paddingBottom: 10,
+                  paddingBottom: isMobile ? 6 : 10,
+                  overflowX: 'clip',
                 }}
               >
                 {loadError && (
@@ -1457,7 +1467,7 @@ export default function TravelTeams() {
                           zoom={mapZoom}
                           enabled={!selectedTeam && mappable.length === 0}
                         />
-                        <FitBounds teams={mappable} enabled={mappable.length > 0} />
+                        <FitBounds teams={mappable} enabled={mappable.length > 0} maxZoom={isMobile ? 9 : 10} />
                         <FlyToTeam team={selectedTeam} />
 
                         {mappable.map((team) => (
