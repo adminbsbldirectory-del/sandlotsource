@@ -26,6 +26,7 @@ const statusColumn = {
   travel_teams: 'approval_status',
   player_board: 'approval_status',
   facilities: 'approval_status',
+  reviews: 'moderation_status',
 };
 
 const tableLabels = {
