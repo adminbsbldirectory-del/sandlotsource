@@ -1,11 +1,61 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../supabase.js'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 
 const TABS = ['Coaches', 'Travel Teams', 'Facilities', 'Claim Requests', 'Reviews', 'Featured Coaches', 'Featured Facilities']
+const FEATURED_TABS = ['Featured Coaches', 'Featured Facilities']
 
-// ── Field config per table ──────────────────────────────────────────
+// ── Quick-filter pill config per tab ────────────────────────────────
+// Each entry: { label, filterFn(row) }
+const QUICK_FILTERS = {
+  'Coaches': [
+    { label: 'All',      filterFn: () => true },
+    { label: 'Approved', filterFn: r => r.approval_status === 'approved' },
+    { label: 'Pending',  filterFn: r => r.approval_status === 'pending' },
+    { label: 'Seeded',   filterFn: r => r.approval_status === 'seeded' },
+    { label: 'Featured', filterFn: r => r.featured_status === true },
+    { label: 'Inactive', filterFn: r => r.active === false },
+  ],
+  'Travel Teams': [
+    { label: 'All',      filterFn: () => true },
+    { label: 'Approved', filterFn: r => r.approval_status === 'approved' },
+    { label: 'Pending',  filterFn: r => r.approval_status === 'pending' },
+    { label: 'Featured', filterFn: r => r.featured_status === true },
+    { label: 'Open',     filterFn: r => r.tryout_status === 'open' },
+  ],
+  'Facilities': [
+    { label: 'All',      filterFn: () => true },
+    { label: 'Approved', filterFn: r => r.approval_status === 'approved' },
+    { label: 'Pending',  filterFn: r => r.approval_status === 'pending' },
+    { label: 'Seeded',   filterFn: r => r.approval_status === 'seeded' },
+    { label: 'Featured', filterFn: r => r.featured_status === true },
+  ],
+  'Claim Requests': [
+    { label: 'All',      filterFn: () => true },
+    { label: 'New',      filterFn: r => r.status === 'new' },
+    { label: 'Pending',  filterFn: r => r.status === 'pending' },
+    { label: 'Resolved', filterFn: r => r.status === 'resolved' },
+  ],
+  'Reviews': [
+    { label: 'All',      filterFn: () => true },
+    { label: 'Pending',  filterFn: r => r.moderation_status === 'pending' },
+    { label: 'Approved', filterFn: r => r.moderation_status === 'approved' },
+    { label: 'Rejected', filterFn: r => r.moderation_status === 'rejected' },
+  ],
+  'Featured Coaches': [
+    { label: 'Featured', filterFn: r => r.featured_status === true },
+    { label: 'All',      filterFn: () => true },
+    { label: 'Expired',  filterFn: r => r.featured_until && new Date(r.featured_until) < new Date() },
+  ],
+  'Featured Facilities': [
+    { label: 'Featured', filterFn: r => r.featured_status === true },
+    { label: 'All',      filterFn: () => true },
+    { label: 'Expired',  filterFn: r => r.featured_until && new Date(r.featured_until) < new Date() },
+  ],
+}
+
+// ── Field config per table ───────────────────────────────────────────
 const COACH_FIELDS = [
   { key: 'name',            label: 'Name',            type: 'text' },
   { key: 'sport',           label: 'Sport',           type: 'select', options: ['baseball','softball','both'] },
@@ -56,26 +106,26 @@ const FACILITY_FIELDS = [
 ]
 
 const CLAIM_FIELDS = [
-  { key: 'listing_name',    label: 'Listing',         type: 'text' },
-  { key: 'listing_type',    label: 'Type',            type: 'text' },
-  { key: 'city',            label: 'City',            type: 'text' },
-  { key: 'requested_change',label: 'Change',          type: 'text' },
-  { key: 'requester_name',  label: 'Requester',       type: 'text' },
-  { key: 'requester_email', label: 'Email',           type: 'email-link' },
-  { key: 'requester_phone', label: 'Phone',           type: 'text' },
-  { key: 'notes',           label: 'Notes',           type: 'text' },
-  { key: 'status',          label: 'Status',          type: 'select', options: ['new','pending','resolved'] },
-  { key: 'admin_notes',     label: 'Admin Notes',     type: 'text' },
+  { key: 'listing_name',     label: 'Listing',        type: 'text' },
+  { key: 'listing_type',     label: 'Type',           type: 'text' },
+  { key: 'city',             label: 'City',           type: 'text' },
+  { key: 'requested_change', label: 'Change',         type: 'text' },
+  { key: 'requester_name',   label: 'Requester',      type: 'text' },
+  { key: 'requester_email',  label: 'Email',          type: 'email-link' },
+  { key: 'requester_phone',  label: 'Phone',          type: 'text' },
+  { key: 'notes',            label: 'Notes',          type: 'text' },
+  { key: 'status',           label: 'Status',         type: 'select', options: ['new','pending','resolved'] },
+  { key: 'admin_notes',      label: 'Admin Notes',    type: 'text' },
 ]
 
 const REVIEW_FIELDS = [
-  { key: '_coach_name',      label: 'Coach',          type: 'joined',        joinPath: ['coaches', 'name'] },
+  { key: '_coach_name',      label: 'Coach',          type: 'joined',       joinPath: ['coaches','name'] },
   { key: 'rating',           label: 'Rating',         type: 'stars' },
   { key: 'review_text',      label: 'Review',         type: 'text' },
   { key: 'reviewer_name',    label: 'Reviewer',       type: 'text' },
   { key: 'player_age_group', label: 'Age Group',      type: 'text' },
   { key: 'email',            label: 'Email',          type: 'email-link' },
-  { key: 'moderation_status',label: 'Status',         type: 'select',        options: ['pending','approved','rejected'] },
+  { key: 'moderation_status',label: 'Status',         type: 'select',       options: ['pending','approved','rejected'] },
   { key: 'created_at',       label: 'Submitted',      type: 'date-readonly' },
 ]
 
@@ -83,7 +133,7 @@ const FEATURED_COACH_FIELDS = [
   { key: 'name',             label: 'Name',           type: 'text' },
   { key: 'city',             label: 'City',           type: 'text' },
   { key: 'state',            label: 'State',          type: 'text' },
-  { key: 'sport',            label: 'Sport',          type: 'select',    options: ['baseball','softball','both'] },
+  { key: 'sport',            label: 'Sport',          type: 'select', options: ['baseball','softball','both'] },
   { key: 'featured_status',  label: 'Featured',       type: 'boolean' },
   { key: 'featured_rank',    label: 'Rank',           type: 'number' },
   { key: 'featured_start',   label: 'Start Date',     type: 'date-edit' },
@@ -94,7 +144,7 @@ const FEATURED_FACILITY_FIELDS = [
   { key: 'name',             label: 'Name',           type: 'text' },
   { key: 'city',             label: 'City',           type: 'text' },
   { key: 'state',            label: 'State',          type: 'text' },
-  { key: 'sport',            label: 'Sport',          type: 'select',    options: ['baseball','softball','both'] },
+  { key: 'sport',            label: 'Sport',          type: 'select', options: ['baseball','softball','both'] },
   { key: 'featured_status',  label: 'Featured',       type: 'boolean' },
   { key: 'featured_rank',    label: 'Rank',           type: 'number' },
   { key: 'featured_until',   label: 'Expiry',         type: 'date-edit' },
@@ -110,277 +160,80 @@ const TABLE_CONFIG = {
   'Featured Facilities': { table: 'facilities',     fields: FEATURED_FACILITY_FIELDS, orderBy: 'featured_rank', ascending: true,  selectQuery: '*' },
 }
 
-// ── Styles ──────────────────────────────────────────────────────────
+// ── Styles ───────────────────────────────────────────────────────────
 const s = {
-  page: {
-    background: '#f4f6f9',
-    fontFamily: 'var(--font-body, system-ui, sans-serif)',
-  },
-  header: {
-    background: '#1b3a5c',
-    padding: '14px 28px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 16,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-  },
-  headerTitle: {
-    color: '#fff',
-    fontFamily: 'var(--font-head, system-ui)',
-    fontSize: 18,
-    fontWeight: 700,
-    letterSpacing: '0.04em',
-    margin: 0,
-  },
-  headerBadge: {
-    background: 'rgba(255,255,255,0.15)',
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: 700,
-    padding: '3px 10px',
-    borderRadius: 20,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-  },
+  page: { background: '#f4f6f9', fontFamily: 'var(--font-body, system-ui, sans-serif)', minHeight: '100vh' },
+  header: { background: '#1b3a5c', padding: '14px 28px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.18)' },
+  headerTitle: { color: '#fff', fontFamily: 'var(--font-head, system-ui)', fontSize: 18, fontWeight: 700, letterSpacing: '0.04em', margin: 0 },
+  headerBadge: { background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: '0.08em', textTransform: 'uppercase' },
   body: { padding: '16px 20px' },
-  tabs: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: 20,
-    borderBottom: '2px solid #dde3ec',
-  },
+  tabs: { display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 20, borderBottom: '2px solid #dde3ec' },
   tab: (active) => ({
-    padding: '9px 20px',
-    fontSize: 13,
-    fontWeight: 700,
-    fontFamily: 'var(--font-head, system-ui)',
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase',
-    border: 'none',
+    padding: '9px 18px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head, system-ui)',
+    letterSpacing: '0.04em', textTransform: 'uppercase', border: 'none',
     borderBottom: active ? '2px solid #1b3a5c' : '2px solid transparent',
-    borderRadius: '6px 6px 0 0',
-    background: active ? '#fff' : 'transparent',
-    color: active ? '#1b3a5c' : '#888',
-    cursor: 'pointer',
-    marginBottom: -2,
-    transition: 'all 0.15s',
+    borderRadius: '6px 6px 0 0', background: active ? '#fff' : 'transparent',
+    color: active ? '#1b3a5c' : '#888', cursor: 'pointer', marginBottom: -2, transition: 'all 0.15s',
   }),
   featuredTab: (active) => ({
-    padding: '9px 20px',
-    fontSize: 13,
-    fontWeight: 700,
-    fontFamily: 'var(--font-head, system-ui)',
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase',
-    border: 'none',
+    padding: '9px 18px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head, system-ui)',
+    letterSpacing: '0.04em', textTransform: 'uppercase', border: 'none',
     borderBottom: active ? '2px solid #d97706' : '2px solid transparent',
-    borderRadius: '6px 6px 0 0',
-    background: active ? '#fffbeb' : 'transparent',
-    color: active ? '#d97706' : '#888',
-    cursor: 'pointer',
-    marginBottom: -2,
-    transition: 'all 0.15s',
+    borderRadius: '6px 6px 0 0', background: active ? '#fffbeb' : 'transparent',
+    color: active ? '#d97706' : '#888', cursor: 'pointer', marginBottom: -2, transition: 'all 0.15s',
   }),
-  card: {
-    background: '#fff',
-    borderRadius: 10,
-    border: '1px solid #dde3ec',
-    overflow: 'hidden',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-  },
-  toolbar: {
-    padding: '14px 18px',
-    borderBottom: '1px solid #eef0f4',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    background: '#f8f9fb',
-  },
-  featuredToolbar: {
-    padding: '14px 18px',
-    borderBottom: '1px solid #fde68a',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    background: '#fffbeb',
-  },
-  searchInput: {
-    flex: 1,
-    maxWidth: 320,
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid #dde3ec',
-    fontSize: 13,
-    outline: 'none',
-    fontFamily: 'inherit',
-  },
-  countBadge: {
-    fontSize: 12,
-    color: '#888',
-    marginLeft: 'auto',
-  },
-  filterToggle: (active) => ({
-    padding: '6px 14px',
-    borderRadius: 8,
-    border: active ? '1px solid #d97706' : '1px solid #dde3ec',
-    background: active ? '#fef3c7' : '#fff',
-    color: active ? '#92400e' : '#666',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
+  card: { background: '#fff', borderRadius: 10, border: '1px solid #dde3ec', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' },
+  toolbar: { padding: '12px 16px', borderBottom: '1px solid #eef0f4', display: 'flex', alignItems: 'center', gap: 10, background: '#f8f9fb', flexWrap: 'wrap' },
+  featuredToolbar: { padding: '12px 16px', borderBottom: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 10, background: '#fffbeb', flexWrap: 'wrap' },
+  pillBar: { padding: '8px 16px', borderBottom: '1px solid #eef0f4', display: 'flex', gap: 6, flexWrap: 'wrap', background: '#fff' },
+  featuredPillBar: { padding: '8px 16px', borderBottom: '1px solid #fde68a', display: 'flex', gap: 6, flexWrap: 'wrap', background: '#fffdf5' },
+  pill: (active, isFeatured) => ({
+    padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+    border: active
+      ? (isFeatured ? '1px solid #d97706' : '1px solid #1b3a5c')
+      : '1px solid #dde3ec',
+    background: active
+      ? (isFeatured ? '#fef3c7' : '#e8edf5')
+      : '#fff',
+    color: active
+      ? (isFeatured ? '#92400e' : '#1b3a5c')
+      : '#888',
+    transition: 'all 0.12s',
   }),
+  searchInput: { flex: 1, maxWidth: 300, padding: '7px 12px', borderRadius: 8, border: '1px solid #dde3ec', fontSize: 13, outline: 'none', fontFamily: 'inherit' },
+  countBadge: { fontSize: 12, color: '#888', marginLeft: 'auto', whiteSpace: 'nowrap' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'auto' },
-  th: {
-    padding: '10px 14px',
-    textAlign: 'left',
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: '#666',
-    background: '#f8f9fb',
-    borderBottom: '1px solid #eef0f4',
-    whiteSpace: 'nowrap',
-    minWidth: 100,
-  },
-  featuredTh: {
-    padding: '10px 14px',
-    textAlign: 'left',
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: '#92400e',
-    background: '#fffbeb',
-    borderBottom: '1px solid #fde68a',
-    whiteSpace: 'nowrap',
-    minWidth: 100,
-  },
-  td: {
-    padding: '9px 14px',
-    borderBottom: '1px solid #f0f2f6',
-    verticalAlign: 'middle',
-    color: '#1a1a2e',
-    minWidth: 100,
-  },
-  inlineInput: {
-    width: '100%',
-    minWidth: 80,
-    padding: '5px 8px',
-    borderRadius: 6,
-    border: '1px solid transparent',
-    fontSize: 13,
-    fontFamily: 'inherit',
-    background: 'transparent',
-    outline: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  },
-  inlineSelect: {
-    padding: '4px 8px',
-    borderRadius: 6,
-    border: '1px solid #dde3ec',
-    fontSize: 12,
-    fontFamily: 'inherit',
-    background: '#fff',
-    cursor: 'pointer',
-    outline: 'none',
-  },
-  dateInput: {
-    padding: '4px 8px',
-    borderRadius: 6,
-    border: '1px solid #dde3ec',
-    fontSize: 12,
-    fontFamily: 'inherit',
-    background: '#fff',
-    cursor: 'pointer',
-    outline: 'none',
-  },
+  th: (sortable) => ({
+    padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: '0.06em', color: '#666', background: '#f8f9fb', borderBottom: '1px solid #eef0f4',
+    whiteSpace: 'nowrap', minWidth: 90, userSelect: 'none',
+    cursor: sortable ? 'pointer' : 'default',
+  }),
+  featuredTh: (sortable) => ({
+    padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+    letterSpacing: '0.06em', color: '#92400e', background: '#fffbeb', borderBottom: '1px solid #fde68a',
+    whiteSpace: 'nowrap', minWidth: 90, userSelect: 'none',
+    cursor: sortable ? 'pointer' : 'default',
+  }),
+  td: { padding: '9px 14px', borderBottom: '1px solid #f0f2f6', verticalAlign: 'middle', color: '#1a1a2e', minWidth: 90 },
+  featuredTd: { padding: '9px 14px', borderBottom: '1px solid #fef3c7', verticalAlign: 'middle', color: '#1a1a2e', minWidth: 90 },
+  inlineInput: { width: '100%', minWidth: 80, padding: '5px 8px', borderRadius: 6, border: '1px solid transparent', fontSize: 13, fontFamily: 'inherit', background: 'transparent', outline: 'none', cursor: 'pointer', transition: 'all 0.15s' },
+  inlineSelect: { padding: '4px 8px', borderRadius: 6, border: '1px solid #dde3ec', fontSize: 12, fontFamily: 'inherit', background: '#fff', cursor: 'pointer', outline: 'none' },
+  dateInput: { padding: '4px 8px', borderRadius: 6, border: '1px solid #dde3ec', fontSize: 12, fontFamily: 'inherit', background: '#fff', cursor: 'pointer', outline: 'none' },
   savingDot: { color: '#f59e0b', fontSize: 11, marginLeft: 6 },
   savedDot:  { color: '#16a34a', fontSize: 11, marginLeft: 6 },
   errorDot:  { color: '#dc2626', fontSize: 11, marginLeft: 6 },
-  boolBadge: (val) => ({
-    display: 'inline-block',
-    padding: '2px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: val ? '#dcfce7' : '#f1f5f9',
-    color: val ? '#15803d' : '#64748b',
-    cursor: 'pointer',
-    userSelect: 'none',
-    border: val ? '1px solid #86efac' : '1px solid #e2e8f0',
-  }),
-  approvalBadge: (val) => ({
-    display: 'inline-block',
-    padding: '2px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: val === 'approved' ? '#dcfce7' : val === 'seeded' ? '#eff6ff' : '#fef3c7',
-    color: val === 'approved' ? '#15803d' : val === 'seeded' ? '#1d4ed8' : '#92400e',
-    border: val === 'approved' ? '1px solid #86efac' : val === 'seeded' ? '1px solid #bfdbfe' : '1px solid #fcd34d',
-  }),
-  claimBadge: (val) => ({
-    display: 'inline-block',
-    padding: '2px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: val === 'resolved' ? '#dcfce7' : val === 'pending' ? '#fef3c7' : '#fee2e2',
-    color: val === 'resolved' ? '#15803d' : val === 'pending' ? '#92400e' : '#991b1b',
-    border: val === 'resolved' ? '1px solid #86efac' : val === 'pending' ? '1px solid #fcd34d' : '1px solid #fca5a5',
-  }),
-  reviewBadge: (val) => ({
-    display: 'inline-block',
-    padding: '2px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: val === 'approved' ? '#dcfce7' : val === 'rejected' ? '#fee2e2' : '#fef3c7',
-    color: val === 'approved' ? '#15803d' : val === 'rejected' ? '#991b1b' : '#92400e',
-    border: val === 'approved' ? '1px solid #86efac' : val === 'rejected' ? '1px solid #fca5a5' : '1px solid #fcd34d',
-  }),
-  featuredDateBadge: {
-    display: 'inline-block',
-    padding: '2px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: '#fef3c7',
-    color: '#92400e',
-    border: '1px solid #fcd34d',
-  },
-  expiredDateBadge: {
-    display: 'inline-block',
-    padding: '2px 10px',
-    borderRadius: 12,
-    fontSize: 11,
-    fontWeight: 700,
-    background: '#fee2e2',
-    color: '#991b1b',
-    border: '1px solid #fca5a5',
-  },
-  passwordWrap: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#f4f6f9',
-  },
-  passwordCard: {
-    background: '#fff',
-    borderRadius: 12,
-    padding: '36px 40px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
-    width: 320,
-    textAlign: 'center',
-  },
+  boolBadge: (val) => ({ display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: val ? '#dcfce7' : '#f1f5f9', color: val ? '#15803d' : '#64748b', cursor: 'pointer', userSelect: 'none', border: val ? '1px solid #86efac' : '1px solid #e2e8f0' }),
+  approvalBadge: (val) => ({ display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: val === 'approved' ? '#dcfce7' : val === 'seeded' ? '#eff6ff' : '#fef3c7', color: val === 'approved' ? '#15803d' : val === 'seeded' ? '#1d4ed8' : '#92400e', border: val === 'approved' ? '1px solid #86efac' : val === 'seeded' ? '1px solid #bfdbfe' : '1px solid #fcd34d' }),
+  claimBadge: (val) => ({ display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: val === 'resolved' ? '#dcfce7' : val === 'pending' ? '#fef3c7' : '#fee2e2', color: val === 'resolved' ? '#15803d' : val === 'pending' ? '#92400e' : '#991b1b', border: val === 'resolved' ? '1px solid #86efac' : val === 'pending' ? '1px solid #fcd34d' : '1px solid #fca5a5' }),
+  reviewBadge: (val) => ({ display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: val === 'approved' ? '#dcfce7' : val === 'rejected' ? '#fee2e2' : '#fef3c7', color: val === 'approved' ? '#15803d' : val === 'rejected' ? '#991b1b' : '#92400e', border: val === 'approved' ? '1px solid #86efac' : val === 'rejected' ? '1px solid #fca5a5' : '1px solid #fcd34d' }),
+  featuredDateBadge: { display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' },
+  expiredDateBadge:  { display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5' },
+  passwordWrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f4f6f9' },
+  passwordCard: { background: '#fff', borderRadius: 12, padding: '36px 40px', boxShadow: '0 4px 24px rgba(0,0,0,0.1)', width: 320, textAlign: 'center' },
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────
 function toDateInputValue(val) {
   if (!val) return ''
   const d = new Date(val)
@@ -400,45 +253,52 @@ function isExpired(val) {
   return new Date(val) < new Date()
 }
 
+function sortRows(rows, sortKey, sortDir, fields) {
+  if (!sortKey) return rows
+  const field = fields.find(f => f.key === sortKey)
+  return [...rows].sort((a, b) => {
+    let av = a[sortKey]
+    let bv = b[sortKey]
+    // joined fields: pull from nested object
+    if (field && field.type === 'joined' && field.joinPath) {
+      av = a[field.joinPath[0]] ? a[field.joinPath[0]][field.joinPath[1]] : null
+      bv = b[field.joinPath[0]] ? b[field.joinPath[0]][field.joinPath[1]] : null
+    }
+    if (av == null && bv == null) return 0
+    if (av == null) return 1
+    if (bv == null) return -1
+    if (typeof av === 'boolean') av = av ? 1 : 0
+    if (typeof bv === 'boolean') bv = bv ? 1 : 0
+    const cmp = typeof av === 'number' && typeof bv === 'number'
+      ? av - bv
+      : String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' })
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+}
+
 // ── Password gate ────────────────────────────────────────────────────
 function PasswordGate({ onUnlock }) {
   const [val, setVal] = useState('')
   const [err, setErr] = useState(false)
-
   function attempt() {
-    if (val === ADMIN_PASSWORD) {
-      sessionStorage.setItem('admin_unlocked', '1')
-      onUnlock()
-    } else {
-      setErr(true)
-      setVal('')
-    }
+    if (val === ADMIN_PASSWORD) { sessionStorage.setItem('admin_unlocked', '1'); onUnlock() }
+    else { setErr(true); setVal('') }
   }
-
   return (
     <div style={s.passwordWrap}>
       <div style={s.passwordCard}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>🔐</div>
-        <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: '#1b3a5c', marginBottom: 6 }}>
-          Admin Access
-        </div>
+        <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: '#1b3a5c', marginBottom: 6 }}>Admin Access</div>
         <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>Sandlot Source</div>
         <input
-          type="password"
-          value={val}
+          type="password" value={val} autoFocus
           onChange={e => { setVal(e.target.value); setErr(false) }}
           onKeyDown={e => e.key === 'Enter' && attempt()}
           placeholder="Password"
-          style={{ ...s.searchInput, width: '100%', maxWidth: '100%', marginBottom: 12, boxSizing: 'border-box',
-            border: err ? '1px solid #dc2626' : '1px solid #dde3ec' }}
-          autoFocus
+          style={{ ...s.searchInput, width: '100%', maxWidth: '100%', marginBottom: 12, boxSizing: 'border-box', border: err ? '1px solid #dc2626' : '1px solid #dde3ec' }}
         />
         {err && <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 10 }}>Incorrect password</div>}
-        <button onClick={attempt} style={{
-          width: '100%', padding: '10px', background: '#1b3a5c', color: '#fff',
-          border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14,
-          fontFamily: 'inherit', cursor: 'pointer',
-        }}>
+        <button onClick={attempt} style={{ width: '100%', padding: '10px', background: '#1b3a5c', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, fontFamily: 'inherit', cursor: 'pointer' }}>
           Unlock
         </button>
       </div>
@@ -457,46 +317,27 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
     const update = {}
     update[field.key] = newVal || null
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
-    const { error } = await supabase
-      .from(cfg?.table || '')
-      .update(update)
-      .eq('id', record.id)
-    if (error) {
-      setStatus('error')
-      setTimeout(() => setStatus(''), 2000)
-    } else {
-      setStatus('saved')
-      onSave(record.id, field.key, newVal)
-      setTimeout(() => setStatus(''), 1500)
-    }
+    const { error } = await supabase.from(cfg?.table || '').update(update).eq('id', record.id)
+    if (error) { setStatus('error'); setTimeout(() => setStatus(''), 2000) }
+    else { setStatus('saved'); onSave(record.id, field.key, newVal); setTimeout(() => setStatus(''), 1500) }
     setEditing(false)
   }
 
-  const tdStyle = isFeaturedTab
-    ? { ...s.td, borderBottom: '1px solid #fef3c7' }
-    : s.td
+  const tdStyle = isFeaturedTab ? s.featuredTd : s.td
 
-  // ── joined (read-only) ──
+  // joined (read-only)
   if (field.type === 'joined') {
     const [tableKey, colKey] = field.joinPath
     const displayVal = record[tableKey] ? record[tableKey][colKey] : null
-    return (
-      <td style={{ ...tdStyle, fontWeight: 600, color: '#1b3a5c' }}>
-        {displayVal || <span style={{ color: '#ccc' }}>—</span>}
-      </td>
-    )
+    return <td style={{ ...tdStyle, fontWeight: 600, color: '#1b3a5c' }}>{displayVal || <span style={{ color: '#ccc' }}>—</span>}</td>
   }
 
-  // ── date-readonly ──
+  // date-readonly
   if (field.type === 'date-readonly') {
-    return (
-      <td style={{ ...tdStyle, color: '#888', fontSize: 12, whiteSpace: 'nowrap' }}>
-        {formatDateDisplay(record[field.key]) || '—'}
-      </td>
-    )
+    return <td style={{ ...tdStyle, color: '#888', fontSize: 12, whiteSpace: 'nowrap' }}>{formatDateDisplay(record[field.key]) || '—'}</td>
   }
 
-  // ── date-edit (editable date picker with expiry badge) ──
+  // date-edit — saves on onChange (fixes calendar picker not triggering blur)
   if (field.type === 'date-edit') {
     const expired = field.key === 'featured_until' && isExpired(val)
     const displayText = formatDateDisplay(val)
@@ -508,15 +349,16 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
             defaultValue={toDateInputValue(val)}
             autoFocus
             style={s.dateInput}
-            onBlur={e => save(e.target.value)}
+            onChange={e => {
+              if (e.target.value) {
+                setVal(e.target.value)
+                save(e.target.value)
+              }
+            }}
             onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }}
           />
         ) : (
-          <span
-            onClick={() => setEditing(true)}
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-            title="Click to edit"
-          >
+          <span onClick={() => setEditing(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }} title="Click to edit">
             {displayText
               ? <span style={expired ? s.expiredDateBadge : s.featuredDateBadge}>{displayText}{expired ? ' ⚠' : ''}</span>
               : <span style={{ color: '#bbb', fontSize: 12 }}>Set date…</span>}
@@ -529,20 +371,19 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
     )
   }
 
-  // ── stars ──
+  // stars
   if (field.type === 'stars') {
     const num = Number(record[field.key]) || 0
     return (
       <td style={tdStyle}>
         <span style={{ color: '#f59e0b', fontSize: 15, letterSpacing: 1 }}>
-          {'★'.repeat(num)}
-          <span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - num)}</span>
+          {'★'.repeat(num)}<span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - num)}</span>
         </span>
       </td>
     )
   }
 
-  // ── boolean ──
+  // boolean
   if (field.type === 'boolean') {
     return (
       <td style={tdStyle}>
@@ -567,7 +408,7 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
     )
   }
 
-  // ── select ──
+  // select
   if (field.type === 'select') {
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
     return (
@@ -594,7 +435,7 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
     )
   }
 
-  // ── multiselect ──
+  // multiselect
   if (field.type === 'multiselect') {
     const arr = Array.isArray(val) ? val : (val ? [val] : [])
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
@@ -605,9 +446,7 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
             {field.options.map(o => {
               const checked = arr.includes(o)
               return (
-                <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12,
-                  background: checked ? '#dbeafe' : '#f1f5f9', borderRadius: 6, padding: '3px 8px',
-                  cursor: 'pointer', border: checked ? '1px solid #93c5fd' : '1px solid #e2e8f0' }}>
+                <label key={o} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, background: checked ? '#dbeafe' : '#f1f5f9', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', border: checked ? '1px solid #93c5fd' : '1px solid #e2e8f0' }}>
                   <input type="checkbox" checked={checked} style={{ margin: 0 }} onChange={async () => {
                     const next = checked ? arr.filter(x => x !== o) : [...arr, o]
                     setVal(next)
@@ -638,39 +477,25 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
     )
   }
 
-  // ── email-link ──
+  // email-link
   if (field.type === 'email-link') {
-    return (
-      <td style={tdStyle}>
-        <a href={'mailto:' + (val || '')} style={{ color: '#1b3a5c', fontSize: 13 }}>{val || '—'}</a>
-      </td>
-    )
+    return <td style={tdStyle}><a href={'mailto:' + (val || '')} style={{ color: '#1b3a5c', fontSize: 13 }}>{val || '—'}</a></td>
   }
 
-  // ── text / number ──
+  // text / number
   return (
     <td style={tdStyle}>
       {editing ? (
         <input
           type={field.type === 'number' ? 'number' : 'text'}
-          value={val || ''}
-          autoFocus
-          style={{ ...s.inlineInput, border: '1px solid #93c5fd', background: '#f0f7ff',
-            width: field.type === 'number' ? 60 : 'auto',
-            minWidth: field.type === 'number' ? 60 : 100 }}
+          value={val || ''} autoFocus
+          style={{ ...s.inlineInput, border: '1px solid #93c5fd', background: '#f0f7ff', width: field.type === 'number' ? 60 : 'auto', minWidth: field.type === 'number' ? 60 : 100 }}
           onChange={e => setVal(field.type === 'number' ? Number(e.target.value) : e.target.value)}
           onBlur={() => save(val)}
-          onKeyDown={e => {
-            if (e.key === 'Enter') save(val)
-            if (e.key === 'Escape') { setVal(record[field.key]); setEditing(false) }
-          }}
+          onKeyDown={e => { if (e.key === 'Enter') save(val); if (e.key === 'Escape') { setVal(record[field.key]); setEditing(false) } }}
         />
       ) : (
-        <span
-          onClick={() => setEditing(true)}
-          style={{ cursor: 'text', display: 'block', minWidth: 40, color: val ? '#1a1a2e' : '#ccc' }}
-          title="Click to edit"
-        >
+        <span onClick={() => setEditing(true)} style={{ cursor: 'text', display: 'block', minWidth: 40, color: val ? '#1a1a2e' : '#ccc' }} title="Click to edit">
           {val !== null && val !== undefined && val !== '' ? String(val) : '—'}
           {status === 'saving' && <span style={s.savingDot}>●</span>}
           {status === 'saved'  && <span style={s.savedDot}>●</span>}
@@ -684,16 +509,22 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
 // ── Table view ───────────────────────────────────────────────────────
 function AdminTable({ tabName }) {
   const cfg = TABLE_CONFIG[tabName]
-  const isFeaturedTab = tabName === 'Featured Coaches' || tabName === 'Featured Facilities'
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [featuredOnly, setFeaturedOnly] = useState(true)
+  const isFeaturedTab = FEATURED_TABS.includes(tabName)
+  const pills = QUICK_FILTERS[tabName] || []
+
+  const [rows, setRows]           = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
+  const [activePill, setActivePill] = useState(pills[0]?.label || 'All')
+  const [sortKey, setSortKey]     = useState(null)
+  const [sortDir, setSortDir]     = useState('asc')
 
   useEffect(() => {
     setLoading(true)
     setSearch('')
-    setFeaturedOnly(true)
+    setSortKey(null)
+    setSortDir('asc')
+    setActivePill((QUICK_FILTERS[tabName] || [])[0]?.label || 'All')
     supabase
       .from(cfg.table)
       .select(cfg.selectQuery || '*')
@@ -701,24 +532,41 @@ function AdminTable({ tabName }) {
       .then(({ data }) => { setRows(data || []); setLoading(false) })
   }, [tabName])
 
-  const filtered = rows.filter(r => {
-    if (isFeaturedTab && featuredOnly && !r.featured_status) return false
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return Object.values(r).some(v => {
-      if (v && typeof v === 'object') {
-        return Object.values(v).some(inner => inner && String(inner).toLowerCase().includes(q))
-      }
-      return v && String(v).toLowerCase().includes(q)
+  function handleSort(key) {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
+  }
+
+  const currentPillFn = pills.find(p => p.label === activePill)?.filterFn || (() => true)
+
+  const displayed = useMemo(() => {
+    let result = rows.filter(r => {
+      if (!currentPillFn(r)) return false
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return Object.values(r).some(v => {
+        if (v && typeof v === 'object') return Object.values(v).some(inner => inner && String(inner).toLowerCase().includes(q))
+        return v && String(v).toLowerCase().includes(q)
+      })
     })
-  })
+    return sortRows(result, sortKey, sortDir, cfg.fields)
+  }, [rows, search, activePill, sortKey, sortDir])
 
   function handleSave(id, key, val) {
     setRows(prev => prev.map(r => r.id === id ? { ...r, [key]: val } : r))
   }
 
+  function sortIndicator(key) {
+    if (sortKey !== key) return <span style={{ color: '#ccc', marginLeft: 4, fontSize: 10 }}>↕</span>
+    return <span style={{ color: isFeaturedTab ? '#d97706' : '#1b3a5c', marginLeft: 4, fontSize: 10 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+  }
+
+  // non-sortable field types
+  const nonSortable = new Set(['multiselect', 'email-link', 'stars'])
+
   return (
     <div style={s.card}>
+      {/* Toolbar */}
       <div style={isFeaturedTab ? s.featuredToolbar : s.toolbar}>
         <input
           value={search}
@@ -726,36 +574,52 @@ function AdminTable({ tabName }) {
           placeholder={'Search ' + tabName.toLowerCase() + '…'}
           style={s.searchInput}
         />
-        {isFeaturedTab && (
-          <button
-            style={s.filterToggle(featuredOnly)}
-            onClick={() => setFeaturedOnly(f => !f)}
-          >
-            {featuredOnly ? '★ Featured only' : 'All records'}
-          </button>
-        )}
-        <span style={s.countBadge}>{filtered.length} of {rows.length} records</span>
+        <span style={s.countBadge}>{displayed.length} of {rows.length} records</span>
       </div>
-      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 310px)' }}>
+
+      {/* Quick-filter pills */}
+      {pills.length > 0 && (
+        <div style={isFeaturedTab ? s.featuredPillBar : s.pillBar}>
+          {pills.map(p => (
+            <button
+              key={p.label}
+              style={s.pill(activePill === p.label, isFeaturedTab)}
+              onClick={() => setActivePill(p.label)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Table */}
+      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>
-            {isFeaturedTab && featuredOnly
-              ? 'No featured records yet — toggle to promote one.'
-              : 'No records found'}
-          </div>
+        ) : displayed.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>No records match.</div>
         ) : (
           <table style={s.table}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               <tr>
-                {cfg.fields.map(f => (
-                  <th key={f.key} style={isFeaturedTab ? s.featuredTh : s.th}>{f.label}</th>
-                ))}
+                {cfg.fields.map(f => {
+                  const sortable = !nonSortable.has(f.type)
+                  const thFn = isFeaturedTab ? s.featuredTh : s.th
+                  return (
+                    <th
+                      key={f.key}
+                      style={thFn(sortable)}
+                      onClick={sortable ? () => handleSort(f.key) : undefined}
+                      title={sortable ? 'Click to sort' : undefined}
+                    >
+                      {f.label}{sortable && sortIndicator(f.key)}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(record => (
+              {displayed.map(record => (
                 <tr
                   key={record.id}
                   style={{ background: isFeaturedTab && record.featured_status ? '#fffdf5' : '#fff' }}
@@ -780,8 +644,6 @@ export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(sessionStorage.getItem('admin_unlocked') === '1')
   const [activeTab, setActiveTab] = useState('Coaches')
 
-  const featuredTabs = ['Featured Coaches', 'Featured Facilities']
-
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />
 
   return (
@@ -792,9 +654,7 @@ export default function AdminPage() {
         <span style={s.headerBadge}>Admin</span>
         <button
           onClick={() => { sessionStorage.removeItem('admin_unlocked'); setUnlocked(false) }}
-          style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.12)', color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '5px 14px',
-            fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+          style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
         >
           Log out
         </button>
@@ -804,10 +664,10 @@ export default function AdminPage() {
           {TABS.map(t => (
             <button
               key={t}
-              style={featuredTabs.includes(t) ? s.featuredTab(activeTab === t) : s.tab(activeTab === t)}
+              style={FEATURED_TABS.includes(t) ? s.featuredTab(activeTab === t) : s.tab(activeTab === t)}
               onClick={() => setActiveTab(t)}
             >
-              {featuredTabs.includes(t) ? ('★ ' + t) : t}
+              {FEATURED_TABS.includes(t) ? ('★ ' + t) : t}
             </button>
           ))}
         </div>
