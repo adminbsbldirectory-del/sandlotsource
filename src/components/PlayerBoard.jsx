@@ -370,13 +370,19 @@ function MapViewport({ posts, showFullUS }) {
   useEffect(() => {
     const pts = posts.filter((p) => p.lat != null && p.lng != null);
 
-    if (showFullUS || pts.length === 0) {
-      map.setView([38.5, -96.5], 5);
-      return;
-    }
+    const timer = window.setTimeout(() => {
+      map.invalidateSize();
 
-    const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+      if (showFullUS || pts.length === 0) {
+        map.setView([38.5, -96.5], 5);
+        return;
+      }
+
+      const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
   }, [posts, map, showFullUS]);
 
   return null;
@@ -1160,6 +1166,35 @@ export default function PlayerBoard() {
         .join(", ") ||
       "Location pending"
     );
+  }
+
+  function getNeededLocationParts(post) {
+    if (post.post_type !== "player_needed") {
+      return {
+        facility: "",
+        address: "",
+        field: "",
+        cityLine: [post.city, stateFromPost(post, zipStateMap), post.zip_code]
+          .filter(Boolean)
+          .join(", "),
+      };
+    }
+
+    const parsed = parseLocationName(post.location_name || "");
+    return {
+      facility: parsed.venue_name || "",
+      address: parsed.location_address || "",
+      field: parsed.field_number || "",
+      cityLine: [post.city, stateFromPost(post, zipStateMap), post.zip_code]
+        .filter(Boolean)
+        .join(", "),
+    };
+  }
+
+  function getDesktopLocationPreview(post) {
+    if (post.post_type !== "player_needed") return getPostLocation(post);
+    const parts = getNeededLocationParts(post);
+    return [parts.facility, parts.address, parts.cityLine].filter(Boolean).join(" • ");
   }
 
   function getPostPositionDetails(post) {
@@ -2246,13 +2281,62 @@ export default function PlayerBoard() {
                                     fontSize: 12,
                                     color: "var(--gray)",
                                     lineHeight: 1.35,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
                                   }}
-                                  title={getPostLocation(post)}
+                                  title={getDesktopLocationPreview(post)}
                                 >
-                                  {getPostLocation(post)}
+                                  {post.post_type === "player_needed" ? (() => {
+                                    const locationParts = getNeededLocationParts(post);
+                                    return (
+                                      <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                                        <div
+                                          style={{
+                                            color: "var(--navy)",
+                                            fontWeight: 700,
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                          }}
+                                          title={locationParts.facility || "Facility pending"}
+                                        >
+                                          {locationParts.facility || "Facility pending"}
+                                        </div>
+                                        {locationParts.address && (
+                                          <div
+                                            style={{
+                                              whiteSpace: "nowrap",
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                            }}
+                                            title={locationParts.address}
+                                          >
+                                            {locationParts.address}
+                                          </div>
+                                        )}
+                                        {locationParts.cityLine && (
+                                          <div
+                                            style={{
+                                              whiteSpace: "nowrap",
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                            }}
+                                            title={locationParts.cityLine}
+                                          >
+                                            {locationParts.cityLine}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })() : (
+                                    <div
+                                      style={{
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {getPostLocation(post)}
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div style={{ minWidth: 0 }}>
@@ -2490,7 +2574,25 @@ export default function PlayerBoard() {
                                 lineHeight: 1.45,
                               }}
                             >
-                              {getPostLocation(selectedPost)}
+                              {selectedPost.post_type === "player_needed" ? (() => {
+                                const locationParts = getNeededLocationParts(selectedPost);
+                                return (
+                                  <div style={{ display: "grid", gap: 3 }}>
+                                    {locationParts.facility && (
+                                      <div style={{ color: "var(--navy)", fontWeight: 700 }}>
+                                        {locationParts.facility}
+                                      </div>
+                                    )}
+                                    {locationParts.address && <div>{locationParts.address}</div>}
+                                    {locationParts.cityLine && <div>{locationParts.cityLine}</div>}
+                                    {locationParts.field && (
+                                      <div style={{ fontSize: 12 }}>Field / Diamond: {locationParts.field}</div>
+                                    )}
+                                  </div>
+                                );
+                              })() : (
+                                getPostLocation(selectedPost)
+                              )}
                             </div>
                           </div>
                           <button
@@ -2949,7 +3051,21 @@ export default function PlayerBoard() {
                                   marginTop: 4,
                                 }}
                               >
-                                📍 {getPostLocation(post)}
+                                {post.post_type === "player_needed" ? (() => {
+                                  const locationParts = getNeededLocationParts(post);
+                                  return (
+                                    <div style={{ display: "grid", gap: 2 }}>
+                                      <div style={{ color: "var(--navy)", fontWeight: 700 }}>
+                                        📍 {locationParts.facility || "Facility pending"}
+                                      </div>
+                                      {locationParts.address && <div>{locationParts.address}</div>}
+                                      {locationParts.cityLine && <div>{locationParts.cityLine}</div>}
+                                      {locationParts.field && <div>Field / Diamond: {locationParts.field}</div>}
+                                    </div>
+                                  );
+                                })() : (
+                                  <>📍 {getPostLocation(post)}</>
+                                )}
                               </div>
                               {post.post_type === "player_available" &&
                                 (post.bats || post.throws) && (
