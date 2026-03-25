@@ -42,13 +42,13 @@ export default async function handler(req, res) {
   const { table, record } = req.body;
 
   if (!table || !record) {
-  return res.status(400).json({ error: 'Missing table or record' });
-}
+    return res.status(400).json({ error: 'Missing table or record' });
+  }
 
-if (table !== 'reviews' && !record?.id) {
-  return res.status(400).json({ error: 'Missing record id' });
-}
-
+  if (table !== 'reviews' && !record?.id) {
+    return res.status(400).json({ error: 'Missing record id' });
+  }
+  
   const buildEmail = templateMap[table];
   if (!buildEmail) {
     return res.status(200).json({ ok: true, skipped: true });
