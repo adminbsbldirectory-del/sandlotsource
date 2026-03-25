@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 
-const TABS = ['Coaches', 'Travel Teams', 'Facilities', 'Claim Requests']
+const TABS = ['Coaches', 'Travel Teams', 'Facilities', 'Claim Requests', 'Reviews']
 
 // ── Field config per table ──────────────────────────────────────────
 const COACH_FIELDS = [
@@ -68,11 +68,23 @@ const CLAIM_FIELDS = [
   { key: 'admin_notes',     label: 'Admin Notes',     type: 'text' },
 ]
 
+const REVIEW_FIELDS = [
+  { key: '_coach_name',      label: 'Coach',          type: 'joined',   joinPath: ['coaches', 'name'] },
+  { key: 'rating',           label: 'Rating',         type: 'stars' },
+  { key: 'review_text',      label: 'Review',         type: 'text' },
+  { key: 'reviewer_name',    label: 'Reviewer',       type: 'text' },
+  { key: 'player_age_group', label: 'Age Group',      type: 'text' },
+  { key: 'email',            label: 'Email',          type: 'email-link' },
+  { key: 'moderation_status',label: 'Status',         type: 'select',   options: ['pending','approved','rejected'] },
+  { key: 'created_at',       label: 'Submitted',      type: 'date-readonly' },
+]
+
 const TABLE_CONFIG = {
-  'Coaches':        { table: 'coaches',        fields: COACH_FIELDS,    orderBy: 'name' },
-  'Travel Teams':   { table: 'travel_teams',   fields: TEAM_FIELDS,     orderBy: 'name' },
-  'Facilities':     { table: 'facilities',     fields: FACILITY_FIELDS, orderBy: 'name' },
-  'Claim Requests': { table: 'claim_requests', fields: CLAIM_FIELDS,    orderBy: 'submitted_at' },
+  'Coaches':        { table: 'coaches',        fields: COACH_FIELDS,    orderBy: 'name',         ascending: true,  selectQuery: '*' },
+  'Travel Teams':   { table: 'travel_teams',   fields: TEAM_FIELDS,     orderBy: 'name',         ascending: true,  selectQuery: '*' },
+  'Facilities':     { table: 'facilities',     fields: FACILITY_FIELDS, orderBy: 'name',         ascending: true,  selectQuery: '*' },
+  'Claim Requests': { table: 'claim_requests', fields: CLAIM_FIELDS,    orderBy: 'submitted_at', ascending: false, selectQuery: '*' },
+  'Reviews':        { table: 'reviews',        fields: REVIEW_FIELDS,   orderBy: 'created_at',   ascending: false, selectQuery: '*, coaches(name)' },
 }
 
 // ── Styles ──────────────────────────────────────────────────────────
@@ -234,6 +246,16 @@ const s = {
     color: val === 'resolved' ? '#15803d' : val === 'pending' ? '#92400e' : '#991b1b',
     border: val === 'resolved' ? '1px solid #86efac' : val === 'pending' ? '1px solid #fcd34d' : '1px solid #fca5a5',
   }),
+  reviewBadge: (val) => ({
+    display: 'inline-block',
+    padding: '2px 10px',
+    borderRadius: 12,
+    fontSize: 11,
+    fontWeight: 700,
+    background: val === 'approved' ? '#dcfce7' : val === 'rejected' ? '#fee2e2' : '#fef3c7',
+    color: val === 'approved' ? '#15803d' : val === 'rejected' ? '#991b1b' : '#92400e',
+    border: val === 'approved' ? '1px solid #86efac' : val === 'rejected' ? '1px solid #fca5a5' : '1px solid #fcd34d',
+  }),
   passwordWrap: {
     minHeight: '100vh',
     display: 'flex',
@@ -307,8 +329,9 @@ function Cell({ record, field, onSave }) {
     setStatus('saving')
     const update = {}
     update[field.key] = newVal
+    const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
     const { error } = await supabase
-      .from(TABLE_CONFIG[Object.keys(TABLE_CONFIG).find(k => TABLE_CONFIG[k].fields.includes(field))]?.table || '')
+      .from(cfg?.table || '')
       .update(update)
       .eq('id', record.id)
     if (error) {
@@ -322,6 +345,42 @@ function Cell({ record, field, onSave }) {
     setEditing(false)
   }
 
+  // ── joined (read-only, value from nested object e.g. coaches.name) ──
+  if (field.type === 'joined') {
+    const [tableKey, colKey] = field.joinPath
+    const displayVal = record[tableKey] ? record[tableKey][colKey] : null
+    return (
+      <td style={{ ...s.td, fontWeight: 600, color: '#1b3a5c' }}>
+        {displayVal || <span style={{ color: '#ccc' }}>—</span>}
+      </td>
+    )
+  }
+
+  // ── date-readonly ──
+  if (field.type === 'date-readonly') {
+    const dateVal = record[field.key]
+    const formatted = dateVal ? new Date(dateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+    return (
+      <td style={{ ...s.td, color: '#888', fontSize: 12, whiteSpace: 'nowrap' }}>
+        {formatted}
+      </td>
+    )
+  }
+
+  // ── stars (read-only rating display) ──
+  if (field.type === 'stars') {
+    const num = Number(record[field.key]) || 0
+    return (
+      <td style={s.td}>
+        <span style={{ color: '#f59e0b', fontSize: 15, letterSpacing: 1 }}>
+          {'★'.repeat(num)}
+          <span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - num)}</span>
+        </span>
+      </td>
+    )
+  }
+
+  // ── boolean ──
   if (field.type === 'boolean') {
     return (
       <td style={s.td}>
@@ -346,13 +405,18 @@ function Cell({ record, field, onSave }) {
     )
   }
 
+  // ── select ──
   if (field.type === 'select') {
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
-    const badge = field.key === 'approval_status'
-      ? <span style={s.approvalBadge(val)}>{val || '—'}</span>
-      : field.key === 'status'
-      ? <span style={s.claimBadge(val)}>{val || '—'}</span>
-      : null
+
+    let badge = null
+    if (field.key === 'approval_status') {
+      badge = <span style={s.approvalBadge(val)}>{val || '—'}</span>
+    } else if (field.key === 'status') {
+      badge = <span style={s.claimBadge(val)}>{val || '—'}</span>
+    } else if (field.key === 'moderation_status') {
+      badge = <span style={s.reviewBadge(val)}>{val || '—'}</span>
+    }
 
     return (
       <td style={s.td}>
@@ -378,6 +442,7 @@ function Cell({ record, field, onSave }) {
     )
   }
 
+  // ── multiselect ──
   if (field.type === 'multiselect') {
     const arr = Array.isArray(val) ? val : (val ? [val] : [])
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
@@ -421,6 +486,7 @@ function Cell({ record, field, onSave }) {
     )
   }
 
+  // ── email-link ──
   if (field.type === 'email-link') {
     return (
       <td style={s.td}>
@@ -429,7 +495,7 @@ function Cell({ record, field, onSave }) {
     )
   }
 
-  // text / number
+  // ── text / number ──
   const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
   return (
     <td style={s.td}>
@@ -469,14 +535,22 @@ function AdminTable({ tabName }) {
   useEffect(() => {
     setLoading(true)
     setSearch('')
-    supabase.from(cfg.table).select('*').order(cfg.orderBy, { ascending: true })
+    supabase
+      .from(cfg.table)
+      .select(cfg.selectQuery || '*')
+      .order(cfg.orderBy, { ascending: cfg.ascending !== false })
       .then(({ data }) => { setRows(data || []); setLoading(false) })
   }, [tabName])
 
   const filtered = rows.filter(r => {
     if (!search.trim()) return true
     const q = search.toLowerCase()
-    return Object.values(r).some(v => v && String(v).toLowerCase().includes(q))
+    return Object.values(r).some(v => {
+      if (v && typeof v === 'object') {
+        return Object.values(v).some(inner => inner && String(inner).toLowerCase().includes(q))
+      }
+      return v && String(v).toLowerCase().includes(q)
+    })
   })
 
   function handleSave(id, key, val) {
