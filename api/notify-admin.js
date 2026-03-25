@@ -10,6 +10,7 @@ import {
   playerBoardEmail,
   facilityEmail,
   claimEmail,
+  reviewEmail,
 } from '../lib/emailTemplates.js';
 import { findDuplicates } from '../lib/duplicateCheck.js';
 
@@ -29,6 +30,7 @@ const templateMap = {
   player_board: playerBoardEmail,
   facilities: facilityEmail,
   claim_requests: (record) => claimEmail(record),
+  reviews: (record) => reviewEmail(record),
 };
 
 export default async function handler(req, res) {
@@ -51,8 +53,10 @@ export default async function handler(req, res) {
   try {
     const token = generateToken(table, record.id);
 
-    // Run duplicate check — never blocks the email even if it fails
-    const duplicates = await findDuplicates(table, record);
+    // Run duplicate check only for listing-style submissions — never blocks the email even if it fails
+    const duplicates = ['coaches', 'travel_teams', 'player_board', 'facilities'].includes(table)
+      ? await findDuplicates(table, record)
+      : [];
 
     // Build email, passing duplicate results in so the banner renders
     const { subject, html } = buildEmail(record, token, duplicates);
@@ -63,13 +67,13 @@ export default async function handler(req, res) {
       : subject;
 
     await resend.emails.send({
-  from: 'Sandlot Source <noreply@sandlotsource.com>',
-  to: ADMIN_EMAIL,
-  subject: finalSubject,
-  html,
-  click_tracking: false,
-});
-    
+      from: 'Sandlot Source <noreply@sandlotsource.com>',
+      to: ADMIN_EMAIL,
+      subject: finalSubject,
+      html,
+      click_tracking: false,
+    });
+
     return res.status(200).json({ ok: true, duplicatesFound: duplicates.length });
   } catch (err) {
     console.error('notify-admin error:', err);
