@@ -130,17 +130,18 @@ export default function CoachProfile({ coach, onClose }) {
       position:'fixed', inset:0, zIndex:2000,
       background:'rgba(0,0,0,0.55)',
       display:'flex', alignItems:'flex-start', justifyContent:'center',
-      overflowY:'auto', padding:'24px 12px',
+      overflowY:'auto', padding:'16px 10px',
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         background:'var(--white)', borderRadius:14,
-        width:'100%', maxWidth:600,
+        width:'100%', maxWidth:640,
         boxShadow:'0 8px 40px rgba(0,0,0,0.25)',
         overflow:'hidden',
+        maxWidth:'calc(100vw - 16px)',
       }}>
 
         {/* Header */}
-        <div style={{ background:'var(--navy)', padding:'20px 24px', position:'relative' }}>
+        <div style={{ background:'var(--navy)', padding:'18px 18px 16px', position:'relative' }}>
           <button onClick={onClose} style={{
             position:'absolute', top:14, right:16,
             background:'rgba(255,255,255,0.15)', border:'none',
@@ -156,26 +157,26 @@ export default function CoachProfile({ coach, onClose }) {
               {coach.facility_name}
             </div>
           )}
-          <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
-            <span style={{ background:'rgba(255,255,255,0.15)', color:'white', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, textTransform:'capitalize' }}>
+          <div style={{ display:'flex', gap:6, marginTop:10, flexWrap:'wrap', rowGap:6 }}>
+            <span style={{ background:'rgba(255,255,255,0.15)', color:'white', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:20, textTransform:'capitalize' }}>
               {coach.sport === 'both' ? 'Baseball & Softball' : coach.sport}
             </span>
             {specs.map(s => (
-              <span key={s} style={{ background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.85)', fontSize:11, padding:'3px 10px', borderRadius:20, textTransform:'capitalize' }}>
+              <span key={s} style={{ background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.85)', fontSize:10, padding:'3px 8px', borderRadius:20, textTransform:'capitalize' }}>
                 {s}
               </span>
             ))}
             {coach.verified_status && (
-              <span style={{ background:'#DBEAFE', color:'#1D4ED8', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, fontFamily:'var(--font-head)' }}>✓ Verified</span>
+              <span style={{ background:'#DBEAFE', color:'#1D4ED8', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:20, fontFamily:'var(--font-head)' }}>✓ Verified</span>
             )}
             {coach.featured_status && (
-              <span style={{ background:'#FEF3C7', color:'#92400E', fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:20, fontFamily:'var(--font-head)' }}>⭐ Featured</span>
+              <span style={{ background:'#FEF3C7', color:'#92400E', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:20, fontFamily:'var(--font-head)' }}>⭐ Featured</span>
             )}
           </div>
         </div>
 
         {/* Body */}
-        <div style={{ padding:'24px' }}>
+        <div style={{ padding:'18px', overflowX:'hidden' }}>
 
           {/* Rating summary */}
           {(parseInt(coach.review_count) || 0) > 0 && (
@@ -213,7 +214,7 @@ export default function CoachProfile({ coach, onClose }) {
             <div style={{ display:'flex', flexDirection:'column', gap:5, marginTop:8 }}>
               {coach.email && (
                 <a href={'mailto:' + coach.email}
-                  style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}>
+                  style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600, display:'inline-flex', alignItems:'center', gap:6, padding:'8px 10px', background:'#F8FAFC', borderRadius:999, width:'fit-content' }}>
                   📧 {coach.email}
                 </a>
               )}
@@ -226,7 +227,7 @@ export default function CoachProfile({ coach, onClose }) {
               {coach.website && (
                 <a href={coach.website.startsWith('http') ? coach.website : 'https://' + coach.website}
                   target="_blank" rel="noopener noreferrer"
-                  style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}>
+                  style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600, display:'inline-flex', alignItems:'center', gap:6, padding:'8px 10px', background:'#F8FAFC', borderRadius:999, width:'fit-content' }}>
                   🌐 {coach.website}
                 </a>
               )}
@@ -255,7 +256,7 @@ export default function CoachProfile({ coach, onClose }) {
                   facilityHref ? (
                     <a
                       href={facilityHref}
-                      style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:700 }}
+                      style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:700, display:'inline-flex', alignItems:'center', gap:6, padding:'8px 10px', background:'#EFF6FF', borderRadius:999, width:'fit-content' }}
                     >
                       📍 {coach.facility_name}
                     </a>
@@ -269,7 +270,7 @@ export default function CoachProfile({ coach, onClose }) {
                 {facilityHref && (
                   <a
                     href={facilityHref}
-                    style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}
+                    style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600, display:'inline-flex', alignItems:'center', gap:6, padding:'8px 10px', background:'#F8FAFC', borderRadius:999, width:'fit-content' }}
                   >
                     View facility page
                   </a>
@@ -280,7 +281,7 @@ export default function CoachProfile({ coach, onClose }) {
                     href={facilityWebsite.startsWith('http') ? facilityWebsite : 'https://' + facilityWebsite}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600 }}
+                    style={{ color:'#1D4ED8', textDecoration:'none', fontSize:14, fontWeight:600, display:'inline-flex', alignItems:'center', gap:6, padding:'8px 10px', background:'#F8FAFC', borderRadius:999, width:'fit-content' }}
                   >
                     Facility website
                   </a>
@@ -372,7 +373,7 @@ export default function CoachProfile({ coach, onClose }) {
                 {errors.review_text && <div style={{ color:'var(--red)', fontSize:12, marginTop:4 }}>{errors.review_text}</div>}
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:12, marginBottom:14 }}>
                 <div>
                   <label style={labelStyle}>Your Name <span style={{ opacity:0.5 }}>(optional)</span></label>
                   <input value={form.reviewer_name} onChange={e => setForm(f => ({...f, reviewer_name:e.target.value}))}
@@ -398,7 +399,7 @@ export default function CoachProfile({ coach, onClose }) {
                 <div style={{ color:'var(--red)', fontSize:13, marginBottom:12 }}>{errors.submit}</div>
               )}
 
-              <div style={{ display:'flex', gap:10 }}>
+              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
                 <button onClick={handleSubmit} disabled={submitting} style={{
                   flex:1, padding:'11px',
                   background: submitting ? '#aaa' : 'var(--navy)',
@@ -410,7 +411,7 @@ export default function CoachProfile({ coach, onClose }) {
                   {submitting ? 'Submitting…' : 'Submit Review'}
                 </button>
                 <button onClick={() => { setShowForm(false); setErrors({}) }} style={{
-                  padding:'11px 18px', background:'white',
+                  padding:'11px 16px', background:'white',
                   color:'var(--navy)', border:'2px solid var(--lgray)',
                   borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer',
                 }}>
