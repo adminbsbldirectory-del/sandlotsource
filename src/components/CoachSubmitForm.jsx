@@ -1780,8 +1780,10 @@ function TeamForm({ isMobile }) {
 }
 
 // ── PLAYER FORM ───────────────────────────────────────────
+
 function PlayerForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
+  const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
   const [postType, setPostType] = useState('player_needed')
 
   const [form, setForm] = useState({
@@ -1789,7 +1791,11 @@ function PlayerForm({ isMobile }) {
     age_group: '',
     team_name: '',
     position_needed: [],
+    venue_name: '',
+    location_address: '',
+    field_number: '',
     city: '',
+    state: '',
     zip_code: '',
     lat: null,
     lng: null,
@@ -1808,8 +1814,10 @@ function PlayerForm({ isMobile }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [addrStatus, setAddrStatus] = useState('')
 
   function set(field, value) {
+    setError('')
     setForm((f) => ({ ...f, [field]: value }))
   }
 
@@ -1824,10 +1832,54 @@ function PlayerForm({ isMobile }) {
 
   function handleGeocode(geo) {
     if (geo) {
-      setForm((f) => ({ ...f, lat: geo.lat, lng: geo.lng, city: f.city || geo.city }))
+      setForm((f) => ({
+        ...f,
+        lat: f.lat || geo.lat,
+        lng: f.lng || geo.lng,
+        city: geo.city || f.city,
+        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
+      }))
     } else {
-      setForm((f) => ({ ...f, lat: null, lng: null }))
+      setForm((f) => ({ ...f, lat: null, lng: null, state: '' }))
     }
+  }
+
+  async function handleNeededAddressBlur() {
+    if (postType !== 'player_needed') return
+    if (!String(form.location_address || '').trim()) {
+      setAddrStatus('')
+      return
+    }
+
+    if (!hasLocationContext(form.city, form.state, form.zip_code)) {
+      setAddrStatus('needs_location')
+      return
+    }
+
+    setAddrStatus('locating')
+    const resolved = await resolveBestLocation(form.location_address, form.city, form.state, form.zip_code)
+    if (!resolved) {
+      setAddrStatus('')
+      return
+    }
+
+    setForm((f) => ({
+      ...f,
+      lat: resolved.lat,
+      lng: resolved.lng,
+      city: f.city || resolved.city || '',
+      state: normalizeStateValue(f.state || resolved.state) || '',
+      zip_code: f.zip_code || resolved.zip_code || '',
+    }))
+
+    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
+  }
+
+  function buildNeededLocationName() {
+    return [form.venue_name, form.location_address, form.field_number]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .join(' — ')
   }
 
   function validate() {
@@ -1835,8 +1887,11 @@ function PlayerForm({ isMobile }) {
     if (postType === 'player_needed') {
       if (!form.age_group) return 'Age group is required.'
       if (form.position_needed.length === 0) return 'Select at least one position needed.'
+      if (!form.venue_name.trim()) return 'Facility name is required.'
+      if (!form.location_address.trim()) return 'Street address is required.'
       if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
-      if (!form.location_name.trim()) return 'Game / Tournament location is required.'
+      if (!form.city.trim()) return 'City is required.'
+      if (!normalizeStateValue(form.state)) return 'State is required.'
       if (!form.event_date) return 'Event date is required.'
       if (!form.contact_info.trim()) return 'Contact info is required.'
     } else {
@@ -1859,6 +1914,37 @@ function PlayerForm({ isMobile }) {
     setSubmitting(true)
 
     try {
+      let resolvedForm = { ...form }
+
+      if (postType === 'player_needed') {
+        const resolvedLocation = await resolveBestLocation(
+          form.location_address,
+          form.city,
+          form.state,
+          form.zip_code,
+        )
+
+        if (resolvedLocation) {
+          resolvedForm = {
+            ...resolvedForm,
+            lat: resolvedLocation.lat,
+            lng: resolvedLocation.lng,
+            city: resolvedForm.city || resolvedLocation.city || '',
+            state: normalizeStateValue(resolvedForm.state || resolvedLocation.state) || '',
+            zip_code: resolvedForm.zip_code || resolvedLocation.zip_code || '',
+          }
+        }
+
+        resolvedForm.location_name = [
+          resolvedForm.venue_name,
+          resolvedForm.location_address,
+          resolvedForm.field_number,
+        ]
+          .map((value) => String(value || '').trim())
+          .filter(Boolean)
+          .join(' — ')
+      }
+
       const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
       const notesWithTravel = postType === 'player_available'
         ? [travelNote, form.additional_notes.trim()].filter(Boolean).join('\n')
@@ -1866,12 +1952,12 @@ function PlayerForm({ isMobile }) {
 
       const payload = {
         post_type: postType,
-        sport: form.sport,
-        city: form.city.trim() || null,
-        zip_code: form.zip_code || null,
-        lat: form.lat != null ? parseFloat(form.lat) : null,
-        lng: form.lng != null ? parseFloat(form.lng) : null,
-        contact_info: form.contact_info.trim(),
+        sport: resolvedForm.sport,
+        city: resolvedForm.city.trim() || null,
+        zip_code: resolvedForm.zip_code || null,
+        lat: resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null,
+        lng: resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null,
+        contact_info: resolvedForm.contact_info.trim(),
         additional_notes: notesWithTravel,
         active: true,
         approval_status: 'pending',
@@ -1879,19 +1965,19 @@ function PlayerForm({ isMobile }) {
         last_confirmed_at: new Date().toISOString(),
         ...(postType === 'player_needed'
           ? {
-              age_group: form.age_group,
-              team_name: form.team_name.trim() || null,
-              position_needed: form.position_needed,
-              location_name: form.location_name.trim(),
-              event_date: form.event_date,
+              age_group: resolvedForm.age_group,
+              team_name: resolvedForm.team_name.trim() || null,
+              position_needed: resolvedForm.position_needed,
+              location_name: resolvedForm.location_name.trim(),
+              event_date: resolvedForm.event_date,
             }
           : {
-              player_age: form.player_age ? parseInt(form.player_age, 10) : null,
-              age_group: form.age_group || null,
-              player_position: form.player_position,
-              player_description: form.player_description.trim() || null,
-              bats: form.bats || null,
-              throws: form.throws || null,
+              player_age: resolvedForm.player_age ? parseInt(resolvedForm.player_age, 10) : null,
+              age_group: resolvedForm.age_group || null,
+              player_position: resolvedForm.player_position,
+              player_description: resolvedForm.player_description.trim() || null,
+              bats: resolvedForm.bats || null,
+              throws: resolvedForm.throws || null,
             }),
       }
 
@@ -1921,11 +2007,16 @@ function PlayerForm({ isMobile }) {
             type="button"
             onClick={() => {
               setPostType(val)
+              setAddrStatus('')
               setForm((f) => ({
                 ...f,
                 age_group: '',
                 team_name: '',
                 position_needed: [],
+                venue_name: '',
+                location_address: '',
+                field_number: '',
+                state: '',
                 location_name: '',
                 event_date: '',
                 player_age: '',
@@ -2026,8 +2117,56 @@ function PlayerForm({ isMobile }) {
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Game / Tournament Location <RequiredMark /></label>
-            <input value={form.location_name} onChange={(e) => set('location_name', e.target.value)} placeholder="e.g. Wills Park Field 3, Seckinger High School" style={inputStyle} />
+            <label style={labelStyle}>Facility Name <RequiredMark /></label>
+            <input
+              value={form.venue_name}
+              onChange={(e) => set('venue_name', e.target.value)}
+              placeholder="e.g. Wills Park"
+              style={inputStyle}
+            />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
+              Use the park, school, or facility name players should head to.
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>
+              Street Address <RequiredMark />
+              {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+              {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+              {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+              {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
+            </label>
+            <input
+              value={form.location_address}
+              onChange={(e) => set('location_address', e.target.value)}
+              onBlur={handleNeededAddressBlur}
+              placeholder="e.g. 11925 Wills Rd"
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
+            <div>
+              <ZipField
+                value={form.zip_code}
+                onChange={(v) => set('zip_code', v)}
+                onGeocode={handleGeocode}
+                required
+                hint="Used to auto-fill city and state"
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>City <RequiredMark /></label>
+              <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>State <RequiredMark /></label>
+              <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
+                <option value="">Select</option>
+                {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
@@ -2036,18 +2175,19 @@ function PlayerForm({ isMobile }) {
               <input type="date" value={form.event_date} onChange={(e) => set('event_date', e.target.value)} style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>City</label>
-              <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
+              <label style={labelStyle}>Field / Diamond</label>
+              <input
+                value={form.field_number}
+                onChange={(e) => set('field_number', e.target.value)}
+                placeholder="e.g. Field 3"
+                style={inputStyle}
+              />
             </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Enter zip first to auto-fill city for area matching" />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Additional Notes</label>
-            <textarea value={form.additional_notes} onChange={(e) => set('additional_notes', e.target.value)} rows={3} placeholder="Practice schedule, skill level expected, tryout info..." style={textareaStyle} />
+            <textarea value={form.additional_notes} onChange={(e) => set('additional_notes', e.target.value)} rows={3} placeholder="Start time, skill level expected, tournament notes..." style={textareaStyle} />
           </div>
         </>
       )}
@@ -2176,7 +2316,10 @@ function PlayerForm({ isMobile }) {
       <div style={{ marginBottom: 8 }}>
         <label style={labelStyle}>Contact Info <RequiredMark /></label>
         <input value={form.contact_info} onChange={(e) => set('contact_info', e.target.value)} placeholder="Email, phone, or Instagram handle" style={inputStyle} />
-        <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 4 }}>Visible publicly. Posts expire after 4 days.</div>
+        <div style={{ fontSize: 11, color: 'var(--gray)', marginTop: 4 }}>
+          Visible publicly. Posts expire after 4 days.
+          {postType === 'player_needed' && buildNeededLocationName() ? ' Families will see the full facility and address details on your post.' : ''}
+        </div>
       </div>
 
       <FieldError msg={error} />
@@ -2207,6 +2350,7 @@ function PlayerForm({ isMobile }) {
     </div>
   )
 }
+
 
 // ── FACILITY FORM ─────────────────────────────────────────
 function FacilityForm({ isMobile }) {
