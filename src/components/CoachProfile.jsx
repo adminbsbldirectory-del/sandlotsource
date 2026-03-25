@@ -97,7 +97,7 @@ export default function CoachProfile({ coach, onClose }) {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setSubmitting(true)
-    const { error } = await supabase.from('reviews').insert({
+    const payload = {
       coach_id:         coach.id,
       rating:           form.rating,
       review_text:      form.review_text.trim(),
@@ -105,7 +105,33 @@ export default function CoachProfile({ coach, onClose }) {
       player_age_group: form.player_age_group || null,
       email:            form.email.trim() || null,
       moderation_status: 'pending',
-    })
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert(payload)
+      .select('*')
+      .single()
+
+    if (!error && data) {
+      try {
+        await fetch('/api/notify-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            table: 'reviews',
+            record: {
+              ...data,
+              coach_name: coach.name,
+              coach_sport: coach.sport,
+            },
+          }),
+        })
+      } catch (notifyError) {
+        console.error('review notify error:', notifyError)
+      }
+    }
+
     setSubmitting(false)
     if (!error) {
       setSubmitted(true)
