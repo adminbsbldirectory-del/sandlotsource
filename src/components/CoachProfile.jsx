@@ -94,53 +94,61 @@ export default function CoachProfile({ coach, onClose }) {
   }
 
   async function handleSubmit() {
-    const e = validate()
-    if (Object.keys(e).length) { setErrors(e); return }
-    setSubmitting(true)
-    const payload = {
-      coach_id:         coach.id,
-      rating:           form.rating,
-      review_text:      form.review_text.trim(),
-      reviewer_name:    form.reviewer_name.trim() || null,
-      player_age_group: form.player_age_group || null,
-      email:            form.email.trim() || null,
-      moderation_status: 'pending',
+  const e = validate()
+  if (Object.keys(e).length) { setErrors(e); return }
+
+  setSubmitting(true)
+
+  const payload = {
+    coach_id: coach.id,
+    rating: form.rating,
+    review_text: form.review_text.trim(),
+    reviewer_name: form.reviewer_name.trim() || null,
+    player_age_group: form.player_age_group || null,
+    email: form.email.trim() || null,
+    moderation_status: 'pending',
+  }
+
+  const reviewId = crypto.randomUUID()
+
+  const reviewRecord = {
+    id: reviewId,
+    ...payload,
+  }
+
+  const { error } = await supabase
+    .from('reviews')
+    .insert(reviewRecord)
+
+  if (!error) {
+    try {
+      await fetch('/api/notify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table: 'reviews',
+          record: {
+            ...reviewRecord,
+            coach_name: coach.name,
+            coach_sport: coach.sport,
+          },
+        }),
+      })
+    } catch (notifyError) {
+      console.error('review notify error:', notifyError)
     }
+  }
 
-    const { data, error } = await supabase
-  .from('reviews')
-  .insert(payload)
-  .select('id')
-  .single()
+  setSubmitting(false)
 
-if (!error) {
-  try {
-    await fetch('/api/notify-admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        table: 'reviews',
-        record: {
-          ...payload,
-          id: data?.id,
-          coach_name: coach.name,
-          coach_sport: coach.sport,
-        },
-      }),
-    })
-  } catch (notifyError) {
-    console.error('review notify error:', notifyError)
+  if (!error) {
+    setSubmitted(true)
+    setShowForm(false)
+    setErrors({})
+  } else {
+    setErrors({ submit: 'Something went wrong. Please try again.' })
   }
 }
-    
-    setSubmitting(false)
-    if (!error) {
-      setSubmitted(true)
-      setShowForm(false)
-    } else {
-      setErrors({ submit: 'Something went wrong. Please try again.' })
-    }
-  }
 
   const inputStyle = {
     width:'100%', padding:'9px 12px', borderRadius:8,
