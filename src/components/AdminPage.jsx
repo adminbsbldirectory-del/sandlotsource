@@ -395,9 +395,8 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
           update[field.key] = next
           const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
           const { error } = await supabase.from(cfg?.table || '').update(update).eq('id', record.id)
-          setStatus(error ? 'error' : 'saved')
-          onSave(record.id, field.key, next)
-          setTimeout(() => setStatus(''), 1500)
+          if (error) { setVal(!next); setStatus('error'); setTimeout(() => setStatus(''), 2000) }
+          else { setStatus('saved'); onSave(record.id, field.key, next); setTimeout(() => setStatus(''), 1500) }
         }}>
           {val ? 'Yes' : 'No'}
           {status === 'saving' && <span style={s.savingDot}>●</span>}
@@ -421,9 +420,8 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
             const update = {}
             update[field.key] = next
             const { error } = await supabase.from(cfg?.table || '').update(update).eq('id', record.id)
-            setStatus(error ? 'error' : 'saved')
-            onSave(record.id, field.key, next)
-            setTimeout(() => setStatus(''), 1500)
+            if (error) { setVal(record[field.key]); setStatus('error'); setTimeout(() => setStatus(''), 2000) }
+            else { setStatus('saved'); onSave(record.id, field.key, next); setTimeout(() => setStatus(''), 1500) }
           }}>
           <option value="">—</option>
           {field.options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -454,9 +452,8 @@ function Cell({ record, field, onSave, isFeaturedTab }) {
                     const update = {}
                     update[field.key] = next
                     const { error } = await supabase.from(cfg?.table || '').update(update).eq('id', record.id)
-                    setStatus(error ? 'error' : 'saved')
-                    onSave(record.id, field.key, next)
-                    setTimeout(() => setStatus(''), 1500)
+                    if (error) { setVal(arr); setStatus('error'); setTimeout(() => setStatus(''), 2000) }
+                    else { setStatus('saved'); onSave(record.id, field.key, next); setTimeout(() => setStatus(''), 1500) }
                   }} />
                   {o}
                 </label>
