@@ -175,6 +175,65 @@ async function resolveBestLocation(address, city, state, zip) {
   return null
 }
 
+
+async function finalizeListingLocation({ address, city, state, zip, addressRequired = false, allowZipFallback = false }) {
+  const cleanAddress = String(address || '').trim()
+
+  if (cleanAddress) {
+    const exact = await geocodeAddress(cleanAddress, city, state, zip)
+    if (exact) {
+      return { ok: true, resolved: { ...exact, source: 'address' } }
+    }
+    return {
+      ok: false,
+      error: 'We could not place that street address. Please verify it or clear it before submitting.',
+    }
+  }
+
+  if (addressRequired) {
+    return {
+      ok: false,
+      error: 'A street address is required for this listing.',
+    }
+  }
+
+  if (allowZipFallback) {
+    const zipGeo = await geocodeZip(String(zip || '').trim())
+    if (zipGeo) {
+      return {
+        ok: true,
+        resolved: {
+          lat: zipGeo.lat,
+          lng: zipGeo.lng,
+          city: String(city || '').trim() || zipGeo.city || null,
+          state: normalizeStateValue(state) || zipGeo.state || null,
+          zip_code: normalizeZipCode(zip) || null,
+          source: 'zip',
+        },
+      }
+    }
+
+    return {
+      ok: false,
+      error: 'A valid zip code is required to place this listing on the map.',
+    }
+  }
+
+  return {
+    ok: false,
+    error: 'We could not determine a precise map location for this listing.',
+  }
+}
+
+function applyZipLookupLocality(current, geo) {
+  if (!geo) return { ...current }
+  return {
+    ...current,
+    city: String(current.city || '').trim() || geo.city || '',
+    state: normalizeStateValue(current.state) || normalizeStateValue(geo.state) || '',
+  }
+}
+
 function hasLocationContext(city, state, zip) {
   const cleanZip = normalizeZipCode(zip)
   if (cleanZip && cleanZip.length === 5) return true
@@ -529,6 +588,53 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
 // findOrCreateFacilityFromTeam removed — teams now link to existing facilities
 // via checkbox + live search. Facility records are only created through the
 // dedicated Facility tab, never auto-created from team submissions.
+
+
+async function createPendingFacilityRecord({ facility, sport, contactName, contactEmail, contactPhone, submissionNotes, source = 'website_form' }) {
+  const finalLocation = await finalizeListingLocation({
+    address: facility.address,
+    city: facility.city,
+    state: facility.state,
+    zip: facility.zip_code,
+    addressRequired: true,
+    allowZipFallback: false,
+  })
+
+  if (!finalLocation.ok) {
+    throw new Error(finalLocation.error)
+  }
+
+  const resolved = finalLocation.resolved
+  const payload = {
+    name: String(facility.name || '').trim(),
+    sport: sport || null,
+    sport_served: sport || null,
+    city: String(facility.city || '').trim() || resolved.city || null,
+    state: normalizeStateValue(facility.state) || normalizeStateValue(resolved.state) || null,
+    zip_code: normalizeZipCode(facility.zip_code) || normalizeZipCode(resolved.zip_code) || null,
+    lat: resolved.lat,
+    lng: resolved.lng,
+    address: String(facility.address || '').trim() || null,
+    website: String(facility.website || '').trim() || null,
+    phone: String(facility.phone || '').trim() || null,
+    contact_name: String(contactName || '').trim() || null,
+    contact_email: String(contactEmail || '').trim() || null,
+    contact_phone: String(contactPhone || '').trim() || null,
+    approval_status: 'pending',
+    source,
+    active: true,
+    submission_notes: String(submissionNotes || '').trim() || null,
+  }
+
+  const { data, error } = await supabase
+    .from('facilities')
+    .insert([payload])
+    .select('id, name, address, city, state, zip_code, lat, lng')
+    .single()
+
+  if (error) throw error
+  return data
+}
 
 function parseAgeGroupsInput(value) {
   const raw = String(value || '').trim()
@@ -905,7 +1011,7 @@ function FacilitySearchSelect({ selectedFacility, onSelect, onClear }) {
           marginTop: 4, zIndex: 50, padding: '12px 14px',
           fontSize: 13, color: 'var(--gray)',
         }}>
-          No facilities found. If it doesn't exist yet, leave unchecked and submit a facility listing separately.
+          No approved facilities found yet. You can add a new one below from the team form.
         </div>
       )}
     </div>
@@ -952,18 +1058,21 @@ function CoachForm({ isMobile }) {
   const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
 
+  const hasFacilityName = Boolean(String(form.facility_name || '').trim())
+
   const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
     facilityName: form.facility_name,
     address: form.address,
     city: form.city,
     state: form.state,
     zipCode: form.zip_code,
+    enabled: hasFacilityName,
   })
 
   const visibleFacilityMatches = useMemo(() => {
-    if (allowCreateNewFacility || selectedFacilityMatch) return []
+    if (!hasFacilityName || allowCreateNewFacility || selectedFacilityMatch) return []
     return facilityMatches
-  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch])
+  }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch, hasFacilityName])
 
   function set(field, value) {
     const facilityIdentityFields = ['facility_name', 'address', 'city', 'state', 'zip_code']
@@ -989,19 +1098,13 @@ function CoachForm({ isMobile }) {
   }
 
   function handleZipGeocode(geo) {
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        lat: f.lat || geo.lat,
-        lng: f.lng || geo.lng,
-        city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
-      }))
-    }
+    if (!geo) return
+    setForm((f) => applyZipLookupLocality(f, geo))
   }
 
   async function handleAddressBlur() {
-    if (!String(form.address || '').trim()) {
+    const cleanAddress = String(form.address || '').trim()
+    if (!cleanAddress) {
       setAddrStatus('')
       return
     }
@@ -1012,9 +1115,9 @@ function CoachForm({ isMobile }) {
     }
 
     setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(cleanAddress, form.city, form.state, form.zip_code)
     if (!resolved) {
-      setAddrStatus('')
+      setAddrStatus('not_found')
       return
     }
 
@@ -1027,14 +1130,13 @@ function CoachForm({ isMobile }) {
       zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
-    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
+    setAddrStatus('found')
   }
   
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
     if (!form.sport) return 'Sport is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
-    if (!form.facility_name.trim()) return 'Facility name is required.'
     if (!form.contact_role.trim()) return 'Your role is required.'
     if (!form.email.trim() && !form.phone.trim()) return 'At least one of email or phone is required.'
     return ''
@@ -1054,28 +1156,39 @@ function CoachForm({ isMobile }) {
 
     try {
       const blockingMatches = facilityMatches.filter((match) => match.id !== selectedFacilityMatch?.id)
-      if (!allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
+      if (hasFacilityName && !allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
         setError('Possible existing facility found. Please review the suggestion below before submitting.')
         setSubmitting(false)
         return
       }
 
       let resolvedForm = { ...form }
-      // Only geocode on submit if coordinates not already set from form interaction
-      if (resolvedForm.lat == null || resolvedForm.lng == null) {
-        const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-        if (resolvedLocation) {
-          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
+
+      if (selectedFacilityMatch) {
+        resolvedForm = applyExistingFacilityToCoachForm(resolvedForm, selectedFacilityMatch)
+      } else {
+        const finalLocation = await finalizeListingLocation({
+          address: form.address,
+          city: form.city,
+          state: form.state,
+          zip: form.zip_code,
+          allowZipFallback: true,
+        })
+
+        if (!finalLocation.ok) {
+          setError(finalLocation.error)
+          setSubmitting(false)
+          return
         }
+
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, finalLocation.resolved)
       }
 
-      // Use the matched facility ID if the user accepted an existing match.
-      // Do NOT auto-create facility records from coach submissions.
       const facilityId = selectedFacilityMatch?.id || null
 
       const payload = {
-        name: form.name.trim(),
-        sport: form.sport,
+        name: resolvedForm.name.trim(),
+        sport: resolvedForm.sport,
         specialty: form.specialty.length ? form.specialty : null,
         city: resolvedForm.city.trim() || null,
         state: resolvedForm.state || null,
@@ -1083,7 +1196,7 @@ function CoachForm({ isMobile }) {
         lat: resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null,
         lng: resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null,
         address: resolvedForm.address.trim() || null,
-        facility_name: resolvedForm.facility_name.trim(),
+        facility_name: resolvedForm.facility_name.trim() || null,
         facility_id: facilityId,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
@@ -1183,10 +1296,10 @@ function CoachForm({ isMobile }) {
             <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Full name" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Facility / Business Name <RequiredMark /></label>
-            <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="e.g. El Dojo, GrandSlam" style={inputStyle} />
+            <label style={labelStyle}>Facility / Business Name</label>
+            <input value={form.facility_name} onChange={(e) => set('facility_name', e.target.value)} placeholder="Optional — e.g. El Dojo, GrandSlam" style={inputStyle} />
             <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-              We will suggest an existing facility if one already looks like a match.
+              Optional. Enter your business or home facility name and we will suggest an existing facility if one looks like a match.
             </div>
           </div>
         </div>
@@ -1196,7 +1309,7 @@ function CoachForm({ isMobile }) {
             Street Address
             {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
             {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-            {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+            {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that address — fix it or clear it to use a zip-area pin</span>}
             {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
           </label>
           <input
@@ -1397,30 +1510,43 @@ function TeamForm({ isMobile }) {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
-  // Facility association — checkbox + selected facility record
   const [linkToFacility, setLinkToFacility] = useState(false)
   const [selectedFacility, setSelectedFacility] = useState(null)
+  const [showCreateFacilityForm, setShowCreateFacilityForm] = useState(false)
+  const [newFacilityAddrStatus, setNewFacilityAddrStatus] = useState('')
+  const [newFacilityForm, setNewFacilityForm] = useState({
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    website: '',
+    phone: '',
+    lat: null,
+    lng: null,
+  })
 
   function set(field, value) {
     setError('')
     setForm((f) => ({ ...f, [field]: value }))
   }
 
+  function setNewFacility(field, value) {
+    setError('')
+    setNewFacilityForm((f) => ({ ...f, [field]: value }))
+  }
+
   const classificationOptions =
     TEAM_CLASSIFICATION_OPTIONS[form.sport] || TEAM_CLASSIFICATION_OPTIONS.baseball
 
   function handleGeocode(geo) {
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        lat: geo.lat,
-        lng: geo.lng,
-        city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
-      }))
-    } else {
-      setForm((f) => ({ ...f, lat: null, lng: null }))
-    }
+    if (!geo) return
+    setForm((f) => applyZipLookupLocality(f, geo))
+  }
+
+  function handleNewFacilityZipGeocode(geo) {
+    if (!geo) return
+    setNewFacilityForm((f) => applyZipLookupLocality(f, geo))
   }
 
   async function handlePracticeAddressBlur() {
@@ -1435,9 +1561,9 @@ function TeamForm({ isMobile }) {
     }
 
     setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(form.address, form.city, form.state, form.zip_code)
     if (!resolved) {
-      setAddrStatus('')
+      setAddrStatus('not_found')
       return
     }
 
@@ -1450,7 +1576,42 @@ function TeamForm({ isMobile }) {
       zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
-    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
+    setAddrStatus('found')
+  }
+
+  async function handleNewFacilityAddressBlur() {
+    if (!String(newFacilityForm.address || '').trim()) {
+      setNewFacilityAddrStatus('')
+      return
+    }
+
+    if (!hasLocationContext(newFacilityForm.city, newFacilityForm.state, newFacilityForm.zip_code)) {
+      setNewFacilityAddrStatus('needs_location')
+      return
+    }
+
+    setNewFacilityAddrStatus('locating')
+    const resolved = await geocodeAddress(
+      newFacilityForm.address,
+      newFacilityForm.city,
+      newFacilityForm.state,
+      newFacilityForm.zip_code,
+    )
+
+    if (!resolved) {
+      setNewFacilityAddrStatus('not_found')
+      return
+    }
+
+    setNewFacilityForm((f) => ({
+      ...f,
+      lat: resolved.lat,
+      lng: resolved.lng,
+      city: f.city || resolved.city || '',
+      state: normalizeStateValue(f.state || resolved.state) || '',
+      zip_code: f.zip_code || resolved.zip_code || '',
+    }))
+    setNewFacilityAddrStatus('found')
   }
 
   function validate() {
@@ -1462,6 +1623,14 @@ function TeamForm({ isMobile }) {
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) {
       return 'At least one of contact email or phone is required.'
+    }
+    if (linkToFacility && !selectedFacility && !showCreateFacilityForm) {
+      return 'Choose an existing facility or add a new one from this page.'
+    }
+    if (linkToFacility && showCreateFacilityForm) {
+      if (!newFacilityForm.name.trim()) return 'New facility name is required.'
+      if (!newFacilityForm.address.trim()) return 'New facility street address is required.'
+      if (!newFacilityForm.zip_code || newFacilityForm.zip_code.length !== 5) return 'New facility zip code is required.'
     }
     return ''
   }
@@ -1477,16 +1646,38 @@ function TeamForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      let resolvedForm = { ...form }
-      if (resolvedForm.lat == null || resolvedForm.lng == null) {
-        const practiceLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-        if (practiceLocation) {
-          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, practiceLocation)
-        }
+      const practiceLocation = await finalizeListingLocation({
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip_code,
+        addressRequired: true,
+      })
+
+      if (!practiceLocation.ok) {
+        setError(practiceLocation.error)
+        setSubmitting(false)
+        return
       }
 
-      // facility_id comes directly from the search selection — no auto-create
-      const facilityId = selectedFacility?.id || null
+      let resolvedForm = applyResolvedCoordsPreservingLocality({ ...form }, practiceLocation.resolved)
+
+      let facilityRecord = selectedFacility
+      if (linkToFacility && !selectedFacility && showCreateFacilityForm) {
+        facilityRecord = await createPendingFacilityRecord({
+          facility: newFacilityForm,
+          sport: form.sport,
+          contactName: form.contact_name,
+          contactEmail: form.contact_email,
+          contactPhone: form.contact_phone,
+          submissionNotes: appendLabeledNote(
+            appendLabeledNote('', 'Created from', 'Travel team submission'),
+            'Team',
+            form.name,
+          ),
+          source: 'team_submission_inline_facility',
+        })
+      }
 
       const finalLat = resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null
       const finalLng = resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null
@@ -1504,10 +1695,8 @@ function TeamForm({ isMobile }) {
         lat: finalLat,
         lng: finalLng,
         address: resolvedForm.address.trim() || null,
-
-        facility_id: facilityId,
-        facility_name: selectedFacility?.name || null,
-
+        facility_id: facilityRecord?.id || null,
+        facility_name: facilityRecord?.name || null,
         contact_name: resolvedForm.contact_name.trim(),
         contact_email: resolvedForm.contact_email.trim() || null,
         contact_phone: resolvedForm.contact_phone.trim() || null,
@@ -1629,7 +1818,8 @@ function TeamForm({ isMobile }) {
     Practice Street Address <RequiredMark />
     {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
     {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-    {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+    {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
+    {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
   </label>
   <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handlePracticeAddressBlur} placeholder="Required field or park address" style={inputStyle} />
 </div>
@@ -1655,7 +1845,7 @@ function TeamForm({ isMobile }) {
 
         <div style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.5, marginBottom: 14 }}>
           Does this team train or operate out of a dedicated facility? (e.g. Georgia Bombers → Grand Slam Johns Creek)
-          If not, leave this unchecked — independent teams that use parks or rotate fields don't need one.
+          If not, leave this unchecked — independent teams that use parks or rotate fields do not need one.
         </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 14 }}>
@@ -1663,13 +1853,29 @@ function TeamForm({ isMobile }) {
             type="checkbox"
             checked={linkToFacility}
             onChange={(e) => {
-              setLinkToFacility(e.target.checked)
-              if (!e.target.checked) setSelectedFacility(null)
+              const checked = e.target.checked
+              setLinkToFacility(checked)
+              if (!checked) {
+                setSelectedFacility(null)
+                setShowCreateFacilityForm(false)
+                setNewFacilityAddrStatus('')
+                setNewFacilityForm({
+                  name: '',
+                  address: '',
+                  city: '',
+                  state: '',
+                  zip_code: '',
+                  website: '',
+                  phone: '',
+                  lat: null,
+                  lng: null,
+                })
+              }
             }}
             style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--navy)' }}
           />
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>
-            This team is associated with an existing facility
+            This team is associated with a facility
           </span>
         </label>
 
@@ -1678,12 +1884,90 @@ function TeamForm({ isMobile }) {
             <label style={labelStyle}>Search for facility</label>
             <FacilitySearchSelect
               selectedFacility={selectedFacility}
-              onSelect={(f) => setSelectedFacility(f)}
+              onSelect={(f) => {
+                setSelectedFacility(f)
+                setShowCreateFacilityForm(false)
+                setError('')
+              }}
               onClear={() => setSelectedFacility(null)}
             />
-            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>
-              Only approved facilities appear in search. If yours isn't listed yet, submit it separately via the Facility tab — then come back and link your team.
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFacility(null)
+                  setShowCreateFacilityForm((v) => !v)
+                  setError('')
+                }}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1.5px solid var(--navy)',
+                  background: showCreateFacilityForm ? 'var(--navy)' : 'white',
+                  color: showCreateFacilityForm ? 'white' : 'var(--navy)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {showCreateFacilityForm ? 'Hide New Facility Form' : "Can't find it? Add a new facility"}
+              </button>
             </div>
+            <div style={{ fontSize: 11, color: '#888', marginTop: 6 }}>
+              Existing approved facilities can be linked immediately. New facilities entered below will be created as pending and auto-linked to this team when you submit.
+            </div>
+
+            {showCreateFacilityForm && (
+              <div style={{ marginTop: 14, padding: '14px', borderRadius: 10, border: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Add New Facility
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label style={labelStyle}>Facility Name <RequiredMark /></label>
+                    <input value={newFacilityForm.name} onChange={(e) => setNewFacility('name', e.target.value)} placeholder="e.g. Grand Slam Johns Creek" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Facility Phone</label>
+                    <input value={newFacilityForm.phone} onChange={(e) => setNewFacility('phone', e.target.value)} placeholder="Optional" style={inputStyle} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>
+                    Facility Street Address <RequiredMark />
+                    {newFacilityAddrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+                    {newFacilityAddrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+                    {newFacilityAddrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
+                    {newFacilityAddrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
+                  </label>
+                  <input value={newFacilityForm.address} onChange={(e) => setNewFacility('address', e.target.value)} onBlur={handleNewFacilityAddressBlur} placeholder="Required for accurate facility placement" style={inputStyle} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 12 }}>
+                  <ZipField value={newFacilityForm.zip_code} onChange={(v) => setNewFacility('zip_code', v)} onGeocode={handleNewFacilityZipGeocode} required hint="Enter zip first to auto-fill city and state" />
+                  <div>
+                    <label style={labelStyle}>Facility City</label>
+                    <input value={newFacilityForm.city} onChange={(e) => setNewFacility('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Facility State</label>
+                    <select value={newFacilityForm.state} onChange={(e) => setNewFacility('state', e.target.value)} style={selectStyle}>
+                      <option value="">Select</option>
+                      {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>Facility Website</label>
+                    <input value={newFacilityForm.website} onChange={(e) => setNewFacility('website', e.target.value)} placeholder="Optional" style={inputStyle} />
+                  </div>
+                  <div style={{ fontSize: 11, color: '#888', alignSelf: 'end' }}>
+                    This creates a pending facility record using the team contact information from Section 4.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1719,7 +2003,7 @@ function TeamForm({ isMobile }) {
       </div>
 
       <div className="form-section">
-        <div className="form-section-title">3. Contact</div>
+        <div className="form-section-title">4. Contact</div>
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Contact Name <RequiredMark /></label>
@@ -1831,17 +2115,8 @@ function PlayerForm({ isMobile }) {
   }
 
   function handleGeocode(geo) {
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        lat: f.lat || geo.lat,
-        lng: f.lng || geo.lng,
-        city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
-      }))
-    } else {
-      setForm((f) => ({ ...f, lat: null, lng: null, state: '' }))
-    }
+    if (!geo) return
+    setForm((f) => applyZipLookupLocality(f, geo))
   }
 
   async function handleNeededAddressBlur() {
@@ -1857,9 +2132,9 @@ function PlayerForm({ isMobile }) {
     }
 
     setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.location_address, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(form.location_address, form.city, form.state, form.zip_code)
     if (!resolved) {
-      setAddrStatus('')
+      setAddrStatus('not_found')
       return
     }
 
@@ -1872,7 +2147,7 @@ function PlayerForm({ isMobile }) {
       zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
-    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
+    setAddrStatus('found')
   }
 
   function buildNeededLocationName() {
@@ -1917,24 +2192,21 @@ function PlayerForm({ isMobile }) {
       let resolvedForm = { ...form }
 
       if (postType === 'player_needed') {
-        const resolvedLocation = await resolveBestLocation(
-          form.location_address,
-          form.city,
-          form.state,
-          form.zip_code,
-        )
+        const resolvedLocation = await finalizeListingLocation({
+          address: form.location_address,
+          city: form.city,
+          state: form.state,
+          zip: form.zip_code,
+          addressRequired: true,
+        })
 
-        if (resolvedLocation) {
-          resolvedForm = {
-            ...resolvedForm,
-            lat: resolvedLocation.lat,
-            lng: resolvedLocation.lng,
-            city: resolvedForm.city || resolvedLocation.city || '',
-            state: normalizeStateValue(resolvedForm.state || resolvedLocation.state) || '',
-            zip_code: resolvedForm.zip_code || resolvedLocation.zip_code || '',
-          }
+        if (!resolvedLocation.ok) {
+          setError(resolvedLocation.error)
+          setSubmitting(false)
+          return
         }
 
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation.resolved)
         resolvedForm.location_name = [
           resolvedForm.venue_name,
           resolvedForm.location_address,
@@ -1943,6 +2215,21 @@ function PlayerForm({ isMobile }) {
           .map((value) => String(value || '').trim())
           .filter(Boolean)
           .join(' — ')
+      } else {
+        const areaLocation = await finalizeListingLocation({
+          city: form.city,
+          state: form.state,
+          zip: form.zip_code,
+          allowZipFallback: true,
+        })
+
+        if (!areaLocation.ok) {
+          setError(areaLocation.error)
+          setSubmitting(false)
+          return
+        }
+
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, areaLocation.resolved)
       }
 
       const travelNote = 'Willing to travel: ' + (form.distance_travel === 999 ? 'Anywhere' : 'up to ' + form.distance_travel + ' miles')
@@ -1954,6 +2241,7 @@ function PlayerForm({ isMobile }) {
         post_type: postType,
         sport: resolvedForm.sport,
         city: resolvedForm.city.trim() || null,
+        state: normalizeStateValue(resolvedForm.state) || null,
         zip_code: resolvedForm.zip_code || null,
         lat: resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null,
         lng: resolvedForm.lng != null ? parseFloat(resolvedForm.lng) : null,
@@ -2134,7 +2422,7 @@ function PlayerForm({ isMobile }) {
               Street Address <RequiredMark />
               {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
               {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-              {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+              {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
               {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
             </label>
             <input
@@ -2429,15 +2717,8 @@ function FacilityForm({ isMobile }) {
   }
 
   function handleZipGeocode(geo) {
-    if (geo) {
-      setForm((f) => ({
-        ...f,
-        lat: f.lat || geo.lat,
-        lng: f.lng || geo.lng,
-        city: geo.city || f.city,
-        state: normalizeStateValue(geo.state) || normalizeStateValue(f.state) || '',
-      }))
-    }
+    if (!geo) return
+    setForm((f) => applyZipLookupLocality(f, geo))
   }
 
   async function handleAddressBlur() {
@@ -2452,9 +2733,9 @@ function FacilityForm({ isMobile }) {
     }
 
     setAddrStatus('locating')
-    const resolved = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(form.address, form.city, form.state, form.zip_code)
     if (!resolved) {
-      setAddrStatus('')
+      setAddrStatus('not_found')
       return
     }
 
@@ -2467,11 +2748,12 @@ function FacilityForm({ isMobile }) {
       zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
-    setAddrStatus(resolved.source === 'address' ? 'found' : 'fallback')
+    setAddrStatus('found')
   }
 
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
+    if (!form.address.trim()) return 'Facility street address is required.'
     if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
     if (!form.contact_name.trim()) return 'Contact name is required.'
     if (!form.contact_email.trim() && !form.contact_phone.trim()) return 'At least one of contact email or phone is required.'
@@ -2501,14 +2783,21 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      let resolvedForm = { ...form }
-      // Only geocode on submit if coordinates not already set from form interaction
-      if (resolvedForm.lat == null || resolvedForm.lng == null) {
-        const resolvedLocation = await resolveBestLocation(form.address, form.city, form.state, form.zip_code)
-        if (resolvedLocation) {
-          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, resolvedLocation)
-        }
+      const finalLocation = await finalizeListingLocation({
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip_code,
+        addressRequired: true,
+      })
+
+      if (!finalLocation.ok) {
+        setError(finalLocation.error)
+        setSubmitting(false)
+        return
       }
+
+      const resolvedForm = applyResolvedCoordsPreservingLocality({ ...form }, finalLocation.resolved)
 
       const payload = {
         name: resolvedForm.name.trim(),
@@ -2532,7 +2821,7 @@ function FacilityForm({ isMobile }) {
         contact_name: resolvedForm.contact_name.trim(),
         contact_email: resolvedForm.contact_email.trim() || null,
         contact_phone: resolvedForm.contact_phone.trim() || null,
-        submission_notes: appendLabeledNote(resolvedForm.submission_notes, 'Practice Location Name', resolvedForm.practice_location_name),
+        submission_notes: resolvedForm.submission_notes.trim() || null,
         approval_status: 'pending',
         source: 'website_form',
         active: true,
@@ -2632,21 +2921,21 @@ function FacilityForm({ isMobile }) {
             <label style={labelStyle}>Facility Type</label>
             <select value={form.facility_type} onChange={(e) => set('facility_type', e.target.value)} style={selectStyle}>
               <option value="">Select type</option>
-              {FACILITY_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              {FACILITY_TYPE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </div>
         </div>
 
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>
-            Street Address
+            Street Address <RequiredMark />
             {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
             {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-            {addrStatus === 'fallback' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Address not found — using zip pin</span>}
+            {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
             {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
           </label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
-          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter address then tab out to place an accurate map pin</div>
+          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter the full street address for the most accurate facility pin possible.</div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
