@@ -629,11 +629,25 @@ async function createPendingFacilityRecord({ facility, sport, contactName, conta
   const { data, error } = await supabase
     .from('facilities')
     .insert([payload])
-    .select('id, name, address, city, state, zip_code, lat, lng')
+    .select('id, name, address, city, state, zip_code, lat, lng, approval_status, source, contact_name, contact_email, contact_phone')
     .single()
 
   if (error) throw error
+  await notifyAdmin('facilities', data)
   return data
+}
+
+
+async function notifyAdmin(table, record) {
+  try {
+    await fetch('/api/notify-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table, record }),
+    })
+  } catch (notifyError) {
+    console.error(`${table} notify error:`, notifyError)
+  }
 }
 
 function parseAgeGroupsInput(value) {
@@ -1217,9 +1231,14 @@ function CoachForm({ isMobile }) {
         verified_status: false,
       }
 
-      const { error: sbError } = await supabase.from('coaches').insert([payload])
+      const { data: createdCoach, error: sbError } = await supabase
+        .from('coaches')
+        .insert([payload])
+        .select('*')
+        .single()
       if (sbError) throw sbError
 
+      await notifyAdmin('coaches', createdCoach)
       setSubmitted(true)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -1711,9 +1730,14 @@ function TeamForm({ isMobile }) {
         active: true,
       }
 
-      const { error: sbError } = await supabase.from('travel_teams').insert([payload])
+      const { data: createdTeam, error: sbError } = await supabase
+        .from('travel_teams')
+        .insert([payload])
+        .select('*')
+        .single()
       if (sbError) throw sbError
 
+      await notifyAdmin('travel_teams', createdTeam)
       setSubmitted(true)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -2827,9 +2851,14 @@ function FacilityForm({ isMobile }) {
         active: true,
       }
 
-      const { error: sbError } = await supabase.from('facilities').insert([payload])
+      const { data: createdFacility, error: sbError } = await supabase
+        .from('facilities')
+        .insert([payload])
+        .select('*')
+        .single()
       if (sbError) throw sbError
 
+      await notifyAdmin('facilities', createdFacility)
       setSubmitted(true)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
