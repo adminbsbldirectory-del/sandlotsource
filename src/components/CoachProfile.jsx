@@ -107,30 +107,28 @@ export default function CoachProfile({ coach, onClose }) {
       moderation_status: 'pending',
     }
 
-    const { data, error } = await supabase
-      .from('reviews')
-      .insert(payload)
-      .select('*')
-      .single()
+    const { error } = await supabase
+  .from('reviews')
+  .insert(payload)
 
-    if (!error && data) {
-      try {
-        await fetch('/api/notify-admin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            table: 'reviews',
-            record: {
-              ...data,
-              coach_name: coach.name,
-              coach_sport: coach.sport,
-            },
-          }),
-        })
-      } catch (notifyError) {
-        console.error('review notify error:', notifyError)
-      }
-    }
+if (!error) {
+  try {
+    await fetch('/api/notify-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        table: 'reviews',
+        record: {
+          ...payload,
+          coach_name: coach.name,
+          coach_sport: coach.sport,
+        },
+      }),
+    })
+  } catch (notifyError) {
+    console.error('review notify error:', notifyError)
+  }
+}
 
     setSubmitting(false)
     if (!error) {
@@ -160,10 +158,10 @@ export default function CoachProfile({ coach, onClose }) {
     }}>
       <div onClick={e => e.stopPropagation()} style={{
         background:'var(--white)', borderRadius:14,
-        width:'100%', maxWidth:640,
+        width:'100%',
         boxShadow:'0 8px 40px rgba(0,0,0,0.25)',
         overflow:'hidden',
-        maxWidth:'calc(100vw - 16px)',
+        maxWidth:'640px',
       }}>
 
         {/* Header */}
