@@ -29,8 +29,8 @@ const templateMap = {
   travel_teams: teamEmail,
   player_board: playerBoardEmail,
   facilities: facilityEmail,
-  claim_requests: (record) => claimEmail(record),
-  reviews: (record) => reviewEmail(record),
+  claim_requests: claimEmail,
+  reviews: reviewEmail,
 };
 
 export default async function handler(req, res) {
