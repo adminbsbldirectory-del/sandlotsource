@@ -67,6 +67,13 @@ const RADIUS_OPTIONS = [
   { value: 50, label: 'Within 50 mi' },
 ]
 
+
+const FEATURED_BADGE_STYLE = {
+  background: '#FEF3C7',
+  color: '#92400E',
+  border: '1px solid #FDE68A',
+}
+
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value)
   if (sport === 'both') return { key: 'both', label: 'Baseball & Softball', bg: '#E7EEF9', color: '#1D3E73', border: '#C8D5E8' }
@@ -603,7 +610,7 @@ function CoachCard({ coach, selected, onClick, onViewProfile, mobile = false }) 
                   </span>
                 )}
                 {coach.featured_status && (
-                  <span className="badge" style={{ background: '#FEF3C7', color: '#92400E' }}>
+                  <span className="badge" style={{ background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border }}>
                     ⭐ Featured
                   </span>
                 )}
@@ -977,7 +984,7 @@ function CoachRow({ coach, selected, onOpen }) {
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
           {coach.verified_status && <span className="badge" style={{ background: '#E8F1FF', color: '#1D4ED8' }}>Verified</span>}
-          {coach.featured_status && <span className="badge" style={{ background: '#FDF0D5', color: '#A16207' }}>Featured</span>}
+          {coach.featured_status && <span className="badge" style={{ background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border }}>⭐ Featured</span>}
           <span style={{ fontSize: 11.5, color: 'var(--gray)' }}>{reviewLabel(coach)}</span>
         </div>
       </div>
@@ -1073,7 +1080,7 @@ function CoachDetailPanel({ coach, onClose, onViewProfile, distanceMi }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 10 }}>
               <span style={{ background: sportBadge.bg, color: sportBadge.color, border: `1px solid ${sportBadge.border}`, borderRadius: 999, padding: '5px 10px', fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{sportBadge.label}</span>
               {coach.verified_status && <span className="badge" style={{ background: '#E8F1FF', color: '#1D4ED8' }}>Verified</span>}
-              {coach.featured_status && <span className="badge" style={{ background: '#FDF0D5', color: '#A16207' }}>Featured</span>}
+              {coach.featured_status && <span className="badge" style={{ background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border }}>⭐ Featured</span>}
               {coach.recommendation_count > 0 && <span className="badge" style={{ background: '#ECFDF3', color: '#166534' }}>{coach.recommendation_count} rec{coach.recommendation_count !== 1 ? 's' : ''}</span>}
             </div>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 32, lineHeight: 1.05, color: 'var(--navy)', fontWeight: 800 }}>{coach.name}</div>
