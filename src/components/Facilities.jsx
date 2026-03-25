@@ -29,6 +29,12 @@ const RADIUS_OPTIONS = [
   { value: 50, label: 'Within 50 mi' },
 ]
 
+const FEATURED_BADGE_STYLE = {
+  background: '#FEF3C7',
+  color: '#92400E',
+  border: '1px solid #FDE68A',
+}
+
 function normalizeSportValue(value) {
   const raw = String(value || '').trim().toLowerCase()
   if (!raw) return ''
@@ -266,6 +272,24 @@ function FacilityCard({ facility, selected, onClick, distanceMi, detailHref }) {
           </div>
 
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 8 }}>
+            {facility.featured_status && (
+              <span
+                style={{
+                  background: selected ? 'rgba(250,204,21,0.18)' : FEATURED_BADGE_STYLE.background,
+                  color: selected ? '#FDE68A' : FEATURED_BADGE_STYLE.color,
+                  border: selected ? '1px solid rgba(250,204,21,0.35)' : FEATURED_BADGE_STYLE.border,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: 20,
+                  letterSpacing: '0.03em',
+                  fontFamily: 'var(--font-head)',
+                  flexShrink: 0,
+                }}
+              >
+                ⭐ Featured
+              </span>
+            )}
             {facilityTypeLabel && (
               <span style={{ background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-head)', flexShrink: 0 }}>
                 {facilityTypeLabel}
@@ -357,6 +381,11 @@ function FacilityPreviewCard({ facility, onClose, detailHref }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {facility.featured_status && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', letterSpacing: '0.03em', background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border }}>
+                ⭐ Featured
+              </span>
+            )}
             {sportMeta && (
               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '5px 9px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: sportMeta.bg, color: sportMeta.color, border: `1px solid ${sportMeta.border}` }}>
                 {sportMeta.label}
@@ -493,6 +522,11 @@ function MobileFacilityRow({ facility, distanceMi, detailHref }) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+            {facility.featured_status && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', letterSpacing: '0.03em', background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border, maxWidth: '100%' }}>
+                ⭐ Featured
+              </span>
+            )}
             {typeLabel && (
               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#F3F4F6', color: getFacilityTypeColor(facility.facility_type), border: '1px solid #E5E7EB', maxWidth: '100%' }}>
                 {typeLabel}
@@ -758,13 +792,17 @@ export default function Facilities() {
         return true
       })
       .sort((a, b) => {
+        const aFeatured = !!a.featured_status
+        const bFeatured = !!b.featured_status
+        if (aFeatured !== bFeatured) return aFeatured ? -1 : 1
+
         if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
-          return (
-            distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) -
-            distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
-          )
+          const distA = distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng)
+          const distB = distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+          if (distA !== distB) return distA - distB
         }
-        return 0
+
+        return (a.name || '').localeCompare(b.name || '')
       })
   }, [facilities, sport, facilityType, search, geoCenter, radius, hasLocationSearch])
 
@@ -1113,6 +1151,13 @@ export default function Facilities() {
                               </div>
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={f.name}>{f.name}</div>
+                                {f.featured_status && (
+                                  <div style={{ marginTop: 4 }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '3px 7px', borderRadius: 999, fontSize: 9.5, fontWeight: 800, fontFamily: 'var(--font-head)', letterSpacing: '0.03em', background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border }}>
+                                      ⭐ Featured
+                                    </span>
+                                  </div>
+                                )}
                                 <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={Array.isArray(f.amenities) ? f.amenities.join(', ') : ''}>{Array.isArray(f.amenities) && f.amenities.length ? f.amenities.slice(0, 3).join(' · ') : 'No amenities listed'}</div>
                               </div>
                               <div style={{ minWidth: 0 }}>
