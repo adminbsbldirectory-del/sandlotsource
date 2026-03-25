@@ -11,6 +11,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
+const FEATURED_BADGE_STYLE = {
+  background: '#FEF3C7',
+  color: '#92400E',
+  border: '1px solid #FDE68A',
+}
+
 function normalizeUrl(url) {
   if (!url) return null
   const trimmed = String(url).trim()
@@ -517,6 +523,11 @@ export default function FacilityProfile() {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {facility.featured_status && (
+              <span style={{ background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border, fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, letterSpacing: '0.03em' }}>
+                ⭐ Featured
+              </span>
+            )}
             {sportLabel && (
               <span style={{ background: 'rgba(255,255,255,0.14)', color: 'white', fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {sportLabel}
