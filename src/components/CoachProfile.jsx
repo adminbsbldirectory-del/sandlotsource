@@ -132,7 +132,7 @@ if (!error) {
     console.error('review notify error:', notifyError)
   }
 }
-
+    
     setSubmitting(false)
     if (!error) {
       setSubmitted(true)
