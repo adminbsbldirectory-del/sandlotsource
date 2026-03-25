@@ -1417,10 +1417,29 @@ export default function CoachDirectory() {
 
       return true
     }).sort((a, b) => {
+      const aFeatured = !!a.featured_status
+      const bFeatured = !!b.featured_status
+      if (aFeatured !== bFeatured) return aFeatured ? -1 : 1
+
+      const aVerified = !!a.verified_status
+      const bVerified = !!b.verified_status
+      if (aVerified !== bVerified) return aVerified ? -1 : 1
+
       if (geoCenter && a.lat != null && a.lng != null && b.lat != null && b.lng != null) {
-        return distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng) - distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+        const distA = distanceMiles(geoCenter.lat, geoCenter.lng, a.lat, a.lng)
+        const distB = distanceMiles(geoCenter.lat, geoCenter.lng, b.lat, b.lng)
+        if (distA !== distB) return distA - distB
       }
-      return 0
+
+      const aReviews = parseInt(a.review_count, 10) || 0
+      const bReviews = parseInt(b.review_count, 10) || 0
+      if (aReviews !== bReviews) return bReviews - aReviews
+
+      const aRating = parseFloat(a.rating_average) || 0
+      const bRating = parseFloat(b.rating_average) || 0
+      if (aRating !== bRating) return bRating - aRating
+
+      return (a.name || '').localeCompare(b.name || '')
     })
   }, [resolvedCoaches, sport, specialty, state, search, geoCenter, radius, facilityFromUrl])
 
