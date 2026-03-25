@@ -85,7 +85,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
         alignItems: 'flex-start',
         justifyContent: 'center',
         overflowY: 'auto',
-        padding: '24px 12px',
+        padding: '16px 10px',
       }}
     >
       <div
@@ -94,12 +94,13 @@ export default function TeamProfile({ team, onClose, onClaim }) {
           background: 'var(--white)',
           borderRadius: 14,
           width: '100%',
-          maxWidth: 600,
+          maxWidth: 640,
           boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
           overflow: 'hidden',
+          maxWidth: 'calc(100vw - 16px)',
         }}
       >
-        <div style={{ background: 'var(--navy)', padding: '20px 24px', position: 'relative' }}>
+        <div style={{ background: 'var(--navy)', padding: '18px 18px 16px', position: 'relative' }}>
           <button
             type="button"
             onClick={onClose}
@@ -135,7 +136,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             {team.name}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap', rowGap: 6, alignItems: 'center' }}>
             <span
               style={{
                 background:
@@ -145,9 +146,9 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                       ? 'var(--navy)'
                       : '#1D4ED8',
                 color: 'white',
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                padding: '3px 10px',
+                padding: '3px 8px',
                 borderRadius: 20,
                 textTransform: 'uppercase',
                 fontFamily: 'var(--font-head)',
@@ -161,9 +162,9 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 style={{
                   background: 'rgba(255,255,255,0.15)',
                   color: 'white',
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 700,
-                  padding: '3px 10px',
+                  padding: '3px 8px',
                   borderRadius: 20,
                   fontFamily: 'var(--font-head)',
                 }}
@@ -177,9 +178,9 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 style={{
                   background: 'rgba(255,255,255,0.15)',
                   color: 'white',
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 700,
-                  padding: '3px 10px',
+                  padding: '3px 8px',
                   borderRadius: 20,
                   fontFamily: 'var(--font-head)',
                 }}
@@ -193,8 +194,8 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                 style={{
                   background: 'rgba(255,255,255,0.1)',
                   color: 'rgba(255,255,255,0.85)',
-                  fontSize: 11,
-                  padding: '3px 10px',
+                  fontSize: 10,
+                  padding: '3px 8px',
                   borderRadius: 20,
                 }}
               >
@@ -206,9 +207,9 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               style={{
                 background: statusInfo.bg,
                 color: statusInfo.color,
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                padding: '3px 10px',
+                padding: '3px 8px',
                 borderRadius: 20,
                 fontFamily: 'var(--font-head)',
                 textTransform: 'uppercase',
@@ -220,7 +221,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
           </div>
         </div>
 
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, overflowX: 'hidden' }}>
           {(locationLine || team.address) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
               {locationLine && (
@@ -253,7 +254,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               style={{
                 background: 'var(--cream)',
                 borderRadius: 10,
-                padding: '14px 16px',
+                padding: '12px 14px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
@@ -289,7 +290,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               style={{
                 background: '#F8FAFC',
                 borderRadius: 10,
-                padding: '14px 16px',
+                padding: '12px 14px',
                 border: '1px solid #E2E8F0',
                 display: 'flex',
                 flexDirection: 'column',
@@ -343,7 +344,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                       📍 {facilityLocationLine}
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {facilityId && (
                       <a
                         href={`/facilities/${facilityId}`}
@@ -352,6 +353,13 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                           textDecoration: 'none',
                           fontWeight: 600,
                           fontSize: 14,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '8px 10px',
+                          background: '#EFF6FF',
+                          borderRadius: 999,
+                          width: 'fit-content',
                         }}
                       >
                         View Facility Profile →
@@ -367,6 +375,13 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                           textDecoration: 'none',
                           fontWeight: 600,
                           fontSize: 14,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '8px 10px',
+                          background: '#EFF6FF',
+                          borderRadius: 999,
+                          width: 'fit-content',
                         }}
                       >
                         Open in Maps →
@@ -383,7 +398,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               style={{
                 background: '#DCFCE7',
                 borderRadius: 10,
-                padding: '14px 16px',
+                padding: '12px 14px',
                 borderLeft: '4px solid #16A34A',
               }}
             >
@@ -410,7 +425,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               style={{
                 background: 'var(--cream)',
                 borderRadius: 10,
-                padding: '14px 16px',
+                padding: '12px 14px',
                 fontSize: 14,
                 color: 'var(--navy)',
                 lineHeight: 1.6,
@@ -456,6 +471,13 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                     textDecoration: 'none',
                     fontWeight: 600,
                     fontSize: 14,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 10px',
+                    background: '#F8FAFC',
+                    borderRadius: 999,
+                    width: 'fit-content',
                   }}
                 >
                   📞 {team.contact_phone}
@@ -470,6 +492,13 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                     textDecoration: 'none',
                     fontWeight: 600,
                     fontSize: 14,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 10px',
+                    background: '#EFF6FF',
+                    borderRadius: 999,
+                    width: 'fit-content',
                   }}
                 >
                   📧 {team.contact_email}
