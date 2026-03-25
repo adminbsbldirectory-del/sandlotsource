@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import Header from './components/Header.jsx'
 import HomePage from './components/HomePage.jsx'
 import CoachDirectory from './components/CoachDirectory.jsx'
@@ -19,6 +19,18 @@ const BORDER = '#eaeae6'
 const FAINT = '#bbb'
 const RED = '#e63329'
 const DARK = '#1a1a1a'
+
+
+function ScrollToTop() {
+  const location = useLocation()
+
+  useLayoutEffect(() => {
+    if (location.hash) return
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname, location.search])
+
+  return null
+}
 
 function SiteFooter() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -206,7 +218,8 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <ScrollToTop />
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%', overflowX: 'clip' }}>
         <AppRoutes />
       </div>
     </BrowserRouter>
