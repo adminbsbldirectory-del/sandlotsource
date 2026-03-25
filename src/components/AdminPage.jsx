@@ -3,7 +3,7 @@ import { supabase } from '../supabase.js'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 
-const TABS = ['Coaches', 'Travel Teams', 'Facilities', 'Claim Requests', 'Reviews']
+const TABS = ['Coaches', 'Travel Teams', 'Facilities', 'Claim Requests', 'Reviews', 'Featured Coaches', 'Featured Facilities']
 
 // ── Field config per table ──────────────────────────────────────────
 const COACH_FIELDS = [
@@ -69,22 +69,45 @@ const CLAIM_FIELDS = [
 ]
 
 const REVIEW_FIELDS = [
-  { key: '_coach_name',      label: 'Coach',          type: 'joined',   joinPath: ['coaches', 'name'] },
+  { key: '_coach_name',      label: 'Coach',          type: 'joined',        joinPath: ['coaches', 'name'] },
   { key: 'rating',           label: 'Rating',         type: 'stars' },
   { key: 'review_text',      label: 'Review',         type: 'text' },
   { key: 'reviewer_name',    label: 'Reviewer',       type: 'text' },
   { key: 'player_age_group', label: 'Age Group',      type: 'text' },
   { key: 'email',            label: 'Email',          type: 'email-link' },
-  { key: 'moderation_status',label: 'Status',         type: 'select',   options: ['pending','approved','rejected'] },
+  { key: 'moderation_status',label: 'Status',         type: 'select',        options: ['pending','approved','rejected'] },
   { key: 'created_at',       label: 'Submitted',      type: 'date-readonly' },
 ]
 
+const FEATURED_COACH_FIELDS = [
+  { key: 'name',             label: 'Name',           type: 'text' },
+  { key: 'city',             label: 'City',           type: 'text' },
+  { key: 'state',            label: 'State',          type: 'text' },
+  { key: 'sport',            label: 'Sport',          type: 'select',    options: ['baseball','softball','both'] },
+  { key: 'featured_status',  label: 'Featured',       type: 'boolean' },
+  { key: 'featured_rank',    label: 'Rank',           type: 'number' },
+  { key: 'featured_start',   label: 'Start Date',     type: 'date-edit' },
+  { key: 'featured_until',   label: 'Expiry',         type: 'date-edit' },
+]
+
+const FEATURED_FACILITY_FIELDS = [
+  { key: 'name',             label: 'Name',           type: 'text' },
+  { key: 'city',             label: 'City',           type: 'text' },
+  { key: 'state',            label: 'State',          type: 'text' },
+  { key: 'sport',            label: 'Sport',          type: 'select',    options: ['baseball','softball','both'] },
+  { key: 'featured_status',  label: 'Featured',       type: 'boolean' },
+  { key: 'featured_rank',    label: 'Rank',           type: 'number' },
+  { key: 'featured_until',   label: 'Expiry',         type: 'date-edit' },
+]
+
 const TABLE_CONFIG = {
-  'Coaches':        { table: 'coaches',        fields: COACH_FIELDS,    orderBy: 'name',         ascending: true,  selectQuery: '*' },
-  'Travel Teams':   { table: 'travel_teams',   fields: TEAM_FIELDS,     orderBy: 'name',         ascending: true,  selectQuery: '*' },
-  'Facilities':     { table: 'facilities',     fields: FACILITY_FIELDS, orderBy: 'name',         ascending: true,  selectQuery: '*' },
-  'Claim Requests': { table: 'claim_requests', fields: CLAIM_FIELDS,    orderBy: 'submitted_at', ascending: false, selectQuery: '*' },
-  'Reviews':        { table: 'reviews',        fields: REVIEW_FIELDS,   orderBy: 'created_at',   ascending: false, selectQuery: '*, coaches(name)' },
+  'Coaches':             { table: 'coaches',        fields: COACH_FIELDS,             orderBy: 'name',          ascending: true,  selectQuery: '*' },
+  'Travel Teams':        { table: 'travel_teams',   fields: TEAM_FIELDS,              orderBy: 'name',          ascending: true,  selectQuery: '*' },
+  'Facilities':          { table: 'facilities',     fields: FACILITY_FIELDS,          orderBy: 'name',          ascending: true,  selectQuery: '*' },
+  'Claim Requests':      { table: 'claim_requests', fields: CLAIM_FIELDS,             orderBy: 'submitted_at',  ascending: false, selectQuery: '*' },
+  'Reviews':             { table: 'reviews',        fields: REVIEW_FIELDS,            orderBy: 'created_at',    ascending: false, selectQuery: '*, coaches(name)' },
+  'Featured Coaches':    { table: 'coaches',        fields: FEATURED_COACH_FIELDS,    orderBy: 'featured_rank', ascending: true,  selectQuery: '*' },
+  'Featured Facilities': { table: 'facilities',     fields: FEATURED_FACILITY_FIELDS, orderBy: 'featured_rank', ascending: true,  selectQuery: '*' },
 }
 
 // ── Styles ──────────────────────────────────────────────────────────
@@ -120,7 +143,13 @@ const s = {
     textTransform: 'uppercase',
   },
   body: { padding: '16px 20px' },
-  tabs: { display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #dde3ec' },
+  tabs: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 20,
+    borderBottom: '2px solid #dde3ec',
+  },
   tab: (active) => ({
     padding: '9px 20px',
     fontSize: 13,
@@ -133,6 +162,22 @@ const s = {
     borderRadius: '6px 6px 0 0',
     background: active ? '#fff' : 'transparent',
     color: active ? '#1b3a5c' : '#888',
+    cursor: 'pointer',
+    marginBottom: -2,
+    transition: 'all 0.15s',
+  }),
+  featuredTab: (active) => ({
+    padding: '9px 20px',
+    fontSize: 13,
+    fontWeight: 700,
+    fontFamily: 'var(--font-head, system-ui)',
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+    border: 'none',
+    borderBottom: active ? '2px solid #d97706' : '2px solid transparent',
+    borderRadius: '6px 6px 0 0',
+    background: active ? '#fffbeb' : 'transparent',
+    color: active ? '#d97706' : '#888',
     cursor: 'pointer',
     marginBottom: -2,
     transition: 'all 0.15s',
@@ -152,6 +197,14 @@ const s = {
     gap: 12,
     background: '#f8f9fb',
   },
+  featuredToolbar: {
+    padding: '14px 18px',
+    borderBottom: '1px solid #fde68a',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: '#fffbeb',
+  },
   searchInput: {
     flex: 1,
     maxWidth: 320,
@@ -167,6 +220,17 @@ const s = {
     color: '#888',
     marginLeft: 'auto',
   },
+  filterToggle: (active) => ({
+    padding: '6px 14px',
+    borderRadius: 8,
+    border: active ? '1px solid #d97706' : '1px solid #dde3ec',
+    background: active ? '#fef3c7' : '#fff',
+    color: active ? '#92400e' : '#666',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  }),
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'auto' },
   th: {
     padding: '10px 14px',
@@ -178,6 +242,19 @@ const s = {
     color: '#666',
     background: '#f8f9fb',
     borderBottom: '1px solid #eef0f4',
+    whiteSpace: 'nowrap',
+    minWidth: 100,
+  },
+  featuredTh: {
+    padding: '10px 14px',
+    textAlign: 'left',
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: '#92400e',
+    background: '#fffbeb',
+    borderBottom: '1px solid #fde68a',
     whiteSpace: 'nowrap',
     minWidth: 100,
   },
@@ -202,6 +279,16 @@ const s = {
     transition: 'all 0.15s',
   },
   inlineSelect: {
+    padding: '4px 8px',
+    borderRadius: 6,
+    border: '1px solid #dde3ec',
+    fontSize: 12,
+    fontFamily: 'inherit',
+    background: '#fff',
+    cursor: 'pointer',
+    outline: 'none',
+  },
+  dateInput: {
     padding: '4px 8px',
     borderRadius: 6,
     border: '1px solid #dde3ec',
@@ -256,6 +343,26 @@ const s = {
     color: val === 'approved' ? '#15803d' : val === 'rejected' ? '#991b1b' : '#92400e',
     border: val === 'approved' ? '1px solid #86efac' : val === 'rejected' ? '1px solid #fca5a5' : '1px solid #fcd34d',
   }),
+  featuredDateBadge: {
+    display: 'inline-block',
+    padding: '2px 10px',
+    borderRadius: 12,
+    fontSize: 11,
+    fontWeight: 700,
+    background: '#fef3c7',
+    color: '#92400e',
+    border: '1px solid #fcd34d',
+  },
+  expiredDateBadge: {
+    display: 'inline-block',
+    padding: '2px 10px',
+    borderRadius: 12,
+    fontSize: 11,
+    fontWeight: 700,
+    background: '#fee2e2',
+    color: '#991b1b',
+    border: '1px solid #fca5a5',
+  },
   passwordWrap: {
     minHeight: '100vh',
     display: 'flex',
@@ -273,7 +380,27 @@ const s = {
   },
 }
 
-// ── Password gate ───────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────
+function toDateInputValue(val) {
+  if (!val) return ''
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 10)
+}
+
+function formatDateDisplay(val) {
+  if (!val) return null
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function isExpired(val) {
+  if (!val) return false
+  return new Date(val) < new Date()
+}
+
+// ── Password gate ────────────────────────────────────────────────────
 function PasswordGate({ onUnlock }) {
   const [val, setVal] = useState('')
   const [err, setErr] = useState(false)
@@ -319,16 +446,16 @@ function PasswordGate({ onUnlock }) {
   )
 }
 
-// ── Inline cell ─────────────────────────────────────────────────────
-function Cell({ record, field, onSave }) {
+// ── Inline cell ──────────────────────────────────────────────────────
+function Cell({ record, field, onSave, isFeaturedTab }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(record[field.key])
-  const [status, setStatus] = useState('') // saving | saved | error
+  const [status, setStatus] = useState('')
 
   async function save(newVal) {
     setStatus('saving')
     const update = {}
-    update[field.key] = newVal
+    update[field.key] = newVal || null
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
     const { error } = await supabase
       .from(cfg?.table || '')
@@ -345,12 +472,16 @@ function Cell({ record, field, onSave }) {
     setEditing(false)
   }
 
-  // ── joined (read-only, value from nested object e.g. coaches.name) ──
+  const tdStyle = isFeaturedTab
+    ? { ...s.td, borderBottom: '1px solid #fef3c7' }
+    : s.td
+
+  // ── joined (read-only) ──
   if (field.type === 'joined') {
     const [tableKey, colKey] = field.joinPath
     const displayVal = record[tableKey] ? record[tableKey][colKey] : null
     return (
-      <td style={{ ...s.td, fontWeight: 600, color: '#1b3a5c' }}>
+      <td style={{ ...tdStyle, fontWeight: 600, color: '#1b3a5c' }}>
         {displayVal || <span style={{ color: '#ccc' }}>—</span>}
       </td>
     )
@@ -358,20 +489,51 @@ function Cell({ record, field, onSave }) {
 
   // ── date-readonly ──
   if (field.type === 'date-readonly') {
-    const dateVal = record[field.key]
-    const formatted = dateVal ? new Date(dateVal).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
     return (
-      <td style={{ ...s.td, color: '#888', fontSize: 12, whiteSpace: 'nowrap' }}>
-        {formatted}
+      <td style={{ ...tdStyle, color: '#888', fontSize: 12, whiteSpace: 'nowrap' }}>
+        {formatDateDisplay(record[field.key]) || '—'}
       </td>
     )
   }
 
-  // ── stars (read-only rating display) ──
+  // ── date-edit (editable date picker with expiry badge) ──
+  if (field.type === 'date-edit') {
+    const expired = field.key === 'featured_until' && isExpired(val)
+    const displayText = formatDateDisplay(val)
+    return (
+      <td style={tdStyle}>
+        {editing ? (
+          <input
+            type="date"
+            defaultValue={toDateInputValue(val)}
+            autoFocus
+            style={s.dateInput}
+            onBlur={e => save(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') setEditing(false) }}
+          />
+        ) : (
+          <span
+            onClick={() => setEditing(true)}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+            title="Click to edit"
+          >
+            {displayText
+              ? <span style={expired ? s.expiredDateBadge : s.featuredDateBadge}>{displayText}{expired ? ' ⚠' : ''}</span>
+              : <span style={{ color: '#bbb', fontSize: 12 }}>Set date…</span>}
+            {status === 'saving' && <span style={s.savingDot}>●</span>}
+            {status === 'saved'  && <span style={s.savedDot}>●</span>}
+            {status === 'error'  && <span style={s.errorDot}>●</span>}
+          </span>
+        )}
+      </td>
+    )
+  }
+
+  // ── stars ──
   if (field.type === 'stars') {
     const num = Number(record[field.key]) || 0
     return (
-      <td style={s.td}>
+      <td style={tdStyle}>
         <span style={{ color: '#f59e0b', fontSize: 15, letterSpacing: 1 }}>
           {'★'.repeat(num)}
           <span style={{ color: '#e5e7eb' }}>{'★'.repeat(5 - num)}</span>
@@ -383,7 +545,7 @@ function Cell({ record, field, onSave }) {
   // ── boolean ──
   if (field.type === 'boolean') {
     return (
-      <td style={s.td}>
+      <td style={tdStyle}>
         <span style={s.boolBadge(val)} onClick={async () => {
           const next = !val
           setVal(next)
@@ -408,19 +570,9 @@ function Cell({ record, field, onSave }) {
   // ── select ──
   if (field.type === 'select') {
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
-
-    let badge = null
-    if (field.key === 'approval_status') {
-      badge = <span style={s.approvalBadge(val)}>{val || '—'}</span>
-    } else if (field.key === 'status') {
-      badge = <span style={s.claimBadge(val)}>{val || '—'}</span>
-    } else if (field.key === 'moderation_status') {
-      badge = <span style={s.reviewBadge(val)}>{val || '—'}</span>
-    }
-
     return (
-      <td style={s.td}>
-        <select value={val || ''} style={{ ...s.inlineSelect }}
+      <td style={tdStyle}>
+        <select value={val || ''} style={s.inlineSelect}
           onChange={async e => {
             const next = e.target.value
             setVal(next)
@@ -447,7 +599,7 @@ function Cell({ record, field, onSave }) {
     const arr = Array.isArray(val) ? val : (val ? [val] : [])
     const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
     return (
-      <td style={s.td}>
+      <td style={tdStyle}>
         {editing ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, minWidth: 160 }}>
             {field.options.map(o => {
@@ -489,25 +641,29 @@ function Cell({ record, field, onSave }) {
   // ── email-link ──
   if (field.type === 'email-link') {
     return (
-      <td style={s.td}>
+      <td style={tdStyle}>
         <a href={'mailto:' + (val || '')} style={{ color: '#1b3a5c', fontSize: 13 }}>{val || '—'}</a>
       </td>
     )
   }
 
   // ── text / number ──
-  const cfg = Object.values(TABLE_CONFIG).find(c => c.fields.includes(field))
   return (
-    <td style={s.td}>
+    <td style={tdStyle}>
       {editing ? (
         <input
           type={field.type === 'number' ? 'number' : 'text'}
           value={val || ''}
           autoFocus
-          style={{ ...s.inlineInput, border: '1px solid #93c5fd', background: '#f0f7ff', width: field.type === 'number' ? 60 : 'auto', minWidth: field.type === 'number' ? 60 : 100 }}
+          style={{ ...s.inlineInput, border: '1px solid #93c5fd', background: '#f0f7ff',
+            width: field.type === 'number' ? 60 : 'auto',
+            minWidth: field.type === 'number' ? 60 : 100 }}
           onChange={e => setVal(field.type === 'number' ? Number(e.target.value) : e.target.value)}
           onBlur={() => save(val)}
-          onKeyDown={e => { if (e.key === 'Enter') save(val); if (e.key === 'Escape') { setVal(record[field.key]); setEditing(false) } }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') save(val)
+            if (e.key === 'Escape') { setVal(record[field.key]); setEditing(false) }
+          }}
         />
       ) : (
         <span
@@ -525,16 +681,19 @@ function Cell({ record, field, onSave }) {
   )
 }
 
-// ── Table view ──────────────────────────────────────────────────────
+// ── Table view ───────────────────────────────────────────────────────
 function AdminTable({ tabName }) {
   const cfg = TABLE_CONFIG[tabName]
+  const isFeaturedTab = tabName === 'Featured Coaches' || tabName === 'Featured Facilities'
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [featuredOnly, setFeaturedOnly] = useState(true)
 
   useEffect(() => {
     setLoading(true)
     setSearch('')
+    setFeaturedOnly(true)
     supabase
       .from(cfg.table)
       .select(cfg.selectQuery || '*')
@@ -543,6 +702,7 @@ function AdminTable({ tabName }) {
   }, [tabName])
 
   const filtered = rows.filter(r => {
+    if (isFeaturedTab && featuredOnly && !r.featured_status) return false
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return Object.values(r).some(v => {
@@ -559,34 +719,51 @@ function AdminTable({ tabName }) {
 
   return (
     <div style={s.card}>
-      <div style={s.toolbar}>
+      <div style={isFeaturedTab ? s.featuredToolbar : s.toolbar}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={'Search ' + tabName.toLowerCase() + '…'}
           style={s.searchInput}
         />
+        {isFeaturedTab && (
+          <button
+            style={s.filterToggle(featuredOnly)}
+            onClick={() => setFeaturedOnly(f => !f)}
+          >
+            {featuredOnly ? '★ Featured only' : 'All records'}
+          </button>
+        )}
         <span style={s.countBadge}>{filtered.length} of {rows.length} records</span>
       </div>
       <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 310px)' }}>
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading…</div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>No records found</div>
+          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>
+            {isFeaturedTab && featuredOnly
+              ? 'No featured records yet — toggle to promote one.'
+              : 'No records found'}
+          </div>
         ) : (
           <table style={s.table}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               <tr>
-                {cfg.fields.map(f => <th key={f.key} style={s.th}>{f.label}</th>)}
+                {cfg.fields.map(f => (
+                  <th key={f.key} style={isFeaturedTab ? s.featuredTh : s.th}>{f.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map(record => (
-                <tr key={record.id} style={{ background: '#fff' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f8f9fb'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                <tr
+                  key={record.id}
+                  style={{ background: isFeaturedTab && record.featured_status ? '#fffdf5' : '#fff' }}
+                  onMouseEnter={e => e.currentTarget.style.background = isFeaturedTab ? '#fffbeb' : '#f8f9fb'}
+                  onMouseLeave={e => e.currentTarget.style.background = isFeaturedTab && record.featured_status ? '#fffdf5' : '#fff'}
+                >
                   {cfg.fields.map(field => (
-                    <Cell key={field.key} record={record} field={field} onSave={handleSave} />
+                    <Cell key={field.key} record={record} field={field} onSave={handleSave} isFeaturedTab={isFeaturedTab} />
                   ))}
                 </tr>
               ))}
@@ -598,10 +775,12 @@ function AdminTable({ tabName }) {
   )
 }
 
-// ── Main ────────────────────────────────────────────────────────────
+// ── Main ─────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(sessionStorage.getItem('admin_unlocked') === '1')
   const [activeTab, setActiveTab] = useState('Coaches')
+
+  const featuredTabs = ['Featured Coaches', 'Featured Facilities']
 
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />
 
@@ -611,17 +790,25 @@ export default function AdminPage() {
         <span style={{ fontSize: 22 }}>⚾</span>
         <h1 style={s.headerTitle}>Sandlot Source</h1>
         <span style={s.headerBadge}>Admin</span>
-        <button onClick={() => { sessionStorage.removeItem('admin_unlocked'); setUnlocked(false) }}
+        <button
+          onClick={() => { sessionStorage.removeItem('admin_unlocked'); setUnlocked(false) }}
           style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.12)', color: '#fff',
             border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '5px 14px',
-            fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+            fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+        >
           Log out
         </button>
       </div>
       <div style={s.body}>
         <div style={s.tabs}>
           {TABS.map(t => (
-            <button key={t} style={s.tab(activeTab === t)} onClick={() => setActiveTab(t)}>{t}</button>
+            <button
+              key={t}
+              style={featuredTabs.includes(t) ? s.featuredTab(activeTab === t) : s.tab(activeTab === t)}
+              onClick={() => setActiveTab(t)}
+            >
+              {featuredTabs.includes(t) ? ('★ ' + t) : t}
+            </button>
           ))}
         </div>
         <AdminTable key={activeTab} tabName={activeTab} />
