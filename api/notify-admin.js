@@ -41,9 +41,13 @@ export default async function handler(req, res) {
   // Supabase webhooks send: { type, table, record, schema, old_record }
   const { table, record } = req.body;
 
-  if (!table || !record?.id) {
-    return res.status(400).json({ error: 'Missing table or record' });
-  }
+  if (!table || !record) {
+  return res.status(400).json({ error: 'Missing table or record' });
+}
+
+if (table !== 'reviews' && !record?.id) {
+  return res.status(400).json({ error: 'Missing record id' });
+}
 
   const buildEmail = templateMap[table];
   if (!buildEmail) {
@@ -51,7 +55,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const token = generateToken(table, record.id);
+    const token = record?.id ? generateToken(table, record.id) : null;
 
     // Run duplicate check only for listing-style submissions — never blocks the email even if it fails
     const duplicates = ['coaches', 'travel_teams', 'player_board', 'facilities'].includes(table)
