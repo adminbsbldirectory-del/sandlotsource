@@ -107,9 +107,11 @@ export default function CoachProfile({ coach, onClose }) {
       moderation_status: 'pending',
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
   .from('reviews')
   .insert(payload)
+  .select('id')
+  .single()
 
 if (!error) {
   try {
@@ -120,6 +122,7 @@ if (!error) {
         table: 'reviews',
         record: {
           ...payload,
+          id: data?.id,
           coach_name: coach.name,
           coach_sport: coach.sport,
         },
