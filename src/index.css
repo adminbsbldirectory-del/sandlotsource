@@ -33,11 +33,27 @@
 }
 
 html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
   height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   font-family: var(--font-body);
   background: var(--cream);
   color: var(--navy);
 }
+
+body {
+  position: relative;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img, svg, video, canvas, iframe {
+  max-width: 100%;
+}
+
 
 /* ── Buttons ─────────────────────────────────────────── */
 button {
