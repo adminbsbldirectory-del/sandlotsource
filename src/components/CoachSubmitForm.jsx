@@ -5,6 +5,7 @@ import ZipField from './submit/ZipField.jsx'
 import FacilitySearchSelect from './submit/FacilitySearchSelect.jsx'
 import CoachContactSocialSection from './submit/CoachContactSocialSection.jsx'
 import SocialInput from './submit/SocialInput.jsx'
+import FacilityContactSection from './submit/FacilityContactSection.jsx'
 
 import {
   applyResolvedCoordsPreservingLocality,
@@ -2444,54 +2445,14 @@ function FacilityForm({ isMobile }) {
         </div>
       </div>
 
-      <div className="form-section">
-        <div className="form-section-title">3. Contact</div>
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Facility Phone</label>
-            <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Facility Email</label>
-            <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="info@facility.com" style={inputStyle} />
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Website</label>
-            <input value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Instagram</label>
-            <SocialInput prefix="@" value={form.instagram} onChange={(v) => set('instagram', v)} placeholder="handle" />
-          </div>
-          <div>
-            <label style={labelStyle}>Facebook</label>
-            <SocialInput prefix="facebook.com/" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="page name" />
-          </div>
-        </div>
-
-        <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '14px', border: '1px solid var(--lgray)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Your Contact Info (not public)
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Your Name <RequiredMark /></label>
-              <input value={form.contact_name} onChange={(e) => set('contact_name', e.target.value)} placeholder="Full name" style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Your Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
-              <input type="email" value={form.contact_email} onChange={(e) => set('contact_email', e.target.value)} placeholder="you@example.com" style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Your Phone</label>
-              <input type="tel" value={form.contact_phone} onChange={(e) => set('contact_phone', e.target.value)} placeholder="770-555-0100" style={inputStyle} />
-            </div>
-          </div>
-        </div>
-      </div>
+            <FacilityContactSection
+        form={form}
+        setField={set}
+        g2={g2}
+        g3={g3}
+        labelStyle={labelStyle}
+        inputStyle={inputStyle}
+      />
 
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Submission Notes</label>
