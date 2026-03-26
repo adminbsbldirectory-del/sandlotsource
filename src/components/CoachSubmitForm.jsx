@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js'
 import DuplicateWarning from './DuplicateWarning.jsx'
 import ZipField from './submit/ZipField.jsx'
 import FacilitySearchSelect from './submit/FacilitySearchSelect.jsx'
+import SocialInput from './submit/SocialInput.jsx'
 
 import {
   applyResolvedCoordsPreservingLocality,
@@ -491,15 +492,6 @@ function DistanceSlider({ value, onChange }) {
       <select value={value} onChange={(e) => onChange(Number(e.target.value))} style={selectStyle}>
         {TRAVEL_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-    </div>
-  )
-}
-
-function SocialInput({ prefix, value, onChange, placeholder }) {
-  return (
-    <div className="input-prefix-wrap">
-      <span className="input-prefix">{prefix}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </div>
   )
 }
