@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js'
 import DuplicateWarning from './DuplicateWarning.jsx'
 import ZipField from './submit/ZipField.jsx'
 import FacilitySearchSelect from './submit/FacilitySearchSelect.jsx'
+import CoachContactSocialSection from './submit/CoachContactSocialSection.jsx'
 import SocialInput from './submit/SocialInput.jsx'
 
 import {
@@ -816,7 +817,7 @@ function CoachForm({ isMobile }) {
         </div>
       </div>
 
-      <div className="form-section">
+            <div className="form-section">
         <div className="form-section-title">2. Professional Specs</div>
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Specialty</label>
@@ -884,49 +885,20 @@ function CoachForm({ isMobile }) {
         </div>
       </div>
 
-      <div className="form-section">
-        <div className="form-section-title">3. Contact &amp; Social</div>
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>Your Role <RequiredMark /></label>
-          <input value={form.contact_role} onChange={(e) => set('contact_role', e.target.value)} placeholder="e.g. Coach (self), Facility Owner, Parent submitting for coach" style={inputStyle} />
-          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Helps us understand your relationship to this listing</div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
-            <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="coach@example.com" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Phone</label>
-            <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="e.g. 770-555-0100" style={inputStyle} />
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Website</label>
-            <input value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://..." style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>Instagram</label>
-            <SocialInput prefix="@" value={form.instagram} onChange={(v) => set('instagram', v)} placeholder="handle" />
-          </div>
-          <div>
-            <label style={labelStyle}>Facebook</label>
-            <SocialInput prefix="facebook.com/" value={form.facebook} onChange={(v) => set('facebook', v)} placeholder="page name" />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 0 }}>
-          <label style={labelStyle}>Submission Notes</label>
-          <textarea value={form.submission_notes} onChange={(e) => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know when reviewing this listing?" style={textareaStyle} />
-        </div>
-      </div>
+      <CoachContactSocialSection
+        form={form}
+        setField={set}
+        g2={g2}
+        g3={g3}
+        labelStyle={labelStyle}
+        inputStyle={inputStyle}
+        textareaStyle={textareaStyle}
+      />
 
       <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
         All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
       </div>
+
 
       <FieldError msg={error} />
 
