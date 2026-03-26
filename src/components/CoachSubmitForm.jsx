@@ -11,6 +11,7 @@ import TeamContactSection from './submit/TeamContactSection.jsx'
 import FacilityAmenitiesDetailsSection from './submit/FacilityAmenitiesDetailsSection.jsx'
 import CoachProfessionalSpecsSection from './submit/CoachProfessionalSpecsSection.jsx'
 import FacilityBasicsSection from './submit/FacilityBasicsSection.jsx'
+import CoachBasicsSection from './submit/CoachBasicsSection.jsx'
 
 import {
   applyResolvedCoordsPreservingLocality,
@@ -618,7 +619,7 @@ function CoachForm({ isMobile }) {
 
     setAddrStatus('found')
   }
-  
+
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
     if (!form.sport) return 'Sport is required.'
@@ -746,7 +747,7 @@ function CoachForm({ isMobile }) {
         }}
       />
 
-            <FacilityBasicsSection
+      <CoachBasicsSection
         form={form}
         setField={set}
         g2={g2}
@@ -757,11 +758,10 @@ function CoachForm({ isMobile }) {
         addrStatus={addrStatus}
         handleAddressBlur={handleAddressBlur}
         handleZipGeocode={handleZipGeocode}
-        facilityTypeOptions={FACILITY_TYPE_OPTIONS}
         stateOptions={US_STATE_ABBRS}
       />
 
-       <CoachProfessionalSpecsSection
+      <CoachProfessionalSpecsSection
         form={form}
         setField={set}
         g2={g2}
@@ -786,7 +786,6 @@ function CoachForm({ isMobile }) {
       <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>
         All listings are reviewed before going live. Fields marked <span style={{ color: 'var(--red)' }}>*</span> are required.
       </div>
-
 
       <FieldError msg={error} />
 
@@ -1060,16 +1059,16 @@ function TeamForm({ isMobile }) {
       setSubmitting(false)
     }
   }
-  
+
   if (submitted) {
     return <SuccessBanner message="Your travel team has been submitted for review. We'll have it live within a few days." />
   }
 
   return (
     <div>
-
       <div className="form-section">
         <div className="form-section-title">1. The Basics</div>
+
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>Sport <RequiredMark /></label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1083,8 +1082,8 @@ function TeamForm({ isMobile }) {
                   borderRadius: 8,
                   border: '2px solid',
                   cursor: 'pointer',
-                  borderColor: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'var(--lgray)',
-                  background: form.sport === s ? (s === 'softball' ? '#7C3AED' : 'var(--navy)') : 'white',
+                  borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
+                  background: form.sport === s ? 'var(--navy)' : 'white',
                   color: form.sport === s ? 'white' : 'var(--navy)',
                   fontWeight: 600,
                   fontSize: 13,
@@ -1098,85 +1097,104 @@ function TeamForm({ isMobile }) {
           </div>
         </div>
 
-       <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-  <div>
-    <label style={labelStyle}>Team Name <RequiredMark /></label>
-    <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Cherokee Nationals 12U" style={inputStyle} />
-  </div>
-  <div>
-    <label style={labelStyle}>Age Group <RequiredMark /></label>
-    <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
-      <option value="">Select</option>
-      {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
-    </select>
-  </div>
-</div>
+        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={labelStyle}>Team Name <RequiredMark /></label>
+            <input
+              value={form.name}
+              onChange={(e) => set('name', e.target.value)}
+              placeholder="e.g. Georgia Bombers 12U"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Organization / Affiliation</label>
+            <input
+              value={form.org_affiliation}
+              onChange={(e) => set('org_affiliation', e.target.value)}
+              placeholder="e.g. Georgia Bombers"
+              style={inputStyle}
+            />
+          </div>
+        </div>
 
-<div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-  <div>
-    <label style={labelStyle}>Sanctioning Body / League</label>
-    <select value={form.org_affiliation} onChange={(e) => set('org_affiliation', e.target.value)} style={selectStyle}>
-      <option value="">Select</option>
-      {TEAM_SANCTION_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-    </select>
-  </div>
-  <div>
-    <label style={labelStyle}>Team Classification</label>
-    <select value={form.classification} onChange={(e) => set('classification', e.target.value)} style={selectStyle}>
-      <option value="">Select</option>
-      {classificationOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-    </select>
-  </div>
-</div>
+        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={labelStyle}>Classification</label>
+            <select
+              value={form.classification}
+              onChange={(e) => set('classification', e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              {classificationOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Age Group <RequiredMark /></label>
+            <input
+              value={form.age_group}
+              onChange={(e) => set('age_group', e.target.value)}
+              placeholder="e.g. 12U"
+              style={inputStyle}
+            />
+          </div>
+        </div>
 
-<div style={{
-  background: '#F8FAFC',
-  border: '1px solid #E2E8F0',
-  borderRadius: 10,
-  padding: '12px 14px',
-  marginBottom: 14,
-  fontSize: 12,
-  color: 'var(--gray)',
-  lineHeight: 1.5,
-}}>
-  Use this section for the team-specific field or practice location families should expect most often. This location drives the team map pin.
-</div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>
+            Practice / Home Field Address <RequiredMark />
+            {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
+            {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
+            {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
+            {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
+          </label>
+          <input
+            value={form.address}
+            onChange={(e) => set('address', e.target.value)}
+            onBlur={handlePracticeAddressBlur}
+            placeholder="Required for accurate map placement"
+            style={inputStyle}
+          />
+        </div>
 
-<div style={{ marginBottom: 14 }}>
-  <label style={labelStyle}>Practice Location Name</label>
-  <input
-    value={form.practice_location_name}
-    onChange={(e) => set('practice_location_name', e.target.value)}
-    placeholder="e.g. Brook Run Park, Ninth Inning Baseball, Wills Park Field 3"
-    style={inputStyle}
-  />
-</div>
-
-<div style={{ marginBottom: 14 }}>
-  <label style={labelStyle}>
-    Practice Street Address <RequiredMark />
-    {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-    {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-    {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
-    {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
-  </label>
-  <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handlePracticeAddressBlur} placeholder="Required field or park address" style={inputStyle} />
-</div>
-
-<div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 14 }}>
-  <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleGeocode} required hint="Enter zip first to auto-fill city and state" />
-  <div>
-    <label style={labelStyle}>Practice City</label>
-    <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
-  </div>
-  <div>
-    <label style={labelStyle}>Practice State</label>
-    <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
-      <option value="">Select</option>
-      {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
-    </select>
-  </div>
-</div>
+        <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
+          <ZipField
+            value={form.zip_code}
+            onChange={(v) => set('zip_code', v)}
+            onGeocode={handleGeocode}
+            required
+            hint="Enter zip first to auto-fill city and state"
+          />
+          <div>
+            <label style={labelStyle}>Practice City</label>
+            <input
+              value={form.city}
+              onChange={(e) => set('city', e.target.value)}
+              placeholder="Auto-filled from zip"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Practice State</label>
+            <select
+              value={form.state}
+              onChange={(e) => set('state', e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Select</option>
+              {US_STATE_ABBRS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="form-section">
@@ -1262,16 +1280,28 @@ function TeamForm({ isMobile }) {
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--navy)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   Add New Facility
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 12 }}>
                   <div>
                     <label style={labelStyle}>Facility Name <RequiredMark /></label>
-                    <input value={newFacilityForm.name} onChange={(e) => setNewFacility('name', e.target.value)} placeholder="e.g. Grand Slam Johns Creek" style={inputStyle} />
+                    <input
+                      value={newFacilityForm.name}
+                      onChange={(e) => setNewFacility('name', e.target.value)}
+                      placeholder="e.g. Grand Slam Johns Creek"
+                      style={inputStyle}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Facility Phone</label>
-                    <input value={newFacilityForm.phone} onChange={(e) => setNewFacility('phone', e.target.value)} placeholder="Optional" style={inputStyle} />
+                    <input
+                      value={newFacilityForm.phone}
+                      onChange={(e) => setNewFacility('phone', e.target.value)}
+                      placeholder="Optional"
+                      style={inputStyle}
+                    />
                   </div>
                 </div>
+
                 <div style={{ marginBottom: 12 }}>
                   <label style={labelStyle}>
                     Facility Street Address <RequiredMark />
@@ -1280,26 +1310,58 @@ function TeamForm({ isMobile }) {
                     {newFacilityAddrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
                     {newFacilityAddrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
                   </label>
-                  <input value={newFacilityForm.address} onChange={(e) => setNewFacility('address', e.target.value)} onBlur={handleNewFacilityAddressBlur} placeholder="Required for accurate facility placement" style={inputStyle} />
+                  <input
+                    value={newFacilityForm.address}
+                    onChange={(e) => setNewFacility('address', e.target.value)}
+                    onBlur={handleNewFacilityAddressBlur}
+                    placeholder="Required for accurate facility placement"
+                    style={inputStyle}
+                  />
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 12 }}>
-                  <ZipField value={newFacilityForm.zip_code} onChange={(v) => setNewFacility('zip_code', v)} onGeocode={handleNewFacilityZipGeocode} required hint="Enter zip first to auto-fill city and state" />
+                  <ZipField
+                    value={newFacilityForm.zip_code}
+                    onChange={(v) => setNewFacility('zip_code', v)}
+                    onGeocode={handleNewFacilityZipGeocode}
+                    required
+                    hint="Enter zip first to auto-fill city and state"
+                  />
                   <div>
                     <label style={labelStyle}>Facility City</label>
-                    <input value={newFacilityForm.city} onChange={(e) => setNewFacility('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
+                    <input
+                      value={newFacilityForm.city}
+                      onChange={(e) => setNewFacility('city', e.target.value)}
+                      placeholder="Auto-filled from zip"
+                      style={inputStyle}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Facility State</label>
-                    <select value={newFacilityForm.state} onChange={(e) => setNewFacility('state', e.target.value)} style={selectStyle}>
+                    <select
+                      value={newFacilityForm.state}
+                      onChange={(e) => setNewFacility('state', e.target.value)}
+                      style={selectStyle}
+                    >
                       <option value="">Select</option>
-                      {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      {US_STATE_ABBRS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12 }}>
                   <div>
                     <label style={labelStyle}>Facility Website</label>
-                    <input value={newFacilityForm.website} onChange={(e) => setNewFacility('website', e.target.value)} placeholder="Optional" style={inputStyle} />
+                    <input
+                      value={newFacilityForm.website}
+                      onChange={(e) => setNewFacility('website', e.target.value)}
+                      placeholder="Optional"
+                      style={inputStyle}
+                    />
                   </div>
                   <div style={{ fontSize: 11, color: '#888', alignSelf: 'end' }}>
                     This creates a pending facility record using the team contact information from Section 4.
@@ -1311,8 +1373,7 @@ function TeamForm({ isMobile }) {
         )}
       </div>
 
-
-            <TeamTryoutInfoSection
+      <TeamTryoutInfoSection
         form={form}
         setField={set}
         g2={g2}
@@ -1322,7 +1383,7 @@ function TeamForm({ isMobile }) {
         textareaStyle={textareaStyle}
       />
 
-            <TeamContactSection
+      <TeamContactSection
         form={form}
         setField={set}
         g2={g2}
@@ -1939,7 +2000,6 @@ function PlayerForm({ isMobile }) {
   )
 }
 
-
 // ── FACILITY FORM ─────────────────────────────────────────
 function FacilityForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
@@ -2179,82 +2239,22 @@ function FacilityForm({ isMobile }) {
         }}
       />
 
-      <div className="form-section">
-        <div className="form-section-title">1. The Basics</div>
-        <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Sport <RequiredMark /></label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['baseball','softball','both'].map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => set('sport', s)}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: 8,
-                  border: '2px solid',
-                  cursor: 'pointer',
-                  borderColor: form.sport === s ? 'var(--navy)' : 'var(--lgray)',
-                  background: form.sport === s ? 'var(--navy)' : 'white',
-                  color: form.sport === s ? 'white' : 'var(--navy)',
-                  fontWeight: 600,
-                  fontSize: 13,
-                  textTransform: 'capitalize',
-                  fontFamily: 'var(--font-body)',
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
+      <FacilityBasicsSection
+        form={form}
+        setField={set}
+        g2={g2}
+        g3={g3}
+        labelStyle={labelStyle}
+        inputStyle={inputStyle}
+        selectStyle={selectStyle}
+        addrStatus={addrStatus}
+        handleAddressBlur={handleAddressBlur}
+        handleZipGeocode={handleZipGeocode}
+        facilityTypeOptions={FACILITY_TYPE_OPTIONS}
+        stateOptions={US_STATE_ABBRS}
+      />
 
-        <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-          <div>
-            <label style={labelStyle}>Facility Name <RequiredMark /></label>
-            <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Grit Academy Athletics" style={inputStyle} />
-            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-              We will suggest an existing facility when the name or address looks close to one already on the site.
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>Facility Type</label>
-            <select value={form.facility_type} onChange={(e) => set('facility_type', e.target.value)} style={selectStyle}>
-              <option value="">Select type</option>
-              {FACILITY_TYPE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 14 }}>
-          <label style={labelStyle}>
-            Street Address <RequiredMark />
-            {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-            {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-            {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
-            {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
-          </label>
-          <input value={form.address} onChange={(e) => set('address', e.target.value)} onBlur={handleAddressBlur} placeholder="e.g. 5735 North Commerce Court" style={inputStyle} />
-          <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter the full street address for the most accurate facility pin possible.</div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 0 }}>
-          <ZipField value={form.zip_code} onChange={(v) => set('zip_code', v)} onGeocode={handleZipGeocode} required hint="Enter zip first to auto-fill city and state" />
-          <div>
-            <label style={labelStyle}>City</label>
-            <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Auto-filled from zip" style={inputStyle} />
-          </div>
-          <div>
-            <label style={labelStyle}>State</label>
-            <select value={form.state} onChange={(e) => set('state', e.target.value)} style={selectStyle}>
-              <option value="">Select</option>
-              {US_STATE_ABBRS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
-
-            <FacilityAmenitiesDetailsSection
+      <FacilityAmenitiesDetailsSection
         form={form}
         setField={set}
         amenityOptions={AMENITY_OPTIONS}
@@ -2264,7 +2264,7 @@ function FacilityForm({ isMobile }) {
         textareaStyle={textareaStyle}
       />
 
-            <FacilityContactSection
+      <FacilityContactSection
         form={form}
         setField={set}
         g2={g2}
