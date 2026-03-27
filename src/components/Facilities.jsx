@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
+import AdSlot from './AdSlot.jsx'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -1181,7 +1182,20 @@ export default function Facilities() {
                     {selFacility && <FacilityPreviewCard facility={selFacility} onClose={closeFacilityPreview} detailHref={buildFacilityDetailHref(selFacility?.id)} />}
                   </div>
                 </main>
-                <aside style={{ position: 'sticky', top: 76, alignSelf: 'start', padding: '8px 0 0 0', width: '230px', justifySelf: 'end' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}><AdBox /><AdBox /><AdBox /></div></aside>
+                <aside
+                  style={{
+                    position: 'sticky',
+                    top: 76,
+                    alignSelf: 'start',
+                    padding: '8px 0 0 0',
+                    width: '230px',
+                    justifySelf: 'end',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <AdSlot slotKey="facilities_right_rail_1_desktop" />
+                  </div>
+                </aside>
               </div>
             </div>
           </div>
