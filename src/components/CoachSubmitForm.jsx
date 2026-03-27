@@ -32,6 +32,26 @@ import {
   resolveBestLocation,
 } from '../lib/submit/geocode.js'
 
+const BLOCKED_GEOCODE_ERROR_PREFIX = 'We could not confidently place that street address.'
+
+function isBlockedGeocodeFailure(message) {
+  return String(message || '').includes(BLOCKED_GEOCODE_ERROR_PREFIX)
+}
+
+async function notifyBlockedGeocodeSubmit(payload) {
+  try {
+    await fetch('/api/notify-blocked-geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...payload,
+        timestamp: new Date().toISOString(),
+      }),
+    })
+  } catch (err) {
+    console.error('Blocked geocode notification failed', err)
+  }
+}
 
 function normalizeFacilityName(value) {
   return String(value || '')
@@ -665,6 +685,21 @@ function CoachForm({ isMobile }) {
         })
 
         if (!finalLocation.ok) {
+          if (isBlockedGeocodeFailure(finalLocation.error)) {
+            await notifyBlockedGeocodeSubmit({
+              listing_type: 'coach',
+              submitted_name: form.name,
+              address: form.address,
+              city: form.city,
+              state: form.state,
+              zip: form.zip_code,
+              contact_name: form.name,
+              contact_email: form.email,
+              contact_phone: form.phone,
+              reason: finalLocation.error,
+            })
+          }
+
           setError(finalLocation.error)
           setSubmitting(false)
           return
@@ -994,29 +1029,63 @@ function TeamForm({ isMobile }) {
         addressRequired: true,
       })
 
-      if (!practiceLocation.ok) {
-        setError(practiceLocation.error)
-        setSubmitting(false)
-        return
+    if (!practiceLocation.ok) {
+      if (isBlockedGeocodeFailure(practiceLocation.error)) {
+        await notifyBlockedGeocodeSubmit({
+          listing_type: 'team',
+          submitted_name: form.name,
+          address: form.address,
+          city: form.city,
+          state: form.state,
+          zip: form.zip_code,
+          contact_name: form.contact_name,
+          contact_email: form.contact_email,
+          contact_phone: form.contact_phone,
+          reason: practiceLocation.error,
+        })
       }
+
+      setError(practiceLocation.error)
+      setSubmitting(false)
+      return
+    }
 
       let resolvedForm = applyResolvedCoordsPreservingLocality({ ...form }, practiceLocation.resolved)
 
       let facilityRecord = selectedFacility
       if (linkToFacility && !selectedFacility && showCreateFacilityForm) {
-        facilityRecord = await createPendingFacilityRecord({
-          facility: newFacilityForm,
-          sport: form.sport,
-          contactName: form.contact_name,
-          contactEmail: form.contact_email,
-          contactPhone: form.contact_phone,
-          submissionNotes: appendLabeledNote(
-            appendLabeledNote('', 'Created from', 'Travel team submission'),
-            'Team',
-            form.name,
-          ),
-          source: 'team_submission_inline_facility',
-        })
+        try {
+          facilityRecord = await createPendingFacilityRecord({
+            facility: newFacilityForm,
+            sport: form.sport,
+            contactName: form.contact_name,
+            contactEmail: form.contact_email,
+            contactPhone: form.contact_phone,
+            submissionNotes: appendLabeledNote(
+              appendLabeledNote('', 'Created from', 'Travel team submission'),
+              'Team',
+              form.name,
+            ),
+            source: 'team_submission_inline_facility',
+          })
+        } catch (facilityErr) {
+          if (isBlockedGeocodeFailure(facilityErr?.message)) {
+            await notifyBlockedGeocodeSubmit({
+              listing_type: 'team',
+              submitted_name: form.name,
+              address: newFacilityForm.address,
+              city: newFacilityForm.city,
+              state: newFacilityForm.state,
+              zip: newFacilityForm.zip_code,
+              contact_name: form.contact_name,
+              contact_email: form.contact_email,
+              contact_phone: form.contact_phone,
+              reason: `Inline facility address failed geocode: ${facilityErr.message}`,
+            })
+          }
+
+          throw facilityErr
+        }
       }
 
       const finalLat = resolvedForm.lat != null ? parseFloat(resolvedForm.lat) : null
@@ -1887,6 +1956,21 @@ function FacilityForm({ isMobile }) {
       })
 
       if (!finalLocation.ok) {
+        if (isBlockedGeocodeFailure(finalLocation.error)) {
+          await notifyBlockedGeocodeSubmit({
+            listing_type: 'facility',
+            submitted_name: form.name,
+            address: form.address,
+            city: form.city,
+            state: form.state,
+            zip: form.zip_code,
+            contact_name: form.contact_name,
+            contact_email: form.contact_email,
+            contact_phone: form.contact_phone,
+            reason: finalLocation.error,
+          })
+        }
+
         setError(finalLocation.error)
         setSubmitting(false)
         return
