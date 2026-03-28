@@ -3197,7 +3197,7 @@ export default function CoachDirectory() {
               <aside
                 style={{
                   position: "sticky",
-                  top: 76,
+                  top: HEADER_H + 12,
                   alignSelf: "start",
                   background: "var(--white)",
                   borderRight: "1px solid rgba(15,23,42,0.06)",
@@ -3549,16 +3549,14 @@ export default function CoachDirectory() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) 230px",
+                    gridTemplateColumns: "minmax(0, 1fr) 300px",
                     gap: 22,
                     alignItems: "start",
                   }}
                 >
                   <main style={{ minWidth: 0 }}>
-                    {showMap && hasLocationSearch && (
-                      <div
-                        style={{ background: "var(--white)", width: "100%" }}
-                      >
+                    {showMap && (
+                      <div style={{ background: "var(--white)", width: "100%" }}>
                         <div
                           style={{
                             height: 355,
@@ -3598,22 +3596,7 @@ export default function CoachDirectory() {
                         <MapLegend />
                       </div>
                     )}
-                    {!hasLocationSearch ? (
-                      <div
-                        style={{
-                          background: "var(--white)",
-                          border: "1px solid rgba(15,23,42,0.06)",
-                          borderRadius: 14,
-                          padding: "16px",
-                          color: "var(--gray)",
-                          fontSize: 13,
-                          width: "100%",
-                        }}
-                      >
-                        Enter a ZIP code and radius in the left panel to load
-                        nearby coaches and center the map.
-                      </div>
-                    ) : !showMap ? (
+                    {!showMap ? (
                       <div
                         style={{
                           background: "var(--white)",
@@ -3785,10 +3768,10 @@ export default function CoachDirectory() {
                   <aside
                     style={{
                       position: "sticky",
-                      top: 76,
+                      top: HEADER_H + 12,
                       alignSelf: "start",
                       padding: "8px 0 0 0",
-                      width: "230px",
+                      width: "300px",
                       justifySelf: "end",
                     }}
                   >
