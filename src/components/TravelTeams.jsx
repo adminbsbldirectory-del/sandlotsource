@@ -13,6 +13,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
+const HEADER_H = 75
+
 const PIN_COLORS = {
   baseball: '#2563EB',
   softball: '#FACC15',
@@ -317,50 +319,78 @@ function MapLegend({ hasPins }) {
   )
 }
 
-function SponsoredSlotShell({
-  slotKey,
-  minHeight = 120,
-  label = 'Sponsored',
-  outerStyle = {},
-  shellStyle = {},
-  slotStyle = {},
-}) {
+function DirectoryAdBand({ slotKey, maxWidth, reservedHeight, isMobile, marginTop = 24 }) {
   return (
-    <section style={{ width: '100%', ...outerStyle }}>
+    <div
+      style={{
+        background: '#F5F4F0',
+        borderTop: '1px solid #E2E0DB',
+        borderBottom: '1px solid #E2E0DB',
+        padding: isMobile ? '16px 0' : '18px 0',
+        marginTop,
+      }}
+    >
+      <div style={{ padding: isMobile ? '0 12px' : '0 14px' }}>
+        <div style={{ width: '100%', maxWidth, margin: '0 auto' }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--gray)',
+              margin: '0 0 8px 2px',
+            }}
+          >
+            Sponsored
+          </div>
+
+          <div
+            style={{
+              minHeight: reservedHeight,
+              background: '#fff',
+              border: '1px solid #E2E0DB',
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}
+          >
+            <AdSlot slotKey={slotKey} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RailAdSlot({ slotKey, reservedHeight = 250 }) {
+  return (
+    <div style={{ width: '100%' }}>
       <div
         style={{
           fontSize: 10,
           fontWeight: 800,
-          color: 'rgba(15,23,42,0.42)',
-          letterSpacing: '0.12em',
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          marginBottom: 6,
+          color: 'var(--gray)',
+          margin: '0 0 8px 2px',
         }}
       >
-        {label}
+        Sponsored
       </div>
 
       <div
         style={{
-          minHeight,
+          minHeight: reservedHeight,
           background: '#fff',
-          border: '1px solid rgba(15,23,42,0.08)',
-          borderRadius: 14,
+          border: '1px solid #E2E0DB',
+          borderRadius: 12,
           overflow: 'hidden',
-          ...shellStyle,
+          boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
         }}
       >
-        <AdSlot
-          slotKey={slotKey}
-          style={{
-            border: 'none',
-            borderRadius: 0,
-            background: '#fff',
-            ...slotStyle,
-          }}
-        />
+          <AdSlot slotKey={slotKey} />
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -1144,27 +1174,13 @@ export default function TravelTeams() {
       )}
 
           {!isMobile && (
-      <div
-        style={{
-          marginBottom: 14,
-          paddingTop: 6,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 970,
-            margin: '0 auto',
-          }}
-        >
-          <SponsoredSlotShell
-            slotKey="teams_top_1_desktop"
-            minHeight={90}
-            shellStyle={{
-              borderRadius: 16,
-            }}
-          />
-        </div>
-      </div>
+      <DirectoryAdBand
+        slotKey="teams_top_1_desktop"
+        maxWidth={970}
+        reservedHeight={90}
+        isMobile={false}
+        marginTop={16}
+      />
     )}
 
       <div
@@ -1179,7 +1195,7 @@ export default function TravelTeams() {
         <aside
           style={{
             position: isMobile ? 'static' : 'sticky',
-            top: isMobile ? 'auto' : 76,
+            top: isMobile ? 'auto' : HEADER_H + 12,
             alignSelf: 'start',
             background: 'var(--white)',
             borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
@@ -1430,11 +1446,7 @@ export default function TravelTeams() {
 
           {!isMobile && (
             <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
-              <SponsoredSlotShell
-                slotKey="teams_left_rail_1_desktop"
-                minHeight={180}
-                shellStyle={{ borderRadius: 14 }}
-              />
+              <RailAdSlot slotKey="teams_left_rail_1_desktop" reservedHeight={250} />
             </div>
           )}
         </aside>
@@ -1443,7 +1455,7 @@ export default function TravelTeams() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: !isMobile ? 'minmax(0, 1fr) 230px' : '1fr',
+              gridTemplateColumns: !isMobile ? 'minmax(0, 1fr) 300px' : '1fr',
               gap: isMobile ? 0 : 22,
               alignItems: 'start',
             }}
@@ -1611,12 +1623,13 @@ export default function TravelTeams() {
                 )}
 
                 {isMobile && (
-                  <div style={{ marginTop: 14, marginBottom: 4 }}>
-                    <SponsoredSlotShell
-                      slotKey="teams_inline_1_mobile"
-                      minHeight={110}
-                    />
-                  </div>
+                  <DirectoryAdBand
+                    slotKey="teams_inline_1_mobile"
+                    maxWidth={320}
+                    reservedHeight={100}
+                    isMobile={true}
+                    marginTop={16}
+                  />
                 )}
 
                 <div
@@ -1838,12 +1851,13 @@ export default function TravelTeams() {
               )}
 
               {isMobile && (
-                <div style={{ marginTop: 18, marginBottom: 4 }}>
-                  <SponsoredSlotShell
-                    slotKey="teams_footer_1_mobile"
-                    minHeight={140}
-                  />
-                </div>
+                <DirectoryAdBand
+                  slotKey="teams_footer_1_mobile"
+                  maxWidth={320}
+                  reservedHeight={100}
+                  isMobile={true}
+                  marginTop={20}
+                />
               )}
             </main>
 
@@ -1851,22 +1865,16 @@ export default function TravelTeams() {
               <aside
                 style={{
                   position: 'sticky',
-                  top: 76,
+                  top: HEADER_H + 12,
                   alignSelf: 'start',
                   padding: '8px 0 0 0',
-                  width: '230px',
+                  width: '300px',
                   justifySelf: 'end',
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <SponsoredSlotShell
-                    slotKey="teams_right_rail_1_desktop"
-                    minHeight={180}
-                  />
-                  <SponsoredSlotShell
-                    slotKey="teams_right_rail_2_desktop"
-                    minHeight={180}
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  <RailAdSlot slotKey="teams_right_rail_1_desktop" reservedHeight={250} />
+                  <RailAdSlot slotKey="teams_right_rail_2_desktop" reservedHeight={250} />
                 </div>
               </aside>
             )}
