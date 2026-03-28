@@ -639,8 +639,8 @@ function CoachForm({ isMobile }) {
       zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
-    setAddrStatus('found')
-  }
+      setAddrStatus('found')
+    }
 
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
@@ -1836,6 +1836,7 @@ function FacilityForm({ isMobile }) {
   const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const resolvedAddressRef = useRef(null)
 
   const { matches: facilityMatches, loading: facilityMatchLoading } = useFacilityDuplicateCheck({
     facilityName: form.name,
@@ -1859,6 +1860,8 @@ function FacilityForm({ isMobile }) {
         setAllowCreateNewFacility(false)
         setSelectedFacilityMatch(null)
         setSelectedFacilityId(null)
+        setAddrStatus('')
+        resolvedAddressRef.current = null
       }
       return { ...f, [field]: value }
     })
@@ -1879,21 +1882,32 @@ function FacilityForm({ isMobile }) {
   }
 
   async function handleAddressBlur() {
-    if (!String(form.address || '').trim()) {
+    const cleanAddress = String(form.address || '').trim()
+
+    if (!cleanAddress) {
       setAddrStatus('')
+      resolvedAddressRef.current = null
       return
     }
 
     if (!hasLocationContext(form.city, form.state, form.zip_code)) {
       setAddrStatus('needs_location')
+      resolvedAddressRef.current = null
       return
     }
 
     setAddrStatus('locating')
-    const resolved = await geocodeAddress(form.address, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(cleanAddress, form.city, form.state, form.zip_code)
+
     if (!resolved) {
       setAddrStatus('not_found')
+      resolvedAddressRef.current = null
       return
+    }
+
+    resolvedAddressRef.current = {
+      ...resolved,
+      source: 'address',
     }
 
     setForm((f) => ({
@@ -1906,7 +1920,7 @@ function FacilityForm({ isMobile }) {
     }))
 
     setAddrStatus('found')
-  }
+}
 
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
@@ -1940,13 +1954,15 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      const finalLocation = await finalizeListingLocation({
-        address: form.address,
-        city: form.city,
-        state: form.state,
-        zip: form.zip_code,
-        addressRequired: true,
-      })
+    const finalLocation = await finalizeListingLocation({
+      address: form.address,
+      city: form.city,
+      state: form.state,
+      zip: form.zip_code,
+      addressRequired: true,
+      preResolved: resolvedAddressRef.current,
+      listingName: form.name,
+    })
 
       if (!finalLocation.ok) {
         if (isBlockedGeocodeFailure(finalLocation.error)) {
