@@ -1335,7 +1335,7 @@ function PlayerForm({ isMobile }) {
       if (!form.event_date) return 'Event date is required.'
       if (!form.contact_info.trim()) return 'Contact info is required.'
     } else {
-      if (!form.player_age.toString().trim()) return 'Player age is required.'
+      if (!form.age_group) return 'Age group is required.'
       if (form.player_position.length === 0) return 'Select at least one position.'
       if (!form.zip_code || form.zip_code.length !== 5) return 'Zip code is required.'
       if (!form.contact_info.trim()) return 'Contact info is required.'
@@ -1425,7 +1425,6 @@ function PlayerForm({ isMobile }) {
               event_date: resolvedForm.event_date,
             }
           : {
-              player_age: resolvedForm.player_age ? parseInt(resolvedForm.player_age, 10) : null,
               age_group: resolvedForm.age_group || null,
               player_position: resolvedForm.player_position,
               player_description: resolvedForm.player_description.trim() || null,
@@ -1647,19 +1646,13 @@ function PlayerForm({ isMobile }) {
 
       {postType === 'player_available' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={labelStyle}>Player Age <RequiredMark /></label>
-              <input type="number" min="6" max="99" value={form.player_age} onChange={(e) => set('player_age', e.target.value)} placeholder="e.g. 12" style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>Age Group</label>
-              <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
-                <option value="">Select</option>
-                {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
-              </select>
-            </div>
-          </div>
+          <div style={{ marginBottom: 14, maxWidth: isMobile ? '100%' : 180 }}>
+          <label style={labelStyle}>Age Group <RequiredMark /></label>
+          <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
+            <option value="">Select</option>
+            {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
+          </select>
+         </div>
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Position(s) <RequiredMark /></label>
