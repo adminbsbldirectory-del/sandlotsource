@@ -6,7 +6,7 @@ const NAV_TABS = [
   { id: 'coaches', label: 'Coaches', path: '/coaches' },
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
   { id: 'teams', label: 'Teams', path: '/teams' },
-  { id: 'board', label: 'Pickup Needed · Pickup Wanted', path: '/find' },
+  { id: 'board', label: 'Players Needed & Available', path: '/find' },
   { id: 'roster', label: 'Roster Spots', path: '/roster' },
   { id: 'submit', label: 'Add a Listing', path: '/submit' },
   { id: 'claim', label: 'Claim a Listing', path: '/claim' },
