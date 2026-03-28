@@ -4,15 +4,15 @@ import { useNavigate, useLocation } from 'react-router-dom'
 const NAV_TABS = [
   { id: 'home', label: 'Home', path: '/' },
   { id: 'coaches', label: 'Coaches', path: '/coaches' },
-  { id: 'teams', label: 'Teams', path: '/teams' },
   { id: 'facilities', label: 'Facilities', path: '/facilities' },
+  { id: 'teams', label: 'Teams', path: '/teams' },
   { id: 'board', label: 'Pickup Needed · Pickup Wanted', path: '/find' },
-  { id: 'roster', label: 'Open Roster Spots', path: '/roster' },
+  { id: 'roster', label: 'Roster Spots', path: '/roster' },
   { id: 'submit', label: 'Add a Listing', path: '/submit' },
   { id: 'claim', label: 'Claim a Listing', path: '/claim' },
 ]
 
-const CTA_IDS = ['submit', 'claim']
+const CTA_IDS = ['roster','submit', 'claim']
 const NAVY = '#1b3a5c'
 
 function getActiveTab(pathname) {
