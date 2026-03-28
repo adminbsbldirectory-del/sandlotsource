@@ -4,6 +4,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
+import AdSlot from './AdSlot.jsx'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -26,7 +27,7 @@ const STATUS_STYLE = {
   unknown: { bg: '#F3F4F6', color: '#4B5563', label: 'Status Unknown' },
 }
 
-const AGE_OPTIONS = ['All Ages','6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
+const AGE_OPTIONS = ['All Ages', '6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
 
 const US_STATES = [
   { abbr: 'AL', name: 'Alabama' }, { abbr: 'AK', name: 'Alaska' },
@@ -316,44 +317,50 @@ function MapLegend({ hasPins }) {
   )
 }
 
-function AdBox({ compact = false }) {
+function SponsoredSlotShell({
+  slotKey,
+  minHeight = 120,
+  label = 'Sponsored',
+  outerStyle = {},
+  shellStyle = {},
+  slotStyle = {},
+}) {
   return (
-    <div
-      style={{
-        background: '#F7F3ED',
-        border: '1px dashed #D8D0C5',
-        borderRadius: 14,
-        padding: compact ? '16px 14px' : '24px 16px',
-        textAlign: 'center',
-        minHeight: compact ? 90 : 150,
-      }}
-    >
+    <section style={{ width: '100%', ...outerStyle }}>
       <div
         style={{
-          fontSize: compact ? 13 : 16,
-          fontWeight: 700,
-          color: '#7A6B57',
-          fontFamily: 'var(--font-head)',
-          marginBottom: 8,
+          fontSize: 10,
+          fontWeight: 800,
+          color: 'rgba(15,23,42,0.42)',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          marginBottom: 6,
         }}
       >
-        ADVERTISE HERE
+        {label}
       </div>
-      <div style={{ fontSize: compact ? 12 : 14, lineHeight: 1.5, color: '#9A8A75', marginBottom: 10 }}>
-        Reach baseball &amp; softball families
-      </div>
-      <a
-        href="/contact"
+
+      <div
         style={{
-          color: 'var(--red)',
-          fontWeight: 700,
-          textDecoration: 'none',
-          fontSize: compact ? 12 : 14,
+          minHeight,
+          background: '#fff',
+          border: '1px solid rgba(15,23,42,0.08)',
+          borderRadius: 14,
+          overflow: 'hidden',
+          ...shellStyle,
         }}
       >
-        Contact Us
-      </a>
-    </div>
+        <AdSlot
+          slotKey={slotKey}
+          style={{
+            border: 'none',
+            borderRadius: 0,
+            background: '#fff',
+            ...slotStyle,
+          }}
+        />
+      </div>
+    </section>
   )
 }
 
@@ -931,7 +938,6 @@ export default function TravelTeams() {
     }
   }
 
-
   useEffect(() => {
     const handler = () => {
       const mobile = window.innerWidth < 768
@@ -1069,7 +1075,6 @@ export default function TravelTeams() {
     return () => clearTimeout(t)
   }, [selectedTeamId, isMobile])
 
-
   const selectedTeam = useMemo(() => {
     return filtered.find((team) => team.id === selectedTeamId) || teams.find((team) => team.id === selectedTeamId) || null
   }, [filtered, teams, selectedTeamId])
@@ -1136,6 +1141,21 @@ export default function TravelTeams() {
               encodeURIComponent('Claim Request: ' + team.name)
           }}
         />
+      )}
+
+      {!isMobile && (
+        <div style={{ marginBottom: 14 }}>
+          <SponsoredSlotShell
+            slotKey="teams_top_1_desktop"
+            minHeight={86}
+            outerStyle={{
+              paddingTop: 6,
+            }}
+            shellStyle={{
+              borderRadius: 16,
+            }}
+          />
+        </div>
       )}
 
       <div
@@ -1350,7 +1370,9 @@ export default function TravelTeams() {
               </select>
             </div>
 
-            <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>Search</button>
+            <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>
+              Search
+            </button>
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -1399,7 +1421,11 @@ export default function TravelTeams() {
 
           {!isMobile && (
             <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
-              <AdBox compact />
+              <SponsoredSlotShell
+                slotKey="teams_left_rail_1_desktop"
+                minHeight={180}
+                shellStyle={{ borderRadius: 14 }}
+              />
             </div>
           )}
         </aside>
@@ -1572,6 +1598,15 @@ export default function TravelTeams() {
                     }}
                   >
                     Map is hidden. Use “Show Map” in the left panel to view team locations.
+                  </div>
+                )}
+
+                {isMobile && (
+                  <div style={{ marginTop: 14, marginBottom: 4 }}>
+                    <SponsoredSlotShell
+                      slotKey="teams_inline_1_mobile"
+                      minHeight={110}
+                    />
                   </div>
                 )}
 
@@ -1792,6 +1827,15 @@ export default function TravelTeams() {
                   )}
                 </div>
               )}
+
+              {isMobile && (
+                <div style={{ marginTop: 18, marginBottom: 4 }}>
+                  <SponsoredSlotShell
+                    slotKey="teams_footer_1_mobile"
+                    minHeight={140}
+                  />
+                </div>
+              )}
             </main>
 
             {!isMobile && (
@@ -1805,10 +1849,15 @@ export default function TravelTeams() {
                   justifySelf: 'end',
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <AdBox />
-                  <AdBox />
-                  <AdBox />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <SponsoredSlotShell
+                    slotKey="teams_right_rail_1_desktop"
+                    minHeight={180}
+                  />
+                  <SponsoredSlotShell
+                    slotKey="teams_right_rail_2_desktop"
+                    minHeight={180}
+                  />
                 </div>
               </aside>
             )}
