@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { supabase } from "../supabase.js";
+import AdSlot from "./AdSlot.jsx";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -41,61 +42,6 @@ function getPinColor(post) {
   }
 
   return sport === "softball" ? "#CCE500" : "#0B2341";
-}
-
-function AdBox() {
-  return (
-    <div
-      style={{
-        background: "#FAF7F1",
-        border: "1px solid rgba(15,23,42,0.05)",
-        borderRadius: 14,
-        padding: "20px 16px",
-        textAlign: "center",
-        minHeight: 146,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "var(--font-head)",
-          fontWeight: 800,
-          fontSize: 18,
-          color: "var(--navy)",
-          marginBottom: 10,
-          lineHeight: 1.05,
-        }}
-      >
-        ADVERTISE
-        <br />
-        HERE
-      </div>
-      <div
-        style={{
-          color: "var(--gray)",
-          fontSize: 13,
-          lineHeight: 1.5,
-          marginBottom: 12,
-        }}
-      >
-        Reach baseball & softball families
-      </div>
-      <a
-        href="/contact"
-        style={{
-          color: "#c62828",
-          fontWeight: 800,
-          textDecoration: "none",
-          fontSize: 13,
-        }}
-      >
-        Contact Us
-      </a>
-    </div>
-  );
 }
 
 async function geocodeZip(zip) {
@@ -386,6 +332,87 @@ function MapViewport({ posts, showFullUS }) {
   }, [posts, map, showFullUS]);
 
   return null;
+}
+
+function DirectoryAdBand({
+  slotKey,
+  maxWidth,
+  reservedHeight,
+  isMobile,
+  marginTop = 24,
+}) {
+  return (
+    <div
+      style={{
+        background: "#F5F4F0",
+        borderTop: "1px solid #E2E0DB",
+        borderBottom: "1px solid #E2E0DB",
+        padding: isMobile ? "16px 0" : "18px 0",
+        marginTop,
+      }}
+    >
+      <div style={{ padding: isMobile ? "0 12px" : "0 14px" }}>
+        <div style={{ width: "100%", maxWidth, margin: "0 auto" }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--gray)",
+              margin: "0 0 8px 2px",
+            }}
+          >
+            Sponsored
+          </div>
+
+          <div
+            style={{
+              minHeight: reservedHeight,
+              background: "#fff",
+              border: "1px solid #E2E0DB",
+              borderRadius: 12,
+              overflow: "hidden",
+            }}
+          >
+            <AdSlot slotKey={slotKey} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RailAdSlot({ slotKey, reservedHeight = 250 }) {
+  return (
+    <div style={{ width: "100%" }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 800,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--gray)",
+          margin: "0 0 8px 2px",
+        }}
+      >
+        Sponsored
+      </div>
+
+      <div
+        style={{
+          minHeight: reservedHeight,
+          background: "#fff",
+          border: "1px solid #E2E0DB",
+          borderRadius: 12,
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(15,23,42,0.04)",
+        }}
+      >
+        <AdSlot slotKey={slotKey} />
+      </div>
+    </div>
+  );
 }
 
 function ZipFieldInline({ value, onChange, onGeocode, required }) {
@@ -1104,10 +1131,10 @@ export default function PlayerBoard() {
 
   const shouldApplyDistance = Boolean(
     stateFilter &&
-    hasSearched &&
-    nearbyZip &&
-    nearbyZip.length === 5 &&
-    searchGeo,
+      hasSearched &&
+      nearbyZip &&
+      nearbyZip.length === 5 &&
+      searchGeo,
   );
 
   const filtered = posts.filter((p) => {
@@ -1194,7 +1221,9 @@ export default function PlayerBoard() {
   function getDesktopLocationPreview(post) {
     if (post.post_type !== "player_needed") return getPostLocation(post);
     const parts = getNeededLocationParts(post);
-    return [parts.facility, parts.address, parts.cityLine].filter(Boolean).join(" • ");
+    return [parts.facility, parts.address, parts.cityLine]
+      .filter(Boolean)
+      .join(" • ");
   }
 
   function getPostPositionDetails(post) {
@@ -1493,17 +1522,6 @@ export default function PlayerBoard() {
     setValidationError("");
   }
 
-  const filterSelectStyle = {
-    padding: "8px 12px",
-    borderRadius: "var(--input-radius)",
-    border: "1.5px solid var(--lgray)",
-    background: "var(--white)",
-    fontSize: 13,
-    color: "var(--navy)",
-    fontFamily: "var(--font-body)",
-    outline: "none",
-    cursor: "pointer",
-  };
   const positions = form.sport === "softball" ? POSITIONS_SB : POSITIONS_BB;
   const isEditing = editingId !== null;
   const g2 = isMobile ? "1fr" : "1fr 1fr";
@@ -1559,7 +1577,7 @@ export default function PlayerBoard() {
   }
 
   return (
-    <div>
+    <>
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       {deleteTarget && (
         <DeleteConfirm
@@ -1568,18 +1586,28 @@ export default function PlayerBoard() {
         />
       )}
 
+      {!isMobile && (
+        <DirectoryAdBand
+          slotKey="player_board_top_1_desktop"
+          maxWidth={970}
+          reservedHeight={90}
+          isMobile={false}
+          marginTop={16}
+        />
+      )}
+
       <div
         style={{
           width: "100%",
           maxWidth: "none",
           margin: 0,
-          padding: isMobile ? "10px 12px 24px" : "6px 0 24px 0",
+          padding: isMobile ? "10px 12px 24px" : "6px 14px 24px 14px",
         }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "265px minmax(0, 1fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "300px minmax(0, 1fr)",
             gap: isMobile ? 0 : 18,
             alignItems: "start",
             width: "100%",
@@ -1880,16 +1908,29 @@ export default function PlayerBoard() {
                   background: "var(--white)",
                 }}
               >
-                <AdBox />
+                <RailAdSlot
+                  slotKey="player_board_left_rail_1_desktop"
+                  reservedHeight={250}
+                />
               </div>
             )}
           </aside>
 
           <div style={{ minWidth: 0 }}>
+            {isMobile && (
+              <DirectoryAdBand
+                slotKey="player_board_inline_1_mobile"
+                maxWidth={320}
+                reservedHeight={100}
+                isMobile={true}
+                marginTop={12}
+              />
+            )}
+
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: !isMobile ? "minmax(0, 1fr) 230px" : "1fr",
+                gridTemplateColumns: !isMobile ? "minmax(0, 1fr) 300px" : "1fr",
                 gap: isMobile ? 0 : 22,
                 alignItems: "start",
               }}
@@ -2174,7 +2215,8 @@ export default function PlayerBoard() {
                             <div
                               key={post.id}
                               style={{
-                                borderBottom: "1px solid rgba(15,23,42,0.06)",
+                                borderBottom:
+                                  "1px solid rgba(15,23,42,0.06)",
                                 background: isSelected
                                   ? "#FCFCFD"
                                   : "var(--white)",
@@ -2284,49 +2326,62 @@ export default function PlayerBoard() {
                                   }}
                                   title={getDesktopLocationPreview(post)}
                                 >
-                                  {post.post_type === "player_needed" ? (() => {
-                                    const locationParts = getNeededLocationParts(post);
-                                    return (
-                                      <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                                  {post.post_type === "player_needed" ? (
+                                    (() => {
+                                      const locationParts =
+                                        getNeededLocationParts(post);
+                                      return (
                                         <div
                                           style={{
-                                            color: "var(--navy)",
-                                            fontWeight: 700,
-                                            whiteSpace: "nowrap",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
+                                            display: "grid",
+                                            gap: 2,
+                                            minWidth: 0,
                                           }}
-                                          title={locationParts.facility || "Facility pending"}
                                         >
-                                          {locationParts.facility || "Facility pending"}
+                                          <div
+                                            style={{
+                                              color: "var(--navy)",
+                                              fontWeight: 700,
+                                              whiteSpace: "nowrap",
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                            }}
+                                            title={
+                                              locationParts.facility ||
+                                              "Facility pending"
+                                            }
+                                          >
+                                            {locationParts.facility ||
+                                              "Facility pending"}
+                                          </div>
+                                          {locationParts.address && (
+                                            <div
+                                              style={{
+                                                whiteSpace: "nowrap",
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                              }}
+                                              title={locationParts.address}
+                                            >
+                                              {locationParts.address}
+                                            </div>
+                                          )}
+                                          {locationParts.cityLine && (
+                                            <div
+                                              style={{
+                                                whiteSpace: "nowrap",
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                              }}
+                                              title={locationParts.cityLine}
+                                            >
+                                              {locationParts.cityLine}
+                                            </div>
+                                          )}
                                         </div>
-                                        {locationParts.address && (
-                                          <div
-                                            style={{
-                                              whiteSpace: "nowrap",
-                                              overflow: "hidden",
-                                              textOverflow: "ellipsis",
-                                            }}
-                                            title={locationParts.address}
-                                          >
-                                            {locationParts.address}
-                                          </div>
-                                        )}
-                                        {locationParts.cityLine && (
-                                          <div
-                                            style={{
-                                              whiteSpace: "nowrap",
-                                              overflow: "hidden",
-                                              textOverflow: "ellipsis",
-                                            }}
-                                            title={locationParts.cityLine}
-                                          >
-                                            {locationParts.cityLine}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })() : (
+                                      );
+                                    })()
+                                  ) : (
                                     <div
                                       style={{
                                         whiteSpace: "nowrap",
@@ -2487,8 +2542,7 @@ export default function PlayerBoard() {
                                   ),
                                 }}
                               >
-                                {selectedPost.post_type ===
-                                "player_available"
+                                {selectedPost.post_type === "player_available"
                                   ? "Player Available"
                                   : "Player Needed"}
                               </span>
@@ -2574,23 +2628,37 @@ export default function PlayerBoard() {
                                 lineHeight: 1.45,
                               }}
                             >
-                              {selectedPost.post_type === "player_needed" ? (() => {
-                                const locationParts = getNeededLocationParts(selectedPost);
-                                return (
-                                  <div style={{ display: "grid", gap: 3 }}>
-                                    {locationParts.facility && (
-                                      <div style={{ color: "var(--navy)", fontWeight: 700 }}>
-                                        {locationParts.facility}
-                                      </div>
-                                    )}
-                                    {locationParts.address && <div>{locationParts.address}</div>}
-                                    {locationParts.cityLine && <div>{locationParts.cityLine}</div>}
-                                    {locationParts.field && (
-                                      <div style={{ fontSize: 12 }}>Field / Diamond: {locationParts.field}</div>
-                                    )}
-                                  </div>
-                                );
-                              })() : (
+                              {selectedPost.post_type === "player_needed" ? (
+                                (() => {
+                                  const locationParts =
+                                    getNeededLocationParts(selectedPost);
+                                  return (
+                                    <div style={{ display: "grid", gap: 3 }}>
+                                      {locationParts.facility && (
+                                        <div
+                                          style={{
+                                            color: "var(--navy)",
+                                            fontWeight: 700,
+                                          }}
+                                        >
+                                          {locationParts.facility}
+                                        </div>
+                                      )}
+                                      {locationParts.address && (
+                                        <div>{locationParts.address}</div>
+                                      )}
+                                      {locationParts.cityLine && (
+                                        <div>{locationParts.cityLine}</div>
+                                      )}
+                                      {locationParts.field && (
+                                        <div style={{ fontSize: 12 }}>
+                                          Field / Diamond: {locationParts.field}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                              ) : (
                                 getPostLocation(selectedPost)
                               )}
                             </div>
@@ -2728,8 +2796,7 @@ export default function PlayerBoard() {
                           )}
 
                           {selectedPostDetailLines.filter(
-                            (line) =>
-                              !line.startsWith("Willing to travel"),
+                            (line) => !line.startsWith("Willing to travel"),
                           ).length > 0 && (
                             <div
                               style={{
@@ -2761,9 +2828,7 @@ export default function PlayerBoard() {
                                 {selectedPostDetailLines
                                   .filter(
                                     (line) =>
-                                      !line.startsWith(
-                                        "Willing to travel",
-                                      ),
+                                      !line.startsWith("Willing to travel"),
                                   )
                                   .map((line, index) => (
                                     <div
@@ -2926,7 +2991,8 @@ export default function PlayerBoard() {
                           fontSize: 13,
                         }}
                       >
-                        Enter a ZIP or select a state in the left panel to load posts and pins.
+                        Enter a ZIP or select a state in the left panel to load
+                        posts and pins.
                       </div>
                     )}
 
@@ -3051,19 +3117,38 @@ export default function PlayerBoard() {
                                   marginTop: 4,
                                 }}
                               >
-                                {post.post_type === "player_needed" ? (() => {
-                                  const locationParts = getNeededLocationParts(post);
-                                  return (
-                                    <div style={{ display: "grid", gap: 2 }}>
-                                      <div style={{ color: "var(--navy)", fontWeight: 700 }}>
-                                        📍 {locationParts.facility || "Facility pending"}
+                                {post.post_type === "player_needed" ? (
+                                  (() => {
+                                    const locationParts =
+                                      getNeededLocationParts(post);
+                                    return (
+                                      <div style={{ display: "grid", gap: 2 }}>
+                                        <div
+                                          style={{
+                                            color: "var(--navy)",
+                                            fontWeight: 700,
+                                          }}
+                                        >
+                                          📍{" "}
+                                          {locationParts.facility ||
+                                            "Facility pending"}
+                                        </div>
+                                        {locationParts.address && (
+                                          <div>{locationParts.address}</div>
+                                        )}
+                                        {locationParts.cityLine && (
+                                          <div>{locationParts.cityLine}</div>
+                                        )}
+                                        {locationParts.field && (
+                                          <div>
+                                            Field / Diamond:{" "}
+                                            {locationParts.field}
+                                          </div>
+                                        )}
                                       </div>
-                                      {locationParts.address && <div>{locationParts.address}</div>}
-                                      {locationParts.cityLine && <div>{locationParts.cityLine}</div>}
-                                      {locationParts.field && <div>Field / Diamond: {locationParts.field}</div>}
-                                    </div>
-                                  );
-                                })() : (
+                                    );
+                                  })()
+                                ) : (
                                   <>📍 {getPostLocation(post)}</>
                                 )}
                               </div>
@@ -3246,7 +3331,7 @@ export default function PlayerBoard() {
                     top: 76,
                     alignSelf: "start",
                     padding: "8px 0 0 0",
-                    width: "230px",
+                    width: "300px",
                     justifySelf: "end",
                   }}
                 >
@@ -3254,12 +3339,17 @@ export default function PlayerBoard() {
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      gap: 12,
+                      gap: 18,
                     }}
                   >
-                    <AdBox />
-                    <AdBox />
-                    <AdBox />
+                    <RailAdSlot
+                      slotKey="player_board_right_rail_1_desktop"
+                      reservedHeight={250}
+                    />
+                    <RailAdSlot
+                      slotKey="player_board_right_rail_2_desktop"
+                      reservedHeight={250}
+                    />
                   </div>
                 </aside>
               )}
@@ -3267,6 +3357,6 @@ export default function PlayerBoard() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
