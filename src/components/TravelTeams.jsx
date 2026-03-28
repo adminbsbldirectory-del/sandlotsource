@@ -1143,20 +1143,29 @@ export default function TravelTeams() {
         />
       )}
 
-      {!isMobile && (
-        <div style={{ marginBottom: 14 }}>
+          {!isMobile && (
+      <div
+        style={{
+          marginBottom: 14,
+          paddingTop: 6,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 970,
+            margin: '0 auto',
+          }}
+        >
           <SponsoredSlotShell
             slotKey="teams_top_1_desktop"
-            minHeight={86}
-            outerStyle={{
-              paddingTop: 6,
-            }}
+            minHeight={90}
             shellStyle={{
               borderRadius: 16,
             }}
           />
         </div>
-      )}
+      </div>
+    )}
 
       <div
         style={{
