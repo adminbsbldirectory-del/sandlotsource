@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { supabase } from '../supabase.js'
+import AdSlot from './AdSlot.jsx'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -9,6 +10,8 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
+
+const HEADER_H = 75
 
 const makeIcon = (color) =>
   L.divIcon({
@@ -103,7 +106,6 @@ const inputStyle = {
 const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
-
 function normalizeLookupText(value) {
   return String(value || '')
     .toLowerCase()
@@ -158,12 +160,14 @@ async function searchTeamMatches({ teamName, orgAffiliation, sport, ageGroup, zi
   if (!normalizedName || normalizedName.length < 3) return []
 
   const lookupTerms = Array.from(
-    new Set([
-      String(teamName || '').trim(),
-      normalizedName,
-      String(orgAffiliation || '').trim(),
-      normalizedOrg,
-    ].filter((value) => value && value.length >= 2))
+    new Set(
+      [
+        String(teamName || '').trim(),
+        normalizedName,
+        String(orgAffiliation || '').trim(),
+        normalizedOrg,
+      ].filter((value) => value && value.length >= 2)
+    )
   )
 
   let candidates = []
@@ -174,7 +178,9 @@ async function searchTeamMatches({ teamName, orgAffiliation, sport, ageGroup, zi
 
     const { data } = await supabase
       .from('travel_teams')
-      .select('id, name, sport, age_group, zip_code, city, state, org_affiliation, practice_location_name, facility_id, facility_name, approval_status, active')
+      .select(
+        'id, name, sport, age_group, zip_code, city, state, org_affiliation, practice_location_name, facility_id, facility_name, approval_status, active'
+      )
       .eq('active', true)
       .in('approval_status', ['approved', 'seeded'])
       .or(`name.ilike.%${safeTerm}%,org_affiliation.ilike.%${safeTerm}%`)
@@ -290,6 +296,84 @@ function DaysRemaining({ expiresAt }) {
   )
 }
 
+function InlineMobileAdSlot({ slotKey, marginTop = 16 }) {
+  return (
+    <div
+      style={{
+        background: '#F5F4F0',
+        borderTop: '1px solid #E2E0DB',
+        borderBottom: '1px solid #E2E0DB',
+        padding: '16px 0',
+        marginTop,
+      }}
+    >
+      <div style={{ padding: '0 12px' }}>
+        <div style={{ width: '100%', maxWidth: 320, margin: '0 auto' }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--gray)',
+              margin: '0 0 8px 2px',
+            }}
+          >
+            Sponsored
+          </div>
+
+          <div
+            style={{
+              minHeight: 100,
+              background: '#fff',
+              border: '1px solid #E2E0DB',
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}
+          >
+            <AdSlot slotKey={slotKey} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SkyscraperAdSlot({ slotKey }) {
+  return (
+    <div style={{ width: 160, maxWidth: 160 }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 800,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: 'var(--gray)',
+          margin: '0 0 8px 2px',
+          textAlign: 'left',
+        }}
+      >
+        Sponsored
+      </div>
+
+      <div
+        style={{
+          width: 160,
+          minWidth: 160,
+          maxWidth: 160,
+          minHeight: 600,
+          background: '#fff',
+          border: '1px solid #E2E0DB',
+          borderRadius: 12,
+          overflow: 'hidden',
+          boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
+        }}
+      >
+        <AdSlot slotKey={slotKey} />
+      </div>
+    </div>
+  )
+}
 
 function RosterRow({ spot, isMobile }) {
   const actionLinkStyle = {
@@ -512,7 +596,6 @@ function RosterRow({ spot, isMobile }) {
   )
 }
 
-
 function ZipFieldInline({ value, onChange, onGeocode, required }) {
   const [status, setStatus] = useState('')
 
@@ -559,7 +642,6 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
     </div>
   )
 }
-
 
 function RosterForm({ onSubmitted, isMobile }) {
   const gridCols = isMobile ? '1fr' : '1fr 1fr'
@@ -686,9 +768,10 @@ function RosterForm({ onSubmitted, isMobile }) {
     setError('')
     setSubmitting(true)
 
-    const selectedMatch = matchChoiceMode === 'standalone'
-      ? null
-      : teamMatches.find((row) => row.id === selectedMatchId) || (teamMatches[0]?.score >= 10 ? teamMatches[0] : null)
+    const selectedMatch =
+      matchChoiceMode === 'standalone'
+        ? null
+        : teamMatches.find((row) => row.id === selectedMatchId) || (teamMatches[0]?.score >= 10 ? teamMatches[0] : null)
 
     const payload = {
       sport: form.sport,
@@ -948,40 +1031,43 @@ function RosterForm({ onSubmitted, isMobile }) {
             </button>
           )}
 
-          {!matchLoading && teamMatches.length > 1 && (!showCollapsedMatchChoices) && (
+          {!matchLoading && teamMatches.length > 1 && !showCollapsedMatchChoices && (
             <div style={{ display: 'grid', gap: 6 }}>
               <div style={{ fontSize: 12, color: '#64748B' }}>Other possible matches</div>
               <div style={{ display: 'grid', gap: 6 }}>
-                {teamMatches.filter((row) => row.id !== selectedMatchId).slice(0, 3).map((row) => (
-                  <button
-                    key={row.id}
-                    type="button"
-                    onClick={() => {
-                      setMatchChoiceMode('linked')
-                      setSelectedMatchId(row.id)
-                    }}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 10,
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '10px 12px',
-                      borderRadius: 10,
-                      border: '1px solid #DCE7F3',
-                      background: 'white',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', wordBreak: 'break-word' }}>{row.name}</div>
-                      <div style={{ fontSize: 12, color: '#64748B', wordBreak: 'break-word' }}>
-                        {[row.age_group, formatSportLabel(row.sport), getLocationLine(row.city, row.state, row.zip_code)].filter(Boolean).join(' · ')}
+                {teamMatches
+                  .filter((row) => row.id !== selectedMatchId)
+                  .slice(0, 3)
+                  .map((row) => (
+                    <button
+                      key={row.id}
+                      type="button"
+                      onClick={() => {
+                        setMatchChoiceMode('linked')
+                        setSelectedMatchId(row.id)
+                      }}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid #DCE7F3',
+                        background: 'white',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', wordBreak: 'break-word' }}>{row.name}</div>
+                        <div style={{ fontSize: 12, color: '#64748B', wordBreak: 'break-word' }}>
+                          {[row.age_group, formatSportLabel(row.sport), getLocationLine(row.city, row.state, row.zip_code)].filter(Boolean).join(' · ')}
+                        </div>
                       </div>
-                    </div>
-                    <span style={{ color: '#1D4ED8', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Use</span>
-                  </button>
-                ))}
+                      <span style={{ color: '#1D4ED8', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Use</span>
+                    </button>
+                  ))}
               </div>
               {isMobile && selectedMatch && (
                 <button
@@ -1022,12 +1108,7 @@ function RosterForm({ onSubmitted, isMobile }) {
         </div>
         <div>
           <label style={labelStyle}>City</label>
-          <input
-            value={form.city}
-            onChange={(e) => set('city', e.target.value)}
-            placeholder="e.g. Canton"
-            style={inputStyle}
-          />
+          <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
         </div>
       </div>
 
@@ -1079,23 +1160,13 @@ function RosterForm({ onSubmitted, isMobile }) {
       <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: isMobile ? 10 : 12, marginBottom: 16 }}>
         <div>
           <label style={labelStyle}>Contact Name</label>
-          <input
-            value={form.contact_name}
-            onChange={(e) => set('contact_name', e.target.value)}
-            placeholder="Coach or contact person"
-            style={inputStyle}
-          />
+          <input value={form.contact_name} onChange={(e) => set('contact_name', e.target.value)} placeholder="Coach or contact person" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>
             Contact Info <RequiredMark />
           </label>
-          <input
-            value={form.contact_info}
-            onChange={(e) => set('contact_info', e.target.value)}
-            placeholder="Email, phone, or Instagram"
-            style={inputStyle}
-          />
+          <input value={form.contact_info} onChange={(e) => set('contact_info', e.target.value)} placeholder="Email, phone, or Instagram" style={inputStyle} />
           <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Visible publicly. Expires after 15 days.</div>
         </div>
       </div>
@@ -1132,7 +1203,6 @@ function RosterForm({ onSubmitted, isMobile }) {
     </div>
   )
 }
-
 
 export default function RosterSpots() {
   const [spots, setSpots] = useState([])
@@ -1353,31 +1423,31 @@ export default function RosterSpots() {
     return (
       <div style={{ padding: isMobile ? '16px 12px' : '32px 20px', overflowX: 'clip' }}>
         <div style={{ maxWidth: 720, width: '100%', margin: '0 auto' }}>
-        <button
-          type="button"
-          onClick={() => setView('browse')}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--navy)',
-            fontWeight: 700,
-            fontSize: 13,
-            fontFamily: 'var(--font-head)',
-            marginBottom: 20,
-            display: 'block',
-          }}
-        >
-          ← Back to Roster Spots
-        </button>
-        <RosterForm onSubmitted={(info) => { setSubmittedInfo(info || null); setView('submitted') }} isMobile={isMobile} />
+          <button
+            type="button"
+            onClick={() => setView('browse')}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--navy)',
+              fontWeight: 700,
+              fontSize: 13,
+              fontFamily: 'var(--font-head)',
+              marginBottom: 20,
+              display: 'block',
+            }}
+          >
+            ← Back to Roster Spots
+          </button>
+          <RosterForm onSubmitted={(info) => { setSubmittedInfo(info || null); setView('submitted') }} isMobile={isMobile} />
         </div>
       </div>
     )
   }
 
-  return (
-    <div style={{ overflowX: 'clip' }}>
+  const browseContent = (
+    <div style={{ minWidth: 0 }}>
       <div
         style={{
           background: 'var(--cream)',
@@ -1387,8 +1457,7 @@ export default function RosterSpots() {
       >
         <div
           style={{
-            maxWidth: 1280,
-            margin: '0 auto',
+            width: '100%',
             display: 'grid',
             gap: 14,
           }}
@@ -1554,7 +1623,7 @@ export default function RosterSpots() {
       </div>
 
       {showMap && hasLocalSearch && (
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '14px 14px 0' : '18px 24px 0' }}>
+        <div style={{ padding: isMobile ? '14px 14px 0' : '18px 24px 0' }}>
           <div style={{ height: isMobile ? 220 : 320, width: '100%', border: '1px solid var(--lgray)', borderRadius: 16, overflow: 'hidden' }}>
             <MapContainer center={zipGeo ? [zipGeo.lat, zipGeo.lng] : DEFAULT_CENTER} zoom={9} style={{ height: '100%', width: '100%' }}>
               <TileLayer
@@ -1587,7 +1656,11 @@ export default function RosterSpots() {
         </div>
       )}
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '14px' : '18px 24px 28px' }}>
+      {isMobile && (
+        <InlineMobileAdSlot slotKey="roster_spots_inline_1_mobile" marginTop={14} />
+      )}
+
+      <div style={{ padding: isMobile ? '14px' : '18px 24px 28px' }}>
         {showSearchPrompt && !loading && (
           <div
             style={{
@@ -1653,6 +1726,53 @@ export default function RosterSpots() {
           </div>
         )}
       </div>
+    </div>
+  )
+
+  return (
+    <div style={{ overflowX: 'clip', background: isMobile ? undefined : 'var(--cream)' }}>
+      {isMobile ? (
+        browseContent
+      ) : (
+        <div style={{ padding: '18px 14px 28px' }}>
+          <div
+            style={{
+              maxWidth: 1440,
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: '160px minmax(0, 1fr) 160px',
+              gap: 18,
+              alignItems: 'start',
+            }}
+          >
+            <aside
+              style={{
+                position: 'sticky',
+                top: HEADER_H + 12,
+                alignSelf: 'start',
+                width: 160,
+                justifySelf: 'start',
+              }}
+            >
+              <SkyscraperAdSlot slotKey="roster_spots_left_rail_1_desktop" />
+            </aside>
+
+            <main style={{ minWidth: 0 }}>{browseContent}</main>
+
+            <aside
+              style={{
+                position: 'sticky',
+                top: HEADER_H + 12,
+                alignSelf: 'start',
+                width: 160,
+                justifySelf: 'end',
+              }}
+            >
+              <SkyscraperAdSlot slotKey="roster_spots_right_rail_1_desktop" />
+            </aside>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
