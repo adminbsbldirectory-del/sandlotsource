@@ -388,7 +388,7 @@ function RailAdSlot({ slotKey, reservedHeight = 250 }) {
           boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
         }}
       >
-          <AdSlot slotKey={slotKey} />
+        <AdSlot slotKey={slotKey} />
       </div>
     </div>
   )
@@ -1160,7 +1160,7 @@ export default function TravelTeams() {
   }
 
   return (
-    <div>
+    <div style={!isMobile ? { background: 'var(--cream)' } : undefined}>
       {profileTeam && (
         <TeamProfile
           team={profileTeam}
@@ -1173,711 +1173,711 @@ export default function TravelTeams() {
         />
       )}
 
-          {!isMobile && (
-      <DirectoryAdBand
-        slotKey="teams_top_1_desktop"
-        maxWidth={970}
-        reservedHeight={90}
-        isMobile={false}
-        marginTop={16}
-      />
-    )}
+      {!isMobile && (
+        <DirectoryAdBand
+          slotKey="teams_top_1_desktop"
+          maxWidth={970}
+          reservedHeight={90}
+          isMobile={false}
+          marginTop={16}
+        />
+      )}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '300px minmax(0, 1fr)',
-          gap: isMobile ? 0 : 18,
-          alignItems: 'start',
-          width: '100%',
-        }}
-      >
-        <aside
+      <div style={{ padding: isMobile ? 0 : '16px 14px 20px' }}>
+        <div
           style={{
-            position: isMobile ? 'static' : 'sticky',
-            top: isMobile ? 'auto' : HEADER_H + 12,
-            alignSelf: 'start',
-            background: 'var(--white)',
-            borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
-            zIndex: 4,
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '300px minmax(0, 1fr)',
+            gap: isMobile ? 0 : 18,
+            alignItems: 'start',
+            width: '100%',
           }}
         >
-          <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-head)',
-                fontSize: 16,
-                fontWeight: 700,
-                color: 'var(--navy)',
-                marginBottom: 2,
-                lineHeight: 1.1,
-              }}
-            >
-              {hasLocationSearch ? `${filtered.length} team${filtered.length !== 1 ? 's' : ''}${selectedState ? ` in ${selectedState.name}` : ''}` : 'Start with ZIP + radius'}
-            </div>
-
-            <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>
-              Enter a ZIP code to load nearby teams first.
-            </div>
-          </div>
-
-          <div
+          <aside
             style={{
-              padding: 12,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              borderBottom: '1px solid var(--lgray)',
+              position: isMobile ? 'static' : 'sticky',
+              top: isMobile ? 'auto' : HEADER_H + 12,
+              alignSelf: 'start',
               background: 'var(--white)',
+              borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+              zIndex: 4,
             }}
           >
-            <div>
-              <div style={sectionLabelStyle}>Near Zip Code</div>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={5}
-                placeholder="Zip code"
-                value={zip}
-                onChange={(e) => {
-                  const nextZip = e.target.value.replace(/\D/g, '').slice(0, 5)
-                  setZip(nextZip)
-                  setSelectedTeamId(null)
-                  if (nextZip.length < 5) {
-                    setGeoCenter(null)
-                    setZipError('')
-                    setState('')
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '9px 10px',
-                  borderRadius: 'var(--input-radius)',
-                  border: '1.5px solid var(--lgray)',
-                  fontSize: 13,
-                  color: 'var(--navy)',
-                  outline: 'none',
-                  background: 'var(--white)',
-                  minHeight: 40,
-                }}
-              />
-
-              {zip.length === 5 && (
-                <div style={{ marginTop: 8 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontSize: 12,
-                      color: 'var(--gray)',
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span>Distance</span>
-                    <strong style={{ color: 'var(--navy)' }}>{radius} miles</strong>
-                  </div>
-                  <input
-                    type="range"
-                    min={5}
-                    max={100}
-                    step={5}
-                    value={radius}
-                    onChange={(e) => {
-                      setRadius(Number(e.target.value))
-                      setSelectedTeamId(null)
-                    }}
-                    style={{ width: '100%', accentColor: 'var(--red)' }}
-                  />
-                </div>
-              )}
-
-              {zipError && (
-                <div style={{ marginTop: 4, fontSize: 11, color: 'var(--red)' }}>
-                  {zipError}
-                </div>
-              )}
-
-              <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--gray)', lineHeight: 1.4 }}>
-                {hasLocationSearch ? `Showing teams within ${radius} miles of ${zip}.` : 'Use ZIP + radius so nearby teams show first.'}
-              </div>
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>State</div>
-              <select
-                value={state}
-                onChange={(e) => {
-                  setState(e.target.value)
-                  setSelectedTeamId(null)
-                }}
-                style={filterSelectStyle}
-              >
-                <option value="">All States</option>
-                {US_STATES.map((s) => (
-                  <option key={s.abbr} value={s.abbr}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>Sport</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
-                  onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
-                  style={{ flex: 1, minHeight: 38 }}
-                >
-                  ⚾ Baseball
-                </button>
-                <button
-                  type="button"
-                  className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
-                  onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
-                  style={{ flex: 1, minHeight: 38 }}
-                >
-                  🥎 Softball
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>Age</div>
-              <select
-                value={ageGroup}
-                onChange={(e) => setAgeGroup(e.target.value)}
-                style={filterSelectStyle}
-              >
-                {AGE_OPTIONS.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>Search</div>
-              <input
-                type="text"
-                placeholder="Team, org, class, facility, city..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={onSearchKeyDown}
-                style={{
-                  width: '100%',
-                  padding: '9px 10px',
-                  borderRadius: 'var(--input-radius)',
-                  border: '1.5px solid var(--lgray)',
-                  fontSize: 13,
-                  color: 'var(--navy)',
-                  outline: 'none',
-                  background: 'var(--white)',
-                  minHeight: 40,
-                }}
-              />
-            </div>
-
-            <div>
-              <div style={sectionLabelStyle}>Tryout Status</div>
-              <select
-                value={tryoutFilter}
-                onChange={(e) => setTryoutFilter(e.target.value)}
-                style={filterSelectStyle}
-              >
-                <option value="All">All Tryout Status</option>
-                <option value="open">Open Tryouts</option>
-                <option value="year_round">Year Round</option>
-                <option value="by_invite">By Invite</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-
-            <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>
-              Search
-            </button>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => setShowMap((m) => !m)}
-                style={{
-                  flex: 1,
-                  padding: '9px 10px',
-                  borderRadius: 'var(--btn-radius)',
-                  border: '1.5px solid var(--navy)',
-                  background: showMap ? 'var(--navy)' : 'var(--white)',
-                  color: showMap ? 'var(--white)' : 'var(--navy)',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-head)',
-                  minHeight: 40,
-                }}
-              >
-                {showMap ? 'Hide Map' : 'Show Map'}
-              </button>
-
-              <a
-                href="/submit"
-                style={{
-                  flex: 1,
-                  textAlign: 'center',
-                  textDecoration: 'none',
-                  padding: '9px 10px',
-                  borderRadius: 'var(--btn-radius)',
-                  background: 'var(--red)',
-                  color: 'white',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: 'var(--font-head)',
-                  minHeight: 40,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                + Add a Team
-              </a>
-            </div>
-          </div>
-
-          {!isMobile && (
-            <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
-              <RailAdSlot slotKey="teams_left_rail_1_desktop" reservedHeight={250} />
-            </div>
-          )}
-        </aside>
-
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: !isMobile ? 'minmax(0, 1fr) 300px' : '1fr',
-              gap: isMobile ? 0 : 22,
-              alignItems: 'start',
-            }}
-          >
-            <main style={{ minWidth: 0 }}>
+            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
               <div
                 style={{
-                  position: 'static',
-                  zIndex: 0,
-                  background: 'var(--page-bg, #f5f3ef)',
-                  paddingTop: isMobile ? 0 : 8,
-                  paddingBottom: isMobile ? 6 : 10,
-                  overflowX: 'clip',
+                  fontFamily: 'var(--font-head)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: 'var(--navy)',
+                  marginBottom: 2,
+                  lineHeight: 1.1,
                 }}
               >
-                {loadError && (
-                  <div
-                    style={{
-                      background: '#FEE2E2',
-                      border: '1px solid #FCA5A5',
-                      borderRadius: 12,
-                      marginBottom: 10,
-                      padding: '10px 14px',
-                      fontSize: 13,
-                      color: '#991B1B',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {loadError}
+                {hasLocationSearch ? `${filtered.length} team${filtered.length !== 1 ? 's' : ''}${selectedState ? ` in ${selectedState.name}` : ''}` : 'Start with ZIP + radius'}
+              </div>
+
+              <div style={{ fontSize: 12, color: 'var(--gray)', lineHeight: 1.3 }}>
+                Enter a ZIP code to load nearby teams first.
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                borderBottom: '1px solid var(--lgray)',
+                background: 'var(--white)',
+              }}
+            >
+              <div>
+                <div style={sectionLabelStyle}>Near Zip Code</div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  placeholder="Zip code"
+                  value={zip}
+                  onChange={(e) => {
+                    const nextZip = e.target.value.replace(/\D/g, '').slice(0, 5)
+                    setZip(nextZip)
+                    setSelectedTeamId(null)
+                    if (nextZip.length < 5) {
+                      setGeoCenter(null)
+                      setZipError('')
+                      setState('')
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '9px 10px',
+                    borderRadius: 'var(--input-radius)',
+                    border: '1.5px solid var(--lgray)',
+                    fontSize: 13,
+                    color: 'var(--navy)',
+                    outline: 'none',
+                    background: 'var(--white)',
+                    minHeight: 40,
+                  }}
+                />
+
+                {zip.length === 5 && (
+                  <div style={{ marginTop: 8 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 12,
+                        color: 'var(--gray)',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span>Distance</span>
+                      <strong style={{ color: 'var(--navy)' }}>{radius} miles</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min={5}
+                      max={100}
+                      step={5}
+                      value={radius}
+                      onChange={(e) => {
+                        setRadius(Number(e.target.value))
+                        setSelectedTeamId(null)
+                      }}
+                      style={{ width: '100%', accentColor: 'var(--red)' }}
+                    />
                   </div>
                 )}
 
-                {showMap && (
+                {zipError && (
+                  <div style={{ marginTop: 4, fontSize: 11, color: 'var(--red)' }}>
+                    {zipError}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--gray)', lineHeight: 1.4 }}>
+                  {hasLocationSearch ? `Showing teams within ${radius} miles of ${zip}.` : 'Use ZIP + radius so nearby teams show first.'}
+                </div>
+              </div>
+
+              <div>
+                <div style={sectionLabelStyle}>State</div>
+                <select
+                  value={state}
+                  onChange={(e) => {
+                    setState(e.target.value)
+                    setSelectedTeamId(null)
+                  }}
+                  style={filterSelectStyle}
+                >
+                  <option value="">All States</option>
+                  {US_STATES.map((s) => (
+                    <option key={s.abbr} value={s.abbr}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div style={sectionLabelStyle}>Sport</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'baseball' ? 'active-baseball' : '')}
+                    onClick={() => setSport((s) => (s === 'baseball' ? 'Both' : 'baseball'))}
+                    style={{ flex: 1, minHeight: 38 }}
+                  >
+                    ⚾ Baseball
+                  </button>
+                  <button
+                    type="button"
+                    className={'pill-toggle ' + (sport === 'softball' ? 'active-softball' : '')}
+                    onClick={() => setSport((s) => (s === 'softball' ? 'Both' : 'softball'))}
+                    style={{ flex: 1, minHeight: 38 }}
+                  >
+                    🥎 Softball
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div style={sectionLabelStyle}>Age</div>
+                <select
+                  value={ageGroup}
+                  onChange={(e) => setAgeGroup(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  {AGE_OPTIONS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div style={sectionLabelStyle}>Search</div>
+                <input
+                  type="text"
+                  placeholder="Team, org, class, facility, city..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={onSearchKeyDown}
+                  style={{
+                    width: '100%',
+                    padding: '9px 10px',
+                    borderRadius: 'var(--input-radius)',
+                    border: '1.5px solid var(--lgray)',
+                    fontSize: 13,
+                    color: 'var(--navy)',
+                    outline: 'none',
+                    background: 'var(--white)',
+                    minHeight: 40,
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={sectionLabelStyle}>Tryout Status</div>
+                <select
+                  value={tryoutFilter}
+                  onChange={(e) => setTryoutFilter(e.target.value)}
+                  style={filterSelectStyle}
+                >
+                  <option value="All">All Tryout Status</option>
+                  <option value="open">Open Tryouts</option>
+                  <option value="year_round">Year Round</option>
+                  <option value="by_invite">By Invite</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+
+              <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>
+                Search
+              </button>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMap((m) => !m)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 10px',
+                    borderRadius: 'var(--btn-radius)',
+                    border: '1.5px solid var(--navy)',
+                    background: showMap ? 'var(--navy)' : 'var(--white)',
+                    color: showMap ? 'var(--white)' : 'var(--navy)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-head)',
+                    minHeight: 40,
+                  }}
+                >
+                  {showMap ? 'Hide Map' : 'Show Map'}
+                </button>
+
+                <a
+                  href="/submit"
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    padding: '9px 10px',
+                    borderRadius: 'var(--btn-radius)',
+                    background: 'var(--red)',
+                    color: 'white',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-head)',
+                    minHeight: 40,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  + Add a Team
+                </a>
+              </div>
+            </div>
+
+            {!isMobile && (
+              <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                <RailAdSlot slotKey="teams_left_rail_1_desktop" reservedHeight={250} />
+              </div>
+            )}
+          </aside>
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: !isMobile ? 'minmax(0, 1fr) 300px' : '1fr',
+                gap: isMobile ? 0 : 22,
+                alignItems: 'start',
+              }}
+            >
+              <main style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    position: 'static',
+                    zIndex: 0,
+                    background: 'var(--page-bg, #f5f3ef)',
+                    paddingTop: isMobile ? 0 : 8,
+                    paddingBottom: isMobile ? 6 : 10,
+                    overflowX: 'clip',
+                  }}
+                >
+                  {loadError && (
+                    <div
+                      style={{
+                        background: '#FEE2E2',
+                        border: '1px solid #FCA5A5',
+                        borderRadius: 12,
+                        marginBottom: 10,
+                        padding: '10px 14px',
+                        fontSize: 13,
+                        color: '#991B1B',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {loadError}
+                    </div>
+                  )}
+
+                  {showMap && (
+                    <div
+                      style={{
+                        background: 'var(--white)',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: isMobile ? 260 : 360,
+                          width: '100%',
+                          overflow: 'hidden',
+                          borderRadius: isMobile ? 0 : 14,
+                          border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                        }}
+                      >
+                        <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
+                          <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          />
+                          <UpdateMapView
+                            center={mapCenter}
+                            zoom={mapZoom}
+                            enabled={!selectedTeam && mappable.length === 0}
+                          />
+                          <FitBounds teams={mappable} enabled={mappable.length > 0} maxZoom={isMobile ? 9 : 10} />
+                          <FlyToTeam team={selectedTeam} />
+
+                          {mappable.map((team) => (
+                            <Marker
+                              key={team.id}
+                              position={[team.lat, team.lng]}
+                              icon={makeIcon(teamPinColor(team))}
+                              eventHandlers={{
+                                click: () => {
+                                  setSelectedTeamId(team.id)
+                                },
+                              }}
+                            >
+                              <Popup
+                                ref={(el) => {
+                                  if (el) popupRefs.current[team.id] = el
+                                  else delete popupRefs.current[team.id]
+                                }}
+                              >
+                                <div style={{ fontFamily: 'var(--font-body)', minWidth: 170 }}>
+                                  <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
+                                    {team.name}
+                                  </strong>
+                                  <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
+                                    {'📍 ' + [team.display_city, team.display_state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
+                                  </div>
+                                  {team.facility_name && (
+                                    <div style={{ fontSize: 12, marginTop: 3 }}>
+                                      {'🏟️ ' + team.facility_name}
+                                    </div>
+                                  )}
+                                  {team.classification && (
+                                    <div style={{ fontSize: 12, marginTop: 3 }}>
+                                      {'🏅 ' + team.classification}
+                                    </div>
+                                  )}
+                                  {team.age_group && (
+                                    <div style={{ fontSize: 12, marginTop: 3 }}>
+                                      {'🎯 ' + team.age_group + ' · ' + (team.sport || '')}
+                                    </div>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => { closeAllPopups(); setSelectedTeamId(team.id) }}
+                                    style={{
+                                      marginTop: 8,
+                                      width: '100%',
+                                      background: 'var(--navy)',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: 8,
+                                      padding: '8px 10px',
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Preview Team
+                                  </button>
+                                </div>
+                              </Popup>
+                            </Marker>
+                          ))}
+                        </MapContainer>
+                      </div>
+
+                      <MapLegend hasPins={mappable.length > 0} />
+                    </div>
+                  )}
+
+                  {openTryoutCount > 0 && (
+                    <div
+                      style={{
+                        background: 'var(--open-bg)',
+                        border: '1px solid var(--open-text)',
+                        borderRadius: 12,
+                        marginTop: 10,
+                        padding: '10px 14px',
+                        fontSize: 13,
+                        color: 'var(--open-text)',
+                        fontWeight: 600,
+                        width: '100%',
+                      }}
+                    >
+                      {`✅ ${openTryoutCount} team${openTryoutCount !== 1 ? 's' : ''} currently accepting tryouts${selectedState ? ' in ' + selectedState.name : ''}`}
+                    </div>
+                  )}
+
+                  {!showMap && (
+                    <div
+                      style={{
+                        background: 'var(--white)',
+                        border: '1px solid rgba(15,23,42,0.06)',
+                        borderRadius: 14,
+                        marginTop: 10,
+                        padding: '16px',
+                        color: 'var(--gray)',
+                        fontSize: 13,
+                        width: '100%',
+                      }}
+                    >
+                      Map is hidden. Use “Show Map” in the left panel to view team locations.
+                    </div>
+                  )}
+
+                  {isMobile && (
+                    <DirectoryAdBand
+                      slotKey="teams_inline_1_mobile"
+                      maxWidth={320}
+                      reservedHeight={100}
+                      isMobile={true}
+                      marginTop={16}
+                    />
+                  )}
+
                   <div
                     style={{
-                      background: 'var(--white)',
-                      width: '100%',
+                      marginTop: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      flexWrap: 'wrap',
                     }}
                   >
                     <div
                       style={{
-                        height: isMobile ? 260 : 360,
-                        width: '100%',
-                        overflow: 'hidden',
-                        borderRadius: isMobile ? 0 : 14,
-                        border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                        fontFamily: 'var(--font-head)',
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: 'var(--navy)',
                       }}
                     >
-                      <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
-                        <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <UpdateMapView
-                          center={mapCenter}
-                          zoom={mapZoom}
-                          enabled={!selectedTeam && mappable.length === 0}
-                        />
-                        <FitBounds teams={mappable} enabled={mappable.length > 0} maxZoom={isMobile ? 9 : 10} />
-                        <FlyToTeam team={selectedTeam} />
-
-                        {mappable.map((team) => (
-                          <Marker
-                            key={team.id}
-                            position={[team.lat, team.lng]}
-                            icon={makeIcon(teamPinColor(team))}
-                            eventHandlers={{
-                              click: () => {
-                                setSelectedTeamId(team.id)
-                              },
-                            }}
-                          >
-                            <Popup
-                              ref={(el) => {
-                                if (el) popupRefs.current[team.id] = el
-                                else delete popupRefs.current[team.id]
-                              }}
-                            >
-                              <div style={{ fontFamily: 'var(--font-body)', minWidth: 170 }}>
-                                <strong style={{ fontFamily: 'var(--font-head)', fontSize: 14 }}>
-                                  {team.name}
-                                </strong>
-                                <div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>
-                                  {'📍 ' + [team.display_city, team.display_state].filter(Boolean).join(', ') + (team.zip_code ? ' ' + team.zip_code : '')}
-                                </div>
-                                {team.facility_name && (
-                                  <div style={{ fontSize: 12, marginTop: 3 }}>
-                                    {'🏟️ ' + team.facility_name}
-                                  </div>
-                                )}
-                                {team.classification && (
-                                  <div style={{ fontSize: 12, marginTop: 3 }}>
-                                    {'🏅 ' + team.classification}
-                                  </div>
-                                )}
-                                {team.age_group && (
-                                  <div style={{ fontSize: 12, marginTop: 3 }}>
-                                    {'🎯 ' + team.age_group + ' · ' + (team.sport || '')}
-                                  </div>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => { closeAllPopups(); setSelectedTeamId(team.id) }}
-                                  style={{
-                                    marginTop: 8,
-                                    width: '100%',
-                                    background: 'var(--navy)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 8,
-                                    padding: '8px 10px',
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Preview Team
-                                </button>
-                              </div>
-                            </Popup>
-                          </Marker>
-                        ))}
-                      </MapContainer>
+                      {hasLocationSearch ? `${filtered.length} Team${filtered.length !== 1 ? 's' : ''}${selectedState ? ` in ${selectedState.name}` : ''}` : 'Browse nearby teams'}
                     </div>
 
-                    <MapLegend hasPins={mappable.length > 0} />
+                    <div style={{ fontSize: 12, color: 'var(--gray)' }}>
+                      {hasLocationSearch ? 'Compact list below. Click a row or pin to preview, then use View Team for full details.' : 'Enter your ZIP code above to load teams near you first.'}
+                    </div>
                   </div>
-                )}
+                </div>
 
-                {openTryoutCount > 0 && (
+                {isMobile ? (
+                  <div ref={mobileListRef} style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr', gap: 14, alignItems: 'stretch' }}>
+                    {loading && (
+                      <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+                        Loading teams...
+                      </div>
+                    )}
+                    {!loading && filtered.length === 0 && (
+                      <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
+                    )}
+                    {!loading && filtered.map((team) => (
+                      <div key={team.id} ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}>
+                        <TeamCard
+                          team={team}
+                          selected={selectedTeamId === team.id}
+                          mobile
+                          onOpen={() => setProfileTeam(team)}
+                          onFocusMap={() => {
+                            closeAllPopups()
+                            setSelectedTeamId(team.id)
+                            setShowMap(true)
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                   <div
                     style={{
-                      background: 'var(--open-bg)',
-                      border: '1px solid var(--open-text)',
-                      borderRadius: 12,
-                      marginTop: 10,
-                      padding: '10px 14px',
-                      fontSize: 13,
-                      color: 'var(--open-text)',
-                      fontWeight: 600,
-                      width: '100%',
-                    }}
-                  >
-                    {`✅ ${openTryoutCount} team${openTryoutCount !== 1 ? 's' : ''} currently accepting tryouts${
-                      selectedState ? ' in ' + selectedState.name : ''
-                    }`}
-                  </div>
-                )}
-
-                {!showMap && (
-                  <div
-                    style={{
+                      marginTop: 8,
                       background: 'var(--white)',
                       border: '1px solid rgba(15,23,42,0.06)',
                       borderRadius: 14,
-                      marginTop: 10,
-                      padding: '16px',
-                      color: 'var(--gray)',
-                      fontSize: 13,
-                      width: '100%',
+                      overflow: 'hidden',
+                      position: 'relative',
                     }}
                   >
-                    Map is hidden. Use “Show Map” in the left panel to view team locations.
+                    <div ref={desktopListRef} style={{ maxHeight: 'min(560px, calc(100vh - 215px))', overflowY: 'auto' }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: desktopRowTemplate,
+                          gap: 10,
+                          alignItems: 'center',
+                          padding: '11px 14px',
+                          background: '#EEF3FA',
+                          borderBottom: '1px solid rgba(15,23,42,0.08)',
+                          position: 'sticky',
+                          top: 0,
+                          zIndex: 4,
+                        }}
+                      >
+                        <div style={desktopHeaderCellStyle}>Sport</div>
+                        <div style={desktopHeaderCellStyle}>Team</div>
+                        <div style={desktopHeaderCellStyle}>Facility</div>
+                        <div style={desktopHeaderCellStyle}>Age / Level</div>
+                        <div style={desktopHeaderCellStyle}>Tryouts</div>
+                        <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
+                      </div>
+
+                      {loading && (
+                        <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--gray)', fontSize: 14 }}>
+                          Loading teams...
+                        </div>
+                      )}
+
+                      {!loading && filtered.length === 0 && (
+                        <div style={{ padding: '16px 14px' }}>
+                          <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
+                        </div>
+                      )}
+
+                      {!loading && filtered.map((team) => {
+                        const isSelected = selectedTeamId === team.id
+                        const statusMeta = getStatusChipStyle(team.tryout_status)
+                        const sportChip = getSportChipStyle(team.sport)
+                        const practiceLine = formatPracticeLocation(team)
+                        const teamLine = formatTeamLocation(team)
+                        const tryoutDate = formatTryoutDate(team.tryout_date)
+
+                        return (
+                          <div
+                            key={team.id}
+                            ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}
+                            style={{ borderBottom: '1px solid rgba(15,23,42,0.06)', background: isSelected ? '#FCFCFD' : 'var(--white)' }}
+                          >
+                            <div
+                              onClick={() => setSelectedTeamId(team.id)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault()
+                                  setSelectedTeamId(team.id)
+                                }
+                              }}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: desktopRowTemplate,
+                                gap: 10,
+                                alignItems: 'center',
+                                padding: '10px 14px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', ...sportChip }}>
+                                  {normalizeSportValue(team.sport) === 'both' ? 'Both' : team.sport}
+                                </span>
+                              </div>
+
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.name}>
+                                  {team.name}
+                                </div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={teamLine}>
+                                  {teamLine || 'Location not listed'}
+                                </div>
+                              </div>
+
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.facility_name || practiceLine}>
+                                  {team.facility_name || 'No linked facility'}
+                                </div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={practiceLine}>
+                                  {practiceLine || 'Practice area not listed'}
+                                </div>
+                              </div>
+
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
+                                  {team.age_group || '—'}
+                                </div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {team.classification || team.org_affiliation || 'Level not listed'}
+                                </div>
+                              </div>
+
+                              <div style={{ minWidth: 0 }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', background: statusMeta.bg, color: statusMeta.color }}>
+                                  {statusMeta.label}
+                                </span>
+                                <div style={{ marginTop: 4, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tryoutDate || team.tryout_notes || ''}>
+                                  {tryoutDate || team.tryout_notes || 'No date listed'}
+                                </div>
+                              </div>
+
+                              <div style={{ textAlign: 'right' }}>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    setSelectedTeamId(isSelected ? null : team.id)
+                                  }}
+                                  style={{
+                                    minWidth: 64,
+                                    padding: '7px 8px',
+                                    borderRadius: 9,
+                                    border: '1.5px solid var(--navy)',
+                                    background: isSelected ? 'var(--navy)' : 'var(--white)',
+                                    color: isSelected ? 'var(--white)' : 'var(--navy)',
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontFamily: 'var(--font-head)',
+                                  }}
+                                >
+                                  {isSelected ? 'Close' : 'Open'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {selectedTeam && (
+                      <TeamPreviewCard
+                        team={selectedTeam}
+                        onClose={() => setSelectedTeamId(null)}
+                        onOpenFull={() => {
+                          const current = selectedTeam
+                          setSelectedTeamId(null)
+                          setTimeout(() => setProfileTeam(current), 0)
+                        }}
+                      />
+                    )}
                   </div>
                 )}
 
                 {isMobile && (
                   <DirectoryAdBand
-                    slotKey="teams_inline_1_mobile"
+                    slotKey="teams_footer_1_mobile"
                     maxWidth={320}
                     reservedHeight={100}
                     isMobile={true}
-                    marginTop={16}
+                    marginTop={20}
                   />
                 )}
+              </main>
 
-                <div
+              {!isMobile && (
+                <aside
                   style={{
-                    marginTop: 14,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    flexWrap: 'wrap',
+                    position: 'sticky',
+                    top: HEADER_H + 12,
+                    alignSelf: 'start',
+                    padding: '8px 0 0 0',
+                    width: '300px',
+                    justifySelf: 'end',
                   }}
                 >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-head)',
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: 'var(--navy)',
-                    }}
-                  >
-                    {hasLocationSearch ? `${filtered.length} Team${filtered.length !== 1 ? 's' : ''}${selectedState ? ` in ${selectedState.name}` : ''}` : 'Browse nearby teams'}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                    <RailAdSlot slotKey="teams_right_rail_1_desktop" reservedHeight={250} />
+                    <RailAdSlot slotKey="teams_right_rail_2_desktop" reservedHeight={250} />
                   </div>
-
-                  <div style={{ fontSize: 12, color: 'var(--gray)' }}>
-                    {hasLocationSearch ? 'Compact list below. Click a row or pin to preview, then use View Team for full details.' : 'Enter your ZIP code above to load teams near you first.'}
-                  </div>
-                </div>
-              </div>
-
-              {isMobile ? (
-                <div ref={mobileListRef} style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr', gap: 14, alignItems: 'stretch' }}>
-                  {loading && (
-                    <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
-                      Loading teams...
-                    </div>
-                  )}
-                  {!loading && filtered.length === 0 && (
-                    <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
-                  )}
-                  {!loading && filtered.map((team) => (
-                    <div key={team.id} ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}>
-                      <TeamCard
-                        team={team}
-                        selected={selectedTeamId === team.id}
-                        mobile
-                        onOpen={() => setProfileTeam(team)}
-                        onFocusMap={() => {
-                          closeAllPopups()
-                          setSelectedTeamId(team.id)
-                          setShowMap(true)
-                          window.scrollTo({ top: 0, behavior: 'smooth' })
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    marginTop: 8,
-                    background: 'var(--white)',
-                    border: '1px solid rgba(15,23,42,0.06)',
-                    borderRadius: 14,
-                    overflow: 'hidden',
-                    position: 'relative',
-                  }}
-                >
-                  <div ref={desktopListRef} style={{ maxHeight: 'min(560px, calc(100vh - 215px))', overflowY: 'auto' }}>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: desktopRowTemplate,
-                        gap: 10,
-                        alignItems: 'center',
-                        padding: '11px 14px',
-                        background: '#EEF3FA',
-                        borderBottom: '1px solid rgba(15,23,42,0.08)',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 4,
-                      }}
-                    >
-                      <div style={desktopHeaderCellStyle}>Sport</div>
-                      <div style={desktopHeaderCellStyle}>Team</div>
-                      <div style={desktopHeaderCellStyle}>Facility</div>
-                      <div style={desktopHeaderCellStyle}>Age / Level</div>
-                      <div style={desktopHeaderCellStyle}>Tryouts</div>
-                      <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
-                    </div>
-
-                    {loading && (
-                      <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--gray)', fontSize: 14 }}>
-                        Loading teams...
-                      </div>
-                    )}
-
-                    {!loading && filtered.length === 0 && (
-                      <div style={{ padding: '16px 14px' }}>
-                        <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
-                      </div>
-                    )}
-
-                    {!loading && filtered.map((team) => {
-                      const isSelected = selectedTeamId === team.id
-                      const statusMeta = getStatusChipStyle(team.tryout_status)
-                      const sportChip = getSportChipStyle(team.sport)
-                      const practiceLine = formatPracticeLocation(team)
-                      const teamLine = formatTeamLocation(team)
-                      const tryoutDate = formatTryoutDate(team.tryout_date)
-
-                      return (
-                        <div
-                          key={team.id}
-                          ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}
-                          style={{ borderBottom: '1px solid rgba(15,23,42,0.06)', background: isSelected ? '#FCFCFD' : 'var(--white)' }}
-                        >
-                          <div
-                            onClick={() => setSelectedTeamId(team.id)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault()
-                                setSelectedTeamId(team.id)
-                              }
-                            }}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: desktopRowTemplate,
-                              gap: 10,
-                              alignItems: 'center',
-                              padding: '10px 14px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <div style={{ minWidth: 0 }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', ...sportChip }}>
-                                {normalizeSportValue(team.sport) === 'both' ? 'Both' : team.sport}
-                              </span>
-                            </div>
-
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.name}>
-                                {team.name}
-                              </div>
-                              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={teamLine}>
-                                {teamLine || 'Location not listed'}
-                              </div>
-                            </div>
-
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.facility_name || practiceLine}>
-                                {team.facility_name || 'No linked facility'}
-                              </div>
-                              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={practiceLine}>
-                                {practiceLine || 'Practice area not listed'}
-                              </div>
-                            </div>
-
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
-                                {team.age_group || '—'}
-                              </div>
-                              <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {team.classification || team.org_affiliation || 'Level not listed'}
-                              </div>
-                            </div>
-
-                            <div style={{ minWidth: 0 }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', background: statusMeta.bg, color: statusMeta.color }}>
-                                {statusMeta.label}
-                              </span>
-                              <div style={{ marginTop: 4, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tryoutDate || team.tryout_notes || ''}>
-                                {tryoutDate || team.tryout_notes || 'No date listed'}
-                              </div>
-                            </div>
-
-                            <div style={{ textAlign: 'right' }}>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  setSelectedTeamId(isSelected ? null : team.id)
-                                }}
-                                style={{
-                                  minWidth: 64,
-                                  padding: '7px 8px',
-                                  borderRadius: 9,
-                                  border: '1.5px solid var(--navy)',
-                                  background: isSelected ? 'var(--navy)' : 'var(--white)',
-                                  color: isSelected ? 'var(--white)' : 'var(--navy)',
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  fontFamily: 'var(--font-head)',
-                                }}
-                              >
-                                {isSelected ? 'Close' : 'Open'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {selectedTeam && (
-                    <TeamPreviewCard
-                      team={selectedTeam}
-                      onClose={() => setSelectedTeamId(null)}
-                      onOpenFull={() => {
-                        const current = selectedTeam
-                        setSelectedTeamId(null)
-                        setTimeout(() => setProfileTeam(current), 0)
-                      }}
-                    />
-                  )}
-                </div>
+                </aside>
               )}
-
-              {isMobile && (
-                <DirectoryAdBand
-                  slotKey="teams_footer_1_mobile"
-                  maxWidth={320}
-                  reservedHeight={100}
-                  isMobile={true}
-                  marginTop={20}
-                />
-              )}
-            </main>
-
-            {!isMobile && (
-              <aside
-                style={{
-                  position: 'sticky',
-                  top: HEADER_H + 12,
-                  alignSelf: 'start',
-                  padding: '8px 0 0 0',
-                  width: '300px',
-                  justifySelf: 'end',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <RailAdSlot slotKey="teams_right_rail_1_desktop" reservedHeight={250} />
-                  <RailAdSlot slotKey="teams_right_rail_2_desktop" reservedHeight={250} />
-                </div>
-              </aside>
-            )}
+            </div>
           </div>
         </div>
       </div>
