@@ -1,5 +1,21 @@
 import ZipField from './ZipField.jsx'
 
+const TEAM_AGE_GROUP_OPTIONS = [
+  '6U',
+  '7U',
+  '8U',
+  '9U',
+  '10U',
+  '11U',
+  '12U',
+  '13U',
+  '14U',
+  '15U',
+  '16U',
+  '17U',
+  '18U',
+]
+
 export default function TeamBasicsSection({
   g2,
   g3,
@@ -84,24 +100,47 @@ export default function TeamBasicsSection({
             ))}
           </select>
         </div>
+
         <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
-          <input
+          <select
             value={form.age_group}
             onChange={(e) => set('age_group', e.target.value)}
-            placeholder="e.g. 12U"
-            style={inputStyle}
-          />
+            style={selectStyle}
+          >
+            <option value="">Select</option>
+            {TEAM_AGE_GROUP_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>
           Practice / Home Field Address <RequiredMark />
-          {addrStatus === 'locating' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>Locating…</span>}
-          {addrStatus === 'found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>✓ Pin placed at address</span>}
-          {addrStatus === 'not_found' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>We could not place that exact address yet</span>}
-          {addrStatus === 'needs_location' && <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>Enter zip or city/state first</span>}
+          {addrStatus === 'locating' && (
+            <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#888' }}>
+              Locating…
+            </span>
+          )}
+          {addrStatus === 'found' && (
+            <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#16a34a' }}>
+              ✓ Pin placed at address
+            </span>
+          )}
+          {addrStatus === 'not_found' && (
+            <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>
+              We could not place that exact address yet
+            </span>
+          )}
+          {addrStatus === 'needs_location' && (
+            <span style={{ fontWeight: 400, textTransform: 'none', marginLeft: 6, color: '#ea580c' }}>
+              Enter zip or city/state first
+            </span>
+          )}
         </label>
         <input
           value={form.address}
@@ -120,6 +159,7 @@ export default function TeamBasicsSection({
           required
           hint="Enter zip first to auto-fill city and state"
         />
+
         <div>
           <label style={labelStyle}>Practice City</label>
           <input
@@ -129,6 +169,7 @@ export default function TeamBasicsSection({
             style={inputStyle}
           />
         </div>
+
         <div>
           <label style={labelStyle}>Practice State</label>
           <select
