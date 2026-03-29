@@ -20,7 +20,6 @@ const FAINT = '#bbb'
 const RED = '#e63329'
 const DARK = '#1a1a1a'
 
-
 function ScrollToTop() {
   const location = useLocation()
 
@@ -175,7 +174,6 @@ function AppRoutes() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Admin routes — no header or footer
   if (location.pathname.startsWith('/admin')) {
     return (
       <Routes>
@@ -185,7 +183,6 @@ function AppRoutes() {
     )
   }
 
-  // Public routes — with header and footer
   return (
     <>
       <Header />
@@ -216,10 +213,31 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+
+    function handlePageShow() {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }
+
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
+
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%', overflowX: 'clip' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100dvh',
+          width: '100%',
+          overflowX: 'clip',
+        }}
+      >
         <AppRoutes />
       </div>
     </BrowserRouter>

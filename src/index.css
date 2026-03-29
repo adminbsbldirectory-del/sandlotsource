@@ -36,12 +36,15 @@ html, body, #root {
   width: 100%;
   max-width: 100%;
   min-height: 100%;
-  height: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;
   font-family: var(--font-body);
   background: var(--cream);
   color: var(--navy);
+}
+
+html, body {
+  min-height: 100%;
 }
 
 body {
