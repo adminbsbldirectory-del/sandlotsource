@@ -83,6 +83,42 @@ function normalizeStreetForGeocode(value) {
     .trim()
 }
 
+function buildStreetVariants(value) {
+  const raw = String(value || '').trim()
+  const base = normalizeStreetForGeocode(raw)
+  const variants = new Set([raw, base].filter(Boolean))
+
+  const replacements = [
+    [/\bplace\b/gi, 'pl'],
+    [/\bpl\b/gi, 'place'],
+    [/\bstreet\b/gi, 'st'],
+    [/\bst\b/gi, 'street'],
+    [/\broad\b/gi, 'rd'],
+    [/\brd\b/gi, 'road'],
+    [/\bavenue\b/gi, 'ave'],
+    [/\bave\b/gi, 'avenue'],
+    [/\bdrive\b/gi, 'dr'],
+    [/\bdr\b/gi, 'drive'],
+    [/\blane\b/gi, 'ln'],
+    [/\bln\b/gi, 'lane'],
+    [/\bcourt\b/gi, 'ct'],
+    [/\bct\b/gi, 'court'],
+  ]
+
+  for (const current of Array.from(variants)) {
+    for (const [pattern, replacement] of replacements) {
+      const swapped = current.replace(pattern, replacement).replace(/\s{2,}/g, ' ').trim()
+      if (swapped) variants.add(swapped)
+    }
+  }
+
+  if (/\b(ne|nw|se|sw)\b/i.test(raw)) {
+    variants.add(raw.replace(/\b(ne|nw|se|sw)\b/gi, '').replace(/\s{2,}/g, ' ').trim())
+  }
+
+  return Array.from(variants).filter(Boolean).slice(0, 4)
+}
+
 async function geocodeZip(zip) {
   const cleanZip = normalizeZipCode(zip)
   if (cleanZip.length !== 5) return null
@@ -153,23 +189,35 @@ function cityMatches(expectedCity, row, addr = {}) {
   return normalizeText(hay).includes(needle)
 }
 
-function buildAddressQueries(street, city, state, zip) {
+function buildAddressQueries(street, city, state, zip, listingName = '') {
   const cleanCity = String(city || '').trim()
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
+  const cleanListingName = String(listingName || '').trim()
 
-  return Array.from(
-    new Set(
-      [
-        [street, cleanCity, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
-        [street, cleanCity, cleanState, 'USA'].filter(Boolean).join(', '),
-        [street, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
-        [street, cleanCity, cleanZip, 'USA'].filter(Boolean).join(', '),
-        [street, cleanZip, 'USA'].filter(Boolean).join(', '),
-        [street, cleanCity, 'USA'].filter(Boolean).join(', '),
-      ].filter(Boolean)
+  const queries = [
+    [street, cleanCity, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
+    [street, cleanCity, cleanState, 'USA'].filter(Boolean).join(', '),
+    [street, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
+    [street, cleanCity, cleanZip, 'USA'].filter(Boolean).join(', '),
+    [street, cleanZip, 'USA'].filter(Boolean).join(', '),
+    [street, cleanCity, 'USA'].filter(Boolean).join(', '),
+  ]
+
+  if (cleanListingName) {
+    queries.unshift(
+      [cleanListingName, street, cleanCity, cleanState, cleanZip, 'USA']
+        .filter(Boolean)
+        .join(', ')
     )
-  )
+    queries.push(
+      [cleanListingName, street, cleanCity, cleanState, 'USA']
+        .filter(Boolean)
+        .join(', ')
+    )
+  }
+
+  return Array.from(new Set(queries.filter(Boolean))).slice(0, 8)
 }
 
 function isCompatibleCandidate({ returnedState, returnedZip, lat, lng, state, zip, zipGeo }) {
@@ -181,7 +229,9 @@ function isCompatibleCandidate({ returnedState, returnedZip, lat, lng, state, zi
   }
 
   if (expectedZip && returnedZip && returnedZip !== expectedZip) {
-    return false
+    if (!zipGeo) return false
+    const dist = distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng)
+    if (dist > 5) return false
   }
 
   if (expectedZip && !returnedZip && zipGeo) {
@@ -205,7 +255,13 @@ function scoreCandidate({ row, addr, lat, lng, city, state, zip, zipGeo }) {
   if (row.addresstype === 'building' || row.type === 'house') score += 4
 
   if (expectedState && returnedState === expectedState) score += 18
-  if (expectedZip && returnedZip === expectedZip) score += 24
+
+  if (expectedZip && returnedZip === expectedZip) {
+    score += 24
+  } else if (expectedZip && returnedZip && returnedZip !== expectedZip) {
+    score -= 12
+  }
+
   if (cityMatches(city, row, addr)) score += 8
 
   if (zipGeo) {
@@ -214,26 +270,48 @@ function scoreCandidate({ row, addr, lat, lng, city, state, zip, zipGeo }) {
     if (dist <= 2) score += 8
     else if (dist <= 5) score += 5
     else if (dist <= 10) score += 2
-    else if (dist > 15) score -= 10
     else if (dist > 25) score -= 25
+    else if (dist > 15) score -= 10
   }
 
   return score
 }
 
-async function geocodeAddress(address, city, state, zip) {
+async function fetchGeocodeRows(query) {
+  const url = new URL('/api/geocode-address', window.location.origin)
+  url.searchParams.set('q', query)
+
+  const res = await fetch(url.toString(), {
+    headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+  })
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    console.error('Geocode proxy failed', res.status, query, detail)
+    return []
+  }
+
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+async function geocodeAddress(address, city, state, zip, options = {}) {
   const rawStreet = String(address || '').trim()
   if (!rawStreet) return null
 
   const cleanCity = String(city || '').trim()
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
-  const street = normalizeStreetForGeocode(rawStreet) || rawStreet
+  const cleanListingName = String(options.listingName || '').trim()
   const zipGeo = cleanZip ? await geocodeZip(cleanZip) : null
 
-  const streetVariants = Array.from(new Set([street, rawStreet].filter(Boolean)))
+  const streetVariants = buildStreetVariants(rawStreet)
   const queries = Array.from(
-    new Set(streetVariants.flatMap((streetLine) => buildAddressQueries(streetLine, cleanCity, cleanState, cleanZip)))
+    new Set(
+      streetVariants.flatMap((streetLine) =>
+        buildAddressQueries(streetLine, cleanCity, cleanState, cleanZip, cleanListingName)
+      )
+    )
   )
 
   const candidates = []
@@ -241,20 +319,7 @@ async function geocodeAddress(address, city, state, zip) {
 
   for (const query of queries) {
     try {
-      const url = new URL('https://nominatim.openstreetmap.org/search')
-      url.searchParams.set('format', 'jsonv2')
-      url.searchParams.set('addressdetails', '1')
-      url.searchParams.set('countrycodes', 'us')
-      url.searchParams.set('limit', '10')
-      url.searchParams.set('q', query)
-
-      const res = await fetch(url.toString(), {
-        headers: { 'Accept-Language': 'en-US,en;q=0.9' },
-      })
-
-      if (!res.ok) continue
-
-      const data = await res.json()
+      const data = await fetchGeocodeRows(query)
 
       for (const row of Array.isArray(data) ? data : []) {
         const lat = parseFloat(row.lat)
@@ -269,17 +334,17 @@ async function geocodeAddress(address, city, state, zip) {
         if (seen.has(key)) continue
         seen.add(key)
 
-        if (
-          !isCompatibleCandidate({
-            returnedState,
-            returnedZip,
-            lat,
-            lng,
-            state: cleanState,
-            zip: cleanZip,
-            zipGeo,
-          })
-        ) {
+        const compatible = isCompatibleCandidate({
+          returnedState,
+          returnedZip,
+          lat,
+          lng,
+          state: cleanState,
+          zip: cleanZip,
+          zipGeo,
+        })
+
+        if (!compatible) {
           continue
         }
 
@@ -355,11 +420,28 @@ async function finalizeListingLocation({
   zip,
   addressRequired = false,
   allowZipFallback = false,
+  preResolved = null,
+  listingName = '',
 }) {
   const cleanAddress = String(address || '').trim()
 
+  if (
+    cleanAddress &&
+    preResolved &&
+    Number.isFinite(preResolved.lat) &&
+    Number.isFinite(preResolved.lng)
+  ) {
+    return {
+      ok: true,
+      resolved: {
+        ...preResolved,
+        source: preResolved.source || 'address',
+      },
+    }
+  }
+
   if (cleanAddress) {
-    const exact = await geocodeAddress(cleanAddress, city, state, zip)
+    const exact = await geocodeAddress(cleanAddress, city, state, zip, { listingName })
 
     if (exact) {
       return { ok: true, resolved: { ...exact, source: 'address' } }
@@ -458,7 +540,8 @@ function applyResolvedFacilityCoordsPreservingLocality(current, resolved) {
     facility_lat: resolved.lat,
     facility_lng: resolved.lng,
     facility_city: String(current.facility_city || '').trim() || resolved.city || '',
-    facility_state: normalizeStateValue(current.facility_state) || normalizeStateValue(resolved.state) || '',
+    facility_state:
+      normalizeStateValue(current.facility_state) || normalizeStateValue(resolved.state) || '',
     facility_zip_code:
       normalizeZipCode(current.facility_zip_code) || normalizeZipCode(resolved.zip_code) || '',
   }
