@@ -7,6 +7,9 @@ export default function FacilityAmenitiesDetailsSection({
   inputStyle,
   textareaStyle,
 }) {
+  const descriptionMax = 500
+  const hoursMax = 120
+
   return (
     <div className="form-section">
       <div className="form-section-title">2. Amenities &amp; Details</div>
@@ -45,7 +48,11 @@ export default function FacilityAmenitiesDetailsSection({
           rows={3}
           placeholder="Tell families what makes your facility special..."
           style={textareaStyle}
+          maxLength={descriptionMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.description || '').length} / {descriptionMax}
+        </div>
       </div>
 
       <div style={{ marginBottom: 0 }}>
@@ -55,7 +62,11 @@ export default function FacilityAmenitiesDetailsSection({
           onChange={(e) => setField('hours', e.target.value)}
           placeholder="e.g. Mon-Fri 4-9pm, Sat 8am-5pm"
           style={inputStyle}
+          maxLength={hoursMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.hours || '').length} / {hoursMax}
+        </div>
       </div>
     </div>
   )

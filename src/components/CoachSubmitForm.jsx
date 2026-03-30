@@ -2103,7 +2103,17 @@ function FacilityForm({ isMobile }) {
 
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Submission Notes</label>
-        <textarea value={form.submission_notes} onChange={(e) => set('submission_notes', e.target.value)} rows={2} placeholder="Anything else we should know?" style={textareaStyle} />
+        <textarea
+          value={form.submission_notes}
+          onChange={(e) => set('submission_notes', e.target.value)}
+          rows={2}
+          placeholder="Anything else we should know?"
+          style={textareaStyle}
+          maxLength={200}
+        />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.submission_notes || '').length} / 200
+        </div>
       </div>
 
       <div style={{ fontSize: 11, color: 'var(--gray)', marginBottom: 12 }}>

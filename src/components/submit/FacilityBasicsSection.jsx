@@ -18,6 +18,9 @@ export default function FacilityBasicsSection({
   facilityTypeOptions,
   stateOptions,
 }) {
+  const facilityNameMax = 80
+  const addressMax = 120
+
   return (
     <div className="form-section">
       <div className="form-section-title">1. The Basics</div>
@@ -58,9 +61,13 @@ export default function FacilityBasicsSection({
             onChange={(e) => setField('name', e.target.value)}
             placeholder="e.g. Grit Academy Athletics"
             style={inputStyle}
+            maxLength={facilityNameMax}
           />
           <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
             We will suggest an existing facility when the name or address looks close to one already on the site.
+          </div>
+          <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+            {(form.name || '').length} / {facilityNameMax}
           </div>
         </div>
 
@@ -112,9 +119,13 @@ export default function FacilityBasicsSection({
           onBlur={handleAddressBlur}
           placeholder="e.g. 5735 North Commerce Court"
           style={inputStyle}
+          maxLength={addressMax}
         />
         <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
           Enter the full street address for the most accurate facility pin possible.
+        </div>
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.address || '').length} / {addressMax}
         </div>
       </div>
 
