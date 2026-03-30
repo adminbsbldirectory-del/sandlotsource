@@ -13,6 +13,9 @@ export default function CoachContactSocialSection({
   inputStyle,
   textareaStyle,
 }) {
+  const roleMax = 80
+  const submissionNotesMax = 200
+
   return (
     <div className="form-section">
       <div className="form-section-title">3. Contact &amp; Social</div>
@@ -24,9 +27,13 @@ export default function CoachContactSocialSection({
           onChange={(e) => setField('contact_role', e.target.value)}
           placeholder="e.g. Coach (self), Facility Owner, Parent submitting for coach"
           style={inputStyle}
+          maxLength={roleMax}
         />
         <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
           Helps us understand your relationship to this listing
+        </div>
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.contact_role || '').length} / {roleMax}
         </div>
       </div>
 
@@ -96,7 +103,11 @@ export default function CoachContactSocialSection({
           rows={2}
           placeholder="Anything else we should know when reviewing this listing?"
           style={textareaStyle}
+          maxLength={submissionNotesMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.submission_notes || '').length} / {submissionNotesMax}
+        </div>
       </div>
     </div>
   )

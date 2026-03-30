@@ -9,6 +9,11 @@ export default function CoachProfessionalSpecsSection({
   specialtyOptions,
   toggleSpecialty,
 }) {
+  const credentialsMax = 140
+  const bioMax = 500
+  const ageGroupsMax = 60
+  const priceNotesMax = 120
+
   return (
     <div className="form-section">
       <div className="form-section-title">2. Professional Specs</div>
@@ -47,7 +52,11 @@ export default function CoachProfessionalSpecsSection({
           onChange={(e) => setField('credentials', e.target.value)}
           placeholder="e.g. Former MiLB pitcher, Masters in Biomechanics"
           style={inputStyle}
+          maxLength={credentialsMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.credentials || '').length} / {credentialsMax}
+        </div>
       </div>
 
       <div style={{ marginBottom: 14 }}>
@@ -58,7 +67,11 @@ export default function CoachProfessionalSpecsSection({
           rows={3}
           placeholder="Tell families about your coaching style, experience, and approach..."
           style={textareaStyle}
+          maxLength={bioMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.bio || '').length} / {bioMax}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
@@ -69,8 +82,13 @@ export default function CoachProfessionalSpecsSection({
             onChange={(e) => setField('age_groups', e.target.value)}
             placeholder="e.g. 10U, 12U, 14U"
             style={inputStyle}
+            maxLength={ageGroupsMax}
           />
+          <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+            {(form.age_groups || '').length} / {ageGroupsMax}
+          </div>
         </div>
+
         <div>
           <label style={labelStyle}>Skill Level</label>
           <select
@@ -99,6 +117,7 @@ export default function CoachProfessionalSpecsSection({
             style={inputStyle}
           />
         </div>
+
         <div>
           <label style={labelStyle}>Price Notes</label>
           <input
@@ -106,7 +125,11 @@ export default function CoachProfessionalSpecsSection({
             onChange={(e) => setField('price_notes', e.target.value)}
             placeholder="e.g. Group rates available"
             style={inputStyle}
+            maxLength={priceNotesMax}
           />
+          <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+            {(form.price_notes || '').length} / {priceNotesMax}
+          </div>
         </div>
       </div>
     </div>
