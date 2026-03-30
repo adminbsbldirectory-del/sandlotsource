@@ -2379,10 +2379,22 @@ export default function CoachDirectory() {
 
   return (
     <>
-      {profileCoach && (
+            {profileCoach && (
         <CoachProfile
           coach={profileCoach}
           onClose={() => setProfileCoach(null)}
+          onClaim={(coach) => {
+            const params = new URLSearchParams({
+              listingId: coach.id || '',
+              listingType: 'coach',
+              listingName: coach.name || '',
+              city: coach.city || '',
+              requestKind: 'claim',
+              requestedChange: 'Claim this listing',
+            })
+
+            window.location.href = '/claim?' + params.toString()
+          }}
         />
       )}
       {!isMobile && !profileCoach && sel && (
