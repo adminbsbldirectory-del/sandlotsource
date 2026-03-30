@@ -10,6 +10,8 @@ export default function TeamContactSection({
   labelStyle,
   inputStyle,
 }) {
+  const submissionNotesMax = 200
+
   return (
     <div className="form-section">
       <div className="form-section-title">4. Contact</div>
@@ -58,6 +60,7 @@ export default function TeamContactSection({
             style={inputStyle}
           />
         </div>
+
         <div>
           <label style={labelStyle}>Submission Notes</label>
           <input
@@ -65,7 +68,11 @@ export default function TeamContactSection({
             onChange={(e) => setField('submission_notes', e.target.value)}
             placeholder="Anything else we should know?"
             style={inputStyle}
+            maxLength={submissionNotesMax}
           />
+          <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+            {(form.submission_notes || '').length} / {submissionNotesMax}
+          </div>
         </div>
       </div>
     </div>

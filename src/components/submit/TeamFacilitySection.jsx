@@ -24,6 +24,11 @@ export default function TeamFacilitySection({
   RequiredMark,
   US_STATE_ABBRS,
 }) {
+  const facilityNameMax = 80
+  const facilityAddressMax = 120
+  const facilityWebsiteMax = 120
+  const facilityPhoneMax = 25
+
   return (
     <div className="form-section">
       <div className="form-section-title">2. Primary / Home Facility</div>
@@ -119,8 +124,13 @@ export default function TeamFacilitySection({
                     onChange={(e) => setNewFacility('name', e.target.value)}
                     placeholder="e.g. Grand Slam Johns Creek"
                     style={inputStyle}
+                    maxLength={facilityNameMax}
                   />
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+                    {(newFacilityForm.name || '').length} / {facilityNameMax}
+                  </div>
                 </div>
+
                 <div>
                   <label style={labelStyle}>Facility Phone</label>
                   <input
@@ -128,7 +138,11 @@ export default function TeamFacilitySection({
                     onChange={(e) => setNewFacility('phone', e.target.value)}
                     placeholder="Optional"
                     style={inputStyle}
+                    maxLength={facilityPhoneMax}
                   />
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+                    {(newFacilityForm.phone || '').length} / {facilityPhoneMax}
+                  </div>
                 </div>
               </div>
 
@@ -146,7 +160,11 @@ export default function TeamFacilitySection({
                   onBlur={handleNewFacilityAddressBlur}
                   placeholder="Required for accurate facility placement"
                   style={inputStyle}
+                  maxLength={facilityAddressMax}
                 />
+                <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+                  {(newFacilityForm.address || '').length} / {facilityAddressMax}
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: g3, gap: 12, marginBottom: 12 }}>
@@ -191,8 +209,13 @@ export default function TeamFacilitySection({
                     onChange={(e) => setNewFacility('website', e.target.value)}
                     placeholder="Optional"
                     style={inputStyle}
+                    maxLength={facilityWebsiteMax}
                   />
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+                    {(newFacilityForm.website || '').length} / {facilityWebsiteMax}
+                  </div>
                 </div>
+
                 <div style={{ fontSize: 11, color: '#888', alignSelf: 'end' }}>
                   This creates a pending facility record using the team contact information from Section 4.
                 </div>

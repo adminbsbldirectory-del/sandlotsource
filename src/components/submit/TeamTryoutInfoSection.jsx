@@ -7,6 +7,9 @@ export default function TeamTryoutInfoSection({
   inputStyle,
   textareaStyle,
 }) {
+  const tryoutNotesMax = 160
+  const teamDescriptionMax = 500
+
   return (
     <div className="form-section">
       <div className="form-section-title">3. Tryout Info</div>
@@ -44,7 +47,11 @@ export default function TeamTryoutInfoSection({
           onChange={(e) => setField('tryout_notes', e.target.value)}
           placeholder="e.g. Bring your own helmet. Arrive 15 min early."
           style={inputStyle}
+          maxLength={tryoutNotesMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.tryout_notes || '').length} / {tryoutNotesMax}
+        </div>
       </div>
 
       <div style={{ marginBottom: 0 }}>
@@ -55,7 +62,11 @@ export default function TeamTryoutInfoSection({
           rows={3}
           placeholder="Tell players and families about your program..."
           style={textareaStyle}
+          maxLength={teamDescriptionMax}
         />
+        <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+          {(form.description || '').length} / {teamDescriptionMax}
+        </div>
       </div>
     </div>
   )
