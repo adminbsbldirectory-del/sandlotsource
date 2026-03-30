@@ -1167,9 +1167,11 @@ export default function TravelTeams() {
           onClose={() => setProfileTeam(null)}
           onClaim={(team) => {
             const params = new URLSearchParams({
-              listingType: 'Travel Team',
+              listingId: team.id || '',
+              listingType: 'team',
               listingName: team.name || '',
-              city: team.city || '',
+              city: team.display_city || team.city || '',
+              requestKind: 'claim',
               requestedChange: 'Claim this listing',
             })
 

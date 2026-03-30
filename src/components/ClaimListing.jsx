@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase.js'
 
-const LISTING_TYPES = ['Coach / Trainer', 'Travel Team', 'Facility']
+const LISTING_TYPE_OPTIONS = [
+  { value: 'coach', label: 'Coach / Trainer' },
+  { value: 'team', label: 'Travel Team' },
+  { value: 'facility', label: 'Facility' },
+]
 
 const CHANGE_OPTIONS = [
   'Claim this listing',
@@ -54,6 +58,27 @@ const inputStyle = {
   boxSizing: 'border-box',
 }
 
+function normalizeListingType(value) {
+  const raw = String(value || '').trim().toLowerCase()
+
+  if (!raw) return ''
+  if (raw === 'coach') return 'coach'
+  if (raw === 'team') return 'team'
+  if (raw === 'facility') return 'facility'
+  if (raw === 'coach / trainer' || raw === 'coach/trainer') return 'coach'
+  if (raw === 'travel team') return 'team'
+
+  return ''
+}
+
+function getListingTypeLabel(value) {
+  return LISTING_TYPE_OPTIONS.find((item) => item.value === value)?.label || ''
+}
+
+function normalizeRequestKind(value) {
+  return String(value || '').trim().toLowerCase() === 'update' ? 'update' : 'claim'
+}
+
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
 }
@@ -70,7 +95,9 @@ export default function ClaimListing() {
   const [searchParams] = useSearchParams()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [form, setForm] = useState({
+    listing_id: '',
     listing_type: '',
+    request_kind: 'claim',
     listing_name: '',
     city: '',
     requester_name: '',
@@ -89,6 +116,8 @@ export default function ClaimListing() {
   const [validationError, setValidationError] = useState('')
 
   const hasPrefill =
+    !!searchParams.get('listingId') ||
+    !!searchParams.get('listing_id') ||
     !!searchParams.get('listingType') ||
     !!searchParams.get('listing_type') ||
     !!searchParams.get('listingName') ||
@@ -105,9 +134,14 @@ export default function ClaimListing() {
   }, [])
 
   useEffect(() => {
-    const listingType = searchParams.get('listingType') || searchParams.get('listing_type') || ''
+    const listingId = searchParams.get('listingId') || searchParams.get('listing_id') || ''
+    const listingTypeRaw = searchParams.get('listingType') || searchParams.get('listing_type') || ''
+    const listingType = normalizeListingType(listingTypeRaw)
     const listingName = searchParams.get('listingName') || searchParams.get('listing_name') || ''
     const city = searchParams.get('city') || ''
+    const requestKind = normalizeRequestKind(
+      searchParams.get('requestKind') || searchParams.get('request_kind') || 'claim'
+    )
     const requestedChange =
       searchParams.get('requestedChange') ||
       searchParams.get('requested_change') ||
@@ -115,7 +149,9 @@ export default function ClaimListing() {
 
     setForm((f) => ({
       ...f,
-      listing_type: LISTING_TYPES.includes(listingType) ? listingType : f.listing_type,
+      listing_id: listingId || f.listing_id,
+      listing_type: listingType || f.listing_type,
+      request_kind: requestKind || f.request_kind,
       listing_name: listingName || f.listing_name,
       city: city || f.city,
       requested_change: CHANGE_OPTIONS.includes(requestedChange) ? requestedChange : f.requested_change,
@@ -148,7 +184,9 @@ export default function ClaimListing() {
     setSubmitting(true)
 
     const payload = {
+      listing_id: form.listing_id || null,
       listing_type: form.listing_type,
+      request_kind: form.request_kind || 'claim',
       listing_name: form.listing_name.trim(),
       city: form.city.trim(),
       requester_name: form.requester_name.trim(),
@@ -253,10 +291,16 @@ export default function ClaimListing() {
 
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>Listing Type <RequiredMark /></label>
-          <select value={form.listing_type} onChange={(e) => set('listing_type', e.target.value)} style={inputStyle}>
+          <select
+            value={form.listing_type}
+            onChange={(e) => set('listing_type', e.target.value)}
+            style={inputStyle}
+          >
             <option value="">Select…</option>
-            {LISTING_TYPES.map((t) => (
-              <option key={t}>{t}</option>
+            {LISTING_TYPE_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
             ))}
           </select>
         </div>
@@ -293,6 +337,22 @@ export default function ClaimListing() {
             <Count value={form.city} max={MAX.city} />
           </div>
         </div>
+
+        {form.listing_id && (
+          <div
+            style={{
+              marginBottom: 14,
+              padding: '10px 12px',
+              background: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: 8,
+              fontSize: 12,
+              color: '#475569',
+            }}
+          >
+            Linked listing: <strong>{getListingTypeLabel(form.listing_type) || 'Listing'}</strong> · ID {form.listing_id}
+          </div>
+        )}
 
         <div style={{ borderTop: '1px solid var(--lgray)', marginBottom: 14, paddingTop: 14 }}>
           <div
