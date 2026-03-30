@@ -12,6 +12,8 @@ export default function FacilityContactSection({
   labelStyle,
   inputStyle,
 }) {
+  const contactNameMax = 80
+
   return (
     <div className="form-section">
       <div className="form-section-title">3. Contact</div>
@@ -81,7 +83,11 @@ export default function FacilityContactSection({
               onChange={(e) => setField('contact_name', e.target.value)}
               placeholder="Full name"
               style={inputStyle}
+              maxLength={contactNameMax}
             />
+            <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
+              {(form.contact_name || '').length} / {contactNameMax}
+            </div>
           </div>
           <div>
             <label style={labelStyle}>Your Email <RequiredMark /> <span style={{ fontWeight: 400, textTransform: 'none' }}>(or phone)</span></label>
