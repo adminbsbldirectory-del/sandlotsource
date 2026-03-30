@@ -183,9 +183,9 @@ function CoachCard({ coach, facilityId }) {
         <Link
           to={`/coaches?select=${coach.id}${facilityId ? `&facility=${facilityId}` : ''}`}
           style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}
-          >
-            View Coach →
-          </Link>
+        >
+          View Coach →
+        </Link>
         {coach.email && (
           <a href={`mailto:${coach.email}`} style={{ color: '#1D4ED8', textDecoration: 'none', fontSize: 13 }}>
             Email
@@ -615,7 +615,6 @@ export default function FacilityProfile() {
             )}
           </div>
 
-          {/* Linked Teams — grouped by org so Georgia Bombers 13U + 14U show as one block */}
           <div className="card" style={{ padding: isMobile ? 14 : 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
               <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)' }}>
@@ -675,6 +674,46 @@ export default function FacilityProfile() {
                 <a href={`https://maps.google.com/?q=${mapsQuery}`} target="_blank" rel="noopener noreferrer" style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 600 }}>🗺 Open in Maps</a>
               )}
             </div>
+          </div>
+
+          <div className="card" style={{ padding: isMobile ? 14 : 18 }}>
+            <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 10 }}>
+              Claim or Update
+            </div>
+
+            <div style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.55, marginBottom: 14 }}>
+              Is this your facility? Claim this listing to request updates to contact information, hours, description, and more.
+            </div>
+
+            <a
+              href={
+                '/claim?' +
+                new URLSearchParams({
+                  listingId: facility.id || '',
+                  listingType: 'facility',
+                  listingName: facility.name || '',
+                  city: facility.city || '',
+                  requestKind: 'claim',
+                  requestedChange: 'Claim this listing',
+                }).toString()
+              }
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 10,
+                background: 'var(--red)',
+                color: 'white',
+                textDecoration: 'none',
+                fontWeight: 800,
+                fontFamily: 'var(--font-head)',
+                fontSize: 14,
+              }}
+            >
+              ✏️ Claim or Update This Listing
+            </a>
           </div>
 
           <div className="card" style={{ padding: 0, overflow: 'hidden', width: '100%', minWidth: 0 }}>
