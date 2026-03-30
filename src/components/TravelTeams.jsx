@@ -1166,9 +1166,14 @@ export default function TravelTeams() {
           team={profileTeam}
           onClose={() => setProfileTeam(null)}
           onClaim={(team) => {
-            window.location.href =
-              'admin@sandlotsource.com?subject=' +
-              encodeURIComponent('Claim Request: ' + team.name)
+            const params = new URLSearchParams({
+              listingType: 'Travel Team',
+              listingName: team.name || '',
+              city: team.city || '',
+              requestedChange: 'Claim this listing',
+            })
+
+            window.location.href = '/claim?' + params.toString()
           }}
         />
       )}

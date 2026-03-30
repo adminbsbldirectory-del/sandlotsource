@@ -175,13 +175,14 @@ function AppRoutes() {
   const location = useLocation()
 
   if (location.pathname.startsWith('/admin')) {
-    return (
-      <Routes>
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/admin/geocode" element={<AdminGeocode />} />
-      </Routes>
-    )
-  }
+  return (
+    <Routes>
+      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin/geocode" element={<AdminGeocode />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
 
   return (
     <>
