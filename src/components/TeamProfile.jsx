@@ -93,11 +93,9 @@ export default function TeamProfile({ team, onClose, onClaim }) {
         style={{
           background: 'var(--white)',
           borderRadius: 14,
-          width: '100%',
-          maxWidth: 640,
+          width: 'min(640px, calc(100vw - 16px))',
           boxShadow: '0 8px 40px rgba(0,0,0,0.25)',
           overflow: 'hidden',
-          maxWidth: 'calc(100vw - 16px)',
         }}
       >
         <div style={{ background: 'var(--navy)', padding: '18px 18px 16px', position: 'relative' }}>

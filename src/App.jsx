@@ -14,6 +14,7 @@ import FacilityProfile from './components/FacilityProfile.jsx'
 import AdminGeocode from './components/AdminGeocode.jsx'
 import LegalPage from './components/LegalPage.jsx'
 import AdminPage from './components/AdminPage.jsx'
+import HelpPage from './components/HelpPage.jsx'
 
 const BORDER = '#eaeae6'
 const FAINT = '#bbb'
@@ -54,17 +55,17 @@ function SiteFooter() {
       ],
     },
     {
-      heading: 'Listings',
+      heading: 'Support',
       links: [
         { label: 'Add a Listing', to: '/submit' },
-        { label: 'Claim a Listing', to: '/claim' },
-        { label: 'About', to: '/legal#about' },
+        { label: 'Help / FAQ', to: '/help' },
         { label: 'Contact', href: 'mailto:admin@sandlotsource.com' },
       ],
     },
     {
       heading: 'Legal',
       links: [
+        { label: 'About', to: '/legal#about' },
         { label: 'Privacy Policy', to: '/legal#privacy' },
         { label: 'Terms of Use', to: '/legal#terms' },
         { label: 'Disclaimer', to: '/legal#disclaimer' },
@@ -106,7 +107,7 @@ function SiteFooter() {
               <span style={{ color: RED }}>◆</span> SANDLOT SOURCE
             </div>
             <p style={{ fontSize: isMobile ? 11 : 12, color: '#aaa', lineHeight: 1.65, margin: 0 }}>
-              Baseball &amp; softball coaches, teams, and roster connections — free to browse, anywhere in the country.
+              Baseball &amp; softball coaches, teams, facilities, and roster connections — free to browse, anywhere in the country.
             </p>
           </div>
 
@@ -175,14 +176,14 @@ function AppRoutes() {
   const location = useLocation()
 
   if (location.pathname.startsWith('/admin')) {
-  return (
-    <Routes>
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="/admin/geocode" element={<AdminGeocode />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  )
-}
+    return (
+      <Routes>
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/geocode" element={<AdminGeocode />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    )
+  }
 
   return (
     <>
@@ -204,6 +205,7 @@ function AppRoutes() {
           <Route path="/roster" element={<RosterSpots />} />
           <Route path="/submit" element={<CoachSubmitForm />} />
           <Route path="/claim" element={<ClaimListing />} />
+          <Route path="/help" element={<HelpPage />} />
           <Route path="/legal" element={<LegalPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

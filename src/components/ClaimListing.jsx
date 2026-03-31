@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase.js'
 
 const LISTING_TYPE_OPTIONS = [
@@ -136,14 +136,23 @@ export default function ClaimListing() {
   const [submitted, setSubmitted] = useState(false)
   const [validationError, setValidationError] = useState('')
 
+  const searchListingId = searchParams.get('listingId') || searchParams.get('listing_id') || ''
+  const searchListingTypeRaw = searchParams.get('listingType') || searchParams.get('listing_type') || ''
+  const searchListingName = searchParams.get('listingName') || searchParams.get('listing_name') || ''
+  const searchCity = searchParams.get('city') || ''
+  const searchRequestKindRaw = searchParams.get('requestKind') || searchParams.get('request_kind') || 'claim'
+  const searchRequestedChangeRaw =
+    searchParams.get('requestedChange') ||
+    searchParams.get('requested_change') ||
+    (searchListingId || searchListingTypeRaw || searchListingName || searchCity ? CLAIM_CHANGE : '')
+
   const hasPrefill =
-    !!searchParams.get('listingId') ||
-    !!searchParams.get('listing_id') ||
-    !!searchParams.get('listingType') ||
-    !!searchParams.get('listing_type') ||
-    !!searchParams.get('listingName') ||
-    !!searchParams.get('listing_name') ||
-    !!searchParams.get('city')
+    !!searchListingId ||
+    !!searchListingTypeRaw ||
+    !!searchListingName ||
+    !!searchCity
+
+  const hasLinkedListing = !!String(form.listing_id || searchListingId || '').trim()
 
   useEffect(() => {
     function handleResize() {
@@ -155,33 +164,23 @@ export default function ClaimListing() {
   }, [])
 
   useEffect(() => {
-    const listingId = searchParams.get('listingId') || searchParams.get('listing_id') || ''
-    const listingTypeRaw = searchParams.get('listingType') || searchParams.get('listing_type') || ''
-    const listingType = normalizeListingType(listingTypeRaw)
-    const listingName = searchParams.get('listingName') || searchParams.get('listing_name') || ''
-    const city = searchParams.get('city') || ''
-
-    const requestKindRaw = searchParams.get('requestKind') || searchParams.get('request_kind') || 'claim'
-    const requestedChangeRaw =
-      searchParams.get('requestedChange') ||
-      searchParams.get('requested_change') ||
-      (listingType || listingName || city ? CLAIM_CHANGE : '')
+    const listingType = normalizeListingType(searchListingTypeRaw)
 
     const nextMode = getInitialRequestMode({
-      requestKind: requestKindRaw,
-      requestedChange: requestedChangeRaw,
-      hasPrefill: !!(listingId || listingType || listingName || city),
+      requestKind: searchRequestKindRaw,
+      requestedChange: searchRequestedChangeRaw,
+      hasPrefill: !!(searchListingId || listingType || searchListingName || searchCity),
     })
 
-    const normalizedRequestedChange = normalizeRequestedChange(requestedChangeRaw)
+    const normalizedRequestedChange = normalizeRequestedChange(searchRequestedChangeRaw)
 
     setRequestMode(nextMode)
     setForm((f) => ({
       ...f,
-      listing_id: listingId || f.listing_id,
-      listing_type: listingType || f.listing_type,
-      listing_name: listingName || f.listing_name,
-      city: city || f.city,
+      listing_id: searchListingId || '',
+      listing_type: listingType || '',
+      listing_name: searchListingName || '',
+      city: searchCity || '',
       requested_change:
         nextMode === 'claim'
           ? CLAIM_CHANGE
@@ -193,7 +192,14 @@ export default function ClaimListing() {
       tryout_updates: nextMode === 'claim' ? '' : f.tryout_updates,
       availability_updates: nextMode === 'claim' ? '' : f.availability_updates,
     }))
-  }, [searchParams])
+  }, [
+    searchListingId,
+    searchListingTypeRaw,
+    searchListingName,
+    searchCity,
+    searchRequestKindRaw,
+    searchRequestedChangeRaw,
+  ])
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -214,6 +220,10 @@ export default function ClaimListing() {
   }
 
   function validate() {
+    if (!String(form.listing_id || '').trim()) {
+      return 'Claims and updates must be started from the specific coach, team, or facility listing.'
+    }
+
     if (!form.listing_type) return 'Please select a listing type.'
     if (!form.listing_name.trim()) return 'Listing name is required.'
     if (!form.city.trim()) return 'City is required.'
@@ -245,7 +255,7 @@ export default function ClaimListing() {
     const requestedChange = requestMode === 'claim' ? CLAIM_CHANGE : form.requested_change
 
     const payload = {
-      listing_id: form.listing_id || null,
+      listing_id: form.listing_id,
       listing_type: form.listing_type,
       request_kind: requestKind,
       listing_name: form.listing_name.trim(),
@@ -309,6 +319,88 @@ export default function ClaimListing() {
         <div style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.6 }}>
           We&apos;ll review your {requestMode === 'claim' ? 'claim' : 'update request'} and follow up at{' '}
           <strong>{form.requester_email}</strong> within a few business days.
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasLinkedListing) {
+    return (
+      <div style={{ maxWidth: 760, margin: '32px auto', padding: isMobile ? '0 12px 96px' : '0 16px' }}>
+        <div
+          style={{
+            background: 'white',
+            borderRadius: 14,
+            border: '2px solid var(--lgray)',
+            padding: isMobile ? '24px 18px' : '30px 28px',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-head)',
+              fontSize: isMobile ? 22 : 26,
+              fontWeight: 800,
+              color: 'var(--navy)',
+              marginBottom: 10,
+            }}
+          >
+            Start from the listing you want to claim
+          </div>
+
+          <div
+            style={{
+              fontSize: 14,
+              color: 'var(--gray)',
+              lineHeight: 1.7,
+              marginBottom: 18,
+            }}
+          >
+            Claims and update requests must begin from a specific coach, team, or facility listing.
+            That keeps the request tied to the correct record and prevents orphaned claim submissions.
+          </div>
+
+          <div
+            style={{
+              background: '#EFF6FF',
+              border: '1px solid #BFDBFE',
+              borderRadius: 12,
+              padding: '14px 14px',
+              color: '#1D4ED8',
+              fontSize: 14,
+              lineHeight: 1.6,
+              marginBottom: 18,
+            }}
+          >
+            Browse to the coach, team, or facility you want, open that listing, and use the claim or
+            update button from there.
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+              gap: 10,
+              marginBottom: 16,
+            }}
+          >
+            <Link to="/coaches" style={ctaLinkStyle('navy')}>
+              Browse Coaches
+            </Link>
+            <Link to="/teams" style={ctaLinkStyle('navy')}>
+              Browse Teams
+            </Link>
+            <Link to="/facilities" style={ctaLinkStyle('navy')}>
+              Browse Facilities
+            </Link>
+            <Link to="/help" style={ctaLinkStyle('red')}>
+              Help / FAQ
+            </Link>
+          </div>
+
+          <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+            Ownership disputes, former admins, and other edge cases should go through the Help / FAQ
+            page or direct support.
+          </div>
         </div>
       </div>
     )
@@ -449,21 +541,19 @@ export default function ClaimListing() {
           </div>
         </div>
 
-        {form.listing_id && (
-          <div
-            style={{
-              marginBottom: 14,
-              padding: '10px 12px',
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              borderRadius: 8,
-              fontSize: 12,
-              color: '#475569',
-            }}
-          >
-            Linked listing: <strong>{getListingTypeLabel(form.listing_type) || 'Listing'}</strong> · ID {form.listing_id}
-          </div>
-        )}
+        <div
+          style={{
+            marginBottom: 14,
+            padding: '10px 12px',
+            background: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: 8,
+            fontSize: 12,
+            color: '#475569',
+          }}
+        >
+          Linked listing: <strong>{getListingTypeLabel(form.listing_type) || 'Listing'}</strong> · ID {form.listing_id}
+        </div>
 
         <div style={{ borderTop: '1px solid var(--lgray)', marginBottom: 14, paddingTop: 14 }}>
           <div
@@ -702,4 +792,22 @@ export default function ClaimListing() {
       </div>
     </div>
   )
+}
+
+function ctaLinkStyle(variant = 'navy') {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    padding: '10px 14px',
+    borderRadius: 12,
+    textDecoration: 'none',
+    fontSize: 13,
+    fontWeight: 800,
+    fontFamily: 'var(--font-head)',
+    letterSpacing: '0.03em',
+    background: variant === 'red' ? 'var(--red)' : 'var(--navy)',
+    color: '#fff',
+  }
 }

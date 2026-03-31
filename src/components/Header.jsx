@@ -9,11 +9,11 @@ const NAV_TABS = [
   { id: 'board', label: 'Players Needed & Available', path: '/find' },
   { id: 'roster', label: 'Roster Spots', path: '/roster' },
   { id: 'submit', label: 'Add a Listing', path: '/submit' },
-  { id: 'claim', label: 'Claim a Listing', path: '/claim' },
 ]
 
-const CTA_IDS = ['roster','submit', 'claim']
+const CTA_IDS = ['roster', 'submit']
 const NAVY = '#1b3a5c'
+const RED = '#c0392b'
 
 function getActiveTab(pathname) {
   const match = NAV_TABS.find((tab) => {
@@ -26,11 +26,12 @@ function getActiveTab(pathname) {
 function getTabStyles(tabId, isActive) {
   if (tabId === 'submit') {
     return {
-      background: isActive ? '#b07d00' : 'rgba(240,165,0,0.12)',
-      color: isActive ? '#fff' : '#b07d00',
-      borderBottom: isActive ? '3px solid #b07d00' : '3px solid transparent',
+      background: isActive ? RED : 'rgba(230,51,41,0.07)',
+      color: isActive ? '#fff' : RED,
+      borderBottom: isActive ? `3px solid ${RED}` : '3px solid transparent',
     }
   }
+
   if (tabId === 'roster') {
     return {
       background: isActive ? '#15803d' : 'rgba(22,163,74,0.1)',
@@ -38,22 +39,17 @@ function getTabStyles(tabId, isActive) {
       borderBottom: isActive ? '3px solid #15803d' : '3px solid transparent',
     }
   }
-  if (tabId === 'claim') {
-    return {
-      background: isActive ? '#c0392b' : 'rgba(230,51,41,0.07)',
-      color: isActive ? '#fff' : '#c0392b',
-      borderBottom: isActive ? '3px solid #c0392b' : '3px solid transparent',
-    }
-  }
+
   return {
     background: isActive ? NAVY : 'transparent',
     color: isActive ? '#fff' : '#555',
-    borderBottom: isActive ? ('3px solid ' + NAVY) : '3px solid transparent',
+    borderBottom: isActive ? `3px solid ${NAVY}` : '3px solid transparent',
   }
 }
 
 function NavButton({ tab, isActive, onClick, mobile = false }) {
   const styles = getTabStyles(tab.id, isActive)
+
   return (
     <button
       type="button"
@@ -121,6 +117,7 @@ export default function Header() {
       setIsMobile(mobile)
       if (!mobile) setMenuOpen(false)
     }
+
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -155,7 +152,6 @@ export default function Header() {
             minHeight: isMobile ? 58 : 84,
           }}
         >
-          {/* Logo */}
           <button
             type="button"
             onClick={() => handleNavigate('/')}
@@ -215,7 +211,6 @@ export default function Header() {
                 scrollbarWidth: 'none',
               }}
             >
-              {/* Core browse tabs — left */}
               <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexShrink: 0 }}>
                 {coreTabs.map((tab) => (
                   <NavButton
@@ -227,10 +222,8 @@ export default function Header() {
                 ))}
               </div>
 
-              {/* Spacer */}
               <div style={{ flex: 1 }} />
 
-              {/* CTA tabs — right */}
               <div
                 style={{
                   display: 'flex',
