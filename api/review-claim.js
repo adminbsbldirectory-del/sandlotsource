@@ -5,14 +5,57 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 )
 
+const QUEUE_ACTIONS = new Set(['approve', 'reject', 'mark_pending', 'mark_new'])
+const ACTIVE_OWNERSHIP_STATUS = 'active'
+
 function normalizeAction(value) {
   const action = String(value || '').trim().toLowerCase()
+  return QUEUE_ACTIONS.has(action) ? action : ''
+}
 
-  if (['approve', 'reject', 'mark_pending', 'mark_new'].includes(action)) {
-    return action
-  }
+function normalizeListingType(value) {
+  const raw = String(value || '').trim().toLowerCase()
+
+  if (raw === 'coach') return 'coach'
+  if (raw === 'team') return 'team'
+  if (raw === 'facility') return 'facility'
 
   return ''
+}
+
+const CLAIM_CHANGE = 'claim this listing'
+
+const UPDATE_CHANGES = new Set([
+  'correct listing info',
+  'update contact info',
+  'update tryout status',
+  'update availability',
+  'mark inactive',
+  'remove listing',
+])
+
+function normalizeRequestKind(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  return raw === 'update' ? 'update' : 'claim'
+}
+
+function normalizeRequestedChange(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function getRequestMode(row) {
+  const requestKind = normalizeRequestKind(row?.request_kind)
+  const requestedChange = normalizeRequestedChange(row?.requested_change)
+
+  if (requestKind === 'claim' && (!requestedChange || requestedChange === CLAIM_CHANGE)) {
+    return 'claim'
+  }
+
+  if (requestKind === 'update' && UPDATE_CHANGES.has(requestedChange)) {
+    return 'update'
+  }
+
+  return 'invalid'
 }
 
 function buildAdminNotes(action, rawNotes) {
@@ -29,8 +72,175 @@ function buildAdminNotes(action, rawNotes) {
   return notes || null
 }
 
-function isClaimRequest(row) {
-  return String(row?.request_kind || 'claim').trim().toLowerCase() === 'claim'
+function getListingTableName(listingType) {
+  if (listingType === 'coach') return 'coaches'
+  if (listingType === 'team') return 'travel_teams'
+  if (listingType === 'facility') return 'facilities'
+  return ''
+}
+
+async function setListingVerifiedStatus({ listingType, listingId, verified }) {
+  const tableName = getListingTableName(listingType)
+
+  if (!tableName) {
+    return {
+      ok: false,
+      error: `Unsupported listing type: ${listingType}`,
+      code: 400,
+    }
+  }
+
+  const updatePayload = { verified_status: verified }
+
+  // Temporary backward-compat support for travel_teams only.
+  if (listingType === 'team') {
+    updatePayload.claimed = verified
+    updatePayload.claimed_at = verified ? new Date().toISOString() : null
+  }
+
+  const { data, error } = await supabase
+    .from(tableName)
+    .update(updatePayload)
+    .eq('id', listingId)
+    .select('id')
+    .limit(1)
+
+  if (error) {
+    console.error('setListingVerifiedStatus error:', error)
+    return {
+      ok: false,
+      error: `Failed to update ${tableName}.`,
+      code: 500,
+    }
+  }
+
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: `Listing not found in ${tableName}.`,
+      code: 404,
+    }
+  }
+
+  return { ok: true }
+}
+
+async function insertOwnershipFromClaim(claim) {
+  const ownershipInsert = {
+    listing_type: claim.listing_type,
+    listing_id: claim.listing_id,
+    owner_name: claim.requester_name || null,
+    owner_email: claim.requester_email,
+    owner_phone: claim.requester_phone || null,
+    status: ACTIVE_OWNERSHIP_STATUS,
+    approved_claim_request_id: claim.id,
+  }
+
+  const { data, error } = await supabase
+    .from('listing_ownerships')
+    .insert(ownershipInsert)
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('insertOwnershipFromClaim error:', error)
+
+    if (error.code === '23505') {
+      return {
+        ok: false,
+        code: 409,
+        error: 'An active ownership already exists for this listing.',
+      }
+    }
+
+    return {
+      ok: false,
+      code: 500,
+      error: 'Failed to create ownership record.',
+    }
+  }
+
+  return {
+    ok: true,
+    ownershipId: data?.id,
+  }
+}
+
+async function deleteOwnershipById(id) {
+  if (!id) return
+  const { error } = await supabase.from('listing_ownerships').delete().eq('id', id)
+  if (error) {
+    console.error('deleteOwnershipById rollback error:', error)
+  }
+}
+
+async function resolveClaimRequest({ claimRequestId, reviewedBy, resolvedAtIso, adminNotes }) {
+  const { error } = await supabase
+    .from('claim_requests')
+    .update({
+      status: 'resolved',
+      resolved_at: resolvedAtIso,
+      reviewed_by: reviewedBy,
+      admin_notes: adminNotes,
+    })
+    .eq('id', claimRequestId)
+
+  if (error) {
+    console.error('resolveClaimRequest error:', error)
+    return {
+      ok: false,
+      code: 500,
+      error: 'Failed to finalize claim request.',
+    }
+  }
+
+  return { ok: true }
+}
+
+async function setClaimQueueStatus({ claimRequestId, reviewedBy, nextStatus, adminNotes, existingAdminNotes }) {
+  const { error } = await supabase
+    .from('claim_requests')
+    .update({
+      status: nextStatus,
+      reviewed_by: reviewedBy,
+      admin_notes: adminNotes || existingAdminNotes || null,
+    })
+    .eq('id', claimRequestId)
+
+  if (error) {
+    console.error('setClaimQueueStatus error:', error)
+    return {
+      ok: false,
+      code: 500,
+      error: 'Failed to update claim queue status.',
+    }
+  }
+
+  return { ok: true }
+}
+
+async function getActiveOwnershipForListing({ listingType, listingId }) {
+  const { data, error } = await supabase
+    .from('listing_ownerships')
+    .select('id, owner_email, status')
+    .eq('listing_type', listingType)
+    .eq('listing_id', listingId)
+    .eq('status', ACTIVE_OWNERSHIP_STATUS)
+    .limit(1)
+
+  if (error) {
+    console.error('getActiveOwnershipForListing error:', error)
+    return {
+      ok: false,
+      code: 500,
+      error: 'Failed to check existing ownership.',
+    }
+  }
+
+  return {
+    ok: true,
+    ownership: data && data.length > 0 ? data[0] : null,
+  }
 }
 
 export default async function handler(req, res) {
@@ -51,7 +261,7 @@ export default async function handler(req, res) {
   const claimRequestId = Number(body?.claimRequestId)
   const action = normalizeAction(body?.action)
   const reviewedBy = String(body?.reviewedBy || 'admin').trim().slice(0, 120) || 'admin'
-  const adminNotes = String(body?.adminNotes || '').trim().slice(0, 4000)
+  const rawAdminNotes = String(body?.adminNotes || '').trim().slice(0, 4000)
 
   if (!Number.isFinite(claimRequestId) || claimRequestId <= 0) {
     return res.status(400).json({ error: 'Missing or invalid claimRequestId' })
@@ -73,23 +283,22 @@ export default async function handler(req, res) {
 
   if (action === 'mark_pending' || action === 'mark_new') {
     if (claim.status === 'resolved') {
-      return res.status(409).json({ error: 'Resolved claim requests cannot be moved back in queue from this workflow.' })
+      return res.status(409).json({
+        error: 'Resolved claim requests cannot be moved back in queue from this workflow.',
+      })
     }
 
     const nextStatus = action === 'mark_pending' ? 'pending' : 'new'
+    const queueResult = await setClaimQueueStatus({
+      claimRequestId,
+      reviewedBy,
+      nextStatus,
+      adminNotes: rawAdminNotes,
+      existingAdminNotes: claim.admin_notes,
+    })
 
-    const { error: queueError } = await supabase
-      .from('claim_requests')
-      .update({
-        status: nextStatus,
-        reviewed_by: reviewedBy,
-        admin_notes: adminNotes || claim.admin_notes || null,
-      })
-      .eq('id', claimRequestId)
-
-    if (queueError) {
-      console.error('review-claim queue update error:', queueError)
-      return res.status(500).json({ error: 'Failed to update claim queue status.' })
+    if (!queueResult.ok) {
+      return res.status(queueResult.code).json({ error: queueResult.error })
     }
 
     return res.status(200).json({
@@ -103,22 +312,18 @@ export default async function handler(req, res) {
   }
 
   const nowIso = new Date().toISOString()
-  const resolvedNotes = buildAdminNotes(action, adminNotes)
+  const resolvedNotes = buildAdminNotes(action, rawAdminNotes)
 
   if (action === 'reject') {
-    const { error: rejectError } = await supabase
-      .from('claim_requests')
-      .update({
-        status: 'resolved',
-        resolved_at: nowIso,
-        reviewed_by: reviewedBy,
-        admin_notes: resolvedNotes,
-      })
-      .eq('id', claimRequestId)
+    const rejectResult = await resolveClaimRequest({
+      claimRequestId,
+      reviewedBy,
+      resolvedAtIso: nowIso,
+      adminNotes: resolvedNotes,
+    })
 
-    if (rejectError) {
-      console.error('review-claim reject update error:', rejectError)
-      return res.status(500).json({ error: 'Failed to reject claim request.' })
+    if (!rejectResult.ok) {
+      return res.status(rejectResult.code).json({ error: rejectResult.error })
     }
 
     return res.status(200).json({
@@ -128,20 +333,25 @@ export default async function handler(req, res) {
   }
 
   // Approve path
-  if (!isClaimRequest(claim)) {
-    const { error: resolveUpdateError } = await supabase
-      .from('claim_requests')
-      .update({
-        status: 'resolved',
-        resolved_at: nowIso,
-        reviewed_by: reviewedBy,
-        admin_notes: resolvedNotes,
-      })
-      .eq('id', claimRequestId)
+  const requestMode = getRequestMode(claim)
 
-    if (resolveUpdateError) {
-      console.error('review-claim update-request approve error:', resolveUpdateError)
-      return res.status(500).json({ error: 'Failed to resolve update request.' })
+  if (requestMode === 'invalid') {
+    return res.status(409).json({
+      error:
+        'This request has an invalid claim/update combination. Only a true claim can create ownership.',
+    })
+  }
+
+  if (requestMode === 'update') {
+    const updateApprovalResult = await resolveClaimRequest({
+      claimRequestId,
+      reviewedBy,
+      resolvedAtIso: nowIso,
+      adminNotes: resolvedNotes,
+    })
+
+    if (!updateApprovalResult.ok) {
+      return res.status(updateApprovalResult.code).json({ error: updateApprovalResult.error })
     }
 
     return res.status(200).json({
@@ -150,129 +360,75 @@ export default async function handler(req, res) {
     })
   }
 
+  const listingType = normalizeListingType(claim.listing_type)
+
   if (!claim.listing_id) {
     return res.status(400).json({ error: 'Claim request is missing listing_id.' })
   }
 
-  if (!claim.listing_type) {
-    return res.status(400).json({ error: 'Claim request is missing listing_type.' })
+  if (!listingType) {
+    return res.status(400).json({ error: 'Claim request is missing or has invalid listing_type.' })
   }
 
   if (!claim.requester_email) {
     return res.status(400).json({ error: 'Claim request is missing requester_email.' })
   }
 
-  const { data: existingOwners, error: existingOwnersError } = await supabase
-    .from('listing_ownerships')
-    .select('id, owner_email, status')
-    .eq('listing_type', claim.listing_type)
-    .eq('listing_id', claim.listing_id)
-    .eq('status', 'active')
-    .limit(1)
+  const activeOwnershipCheck = await getActiveOwnershipForListing({
+    listingType,
+    listingId: claim.listing_id,
+  })
 
-  if (existingOwnersError) {
-    console.error('review-claim existing owner check error:', existingOwnersError)
-    return res.status(500).json({ error: 'Failed to check existing ownership.' })
+  if (!activeOwnershipCheck.ok) {
+    return res.status(activeOwnershipCheck.code).json({ error: activeOwnershipCheck.error })
   }
 
-  if (existingOwners && existingOwners.length > 0) {
+  if (activeOwnershipCheck.ownership) {
     return res.status(409).json({
       error: 'This listing already has an active owner. Resolve ownership manually before approving another claim.',
     })
   }
 
-  const ownershipInsert = {
-    listing_type: claim.listing_type,
-    listing_id: claim.listing_id,
-    owner_name: claim.requester_name || null,
-    owner_email: claim.requester_email,
-    owner_phone: claim.requester_phone || null,
-    status: 'active',
-    approved_claim_request_id: claim.id,
+  const ownershipResult = await insertOwnershipFromClaim({
+    ...claim,
+    listing_type: listingType,
+  })
+
+  if (!ownershipResult.ok) {
+    return res.status(ownershipResult.code).json({ error: ownershipResult.error })
   }
 
-  const { data: insertedOwnership, error: ownershipInsertError } = await supabase
-    .from('listing_ownerships')
-    .insert(ownershipInsert)
-    .select('id')
-    .single()
+  const verifyResult = await setListingVerifiedStatus({
+    listingType,
+    listingId: claim.listing_id,
+    verified: true,
+  })
 
-  if (ownershipInsertError) {
-    console.error('review-claim ownership insert error:', ownershipInsertError)
-
-    if (ownershipInsertError.code === '23505') {
-      return res.status(409).json({
-        error: 'An active ownership already exists for this listing.',
-      })
-    }
-
-    return res.status(500).json({ error: 'Failed to create ownership record.' })
+  if (!verifyResult.ok) {
+    await deleteOwnershipById(ownershipResult.ownershipId)
+    return res.status(verifyResult.code).json({ error: verifyResult.error })
   }
 
-  let teamWasUpdated = false
+  const finalizeApprovalResult = await resolveClaimRequest({
+    claimRequestId,
+    reviewedBy,
+    resolvedAtIso: nowIso,
+    adminNotes: resolvedNotes,
+  })
 
-  if (claim.listing_type === 'team') {
-    const { data: updatedTeams, error: teamUpdateError } = await supabase
-      .from('travel_teams')
-      .update({
-        claimed: true,
-        claimed_at: nowIso,
-      })
-      .eq('id', claim.listing_id)
-      .select('id')
-
-    if (teamUpdateError || !updatedTeams || updatedTeams.length === 0) {
-      console.error('review-claim team update error:', teamUpdateError)
-
-      if (insertedOwnership?.id) {
-        await supabase.from('listing_ownerships').delete().eq('id', insertedOwnership.id)
-      }
-
-      return res.status(500).json({
-        error: 'Failed to mark team as claimed.',
-      })
-    }
-
-    teamWasUpdated = true
-  }
-
-  const { error: approveUpdateError } = await supabase
-    .from('claim_requests')
-    .update({
-      status: 'resolved',
-      resolved_at: nowIso,
-      reviewed_by: reviewedBy,
-      admin_notes: resolvedNotes,
+  if (!finalizeApprovalResult.ok) {
+    await setListingVerifiedStatus({
+      listingType,
+      listingId: claim.listing_id,
+      verified: false,
     })
-    .eq('id', claimRequestId)
+    await deleteOwnershipById(ownershipResult.ownershipId)
 
-  if (approveUpdateError) {
-    console.error('review-claim claim request resolve error:', approveUpdateError)
-
-    if (teamWasUpdated && claim.listing_type === 'team') {
-      await supabase
-        .from('travel_teams')
-        .update({
-          claimed: false,
-          claimed_at: null,
-        })
-        .eq('id', claim.listing_id)
-    }
-
-    if (insertedOwnership?.id) {
-      await supabase.from('listing_ownerships').delete().eq('id', insertedOwnership.id)
-    }
-
-    return res.status(500).json({
-      error: 'Failed to finalize claim approval.',
-    })
+    return res.status(finalizeApprovalResult.code).json({ error: finalizeApprovalResult.error })
   }
 
   return res.status(200).json({
     ok: true,
-    message:
-      claim.listing_type === 'team'
-        ? 'Team claim approved and ownership recorded.'
-        : 'Claim approved and ownership recorded.',
+    message: 'Claim approved, ownership recorded, and listing verified.',
   })
 }
