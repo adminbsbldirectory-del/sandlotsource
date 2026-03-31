@@ -27,6 +27,7 @@ function formatTryoutDate(value) {
 export default function TeamProfile({ team, onClose, onClaim }) {
   const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.unknown
   const zip = getTeamZip(team)
+  const isVerified = team?.verified_status === true
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -216,6 +217,24 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             >
               {statusInfo.label}
             </span>
+
+            {isVerified && (
+              <span
+                style={{
+                  background: '#DCFCE7',
+                  color: '#166534',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: 20,
+                  fontFamily: 'var(--font-head)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                Verified
+              </span>
+            )}
           </div>
         </div>
 
@@ -515,19 +534,59 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               gap: 8,
             }}
           >
-            {team.claimed || team.claimed_status ? (
+            {isVerified ? (
               <div
                 style={{
                   textAlign: 'center',
-                  padding: '12px',
-                  background: 'var(--lgray)',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  color: 'var(--gray)',
-                  fontWeight: 600,
+                  padding: '14px 12px',
+                  background: '#F0FDF4',
+                  border: '1px solid #BBF7D0',
+                  borderRadius: 10,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  alignItems: 'center',
                 }}
               >
-                ✅ This listing has been claimed
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#166534',
+                    fontWeight: 700,
+                  }}
+                >
+                  ✅ Verified Listing
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: '#166534',
+                    lineHeight: 1.5,
+                    maxWidth: 460,
+                  }}
+                >
+                  Need a correction or ownership help? Visit Help / FAQ for next steps.
+                </div>
+
+                <a
+                  href="/help"
+                  style={{
+                    color: '#166534',
+                    textDecoration: 'none',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 12px',
+                    background: '#DCFCE7',
+                    borderRadius: 999,
+                    width: 'fit-content',
+                  }}
+                >
+                  Open Help / FAQ →
+                </a>
               </div>
             ) : (
               <>
