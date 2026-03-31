@@ -23,8 +23,39 @@ function normalizeListingType(value) {
   return ''
 }
 
-function isClaimRequest(row) {
-  return String(row?.request_kind || 'claim').trim().toLowerCase() === 'claim'
+const CLAIM_CHANGE = 'claim this listing'
+
+const UPDATE_CHANGES = new Set([
+  'correct listing info',
+  'update contact info',
+  'update tryout status',
+  'update availability',
+  'mark inactive',
+  'remove listing',
+])
+
+function normalizeRequestKind(value) {
+  const raw = String(value || '').trim().toLowerCase()
+  return raw === 'update' ? 'update' : 'claim'
+}
+
+function normalizeRequestedChange(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function getRequestMode(row) {
+  const requestKind = normalizeRequestKind(row?.request_kind)
+  const requestedChange = normalizeRequestedChange(row?.requested_change)
+
+  if (requestKind === 'claim' && (!requestedChange || requestedChange === CLAIM_CHANGE)) {
+    return 'claim'
+  }
+
+  if (requestKind === 'update' && UPDATE_CHANGES.has(requestedChange)) {
+    return 'update'
+  }
+
+  return 'invalid'
 }
 
 function buildAdminNotes(action, rawNotes) {
@@ -302,7 +333,16 @@ export default async function handler(req, res) {
   }
 
   // Approve path
-  if (!isClaimRequest(claim)) {
+  const requestMode = getRequestMode(claim)
+
+  if (requestMode === 'invalid') {
+    return res.status(409).json({
+      error:
+        'This request has an invalid claim/update combination. Only a true claim can create ownership.',
+    })
+  }
+
+  if (requestMode === 'update') {
     const updateApprovalResult = await resolveClaimRequest({
       claimRequestId,
       reviewedBy,
