@@ -522,7 +522,12 @@ export default function FacilityProfile() {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {facility.verified_status && (
+              <span style={{ background: '#DBEAFE', color: '#1D4ED8', fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, letterSpacing: '0.03em' }}>
+                ✓ Verified
+              </span>
+            )}
             {facility.featured_status && (
               <span style={{ background: FEATURED_BADGE_STYLE.background, color: FEATURED_BADGE_STYLE.color, border: FEATURED_BADGE_STYLE.border, fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, letterSpacing: '0.03em' }}>
                 ⭐ Featured
@@ -676,44 +681,94 @@ export default function FacilityProfile() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: isMobile ? 14 : 18 }}>
+                    <div className="card" style={{ padding: isMobile ? 14 : 18 }}>
             <div style={{ fontFamily: 'var(--font-head)', fontSize: 18, fontWeight: 800, color: 'var(--navy)', marginBottom: 10 }}>
-              Claim or Update
+              {facility.verified_status ? 'Verified Listing' : 'Claim or Update'}
             </div>
 
-            <div style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.55, marginBottom: 14 }}>
-              Is this your facility? Claim this listing to request updates to contact information, hours, description, and more.
-            </div>
+            {facility.verified_status ? (
+              <>
+                <div style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 14 }}>
+                  This facility listing is already verified. For ownership issues, admin changes, or disputes, please use Help / FAQ or contact support.
+                </div>
 
-            <a
-              href={
-                '/claim?' +
-                new URLSearchParams({
-                  listingId: facility.id || '',
-                  listingType: 'facility',
-                  listingName: facility.name || '',
-                  city: facility.city || '',
-                  requestKind: 'claim',
-                  requestedChange: 'Claim this listing',
-                }).toString()
-              }
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '100%',
-                padding: '12px 14px',
-                borderRadius: 10,
-                background: 'var(--red)',
-                color: 'white',
-                textDecoration: 'none',
-                fontWeight: 800,
-                fontFamily: 'var(--font-head)',
-                fontSize: 14,
-              }}
-            >
-              ✏️ Claim or Update This Listing
-            </a>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  <Link
+                    to="/help"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '11px 14px',
+                      borderRadius: 10,
+                      background: 'var(--navy)',
+                      color: 'white',
+                      textDecoration: 'none',
+                      fontWeight: 800,
+                      fontFamily: 'var(--font-head)',
+                      fontSize: 13,
+                    }}
+                  >
+                    Help / FAQ
+                  </Link>
+
+                  <a
+                    href="mailto:admin@sandlotsource.com"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '11px 14px',
+                      borderRadius: 10,
+                      background: '#EFF6FF',
+                      color: '#1D4ED8',
+                      textDecoration: 'none',
+                      fontWeight: 800,
+                      fontFamily: 'var(--font-head)',
+                      fontSize: 13,
+                    }}
+                  >
+                    Contact Support
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.55, marginBottom: 14 }}>
+                  Is this your facility? Claim this listing to request updates to contact information, hours, description, and more.
+                </div>
+
+                <a
+                  href={
+                    '/claim?' +
+                    new URLSearchParams({
+                      listingId: facility.id || '',
+                      listingType: 'facility',
+                      listingName: facility.name || '',
+                      city: facility.city || '',
+                      requestKind: 'claim',
+                      requestedChange: 'Claim this listing',
+                    }).toString()
+                  }
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    background: 'var(--red)',
+                    color: 'white',
+                    textDecoration: 'none',
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-head)',
+                    fontSize: 14,
+                  }}
+                >
+                  ✏️ Claim or Update This Listing
+                </a>
+              </>
+            )}
           </div>
 
           <div className="card" style={{ padding: 0, overflow: 'hidden', width: '100%', minWidth: 0 }}>

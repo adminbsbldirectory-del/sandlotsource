@@ -576,31 +576,70 @@ export default function CoachProfile({ coach, onClose, onClaim }) {
               gap: 8,
             }}
           >
-            <div style={{ fontSize: 12, color: '#888', textAlign: 'center' }}>
-              Is this your coaching listing? Claim it to request contact, bio, facility, and profile updates.
-            </div>
+            {coach.verified_status ? (
+              <div
+                style={{
+                  background: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#1D4ED8',
+                    marginBottom: 6,
+                  }}
+                >
+                  ✓ This coaching listing is already verified
+                </div>
+                <div style={{ fontSize: 12, color: '#4B5563', lineHeight: 1.6 }}>
+                  For ownership issues, admin changes, or disputes, please use{' '}
+                  <a href="/help" style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none' }}>
+                    Help / FAQ
+                  </a>{' '}
+                  or contact{' '}
+                  <a
+                    href="mailto:admin@sandlotsource.com"
+                    style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none' }}
+                  >
+                    support
+                  </a>
+                  .
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, color: '#888', textAlign: 'center' }}>
+                  Is this your coaching listing? Claim it to request contact, bio, facility, and profile updates.
+                </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                onClose()
-                if (onClaim) onClaim(coach)
-              }}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'var(--red)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-head)',
-              }}
-            >
-              ✏️ Claim or Update This Listing
-            </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose()
+                    if (onClaim) onClaim(coach)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: 'var(--red)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-head)',
+                  }}
+                >
+                  ✏️ Claim or Update This Listing
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
