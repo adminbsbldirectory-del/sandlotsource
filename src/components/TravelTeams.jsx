@@ -531,7 +531,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap, mobile = false }) {
                   letterSpacing: '0.04em',
                 }}
               >
-                View Team
+                View Team Details
               </button>
             </div>
           </div>
@@ -667,7 +667,7 @@ function TeamCard({ team, selected, onOpen, onFocusMap, mobile = false }) {
               letterSpacing: '0.04em',
             }}
           >
-            View Team &amp; Claim
+            View Team Details
           </button>
 
           {team.lat != null && team.lng != null && (
@@ -905,7 +905,7 @@ function TeamPreviewCard({ team, onClose, onOpenFull }) {
               fontFamily: 'var(--font-head)',
             }}
           >
-            View Team &amp; Claim
+            View Team Details
           </button>
         </div>
       </div>
@@ -985,7 +985,7 @@ export default function TravelTeams() {
 
       const { data: teamRows, error: teamError } = await supabase
         .from('travel_teams')
-        .select('id, name, sport, org_affiliation, classification, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, active')
+        .select('id, name, sport, org_affiliation, classification, age_group, practice_location_name, city, state, zip_code, lat, lng, address, facility_id, facility_name, contact_name, contact_email, contact_phone, website, tryout_status, tryout_date, tryout_notes, description, submission_notes, approval_status, source, verified_status, active')
         .eq('active', true)
         .in('approval_status', ['approved', 'seeded'])
 
