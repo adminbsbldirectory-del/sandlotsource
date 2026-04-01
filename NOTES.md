@@ -66,6 +66,16 @@ refactor/shared-utilities-phase-1
 - Tested CoachDirectory and FacilityProfile locally successfully
 - Committed and pushed shared sport normalization extraction
 
+## Branch: refactor/coach-directory-row-extraction
+- Inspected CoachDirectory.jsx for CoachRow extraction
+- Found local CoachRow as a low-risk presentational component
+- Created src/components/coaches/CoachRow.jsx
+- Updated CoachDirectory.jsx to import extracted CoachRow
+- Kept helper/derived display logic in CoachDirectory and passed props down
+- Fixed one mobile radius options reference to use DIRECTORY_RADIUS_OPTIONS
+- Localhost regression check passed for Coach Directory
+- No intended UI or behavior change
+
 ## In progress
 - Phase 1 shared utilities appear complete pending full branch regression review and PR readiness check
 
