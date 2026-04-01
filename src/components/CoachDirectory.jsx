@@ -8,6 +8,7 @@ import CoachProfile from "./CoachProfile.jsx";
 import AdSlot from "./AdSlot.jsx";
 import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
 import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
+import { COACH_SPECIALTIES } from '../constants/coachSpecialties'
 
 ensureLeafletDefaultMarkerIcons();
 
@@ -46,14 +47,7 @@ function makePinIcon(background, selected = false) {
   });
 }
 
-const SPECIALTIES = [
-  "All Specialties",
-  "Pitching",
-  "Hitting",
-  "Catching",
-  "Fielding",
-  "Strength / Conditioning",
-];
+const SPECIALTIES = ['All Specialties', ...COACH_SPECIALTIES]
 
 const US_STATES = [
   "All States",
