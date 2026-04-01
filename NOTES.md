@@ -30,11 +30,9 @@ refactor/shared-utilities-phase-1
 - Tested CoachDirectory, Facilities, FacilityProfile, PlayerBoard, RosterSpots, and TravelTeams locally after Leaflet init extraction
 
 ## In progress
-- Final review of shared Leaflet default marker init extraction before commit
+- Phase 1 shared utilities complete through Leaflet default marker init extraction
 
 ## Next steps
-- Run final git diff review for leafletInit extraction
-- Confirm no console/import errors on affected pages
-- Stage Leaflet init extraction files
-- Commit Leaflet init extraction if stable
-- Push branch
+- Start next Phase 1 shared utility candidate in a new thread
+- Inspect next duplication carefully before editing
+- Continue one utility at a time
