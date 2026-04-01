@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
+import { normalizeSportValue } from '../utils/sportUtils'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -28,16 +29,6 @@ function normalizeInstagramHandle(value) {
   if (/^(javascript|data|file|intent):/i.test(trimmed)) return null
   if (/^https?:\/\//i.test(trimmed)) return trimmed
   return 'https://instagram.com/' + trimmed.replace(/^@/, '')
-}
-
-function normalizeSportValue(value) {
-  const raw = String(value || '').trim().toLowerCase()
-  if (!raw) return ''
-  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
-  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
-  if (raw.includes('softball')) return 'softball'
-  if (raw.includes('baseball')) return 'baseball'
-  return raw
 }
 
 function getFacilitySport(facility) {

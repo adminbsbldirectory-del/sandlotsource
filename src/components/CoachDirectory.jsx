@@ -9,22 +9,13 @@ import AdSlot from "./AdSlot.jsx";
 import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
 import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
 import { COACH_SPECIALTIES } from '../constants/coachSpecialties'
+import { normalizeSportValue } from '../utils/sportUtils'
+
 
 ensureLeafletDefaultMarkerIcons();
 
 const HEADER_H = 75;
 
-function normalizeSportValue(value) {
-  const raw = String(value || "")
-    .trim()
-    .toLowerCase();
-  if (!raw) return "";
-  if (raw === "baseball" || raw === "softball" || raw === "both") return raw;
-  if (raw.includes("baseball") && raw.includes("softball")) return "both";
-  if (raw.includes("softball")) return "softball";
-  if (raw.includes("baseball")) return "baseball";
-  return raw;
-}
 
 function sportPinBackground(value) {
   const sport = normalizeSportValue(value);
