@@ -6,6 +6,7 @@ import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
 import { supabase } from "../supabase.js";
 import CoachProfile from "./CoachProfile.jsx";
 import AdSlot from "./AdSlot.jsx";
+import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
 
 ensureLeafletDefaultMarkerIcons();
 
@@ -107,11 +108,6 @@ const US_STATES = [
   "WY",
 ];
 
-const RADIUS_OPTIONS = [
-  { value: 10, label: "Within 10 mi" },
-  { value: 25, label: "Within 25 mi" },
-  { value: 50, label: "Within 50 mi" },
-];
 
 const FEATURED_BADGE_STYLE = {
   background: "#FEF3C7",
@@ -2840,7 +2836,7 @@ export default function CoachDirectory() {
                         onChange={(e) => setRadius(Number(e.target.value))}
                         style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}
                       >
-                        {RADIUS_OPTIONS.map((option) => (
+                        {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -3351,7 +3347,7 @@ export default function CoachDirectory() {
                           onChange={(e) => setRadius(Number(e.target.value))}
                           style={{ ...inputStyle, minHeight: 40 }}
                         >
-                          {RADIUS_OPTIONS.map((option) => (
+                          {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>

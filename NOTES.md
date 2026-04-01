@@ -31,6 +31,9 @@ refactor/shared-utilities-phase-1
 - Created src/constants/radiusOptions.js
 - Updated HomePage.jsx and SearchResults.jsx to use shared SEARCH_RADIUS_OPTIONS
 - Tested Home page and Search Results locally successfully
+- Created src/constants/directoryRadiusOptions.js
+- Updated CoachDirectory.jsx and Facilities.jsx to use shared DIRECTORY_RADIUS_OPTIONS
+- Tested Coaches and Facilities locally successfully
 
 ## In progress
 - Phase 1 shared utilities complete through Leaflet default marker init extraction

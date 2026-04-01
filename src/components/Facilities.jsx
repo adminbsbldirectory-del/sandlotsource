@@ -5,6 +5,7 @@ import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
+import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -20,11 +21,6 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-const RADIUS_OPTIONS = [
-  { value: 10, label: 'Within 10 mi' },
-  { value: 25, label: 'Within 25 mi' },
-  { value: 50, label: 'Within 50 mi' },
-]
 
 const FEATURED_BADGE_STYLE = {
   background: '#FEF3C7',
@@ -914,7 +910,7 @@ export default function Facilities() {
   const initialSearch = String(searchParams.get('q') || '').trim()
   const initialZip = String(searchParams.get('zip') || '').replace(/\D/g, '').slice(0, 5)
   const initialRadiusValue = Number(searchParams.get('radius') || 25)
-  const initialRadius = RADIUS_OPTIONS.some((option) => option.value === initialRadiusValue) ? initialRadiusValue : 25
+  const initialRadius = DIRECTORY_RADIUS_OPTIONS.some((option) => option.value === initialRadiusValue) ? initialRadiusValue : 25
   const initialMobileView = searchParams.get('view') === 'map' ? 'map' : 'list'
 
   const [facilities, setFacilities] = useState([])
@@ -1347,7 +1343,7 @@ export default function Facilities() {
                       onChange={(e) => setRadius(Number(e.target.value))}
                       style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0 }}
                     >
-                      {RADIUS_OPTIONS.map((option) => (
+                      {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
@@ -1552,7 +1548,7 @@ export default function Facilities() {
                         onChange={(e) => setRadius(Number(e.target.value))}
                         style={{ ...inputStyle, minHeight: 44, fontSize: 14 }}
                       >
-                        {RADIUS_OPTIONS.map((option) => (
+                        {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
@@ -1803,7 +1799,7 @@ export default function Facilities() {
                   <div>
                     <div style={sectionLabel}>Radius</div>
                     <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 40 }}>
-                      {RADIUS_OPTIONS.map((option) => (
+                      {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
