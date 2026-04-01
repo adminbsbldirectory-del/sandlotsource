@@ -4,6 +4,7 @@ import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
+import { POSITIONS_BB, POSITIONS_SB } from '../constants/positionOptions'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -76,8 +77,6 @@ const AGE_GROUPS = [
   'College',
   'Adult',
 ]
-const POSITIONS_BB = ['Pitcher', 'Catcher', '1B', '2B', '3B', 'Shortstop', 'Outfield', 'Utility']
-const POSITIONS_SB = ['Pitcher', 'Catcher', '1B', '2B', '3B', 'Shortstop', 'Outfield', 'Utility']
 
 const labelStyle = {
   fontSize: 12,
