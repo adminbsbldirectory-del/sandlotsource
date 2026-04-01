@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AdSlot from './AdSlot'
+import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
 
 const FEATURED_LISTINGS = [
   {
@@ -90,7 +91,7 @@ const BORDER = '#e2e0db'
 const MUTED = '#888'
 const FAINT = '#bbb'
 
-const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
+
 
 function Band({ children, style }) {
   return (
@@ -587,7 +588,7 @@ export default function HomePage() {
                   onChange={(e) => setRadius(Number(e.target.value))}
                   style={{ ...selectStyle, flex: 1 }}
                 >
-                  {RADIUS_OPTIONS.map((r) => (
+                  {SEARCH_RADIUS_OPTIONS.map((r) => (
                     <option key={r} value={r}>
                       {r} mi
                     </option>

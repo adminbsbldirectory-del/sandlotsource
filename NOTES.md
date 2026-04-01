@@ -28,6 +28,9 @@ refactor/shared-utilities-phase-1
 - Updated RosterSpots.jsx to use shared Leaflet default marker init
 - Updated TravelTeams.jsx to use shared Leaflet default marker init
 - Tested CoachDirectory, Facilities, FacilityProfile, PlayerBoard, RosterSpots, and TravelTeams locally after Leaflet init extraction
+- Created src/constants/radiusOptions.js
+- Updated HomePage.jsx and SearchResults.jsx to use shared SEARCH_RADIUS_OPTIONS
+- Tested Home page and Search Results locally successfully
 
 ## In progress
 - Phase 1 shared utilities complete through Leaflet default marker init extraction
