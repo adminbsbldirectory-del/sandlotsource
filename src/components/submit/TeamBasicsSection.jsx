@@ -1,21 +1,8 @@
 import ZipField from './ZipField.jsx'
 import { SPORT_OPTIONS_STANDARD } from '../../utils/sportUtils.js';
+import { TEAM_AGE_GROUPS } from '../../constants/teamAgeGroups'
 
-const TEAM_AGE_GROUP_OPTIONS = [
-  '6U',
-  '7U',
-  '8U',
-  '9U',
-  '10U',
-  '11U',
-  '12U',
-  '13U',
-  '14U',
-  '15U',
-  '16U',
-  '17U',
-  '18U',
-]
+const TEAM_AGE_GROUP_OPTIONS = TEAM_AGE_GROUPS
 
 export default function TeamBasicsSection({
   g2,

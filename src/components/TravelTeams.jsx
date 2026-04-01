@@ -7,6 +7,7 @@ import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
 import AdSlot from './AdSlot.jsx'
 import { US_STATES } from '../constants/usStates';
+import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -26,8 +27,7 @@ const STATUS_STYLE = {
   unknown: { bg: '#F3F4F6', color: '#4B5563', label: 'Status Unknown' },
 }
 
-const AGE_OPTIONS = ['All Ages', '6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
-
+const AGE_OPTIONS = ['All Ages', ...TEAM_AGE_GROUPS]
 
 const STATE_CENTERS = {
   AL: [32.8, -86.8], AK: [64.2, -153.0], AZ: [34.3, -111.1], AR: [34.8, -92.2],
