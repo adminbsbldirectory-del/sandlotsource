@@ -1,4 +1,5 @@
 import ZipField from './ZipField.jsx'
+import { SPORT_OPTIONS_WITH_BOTH } from '../../utils/sportUtils.js';
 
 function RequiredMark() {
   return <span style={{ color: 'var(--red)' }}> *</span>
@@ -28,7 +29,7 @@ export default function FacilityBasicsSection({
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['baseball', 'softball', 'both'].map((s) => (
+          {SPORT_OPTIONS_WITH_BOTH.map((s) => (
             <button
               key={s}
               type="button"

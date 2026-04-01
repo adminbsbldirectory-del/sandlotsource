@@ -1,4 +1,5 @@
 import ZipField from './ZipField.jsx'
+import { SPORT_OPTIONS_STANDARD } from '../../utils/sportUtils.js';
 
 const TEAM_AGE_GROUP_OPTIONS = [
   '6U',
@@ -38,7 +39,7 @@ export default function TeamBasicsSection({
       <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Sport <RequiredMark /></label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['baseball', 'softball'].map((s) => (
+          {SPORT_OPTIONS_STANDARD.map((s) => (
             <button
               key={s}
               type="button"
