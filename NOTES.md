@@ -76,6 +76,14 @@ refactor/shared-utilities-phase-1
 - Localhost regression check passed for Coach Directory
 - No intended UI or behavior change
 
+TravelTeams card component extraction
+- Created branch: refactor/travelteams-card-components
+- Extracted TeamCard from TravelTeams.jsx to src/components/teams/TeamCard.jsx
+- Kept desktop inline list path unchanged
+- Mobile view tested successfully in localhost
+- Desktop view tested successfully in localhost
+- Ready for next Phase 2 step: inspect/extract TeamPreviewCard
+
 ## In progress
 - Phase 1 shared utilities appear complete pending full branch regression review and PR readiness check
 
