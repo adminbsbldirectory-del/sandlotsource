@@ -8,6 +8,7 @@ import TeamProfile from './TeamProfile.jsx'
 import AdSlot from './AdSlot.jsx'
 import { US_STATES } from '../constants/usStates';
 import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
+import TeamCard from './teams/TeamCard.jsx'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -364,309 +365,6 @@ function RailAdSlot({ slotKey, reservedHeight = 250 }) {
   )
 }
 
-function TeamCard({ team, selected, onOpen, onFocusMap, mobile = false }) {
-  const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.unknown
-  const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
-  const locationFull = getTeamZip(team) ? `${cityState} ${getTeamZip(team)}` : cityState
-  const practiceLabel = team.practice_location_name
-    ? [team.practice_location_name, team.address?.trim() || ''].filter(Boolean).join(' · ')
-    : team.address?.trim() ? team.address.trim() : locationFull
-  const sportLabel = normalizeSportValue(team.sport) === 'both' ? 'Baseball & Softball' : (team.sport || 'Baseball')
-
-  if (mobile) {
-    return (
-      <div
-        className="card"
-        onClick={onOpen}
-        style={{
-          cursor: 'pointer',
-          border: selected ? '2px solid var(--red)' : '1px solid rgba(15,23,42,0.08)',
-          boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.10)' : '0 2px 10px rgba(0,0,0,0.05)',
-        }}
-      >
-        <div className="card-body" style={{ padding: '12px 12px 10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontFamily: 'var(--font-head)',
-                  fontSize: 16,
-                  fontWeight: 800,
-                  lineHeight: 1.15,
-                  color: 'var(--navy)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {team.name}
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--gray)', marginTop: 4, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                📍 {locationFull || 'Location not listed'}
-              </div>
-            </div>
-            <span
-              className="badge"
-              style={{
-                background: statusInfo.bg,
-                color: statusInfo.color,
-                flexShrink: 0,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {statusInfo.label}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
-            {team.age_group && (
-              <span
-                style={{
-                  background: 'var(--navy)',
-                  color: 'white',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: '2px 7px',
-                  borderRadius: 20,
-                  fontFamily: 'var(--font-head)',
-                }}
-              >
-                {team.age_group}
-              </span>
-            )}
-            <span className={'badge badge-sport-' + (team.sport || 'baseball')}>
-              {sportLabel}
-            </span>
-            {team.classification && (
-              <span
-                style={{
-                  background: '#EFF6FF',
-                  color: '#1D4ED8',
-                  fontSize: 10,
-                  padding: '2px 7px',
-                  borderRadius: 20,
-                  fontWeight: 700,
-                }}
-              >
-                {team.classification}
-              </span>
-            )}
-          </div>
-
-          <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 8, lineHeight: 1.35 }}>
-            {practiceLabel ? `Practice: ${practiceLabel}` : 'Practice location not listed'}
-          </div>
-
-          <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 12, color: 'var(--gray)' }}>Open team details</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {team.lat != null && team.lng != null && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onFocusMap()
-                  }}
-                  style={{
-                    background: 'var(--white)',
-                    color: 'var(--navy)',
-                    border: '1.5px solid var(--lgray)',
-                    borderRadius: 10,
-                    padding: '8px 10px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-head)',
-                  }}
-                >
-                  View Map
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onOpen()
-                }}
-                style={{
-                  background: 'var(--navy)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 10,
-                  padding: '8px 10px',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-head)',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                View Team Details
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div
-      className="card"
-      onClick={onOpen}
-      style={{
-        cursor: 'pointer',
-        border: selected ? '2px solid var(--red)' : '1px solid rgba(15,23,42,0.08)',
-        boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.10)' : '0 2px 10px rgba(0,0,0,0.05)',
-      }}
-    >
-      <div className="card-body" style={{ padding: '12px 12px 10px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-          <div style={{ flex: 1 }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-head)',
-                fontSize: 16,
-                fontWeight: 700,
-                letterSpacing: '0.02em',
-                lineHeight: 1.2,
-              }}
-            >
-              {team.name}
-            </div>
-
-            <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
-              {practiceLabel ? `📍 Practice: ${practiceLabel}` : '📍 Practice location not listed'}
-            </div>
-
-            {team.facility_name && (
-              <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
-                {`🏟️ Primary: ${team.facility_name}`}
-              </div>
-            )}
-
-            {team.classification && (
-              <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 3 }}>
-                {`🏅 ${team.classification}`}
-              </div>
-            )}
-          </div>
-
-          <span
-            className="badge"
-            style={{
-              background: statusInfo.bg,
-              color: statusInfo.color,
-              flexShrink: 0,
-            }}
-          >
-            {statusInfo.label}
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
-          {team.age_group && (
-            <span
-              style={{
-                background: 'var(--navy)',
-                color: 'white',
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '2px 7px',
-                borderRadius: 20,
-                fontFamily: 'var(--font-head)',
-              }}
-            >
-              {team.age_group}
-            </span>
-          )}
-
-          <span className={'badge badge-sport-' + (team.sport || 'baseball')}>
-            {sportLabel}
-          </span>
-
-          {team.org_affiliation && (
-            <span
-              style={{
-                background: 'var(--lgray)',
-                color: 'var(--gray)',
-                fontSize: 10,
-                padding: '2px 7px',
-                borderRadius: 20,
-              }}
-            >
-              {team.org_affiliation}
-            </span>
-          )}
-
-          {team.classification && (
-            <span
-              style={{
-                background: '#EFF6FF',
-                color: '#1D4ED8',
-                fontSize: 10,
-                padding: '2px 7px',
-                borderRadius: 20,
-                fontWeight: 700,
-              }}
-            >
-              {team.classification}
-            </span>
-          )}
-        </div>
-
-        <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpen()
-            }}
-            style={{
-              flex: 1,
-              minWidth: 140,
-              background: 'var(--navy)',
-              color: 'white',
-              border: 'none',
-              borderRadius: 'var(--btn-radius)',
-              padding: '9px 12px',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-head)',
-              letterSpacing: '0.04em',
-            }}
-          >
-            View Team Details
-          </button>
-
-          {team.lat != null && team.lng != null && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onFocusMap()
-              }}
-              style={{
-                background: 'var(--white)',
-                color: 'var(--navy)',
-                border: '1.5px solid var(--lgray)',
-                borderRadius: 'var(--btn-radius)',
-                padding: '9px 12px',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'var(--font-head)',
-              }}
-            >
-              View on Map
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function EmptyState({ hasFilters, stateName, zipActive, radius }) {
   if (!zipActive) {
@@ -1636,195 +1334,340 @@ export default function TravelTeams() {
                 </div>
 
                 {isMobile ? (
-                  <div ref={mobileListRef} style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr', gap: 14, alignItems: 'stretch' }}>
-                    {loading && (
-                      <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
-                        Loading teams...
-                      </div>
-                    )}
-                    {!loading && filtered.length === 0 && (
-                      <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
-                    )}
-                    {!loading && filtered.map((team) => (
-                      <div key={team.id} ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}>
-                        <TeamCard
-                          team={team}
-                          selected={selectedTeamId === team.id}
-                          mobile
-                          onOpen={() => setProfileTeam(team)}
-                          onFocusMap={() => {
-                            closeAllPopups()
-                            setSelectedTeamId(team.id)
-                            setShowMap(true)
-                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div
+  <div
+    ref={mobileListRef}
+    style={{
+      marginTop: 10,
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+      gap: 14,
+      alignItems: 'stretch',
+    }}
+  >
+    {loading && (
+      <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--gray)', fontSize: 14 }}>
+        Loading teams...
+      </div>
+    )}
+
+    {!loading && filtered.length === 0 && (
+      <EmptyState
+        hasFilters={hasFilters}
+        stateName={selectedState?.name || ''}
+        zipActive={!!geoCenter}
+        radius={radius}
+      />
+    )}
+
+    {!loading &&
+      filtered.map((team) => {
+        const statusInfo = STATUS_STYLE[team.tryout_status] || STATUS_STYLE.unknown
+        const cityState = [team.display_city, team.display_state].filter(Boolean).join(', ')
+        const locationFull = getTeamZip(team) ? `${cityState} ${getTeamZip(team)}` : cityState
+        const practiceLabel = team.practice_location_name
+          ? [team.practice_location_name, team.address?.trim() || ''].filter(Boolean).join(' · ')
+          : team.address?.trim()
+            ? team.address.trim()
+            : locationFull
+        const sportLabel =
+          normalizeSportValue(team.sport) === 'both' ? 'Baseball & Softball' : (team.sport || 'Baseball')
+
+        return (
+          <div
+            key={team.id}
+            ref={(el) => {
+              if (el) rowRefs.current[team.id] = el
+              else delete rowRefs.current[team.id]
+            }}
+          >
+            <TeamCard
+              team={team}
+              selected={selectedTeamId === team.id}
+              mobile
+              onOpen={() => setProfileTeam(team)}
+              onFocusMap={() => {
+                closeAllPopups()
+                setSelectedTeamId(team.id)
+                setShowMap(true)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              statusInfo={statusInfo}
+              locationFull={locationFull}
+              practiceLabel={practiceLabel}
+              sportLabel={sportLabel}
+            />
+          </div>
+        )
+      })}
+  </div>
+) : (
+  <div
+    style={{
+      marginTop: 8,
+      background: 'var(--white)',
+      border: '1px solid rgba(15,23,42,0.06)',
+      borderRadius: 14,
+      overflow: 'hidden',
+      position: 'relative',
+    }}
+  >
+    <div ref={desktopListRef} style={{ maxHeight: 'min(560px, calc(100vh - 215px))', overflowY: 'auto' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: desktopRowTemplate,
+          gap: 10,
+          alignItems: 'center',
+          padding: '11px 14px',
+          background: '#EEF3FA',
+          borderBottom: '1px solid rgba(15,23,42,0.08)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 4,
+        }}
+      >
+        <div style={desktopHeaderCellStyle}>Sport</div>
+        <div style={desktopHeaderCellStyle}>Team</div>
+        <div style={desktopHeaderCellStyle}>Facility</div>
+        <div style={desktopHeaderCellStyle}>Age / Level</div>
+        <div style={desktopHeaderCellStyle}>Tryouts</div>
+        <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
+      </div>
+
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--gray)', fontSize: 14 }}>
+          Loading teams...
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{ padding: '16px 14px' }}>
+          <EmptyState
+            hasFilters={hasFilters}
+            stateName={selectedState?.name || ''}
+            zipActive={!!geoCenter}
+            radius={radius}
+          />
+        </div>
+      )}
+
+      {!loading &&
+        filtered.map((team) => {
+          const isSelected = selectedTeamId === team.id
+          const statusMeta = getStatusChipStyle(team.tryout_status)
+          const sportChip = getSportChipStyle(team.sport)
+          const practiceLine = formatPracticeLocation(team)
+          const teamLine = formatTeamLocation(team)
+          const tryoutDate = formatTryoutDate(team.tryout_date)
+
+          return (
+            <div
+              key={team.id}
+              ref={(el) => {
+                if (el) rowRefs.current[team.id] = el
+                else delete rowRefs.current[team.id]
+              }}
+              style={{
+                borderBottom: '1px solid rgba(15,23,42,0.06)',
+                background: isSelected ? '#FCFCFD' : 'var(--white)',
+              }}
+            >
+              <div
+                onClick={() => setSelectedTeamId(team.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setSelectedTeamId(team.id)
+                  }
+                }}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: desktopRowTemplate,
+                  gap: 10,
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <span
                     style={{
-                      marginTop: 8,
-                      background: 'var(--white)',
-                      border: '1px solid rgba(15,23,42,0.06)',
-                      borderRadius: 14,
-                      overflow: 'hidden',
-                      position: 'relative',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px 8px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      fontFamily: 'var(--font-head)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      whiteSpace: 'nowrap',
+                      ...sportChip,
                     }}
                   >
-                    <div ref={desktopListRef} style={{ maxHeight: 'min(560px, calc(100vh - 215px))', overflowY: 'auto' }}>
-                      <div
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: desktopRowTemplate,
-                          gap: 10,
-                          alignItems: 'center',
-                          padding: '11px 14px',
-                          background: '#EEF3FA',
-                          borderBottom: '1px solid rgba(15,23,42,0.08)',
-                          position: 'sticky',
-                          top: 0,
-                          zIndex: 4,
-                        }}
-                      >
-                        <div style={desktopHeaderCellStyle}>Sport</div>
-                        <div style={desktopHeaderCellStyle}>Team</div>
-                        <div style={desktopHeaderCellStyle}>Facility</div>
-                        <div style={desktopHeaderCellStyle}>Age / Level</div>
-                        <div style={desktopHeaderCellStyle}>Tryouts</div>
-                        <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
-                      </div>
+                    {normalizeSportValue(team.sport) === 'both' ? 'Both' : team.sport}
+                  </span>
+                </div>
 
-                      {loading && (
-                        <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--gray)', fontSize: 14 }}>
-                          Loading teams...
-                        </div>
-                      )}
-
-                      {!loading && filtered.length === 0 && (
-                        <div style={{ padding: '16px 14px' }}>
-                          <EmptyState hasFilters={hasFilters} stateName={selectedState?.name || ''} zipActive={!!geoCenter} radius={radius} />
-                        </div>
-                      )}
-
-                      {!loading && filtered.map((team) => {
-                        const isSelected = selectedTeamId === team.id
-                        const statusMeta = getStatusChipStyle(team.tryout_status)
-                        const sportChip = getSportChipStyle(team.sport)
-                        const practiceLine = formatPracticeLocation(team)
-                        const teamLine = formatTeamLocation(team)
-                        const tryoutDate = formatTryoutDate(team.tryout_date)
-
-                        return (
-                          <div
-                            key={team.id}
-                            ref={(el) => { if (el) rowRefs.current[team.id] = el; else delete rowRefs.current[team.id] }}
-                            style={{ borderBottom: '1px solid rgba(15,23,42,0.06)', background: isSelected ? '#FCFCFD' : 'var(--white)' }}
-                          >
-                            <div
-                              onClick={() => setSelectedTeamId(team.id)}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault()
-                                  setSelectedTeamId(team.id)
-                                }
-                              }}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: desktopRowTemplate,
-                                gap: 10,
-                                alignItems: 'center',
-                                padding: '10px 14px',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <div style={{ minWidth: 0 }}>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', ...sportChip }}>
-                                  {normalizeSportValue(team.sport) === 'both' ? 'Both' : team.sport}
-                                </span>
-                              </div>
-
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontFamily: 'var(--font-head)', fontSize: 14, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.name}>
-                                  {team.name}
-                                </div>
-                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={teamLine}>
-                                  {teamLine || 'Location not listed'}
-                                </div>
-                              </div>
-
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={team.facility_name || practiceLine}>
-                                  {team.facility_name || 'No linked facility'}
-                                </div>
-                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={practiceLine}>
-                                  {practiceLine || 'Practice area not listed'}
-                                </div>
-                              </div>
-
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
-                                  {team.age_group || '—'}
-                                </div>
-                                <div style={{ marginTop: 3, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {team.classification || team.org_affiliation || 'Level not listed'}
-                                </div>
-                              </div>
-
-                              <div style={{ minWidth: 0 }}>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 8px', borderRadius: 999, fontSize: 10, fontWeight: 800, fontFamily: 'var(--font-head)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', background: statusMeta.bg, color: statusMeta.color }}>
-                                  {statusMeta.label}
-                                </span>
-                                <div style={{ marginTop: 4, fontSize: 11, color: 'var(--gray)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tryoutDate || team.tryout_notes || ''}>
-                                  {tryoutDate || team.tryout_notes || 'No date listed'}
-                                </div>
-                              </div>
-
-                              <div style={{ textAlign: 'right' }}>
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation()
-                                    setSelectedTeamId(isSelected ? null : team.id)
-                                  }}
-                                  style={{
-                                    minWidth: 64,
-                                    padding: '7px 8px',
-                                    borderRadius: 9,
-                                    border: '1.5px solid var(--navy)',
-                                    background: isSelected ? 'var(--navy)' : 'var(--white)',
-                                    color: isSelected ? 'var(--white)' : 'var(--navy)',
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    fontFamily: 'var(--font-head)',
-                                  }}
-                                >
-                                  {isSelected ? 'Close' : 'Open'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {selectedTeam && (
-                      <TeamPreviewCard
-                        team={selectedTeam}
-                        onClose={() => setSelectedTeamId(null)}
-                        onOpenFull={() => {
-                          const current = selectedTeam
-                          setSelectedTeamId(null)
-                          setTimeout(() => setProfileTeam(current), 0)
-                        }}
-                      />
-                    )}
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-head)',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: 'var(--navy)',
+                      lineHeight: 1.2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={team.name}
+                  >
+                    {team.name}
                   </div>
-                )}
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: 11,
+                      color: 'var(--gray)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={teamLine}
+                  >
+                    {teamLine || 'Location not listed'}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: 'var(--navy)',
+                      lineHeight: 1.2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={team.facility_name || practiceLine}
+                  >
+                    {team.facility_name || 'No linked facility'}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: 11,
+                      color: 'var(--gray)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={practiceLine}
+                  >
+                    {practiceLine || 'Practice area not listed'}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
+                    {team.age_group || '—'}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: 11,
+                      color: 'var(--gray)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {team.classification || team.org_affiliation || 'Level not listed'}
+                  </div>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px 8px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      fontFamily: 'var(--font-head)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      whiteSpace: 'nowrap',
+                      background: statusMeta.bg,
+                      color: statusMeta.color,
+                    }}
+                  >
+                    {statusMeta.label}
+                  </span>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 11,
+                      color: 'var(--gray)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={tryoutDate || team.tryout_notes || ''}
+                  >
+                    {tryoutDate || team.tryout_notes || 'No date listed'}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setSelectedTeamId(isSelected ? null : team.id)
+                    }}
+                    style={{
+                      minWidth: 64,
+                      padding: '7px 8px',
+                      borderRadius: 9,
+                      border: '1.5px solid var(--navy)',
+                      background: isSelected ? 'var(--navy)' : 'var(--white)',
+                      color: isSelected ? 'var(--white)' : 'var(--navy)',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-head)',
+                    }}
+                  >
+                    {isSelected ? 'Close' : 'Open'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+    </div>
+
+    {selectedTeam && (
+      <TeamPreviewCard
+        team={selectedTeam}
+        onClose={() => setSelectedTeamId(null)}
+        onOpenFull={() => {
+          const current = selectedTeam
+          setSelectedTeamId(null)
+          setTimeout(() => setProfileTeam(current), 0)
+        }}
+      />
+    )}
+  </div>
+)}
 
                 {isMobile && (
                   <DirectoryAdBand
