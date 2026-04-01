@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase.js'
+import { COACH_AGE_GROUPS } from '../constants/coachAgeGroups'
 
-const AGE_GROUPS = ['6U','7U','8U','9U','10U','11U','12U','13U','14U','15U','16U','17U','18U','College','Adult']
+const AGE_GROUPS = COACH_AGE_GROUPS
 
 function parseFirstPhone(raw) {
   if (!raw) return null

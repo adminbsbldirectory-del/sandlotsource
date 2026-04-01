@@ -1,0 +1,17 @@
+export const COACH_AGE_GROUPS = [
+  '6U',
+  '7U',
+  '8U',
+  '9U',
+  '10U',
+  '11U',
+  '12U',
+  '13U',
+  '14U',
+  '15U',
+  '16U',
+  '17U',
+  '18U',
+  'College',
+  'Adult',
+]
