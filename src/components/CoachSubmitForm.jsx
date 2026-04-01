@@ -17,6 +17,7 @@ import TeamFacilitySection from './submit/TeamFacilitySection.jsx'
 import { COACH_SPECIALTIES } from '../constants/coachSpecialties'
 import { COACH_AGE_GROUPS } from '../constants/coachAgeGroups'
 import { POSITIONS_BB, POSITIONS_SB } from '../constants/positionOptions'
+import { US_STATE_ABBRS } from '../constants/usStates'
 
 import {
   applyResolvedCoordsPreservingLocality,
@@ -454,7 +455,6 @@ const selectStyle = { ...inputStyle }
 const textareaStyle = { ...inputStyle, resize: 'vertical' }
 
 const AGE_GROUPS = [...COACH_AGE_GROUPS.slice(0, 13), 'High School', ...COACH_AGE_GROUPS.slice(13)]
-const US_STATE_ABBRS = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
 const TEAM_SANCTION_OPTIONS = [
   'USSSA',
   'Perfect Game',

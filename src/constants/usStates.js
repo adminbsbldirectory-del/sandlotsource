@@ -56,6 +56,8 @@ export const US_STATES = [
   { abbr: 'WY', name: 'Wyoming' },
 ];
 
+export const US_STATE_ABBRS = US_STATES.map(({ abbr }) => abbr)
+
 export const STATE_NAMES = Object.fromEntries(
   US_STATES.map(({ abbr, name }) => [abbr, name])
 );
