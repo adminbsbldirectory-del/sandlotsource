@@ -1,0 +1,1 @@
+export const SEARCH_RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]

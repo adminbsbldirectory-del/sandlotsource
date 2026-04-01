@@ -2,31 +2,20 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
 import { supabase } from "../supabase.js";
 import CoachProfile from "./CoachProfile.jsx";
 import AdSlot from "./AdSlot.jsx";
+import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
+import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
+import { COACH_SPECIALTIES } from '../constants/coachSpecialties'
+import { normalizeSportValue } from '../utils/sportUtils'
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+
+ensureLeafletDefaultMarkerIcons();
 
 const HEADER_H = 75;
 
-function normalizeSportValue(value) {
-  const raw = String(value || "")
-    .trim()
-    .toLowerCase();
-  if (!raw) return "";
-  if (raw === "baseball" || raw === "softball" || raw === "both") return raw;
-  if (raw.includes("baseball") && raw.includes("softball")) return "both";
-  if (raw.includes("softball")) return "softball";
-  if (raw.includes("baseball")) return "baseball";
-  return raw;
-}
 
 function sportPinBackground(value) {
   const sport = normalizeSportValue(value);
@@ -49,14 +38,7 @@ function makePinIcon(background, selected = false) {
   });
 }
 
-const SPECIALTIES = [
-  "All Specialties",
-  "Pitching",
-  "Hitting",
-  "Catching",
-  "Fielding",
-  "Strength / Conditioning",
-];
+const SPECIALTIES = ['All Specialties', ...COACH_SPECIALTIES]
 
 const US_STATES = [
   "All States",
@@ -112,17 +94,6 @@ const US_STATES = [
   "WY",
 ];
 
-const RADIUS_OPTIONS = [
-  { value: 10, label: "Within 10 mi" },
-  { value: 25, label: "Within 25 mi" },
-  { value: 50, label: "Within 50 mi" },
-];
-
-const FEATURED_BADGE_STYLE = {
-  background: "#FEF3C7",
-  color: "#92400E",
-  border: "1px solid #FDE68A",
-};
 
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value);
@@ -2845,7 +2816,7 @@ export default function CoachDirectory() {
                         onChange={(e) => setRadius(Number(e.target.value))}
                         style={{ ...inputStyle, minHeight: 46, fontSize: 15 }}
                       >
-                        {RADIUS_OPTIONS.map((option) => (
+                        {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -3356,7 +3327,7 @@ export default function CoachDirectory() {
                           onChange={(e) => setRadius(Number(e.target.value))}
                           style={{ ...inputStyle, minHeight: 40 }}
                         >
-                          {RADIUS_OPTIONS.map((option) => (
+                          {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>

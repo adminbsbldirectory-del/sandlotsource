@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
+import { POSITIONS_BB, POSITIONS_SB } from '../constants/positionOptions'
 
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+ensureLeafletDefaultMarkerIcons()
 
 const HEADER_H = 75
 
@@ -80,8 +77,6 @@ const AGE_GROUPS = [
   'College',
   'Adult',
 ]
-const POSITIONS_BB = ['Pitcher', 'Catcher', '1B', '2B', '3B', 'Shortstop', 'Outfield', 'Utility']
-const POSITIONS_SB = ['Pitcher', 'Catcher', '1B', '2B', '3B', 'Shortstop', 'Outfield', 'Utility']
 
 const labelStyle = {
   fontSize: 12,

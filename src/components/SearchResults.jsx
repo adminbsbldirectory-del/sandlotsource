@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase.js'
+import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
 
 // ─── Haversine distance (miles) ───────────────────────────
 function distanceMiles(lat1, lng1, lat2, lng2) {
@@ -67,7 +68,6 @@ const BADGE_STYLES = {
   facility: { background: '#e8f4ff', color: '#1d4ed8' },
 }
 
-const RADIUS_OPTIONS = [5, 10, 15, 25, 50, 75, 100]
 
 // ─── Sub-components ───────────────────────────────────────
 function ResultCount({ count }) {
@@ -909,7 +909,7 @@ export default function SearchResults() {
               <circle cx="6" cy="6" r="1.5" fill="#aaa" />
             </svg>
             <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={selectStyle}>
-              {RADIUS_OPTIONS.map((r) => (
+              {SEARCH_RADIUS_OPTIONS.map((r) => (
                 <option key={r} value={r}>
                   Up to {r} miles
                 </option>

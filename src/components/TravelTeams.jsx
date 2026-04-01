@@ -2,16 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
 import AdSlot from './AdSlot.jsx'
+import { US_STATES } from '../constants/usStates';
+import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
 
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+ensureLeafletDefaultMarkerIcons()
 
 const HEADER_H = 75
 
@@ -29,35 +27,7 @@ const STATUS_STYLE = {
   unknown: { bg: '#F3F4F6', color: '#4B5563', label: 'Status Unknown' },
 }
 
-const AGE_OPTIONS = ['All Ages', '6U', '7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U']
-
-const US_STATES = [
-  { abbr: 'AL', name: 'Alabama' }, { abbr: 'AK', name: 'Alaska' },
-  { abbr: 'AZ', name: 'Arizona' }, { abbr: 'AR', name: 'Arkansas' },
-  { abbr: 'CA', name: 'California' }, { abbr: 'CO', name: 'Colorado' },
-  { abbr: 'CT', name: 'Connecticut' }, { abbr: 'DE', name: 'Delaware' },
-  { abbr: 'FL', name: 'Florida' }, { abbr: 'GA', name: 'Georgia' },
-  { abbr: 'HI', name: 'Hawaii' }, { abbr: 'ID', name: 'Idaho' },
-  { abbr: 'IL', name: 'Illinois' }, { abbr: 'IN', name: 'Indiana' },
-  { abbr: 'IA', name: 'Iowa' }, { abbr: 'KS', name: 'Kansas' },
-  { abbr: 'KY', name: 'Kentucky' }, { abbr: 'LA', name: 'Louisiana' },
-  { abbr: 'ME', name: 'Maine' }, { abbr: 'MD', name: 'Maryland' },
-  { abbr: 'MA', name: 'Massachusetts' }, { abbr: 'MI', name: 'Michigan' },
-  { abbr: 'MN', name: 'Minnesota' }, { abbr: 'MS', name: 'Mississippi' },
-  { abbr: 'MO', name: 'Missouri' }, { abbr: 'MT', name: 'Montana' },
-  { abbr: 'NE', name: 'Nebraska' }, { abbr: 'NV', name: 'Nevada' },
-  { abbr: 'NH', name: 'New Hampshire' }, { abbr: 'NJ', name: 'New Jersey' },
-  { abbr: 'NM', name: 'New Mexico' }, { abbr: 'NY', name: 'New York' },
-  { abbr: 'NC', name: 'North Carolina' }, { abbr: 'ND', name: 'North Dakota' },
-  { abbr: 'OH', name: 'Ohio' }, { abbr: 'OK', name: 'Oklahoma' },
-  { abbr: 'OR', name: 'Oregon' }, { abbr: 'PA', name: 'Pennsylvania' },
-  { abbr: 'RI', name: 'Rhode Island' }, { abbr: 'SC', name: 'South Carolina' },
-  { abbr: 'SD', name: 'South Dakota' }, { abbr: 'TN', name: 'Tennessee' },
-  { abbr: 'TX', name: 'Texas' }, { abbr: 'UT', name: 'Utah' },
-  { abbr: 'VT', name: 'Vermont' }, { abbr: 'VA', name: 'Virginia' },
-  { abbr: 'WA', name: 'Washington' }, { abbr: 'WV', name: 'West Virginia' },
-  { abbr: 'WI', name: 'Wisconsin' }, { abbr: 'WY', name: 'Wyoming' },
-]
+const AGE_OPTIONS = ['All Ages', ...TEAM_AGE_GROUPS]
 
 const STATE_CENTERS = {
   AL: [32.8, -86.8], AK: [64.2, -153.0], AZ: [34.3, -111.1], AR: [34.8, -92.2],

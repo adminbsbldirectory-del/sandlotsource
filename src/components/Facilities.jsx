@@ -2,15 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
+import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
+import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
 
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+ensureLeafletDefaultMarkerIcons()
 
 const HEADER_H = 75
 
@@ -24,17 +22,6 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-const RADIUS_OPTIONS = [
-  { value: 10, label: 'Within 10 mi' },
-  { value: 25, label: 'Within 25 mi' },
-  { value: 50, label: 'Within 50 mi' },
-]
-
-const FEATURED_BADGE_STYLE = {
-  background: '#FEF3C7',
-  color: '#92400E',
-  border: '1px solid #FDE68A',
-}
 
 function normalizeSportValue(value) {
   const raw = String(value || '').trim().toLowerCase()
@@ -918,7 +905,7 @@ export default function Facilities() {
   const initialSearch = String(searchParams.get('q') || '').trim()
   const initialZip = String(searchParams.get('zip') || '').replace(/\D/g, '').slice(0, 5)
   const initialRadiusValue = Number(searchParams.get('radius') || 25)
-  const initialRadius = RADIUS_OPTIONS.some((option) => option.value === initialRadiusValue) ? initialRadiusValue : 25
+  const initialRadius = DIRECTORY_RADIUS_OPTIONS.some((option) => option.value === initialRadiusValue) ? initialRadiusValue : 25
   const initialMobileView = searchParams.get('view') === 'map' ? 'map' : 'list'
 
   const [facilities, setFacilities] = useState([])
@@ -1351,7 +1338,7 @@ export default function Facilities() {
                       onChange={(e) => setRadius(Number(e.target.value))}
                       style={{ ...inputStyle, minHeight: 44, fontSize: 14, minWidth: 0 }}
                     >
-                      {RADIUS_OPTIONS.map((option) => (
+                      {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
@@ -1556,7 +1543,7 @@ export default function Facilities() {
                         onChange={(e) => setRadius(Number(e.target.value))}
                         style={{ ...inputStyle, minHeight: 44, fontSize: 14 }}
                       >
-                        {RADIUS_OPTIONS.map((option) => (
+                        {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
@@ -1807,7 +1794,7 @@ export default function Facilities() {
                   <div>
                     <div style={sectionLabel}>Radius</div>
                     <select value={radius} onChange={(e) => setRadius(Number(e.target.value))} style={{ ...inputStyle, minHeight: 40 }}>
-                      {RADIUS_OPTIONS.map((option) => (
+                      {DIRECTORY_RADIUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
