@@ -7,6 +7,7 @@ import { supabase } from "../supabase.js";
 import CoachProfile from "./CoachProfile.jsx";
 import AdSlot from "./AdSlot.jsx";
 import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
+import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
 
 ensureLeafletDefaultMarkerIcons();
 
@@ -108,12 +109,6 @@ const US_STATES = [
   "WY",
 ];
 
-
-const FEATURED_BADGE_STYLE = {
-  background: "#FEF3C7",
-  color: "#92400E",
-  border: "1px solid #FDE68A",
-};
 
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value);

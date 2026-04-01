@@ -6,6 +6,7 @@ import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
 import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
+import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -21,12 +22,6 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-
-const FEATURED_BADGE_STYLE = {
-  background: '#FEF3C7',
-  color: '#92400E',
-  border: '1px solid #FDE68A',
-}
 
 function normalizeSportValue(value) {
   const raw = String(value || '').trim().toLowerCase()
