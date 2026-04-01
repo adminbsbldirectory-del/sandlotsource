@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
 import { supabase } from "../supabase.js";
 import AdSlot from "./AdSlot.jsx";
 import { STATE_NAMES } from '../constants/usStates.js';
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+ensureLeafletDefaultMarkerIcons();
 
 const makeIcon = (color) =>
   L.divIcon({

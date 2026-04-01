@@ -2,17 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
 import { supabase } from "../supabase.js";
 import CoachProfile from "./CoachProfile.jsx";
 import AdSlot from "./AdSlot.jsx";
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+ensureLeafletDefaultMarkerIcons();
 
 const HEADER_H = 75;
 

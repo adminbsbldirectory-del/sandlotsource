@@ -18,14 +18,23 @@ refactor/shared-utilities-phase-1
 - Updated CoachBasicsSection.jsx to use shared sport options
 - Updated FacilityBasicsSection.jsx to use shared sport options
 - Updated TeamBasicsSection.jsx to use shared sport options
+- Tested shared sport options extraction locally
+- Committed and pushed shared sport options extraction
+- Created src/lib/leafletInit.js
+- Updated CoachDirectory.jsx to use shared Leaflet default marker init
+- Updated Facilities.jsx to use shared Leaflet default marker init
+- Updated FacilityProfile.jsx to use shared Leaflet default marker init
+- Updated PlayerBoard.jsx to use shared Leaflet default marker init
+- Updated RosterSpots.jsx to use shared Leaflet default marker init
+- Updated TravelTeams.jsx to use shared Leaflet default marker init
+- Tested CoachDirectory, Facilities, FacilityProfile, PlayerBoard, RosterSpots, and TravelTeams locally after Leaflet init extraction
 
 ## In progress
-- Local testing for shared sport options extraction
+- Final review of shared Leaflet default marker init extraction before commit
 
 ## Next steps
-- Run npm run dev
-- Test coach submit form sport buttons
-- Test facility submit form sport buttons
-- Test team submit form sport buttons
-- Confirm no console/import errors
-- Commit sportUtils extraction if stable
+- Run final git diff review for leafletInit extraction
+- Confirm no console/import errors on affected pages
+- Stage Leaflet init extraction files
+- Commit Leaflet init extraction if stable
+- Push branch
