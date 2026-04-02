@@ -13,10 +13,11 @@ Phase 2 - Presentational component extractions only
 - Always verify Vercel production after merge
 
 ## Current confirmed state
-- Working branch is `refactor/rosterspots-row`
+- Working branch is `refactor/rosterspots-submitted-state`
 - Branch was created from `main`
 - `RosterRow` extraction from `RosterSpots.jsx` is complete locally
-- Localhost testing passed for the extracted row
+- `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete locally
+- Localhost testing passed for the extracted submitted state
 - `NOTES.md` is being updated before commit
 - Vercel production was verified after the last merged refactor on `main`
 
@@ -36,21 +37,24 @@ Phase 2 - Presentational component extractions only
 13. PlayerBoardMobileCard - `PlayerBoard`
 14. PlayerBoardBrowseSidebar - `PlayerBoard`
 15. RosterRow - `RosterSpots`
+16. RosterSubmittedState - `RosterSpots`
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
 - `PlayerBoard.jsx` will likely need additional reduction in a later structural phase rather than through more simple presentational extraction
-- `RosterSpots.jsx` had a clean still-live presentational leaf, and `RosterRow` was the correct next extraction target
+- `RosterSpots.jsx` had one more clearly safe live presentational leaf after `RosterRow`, and `RosterSubmittedState` was the correct final worthwhile Phase 2 extraction there
+- `RosterSubmittedState` was the last clearly worthwhile safe presentational leaf in `RosterSpots.jsx`
+- Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional Phase 2 presentational extraction
 
 ## Next target
-- Re-inspect `RosterSpots.jsx` for one more still-live safe presentational extraction target after `RosterRow`
-- If no worthwhile safe presentational target remains, say so explicitly and defer further `RosterSpots` reduction to a later structural phase
+- `RosterSpots.jsx` Phase 2 presentational extraction work is complete
+- Defer further `RosterSpots` reduction to a later structural phase
+- Re-inspect a different oversized live page for the next safe presentational extraction target
 
 ## Remaining queue
-1. Remaining safe `RosterSpots` extraction only if inspection confirms one still exists
-2. Later-phase structural reduction for oversized files like `PlayerBoard` and possibly `RosterSpots`
-3. `AdminPage` tab splitting
-4. Bug audit (deferred until files are smaller)
+1. Later-phase structural reduction for oversized files like `PlayerBoard` and `RosterSpots`
+2. `AdminPage` tab splitting
+3. Bug audit (deferred until files are smaller)
 
 ## Local branches to keep
 - `main`
