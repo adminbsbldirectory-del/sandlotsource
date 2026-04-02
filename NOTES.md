@@ -13,13 +13,14 @@ Phase 2 - Presentational component extractions only
 - Always verify Vercel production after merge
 
 ## Current confirmed state
-- Working branch is `refactor/rosterspots-submitted-state`
-- Branch was created from `main`
-- `RosterRow` extraction from `RosterSpots.jsx` is complete locally
-- `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete locally
-- Localhost testing passed for the extracted submitted state
-- `NOTES.md` is being updated before commit
-- Vercel production was verified after the last merged refactor on `main`
+- `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
+- `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
+- `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
+- Vercel production was verified after the latest merged refactor on `main`
+- Local repo is back on `main`
+- Local `main` is up to date with `origin/main`
+- Working tree is clean
+- No active refactor branch is in progress
 
 ## Completed extractions
 1. Phase 1 shared utilities
@@ -38,6 +39,7 @@ Phase 2 - Presentational component extractions only
 14. PlayerBoardBrowseSidebar - `PlayerBoard`
 15. RosterRow - `RosterSpots`
 16. RosterSubmittedState - `RosterSpots`
+17. ClaimRequestRow - `AdminPage`
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
@@ -45,16 +47,23 @@ Phase 2 - Presentational component extractions only
 - `RosterSpots.jsx` had one more clearly safe live presentational leaf after `RosterRow`, and `RosterSubmittedState` was the correct final worthwhile Phase 2 extraction there
 - `RosterSubmittedState` was the last clearly worthwhile safe presentational leaf in `RosterSpots.jsx`
 - Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional Phase 2 presentational extraction
+- `AdminPage.jsx` contains a clearly live claim request row render path, and `ClaimRequestRow` was a safe Phase 2 presentational extraction
+- Further `AdminPage.jsx` reduction should continue only through clearly live presentational leaves that do not require moving logic or state out of the parent
 
-## Next target
+### Next target
+- `RosterSpots.jsx` Phase 2 presentational extraction work is complete
+- Defer further `RosterSpots` reduction to a later structural phase
+- `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting merge
+- After merge and production verification, re-inspect `AdminPage.jsx` for the next safe presentational extraction target
 - `RosterSpots.jsx` Phase 2 presentational extraction work is complete
 - Defer further `RosterSpots` reduction to a later structural phase
 - Re-inspect a different oversized live page for the next safe presentational extraction target
 
 ## Remaining queue
-1. Later-phase structural reduction for oversized files like `PlayerBoard` and `RosterSpots`
-2. `AdminPage` tab splitting
-3. Bug audit (deferred until files are smaller)
+1. Re-inspect the next oversized live page for a safe Phase 2 presentational extraction target
+2. Later-phase structural reduction for oversized files like `PlayerBoard` and `RosterSpots`
+3. `AdminPage` tab splitting
+4. Bug audit (deferred until files are smaller)
 
 ## Local branches to keep
 - `main`

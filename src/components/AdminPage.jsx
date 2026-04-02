@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase.js'
+import ClaimRequestRow from './admin/ClaimRequestRow.jsx'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 const REVIEWED_BY = 'admin'
@@ -1140,172 +1141,6 @@ function ClaimRequestsTable() {
     return result
   }, [listingType, requestKind, rows, search, sortOrder, statusFilter])
 
-  function renderClaimRow(row) {
-    const decision = deriveClaimDecision(row)
-    const isResolved = row.status === 'resolved'
-    const isBusy = busyId === row.id
-    const layoutStyle = isMobile ? s.claimGridMobile : s.claimGrid
-
-    return (
-      <div key={row.id} style={s.claimItem}>
-        <div style={layoutStyle}>
-          <div>
-            <div style={s.sectionLabel}>Listing</div>
-            <div style={{ fontWeight: 700, color: '#1b3a5c' }}>{row.listing_name || '—'}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
-              {row.listing_type || '—'} · {row.request_kind || 'claim'}
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{row.city || '—'}</div>
-            <div style={{ ...s.monospace, marginTop: 6 }}>{row.listing_id || 'No listing_id'}</div>
-          </div>
-
-          <div>
-            <div style={s.sectionLabel}>Requester</div>
-            <div style={{ fontWeight: 600 }}>{row.requester_name || '—'}</div>
-            <div style={{ fontSize: 12, marginTop: 4 }}>
-              {row.requester_email ? (
-                <a href={`mailto:${row.requester_email}`} style={{ color: '#1d4ed8', textDecoration: 'none' }}>
-                  {row.requester_email}
-                </a>
-              ) : (
-                '—'
-              )}
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{row.requester_phone || '—'}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.45 }}>
-              {row.relationship_to_listing || '—'}
-            </div>
-          </div>
-
-          <div>
-            <div style={s.sectionLabel}>Request</div>
-            <div style={{ fontWeight: 600 }}>{row.requested_change || '—'}</div>
-
-            {row.corrected_contact_info ? (
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.45 }}>
-                Contact: {row.corrected_contact_info}
-              </div>
-            ) : null}
-
-            {row.website_social_updates ? (
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.45 }}>
-                Web/Social: {row.website_social_updates}
-              </div>
-            ) : null}
-
-            {row.tryout_updates ? (
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.45 }}>
-                Tryout: {row.tryout_updates}
-              </div>
-            ) : null}
-
-            {row.availability_updates ? (
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.45 }}>
-                Availability: {row.availability_updates}
-              </div>
-            ) : null}
-
-            {row.notes ? (
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.45 }}>
-                Notes: {row.notes}
-              </div>
-            ) : null}
-          </div>
-
-          <div>
-            <div style={s.sectionLabel}>Status</div>
-            <div style={{ fontWeight: 600 }}>{formatFilterOption(row.status || 'new')}</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>
-              Decision: {decision ? formatFilterOption(decision) : '—'}
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>
-              Submitted: {formatDateDisplay(row.submitted_at)}
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>
-              Resolved: {formatDateDisplay(row.resolved_at)}
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>
-              Reviewed by: {row.reviewed_by || '—'}
-            </div>
-          </div>
-
-          <div>
-            <div style={s.sectionLabel}>Admin Notes</div>
-            <textarea
-              value={notesById[row.id] || ''}
-              onChange={(e) =>
-                setNotesById((prev) => ({
-                  ...prev,
-                  [row.id]: e.target.value,
-                }))
-              }
-              disabled={isBusy || isResolved}
-              rows={6}
-              style={{
-                ...s.inlineInput,
-                resize: 'vertical',
-                minHeight: 120,
-                minWidth: isMobile ? '100%' : 220,
-              }}
-            />
-          </div>
-
-          <div>
-            <div style={s.sectionLabel}>Actions</div>
-
-            {!isResolved ? (
-              <div style={{ display: 'grid', gap: 10 }}>
-                {row.status === 'new' ? (
-                  <button
-                    type="button"
-                    onClick={() => updateClaimQueue(row, 'mark_pending')}
-                    disabled={isBusy}
-                    style={s.actionButton('pending')}
-                  >
-                    {isBusy ? 'Working…' : 'Set Pending'}
-                  </button>
-                ) : null}
-
-                {row.status === 'pending' ? (
-                  <button
-                    type="button"
-                    onClick={() => updateClaimQueue(row, 'mark_new')}
-                    disabled={isBusy}
-                    style={s.actionButton('neutral')}
-                  >
-                    {isBusy ? 'Working…' : 'Set New'}
-                  </button>
-                ) : null}
-
-                <button
-                  type="button"
-                  onClick={() => reviewClaim(row, 'approve')}
-                  disabled={isBusy}
-                  style={s.actionButton('approve')}
-                >
-                  {isBusy ? 'Working…' : 'Approve'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => reviewClaim(row, 'reject')}
-                  disabled={isBusy}
-                  style={s.actionButton('reject')}
-                >
-                  {isBusy ? 'Working…' : 'Reject'}
-                </button>
-              </div>
-            ) : (
-              <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.45 }}>
-                This request is already resolved.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div style={s.card}>
       <div style={s.toolbar}>
@@ -1353,7 +1188,38 @@ function ClaimRequestsTable() {
       ) : displayed.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>No claim requests match.</div>
       ) : (
-        <div style={s.claimList}>{displayed.map((row) => renderClaimRow(row))}</div>
+               <div style={s.claimList}>
+          {displayed.map((row) => {
+            const decision = deriveClaimDecision(row)
+            const isResolved = row.status === 'resolved'
+            const isBusy = busyId === row.id
+
+            return (
+              <ClaimRequestRow
+                key={row.id}
+                row={row}
+                decision={decision}
+                isResolved={isResolved}
+                isBusy={isBusy}
+                isMobile={isMobile}
+                noteValue={notesById[row.id] || ''}
+                onNoteChange={(nextValue) =>
+                  setNotesById((prev) => ({
+                    ...prev,
+                    [row.id]: nextValue,
+                  }))
+                }
+                onMarkPending={() => updateClaimQueue(row, 'mark_pending')}
+                onMarkNew={() => updateClaimQueue(row, 'mark_new')}
+                onApprove={() => reviewClaim(row, 'approve')}
+                onReject={() => reviewClaim(row, 'reject')}
+                styles={s}
+                formatFilterOption={formatFilterOption}
+                formatDateDisplay={formatDateDisplay}
+              />
+            )
+          })}
+        </div> 
       )}
     </div>
   )
