@@ -18,8 +18,9 @@ Phase 2 - Presentational component extractions only
 - TravelTeams TeamCard extraction is complete and merged
 - TravelTeams TeamPreviewCard extraction is complete and merged
 - Facilities desktop row extraction is complete and merged
-- Facilities mobile row extraction is complete locally on branch and localhost-tested
-- Local repo is currently on branch: `refactor/facilities-mobile-row`
+- Facilities mobile row extraction is complete and merged
+- Facilities preview card extraction is complete locally on branch and localhost-tested
+- Local repo is currently on branch: `refactor/facilities-preview-card`
 - Local main was up to date with `origin/main` before creating the current branch
 - Current branch work has passed localhost regression checks
 - No intended UI or behavior change in the current branch
@@ -30,7 +31,7 @@ Phase 2 - Presentational component extractions only
 - `refactor/submit-form-modular`
 
 ## Active branch
-- `refactor/facilities-mobile-row`
+- `refactor/facilities-preview-card`
 
 ## Locked refactor rules
 - Move slowly and cleanly
@@ -53,7 +54,8 @@ We are staying aligned to the codebase audit / refactor plan.
 3. Phase 2 TeamCard extraction from `TravelTeams`
 4. Phase 2 TeamPreviewCard extraction from `TravelTeams`
 5. Phase 2 Facilities desktop row extraction from `Facilities`
-6. Phase 2 Facilities mobile row extraction from `Facilities` (current branch, localhost passed)
+6. Phase 2 Facilities mobile row extraction from `Facilities`
+7. Phase 2 Facilities preview card extraction from `Facilities` (current branch, localhost passed)
 
 ### Not completed yet from the current audit path
 - Remaining later Phase 2 targets only if explicitly chosen from the audit after inspection
@@ -167,13 +169,35 @@ Because of that, this stricter rule is mandatory before each new extraction:
 - Kept helper/derived display logic in `Facilities.jsx` and passed props down
 - Kept desktop row path and `FacilityPreviewCard` unchanged
 - Localhost regression check passed for Facilities mobile row extraction
+- Preview deployment passed
+- Merged and production verified
+
+#### FacilityPreviewCard inspection
+- Re-inspected `src/components/Facilities.jsx` before creating the next Facilities extraction branch
+- Confirmed `FacilityPreviewCard` is still the live desktop selected-preview render path
+- Confirmed it renders when `selFacility` is truthy in the desktop Facilities list layout
+- Confirmed it depends on preview-specific helper/derived display logic, `closeFacilityPreview`, and `buildFacilityDetailHref`
+- Confirmed it has no direct ref dependency
+- Determined it is a safe presentational extraction target, but higher risk than the desktop/mobile row extractions because it uses more helper display logic
+
+#### FacilityPreviewCard extraction
+- Created branch: `refactor/facilities-preview-card`
+- Created `src/components/facilities/FacilityPreviewCard.jsx`
+- Updated `Facilities.jsx` to import extracted `FacilityPreviewCard`
+- Extracted only the live desktop selected-preview UI path
+- Kept page-level selection, filtering, map behavior, and detail href building in `Facilities.jsx`
+- Left desktop row path and mobile row path unchanged
+- Localhost regression check passed for Facilities preview extraction
+- Desktop preview opened and closed correctly
+- Facility detail page links opened correctly
+- External links from preview continued to work
 - No intended UI or behavior change
 
 ## Current branch next steps
 1. Update `NOTES.md`
 2. Stage only:
    - `src/components/Facilities.jsx`
-   - `src/components/facilities/MobileFacilityRow.jsx`
+   - `src/components/facilities/FacilityPreviewCard.jsx`
    - `NOTES.md`
 3. Commit current branch work
 4. Push branch
@@ -199,5 +223,4 @@ Because of that, this stricter rule is mandatory before each new extraction:
 - do Facilities logic cleanup
 - do unrelated renames / formatting-only changes
 - do more than one extraction type in the same branch
-- touch `FacilityPreviewCard` in this branch
 - route desktop through the existing local `FacilityCard` as a shortcut
