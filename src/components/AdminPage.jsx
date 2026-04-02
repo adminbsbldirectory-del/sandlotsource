@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase.js'
 import ClaimRequestRow from './admin/ClaimRequestRow.jsx'
+import ClaimRequestsToolbar from './admin/ClaimRequestsToolbar.jsx'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 const REVIEWED_BY = 'admin'
@@ -1141,45 +1142,22 @@ function ClaimRequestsTable() {
     return result
   }, [listingType, requestKind, rows, search, sortOrder, statusFilter])
 
-  return (
-    <div style={s.card}>
-      <div style={s.toolbar}>
-        <div style={s.filterRow}>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search claim requests…"
-            style={s.searchInput}
-          />
-
-          <select value={listingType} onChange={(e) => setListingType(e.target.value)} style={s.filterSelect}>
-            <option value="">All Listing Types</option>
-            <option value="coach">Coach</option>
-            <option value="team">Team</option>
-            <option value="facility">Facility</option>
-          </select>
-
-          <select value={requestKind} onChange={(e) => setRequestKind(e.target.value)} style={s.filterSelect}>
-            <option value="">All Request Kinds</option>
-            <option value="claim">Claim</option>
-            <option value="update">Update</option>
-          </select>
-
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={s.filterSelect}>
-            <option value="">All Statuses</option>
-            <option value="new">New</option>
-            <option value="pending">Pending</option>
-            <option value="resolved">Resolved</option>
-          </select>
-
-          <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} style={s.filterSelect}>
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
-
-          <span style={s.countBadge}>{displayed.length} shown</span>
-        </div>
-      </div>
+    return (
+      <div style={s.card}>
+              <ClaimRequestsToolbar
+                search={search}
+                onSearchChange={setSearch}
+                listingType={listingType}
+                onListingTypeChange={setListingType}
+                requestKind={requestKind}
+                onRequestKindChange={setRequestKind}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                sortOrder={sortOrder}
+                onSortOrderChange={setSortOrder}
+                shownCount={displayed.length}
+                styles={s}
+              />
 
       {loadError ? <div style={s.errorBox}>{loadError}</div> : null}
 

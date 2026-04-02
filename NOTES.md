@@ -14,6 +14,7 @@ Phase 2 - Presentational component extractions only
 
 ## Current confirmed state
 - `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
+- `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
 - Vercel production was verified after the latest merged refactor on `main`
@@ -40,6 +41,7 @@ Phase 2 - Presentational component extractions only
 15. RosterRow - `RosterSpots`
 16. RosterSubmittedState - `RosterSpots`
 17. ClaimRequestRow - `AdminPage`
+18. ClaimRequestsToolbar - `AdminPage`
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
@@ -49,11 +51,12 @@ Phase 2 - Presentational component extractions only
 - Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional Phase 2 presentational extraction
 - `AdminPage.jsx` contains a clearly live claim request row render path, and `ClaimRequestRow` was a safe Phase 2 presentational extraction
 - Further `AdminPage.jsx` reduction should continue only through clearly live presentational leaves that do not require moving logic or state out of the parent
+- `AdminPage.jsx` contains clearly live claim request render paths, and both `ClaimRequestRow` and `ClaimRequestsToolbar` are safe Phase 2 presentational extractions
 
 ### Next target
 - `RosterSpots.jsx` Phase 2 presentational extraction work is complete
 - Defer further `RosterSpots` reduction to a later structural phase
-- `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting merge
+- `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete locally and awaiting merge
 - After merge and production verification, re-inspect `AdminPage.jsx` for the next safe presentational extraction target
 - `RosterSpots.jsx` Phase 2 presentational extraction work is complete
 - Defer further `RosterSpots` reduction to a later structural phase
