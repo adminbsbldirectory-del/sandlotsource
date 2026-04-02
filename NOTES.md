@@ -13,6 +13,7 @@ Phase 2 - Presentational component extractions only
 - Always verify Vercel production after merge
 
 ## Current confirmed state
+- `PasswordGate` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
 - `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
 - `AdminTabs` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
 - `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
@@ -44,6 +45,7 @@ Phase 2 - Presentational component extractions only
 17. ClaimRequestRow - `AdminPage`
 18. ClaimRequestsToolbar - `AdminPage`
 19. AdminTabs - `AdminPage`
+20. PasswordGate - `AdminPage`
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
@@ -51,14 +53,13 @@ Phase 2 - Presentational component extractions only
 - `RosterSpots.jsx` had one more clearly safe live presentational leaf after `RosterRow`, and `RosterSubmittedState` was the correct final worthwhile Phase 2 extraction there
 - `RosterSubmittedState` was the last clearly worthwhile safe presentational leaf in `RosterSpots.jsx`
 - Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional Phase 2 presentational extraction
-- `AdminPage.jsx` contains a clearly live claim request row render path, and `ClaimRequestRow` was a safe Phase 2 presentational extraction
+- `AdminPage.jsx` contains clearly live presentational leaves, and `ClaimRequestRow`, `ClaimRequestsToolbar`, `AdminTabs`, and `PasswordGate` are safe Phase 2 extractions
 - Further `AdminPage.jsx` reduction should continue only through clearly live presentational leaves that do not require moving logic or state out of the parent
-- `AdminPage.jsx` contains clearly live claim request render paths, and both `ClaimRequestRow` and `ClaimRequestsToolbar` are safe Phase 2 presentational extractions
 
 ## Next target
 - `RosterSpots.jsx` Phase 2 presentational extraction work is complete
 - Defer further `RosterSpots` reduction to a later structural phase
-- `AdminTabs` extraction from `AdminPage.jsx` is complete locally and awaiting merge
+- `PasswordGate` extraction from `AdminPage.jsx` is complete locally and awaiting merge
 - After merge and production verification, re-inspect `AdminPage.jsx` for the next safe presentational extraction target
 
 ## Remaining queue
