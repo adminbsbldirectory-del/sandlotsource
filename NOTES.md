@@ -15,6 +15,7 @@ Phase 2 - Presentational component extractions only
 ## Current confirmed state
 - Phase 1 shared utilities is complete and merged
 - CoachRow extraction is complete and merged
+- CoachDetailPanel extraction is complete and merged
 - TravelTeams `TeamCard` extraction is complete and merged
 - TravelTeams `TeamPreviewCard` extraction is complete and merged
 - TravelTeams desktop row extraction is complete and merged
@@ -22,9 +23,10 @@ Phase 2 - Presentational component extractions only
 - Facilities mobile row extraction is complete and merged
 - Facilities preview card extraction is complete and merged
 - Vercel production has been verified after the latest merged refactor
-- Current active branch is `refactor/coach-detail-panel`
-- Localhost passed for the `CoachDetailPanel` extraction
-- Preview / merge / production verification are still pending for the `CoachDetailPanel` extraction
+- Local repo is on `main`
+- Local `main` is up to date with `origin/main`
+- Working tree is clean
+- No active refactor branch is in progress
 
 ## Local branches to keep
 - `main`
@@ -45,6 +47,12 @@ Phase 2 - Presentational component extractions only
 - Keep each refactor branch limited to one safe extraction target at a time
 - No file should exceed 1000 lines after the audit path is complete
 
+## Additional prompt guardrails
+- Do not suggest alternatives to the current stack
+- Do not expand scope because you see a related opportunity
+- If uncertain about repo state, stop and ask rather than guess
+- If the thread gets long, help prepare a clean handoff prompt before continuing
+
 ## Inspection rule carried forward
 Before each new extraction:
 1. Find the candidate component/function
@@ -58,15 +66,13 @@ Before each new extraction:
 ### Completed from the audit path
 1. Phase 1 shared utilities
 2. Phase 2 CoachRow extraction from `CoachDirectory`
-3. Phase 2 TeamCard extraction from `TravelTeams`
-4. Phase 2 TeamPreviewCard extraction from `TravelTeams`
-5. Phase 2 TravelTeams desktop row extraction from `TravelTeams`
-6. Phase 2 Facilities desktop row extraction from `Facilities`
-7. Phase 2 Facilities mobile row extraction from `Facilities`
-8. Phase 2 Facilities preview card extraction from `Facilities`
-
-### In progress from the audit path
-9. Phase 2 CoachDetailPanel extraction from `CoachDirectory`
+3. Phase 2 CoachDetailPanel extraction from `CoachDirectory`
+4. Phase 2 TeamCard extraction from `TravelTeams`
+5. Phase 2 TeamPreviewCard extraction from `TravelTeams`
+6. Phase 2 TravelTeams desktop row extraction from `TravelTeams`
+7. Phase 2 Facilities desktop row extraction from `Facilities`
+8. Phase 2 Facilities mobile row extraction from `Facilities`
+9. Phase 2 Facilities preview card extraction from `Facilities`
 
 ### Not completed yet
 - Remaining later Phase 2 targets only if explicitly chosen after inspection
@@ -98,26 +104,26 @@ Completed:
 - Localhost passed
 - Merged and production verified
 
-In progress:
+Completed:
 - Branch: `refactor/coach-detail-panel`
 
 Inspection outcome:
 - Confirmed the live selected desktop preview/detail UI is rendered from `CoachDirectory.jsx` as `CoachDetailPanel`
 - Confirmed render gate is desktop only, no profile modal open, and selected coach present
 - Confirmed this is the current live selected-preview path, not an unused local component
-- Confirmed `MobileCoachRow` is also live in the mobile list path, but is a secondary target
-- Confirmed `CoachDetailPanel` is the better next extraction candidate because it matches the preview/detail extraction pattern already used in TravelTeams and Facilities
-- Confirmed this is safe to extract if page-level state and handlers remain in `CoachDirectory.jsx`
+- Confirmed `MobileCoachRow` is also live in the mobile list path, but was a secondary target
+- Confirmed `CoachDetailPanel` was the better extraction candidate because it matched the preview/detail extraction pattern already used in TravelTeams and Facilities
+- Confirmed this was safe to extract with page-level state and handlers kept in `CoachDirectory.jsx`
 
-Extraction outcome so far:
+Extraction outcome:
 - Created `src/components/coaches/CoachDetailPanel.jsx`
 - Updated `CoachDirectory.jsx` to import `CoachDetailPanel`
 - Removed the in-file `CoachDetailPanel` block from `CoachDirectory.jsx`
 - Kept selection state, profile modal state, distance calculation, filter/search/map behavior, and preview open/close logic in `CoachDirectory.jsx`
 - Localhost passed
-- Preview pending
-- Merge pending
-- Production verification pending
+- Preview passed
+- Merged and production verified
+- No intended UI or behavior change
 
 ### Phase 2 - TravelTeams
 Completed:
@@ -190,11 +196,37 @@ Completed:
 - Merged and production verified
 
 ## Next inspection target
-- Not yet selected after `CoachDetailPanel`
-- Return to inspection-first workflow after preview / merge / production verification for the current branch
-- Possible future candidates should be chosen only after confirming the exact live render path and dependency scope
+- Candidate: `MobileCoachRow` from `CoachDirectory.jsx`
 
-## Guardrails for the current branch
+Inspection status:
+- Confirmed live in the current mobile list path of `CoachDirectory.jsx`
+- Confirmed it is rendered through the mobile `displayedCoaches.map(...)` list path
+- Confirmed it is a better next target than jumping to a different page before finishing the current `CoachDirectory` presentational audit
+
+Known dependency scope from current inspection:
+- Props:
+  - `coach`
+  - `isSelected`
+  - `onSelect`
+  - `onOpenProfile`
+- Internal helper usage:
+  - `getSportBadgeMeta(coach.sport)`
+  - `parseSpecialties(coach.specialty)`
+  - `formatCoachLocation(coach)`
+
+Known live behavior:
+- Row click selects the coach through `onSelect(coach)`
+- Button click stops propagation and opens profile through `onOpenProfile(coach)`
+
+Pre-branch requirement:
+- Before creating the next branch, inspect nearby sibling files in `src/components/coaches/` for naming, styling, and prop-pattern consistency:
+  - `CoachRow.jsx`
+  - `CoachDetailPanel.jsx`
+
+Branch decision rule:
+- Only create the branch if `MobileCoachRow` remains a presentational extraction with parent-owned state and handlers
+
+## Guardrails for the next branch
 ### Do
 - keep extraction presentational
 - keep helper / derived logic in the parent file if that lowers risk
@@ -202,6 +234,7 @@ Completed:
 - test Vercel preview before merge
 - verify production after merge
 - update `NOTES.md` as part of the work
+- inspect sibling coach components before creating a new file
 
 ### Do not
 - do hooks
@@ -210,7 +243,7 @@ Completed:
 - do logic cleanup outside the exact extraction target
 - do unrelated renames or formatting-only changes
 - do more than one extraction type in the same branch
-- do follow-on CoachDirectory extractions on this same branch
+- jump to PlayerBoard, RosterSpots, or AdminPage before resolving the current next inspection target
 
 ## Execution reminder
 - If a new file is being created from code already identified in an existing file, provide the full paste-ready file contents in the chat, not just a summary of what should go into it
