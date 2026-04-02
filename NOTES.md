@@ -17,18 +17,19 @@ Phase 2 - Presentational component extractions only
 - CoachRow extraction is complete and merged
 - TravelTeams `TeamCard` extraction is complete and merged
 - TravelTeams `TeamPreviewCard` extraction is complete and merged
+- TravelTeams desktop row extraction is complete and merged
 - Facilities desktop row extraction is complete and merged
 - Facilities mobile row extraction is complete and merged
 - Facilities preview card extraction is complete and merged
-- TravelTeams desktop row extraction is now in progress on branch `refactor/travelteams-desktop-row`
-- Localhost regression check passed for the TravelTeams desktop row extraction
-- Preview / merge / production verification are still pending for the TravelTeams desktop row extraction
+- Vercel production has been verified after the latest merged refactor
+- Current active branch is `refactor/coach-detail-panel`
+- Localhost passed for the `CoachDetailPanel` extraction
+- Preview / merge / production verification are still pending for the `CoachDetailPanel` extraction
 
 ## Local branches to keep
 - `main`
 - `refactor/shared-utilities-phase-1`
 - `refactor/submit-form-modular`
-- `refactor/travelteams-desktop-row` (active until this extraction is fully merged and verified)
 
 ## Locked refactor rules
 - Move slowly and cleanly
@@ -41,6 +42,8 @@ Phase 2 - Presentational component extractions only
 - Do not expand scope unnecessarily
 - Production deploys from `main` only
 - New refactor work should start from clean updated `main` on a fresh branch
+- Keep each refactor branch limited to one safe extraction target at a time
+- No file should exceed 1000 lines after the audit path is complete
 
 ## Inspection rule carried forward
 Before each new extraction:
@@ -57,12 +60,13 @@ Before each new extraction:
 2. Phase 2 CoachRow extraction from `CoachDirectory`
 3. Phase 2 TeamCard extraction from `TravelTeams`
 4. Phase 2 TeamPreviewCard extraction from `TravelTeams`
-5. Phase 2 Facilities desktop row extraction from `Facilities`
-6. Phase 2 Facilities mobile row extraction from `Facilities`
-7. Phase 2 Facilities preview card extraction from `Facilities`
+5. Phase 2 TravelTeams desktop row extraction from `TravelTeams`
+6. Phase 2 Facilities desktop row extraction from `Facilities`
+7. Phase 2 Facilities mobile row extraction from `Facilities`
+8. Phase 2 Facilities preview card extraction from `Facilities`
 
 ### In progress from the audit path
-8. Phase 2 TravelTeams desktop row extraction from `TravelTeams`
+9. Phase 2 CoachDetailPanel extraction from `CoachDirectory`
 
 ### Not completed yet
 - Remaining later Phase 2 targets only if explicitly chosen after inspection
@@ -94,6 +98,27 @@ Completed:
 - Localhost passed
 - Merged and production verified
 
+In progress:
+- Branch: `refactor/coach-detail-panel`
+
+Inspection outcome:
+- Confirmed the live selected desktop preview/detail UI is rendered from `CoachDirectory.jsx` as `CoachDetailPanel`
+- Confirmed render gate is desktop only, no profile modal open, and selected coach present
+- Confirmed this is the current live selected-preview path, not an unused local component
+- Confirmed `MobileCoachRow` is also live in the mobile list path, but is a secondary target
+- Confirmed `CoachDetailPanel` is the better next extraction candidate because it matches the preview/detail extraction pattern already used in TravelTeams and Facilities
+- Confirmed this is safe to extract if page-level state and handlers remain in `CoachDirectory.jsx`
+
+Extraction outcome so far:
+- Created `src/components/coaches/CoachDetailPanel.jsx`
+- Updated `CoachDirectory.jsx` to import `CoachDetailPanel`
+- Removed the in-file `CoachDetailPanel` block from `CoachDirectory.jsx`
+- Kept selection state, profile modal state, distance calculation, filter/search/map behavior, and preview open/close logic in `CoachDirectory.jsx`
+- Localhost passed
+- Preview pending
+- Merge pending
+- Production verification pending
+
 ### Phase 2 - TravelTeams
 Completed:
 - Branch: `refactor/travelteams-card-components`
@@ -112,39 +137,27 @@ Completed:
 - Preview passed
 - Merged and production verified
 
-In progress:
+Completed:
 - Branch: `refactor/travelteams-desktop-row`
 
 Inspection outcome:
-- Confirmed the live desktop repeated row is still rendered inline in `TravelTeams.jsx`
+- Confirmed the live desktop repeated row was still rendered inline in `TravelTeams.jsx`
 - Confirmed `TeamCard` remains the mobile repeated card path
 - Confirmed `TeamPreviewCard` remains the selected desktop preview path
-- Confirmed the desktop repeated row depends on parent selection state, row refs, and derived display helpers
-- Confirmed this is a safe presentational extraction target if logic remains in `TravelTeams.jsx`
+- Confirmed the desktop repeated row depended on parent selection state, row refs, and derived display helpers
+- Confirmed this was a safe presentational extraction target if logic remained in `TravelTeams.jsx`
 
-Current extraction work:
+Extraction outcome:
 - Created `src/components/teams/TeamDesktopRow.jsx`
 - Updated `TravelTeams.jsx` to import `TeamDesktopRow`
 - Extracted only the live desktop repeated row render block
 - Kept selection state, row refs, derived display logic, loading state, empty state, preview rendering, map behavior, and filter behavior in `TravelTeams.jsx`
 - Left mobile `TeamCard` path unchanged
 - Left desktop `TeamPreviewCard` path unchanged
-
-Current validation status:
 - Localhost regression check passed
-- Desktop behavior passed
-- Mobile sanity passed
-- No intended UI or behavior change observed locally
-
-Still pending:
-- Update `NOTES.md`
-- Stage branch changes
-- Commit branch changes
-- Push branch
-- Open PR
-- Test Vercel preview on desktop and mobile
-- Merge only if preview passes
-- Verify Vercel production after merge
+- Preview deployment passed
+- Merged and production verified
+- No intended UI or behavior change
 
 ### Phase 2 - Facilities
 Inspection outcome:
@@ -176,19 +189,15 @@ Completed:
 - Preview passed
 - Merged and production verified
 
-## Current branch
-- Active branch: `refactor/travelteams-desktop-row`
-
-## Files currently expected on this branch
-- `src/components/TravelTeams.jsx`
-- `src/components/teams/TeamDesktopRow.jsx`
-- `NOTES.md`
+## Next inspection target
+- Not yet selected after `CoachDetailPanel`
+- Return to inspection-first workflow after preview / merge / production verification for the current branch
+- Possible future candidates should be chosen only after confirming the exact live render path and dependency scope
 
 ## Guardrails for the current branch
 ### Do
 - keep extraction presentational
-- keep helper / derived logic in `TravelTeams.jsx` if that lowers risk
-- keep mobile and preview paths unchanged
+- keep helper / derived logic in the parent file if that lowers risk
 - test localhost before commit
 - test Vercel preview before merge
 - verify production after merge
@@ -198,24 +207,13 @@ Completed:
 - do hooks
 - do filter panel extraction
 - do map abstraction
-- do TravelTeams logic cleanup
+- do logic cleanup outside the exact extraction target
 - do unrelated renames or formatting-only changes
 - do more than one extraction type in the same branch
-- assume another local component should replace the live path without inspection
+- do follow-on CoachDirectory extractions on this same branch
 
-## Next steps for current branch
-1. Update `NOTES.md`
-2. Stage only:
-   - `src/components/TravelTeams.jsx`
-   - `src/components/teams/TeamDesktopRow.jsx`
-   - `NOTES.md`
-3. Commit current branch work
-4. Push branch
-5. Open PR
-6. Test Vercel preview on desktop and mobile
-7. Merge only if preview passes
-8. Verify Vercel production after merge
-
-## Next target after current branch
-- Not yet selected
-- Must return to inspection-first workflow after the TravelTeams desktop row extraction is fully merged and production verified
+## Execution reminder
+- If a new file is being created from code already identified in an existing file, provide the full paste-ready file contents in the chat, not just a summary of what should go into it
+- Also provide the exact import line(s) and clearly state what old in-file block should be removed
+- Before moving a new component into an existing folder, quickly inspect nearby sibling components in that folder for naming, styling, and prop-pattern conflicts
+- Keep moving toward the audit rule that no file should exceed 1000 lines, but still keep each branch limited to one safe extraction target at a time
