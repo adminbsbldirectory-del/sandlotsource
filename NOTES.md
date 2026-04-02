@@ -13,10 +13,11 @@ Phase 2 - Presentational component extractions only
 - Always verify Vercel production after merge
 
 ## Current confirmed state
-- `PasswordGate` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
-- `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
-- `AdminTabs` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
-- `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
+- `CoachResult` extraction from `SearchResults.jsx` is complete locally on the current branch
+- `PasswordGate` extraction from `AdminPage.jsx` is complete and merged
+- `ClaimRequestRow` extraction from `AdminPage.jsx` is complete and merged
+- `AdminTabs` extraction from `AdminPage.jsx` is complete and merged
+- `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete and merged
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
 - Vercel production was verified after the latest merged refactor on `main`
@@ -46,6 +47,8 @@ Phase 2 - Presentational component extractions only
 18. ClaimRequestsToolbar - `AdminPage`
 19. AdminTabs - `AdminPage`
 20. PasswordGate - `AdminPage`
+21. CoachResult - `SearchResults`
+
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
@@ -53,20 +56,21 @@ Phase 2 - Presentational component extractions only
 - `RosterSpots.jsx` had one more clearly safe live presentational leaf after `RosterRow`, and `RosterSubmittedState` was the correct final worthwhile Phase 2 extraction there
 - `RosterSubmittedState` was the last clearly worthwhile safe presentational leaf in `RosterSpots.jsx`
 - Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional Phase 2 presentational extraction
-- `AdminPage.jsx` contains clearly live presentational leaves, and `ClaimRequestRow`, `ClaimRequestsToolbar`, `AdminTabs`, and `PasswordGate` are safe Phase 2 extractions
-- Further `AdminPage.jsx` reduction should continue only through clearly live presentational leaves that do not require moving logic or state out of the parent
+- `AdminPage.jsx` contained multiple clearly live Phase 2 presentational leaves, and `ClaimRequestRow`, `ClaimRequestsToolbar`, `AdminTabs`, and `PasswordGate` have now been extracted successfully
+- `AdminPage.jsx` should be re-inspected before any further extraction work, because the remaining sections are more logic-heavy and may no longer qualify as worthwhile safe Phase 2 presentational leaves
 
 ## Next target
-- `RosterSpots.jsx` Phase 2 presentational extraction work is complete
-- Defer further `RosterSpots` reduction to a later structural phase
-- `PasswordGate` extraction from `AdminPage.jsx` is complete locally and awaiting merge
-- After merge and production verification, re-inspect `AdminPage.jsx` for the next safe presentational extraction target
+- `AdminPage.jsx` Phase 2 presentational extraction work is complete
+- `SearchResults.jsx` is now the current inspection target
+- `CoachResult` has been extracted from `SearchResults.jsx`
+- Re-inspect `SearchResults.jsx` from the updated branch state for the next safe presentational extraction target
 
 ## Remaining queue
-1. Re-inspect the next oversized live page for a safe Phase 2 presentational extraction target
-2. Later-phase structural reduction for oversized files like `PlayerBoard` and `RosterSpots`
-3. `AdminPage` tab splitting
-4. Bug audit (deferred until files are smaller)
+1. Re-inspect `SearchResults.jsx` from the current branch state for the next safe Phase 2 presentational extraction target after `CoachResult`
+2. If `SearchResults.jsx` still has a worthwhile safe leaf, extract only one target on the next branch
+3. Later-phase structural reduction for oversized files like `PlayerBoard`, `RosterSpots`, `AdminPage`, and possibly `SearchResults`
+4. `AdminPage` tab splitting
+5. Bug audit (deferred until files are smaller)
 
 ## Local branches to keep
 - `main`
