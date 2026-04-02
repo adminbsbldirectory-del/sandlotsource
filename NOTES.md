@@ -14,6 +14,7 @@ Phase 2 - Presentational component extractions only
 
 ## Current confirmed state
 - `ClaimRequestRow` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
+- `AdminTabs` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
 - `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete locally and awaiting commit/merge
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
@@ -42,6 +43,7 @@ Phase 2 - Presentational component extractions only
 16. RosterSubmittedState - `RosterSpots`
 17. ClaimRequestRow - `AdminPage`
 18. ClaimRequestsToolbar - `AdminPage`
+19. AdminTabs - `AdminPage`
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
@@ -53,14 +55,11 @@ Phase 2 - Presentational component extractions only
 - Further `AdminPage.jsx` reduction should continue only through clearly live presentational leaves that do not require moving logic or state out of the parent
 - `AdminPage.jsx` contains clearly live claim request render paths, and both `ClaimRequestRow` and `ClaimRequestsToolbar` are safe Phase 2 presentational extractions
 
-### Next target
+## Next target
 - `RosterSpots.jsx` Phase 2 presentational extraction work is complete
 - Defer further `RosterSpots` reduction to a later structural phase
-- `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete locally and awaiting merge
+- `AdminTabs` extraction from `AdminPage.jsx` is complete locally and awaiting merge
 - After merge and production verification, re-inspect `AdminPage.jsx` for the next safe presentational extraction target
-- `RosterSpots.jsx` Phase 2 presentational extraction work is complete
-- Defer further `RosterSpots` reduction to a later structural phase
-- Re-inspect a different oversized live page for the next safe presentational extraction target
 
 ## Remaining queue
 1. Re-inspect the next oversized live page for a safe Phase 2 presentational extraction target

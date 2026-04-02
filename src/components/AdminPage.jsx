@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase.js'
 import ClaimRequestRow from './admin/ClaimRequestRow.jsx'
 import ClaimRequestsToolbar from './admin/ClaimRequestsToolbar.jsx'
+import AdminTabs from './admin/AdminTabs.jsx'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 const REVIEWED_BY = 'admin'
@@ -1248,18 +1249,13 @@ export default function AdminPage() {
       </div>
 
       <div style={s.body}>
-        <div style={s.tabs}>
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              style={FEATURED_TABS.includes(tab) ? s.featuredTab(activeTab === tab) : s.tab(activeTab === tab)}
-              onClick={() => setActiveTab(tab)}
-            >
-              {FEATURED_TABS.includes(tab) ? `★ ${tab}` : tab}
-            </button>
-          ))}
-        </div>
+        <AdminTabs
+          tabs={TABS}
+          featuredTabs={FEATURED_TABS}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          styles={s}
+        />
 
         <AdminTable key={activeTab} tabName={activeTab} />
       </div>
