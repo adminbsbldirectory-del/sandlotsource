@@ -24,12 +24,12 @@ Phase 2 - Presentational component extractions only
 - Facilities mobile row extraction is complete and merged
 - Facilities preview card extraction is complete and merged
 - PlayerBoard detail panel extraction is complete and merged
-- PlayerBoard desktop row inspection is complete
+- PlayerBoard desktop row extraction is complete and merged
 - Vercel production has been verified after the latest merged refactor
 - Local repo is on `main`
 - Local `main` is up to date with `origin/main`
 - Working tree is clean
-- Active refactor branch: refactor/playerboard-desktop-row
+- No active refactor branch is in progress
 
 ## Local branches to keep
 - `main`
@@ -78,9 +78,10 @@ Before each new extraction:
 9. Phase 2 Facilities mobile row extraction from `Facilities`
 10. Phase 2 Facilities preview card extraction from `Facilities`
 11. Phase 2 PlayerBoard detail panel extraction from `PlayerBoard`
+12. Phase 2 PlayerBoard desktop row extraction from `PlayerBoard`
 
 ### Not completed yet
-- PlayerBoard desktop repeated row extraction
+- PlayerBoard mobile repeated card extraction
 - Remaining later Phase 2 targets only if explicitly chosen after inspection
 - Do NOT jump ahead to hooks, filters, map abstraction, submit-form splits, or unrelated cleanup
 
@@ -244,8 +245,8 @@ Extraction outcome:
   - cards opened correctly
 - No intended UI or behavior change
 
-Inspection completed:
-- Next candidate inspected: live PlayerBoard desktop repeated row in `PlayerBoard.jsx`
+Completed:
+- Branch: `refactor/playerboard-desktop-row`
 
 Inspection outcome:
 - Confirmed the live desktop repeated row is rendered inline from the desktop `filtered.map((post) => { ... })` path in `PlayerBoard.jsx`
@@ -269,35 +270,44 @@ Inspection outcome:
 - Confirmed the row button stops propagation and toggles open / close state
 - Confirmed nearby sibling folder `src/components/playerboard/` is consistent with adding a desktop row component there
 
-Approved next extraction target:
-- `PlayerBoardDesktopRow`
-- Target file: `src/components/playerboard/PlayerBoardDesktopRow.jsx`
+Extraction outcome:
+- Created `src/components/playerboard/PlayerBoardDesktopRow.jsx`
+- Updated `src/components/PlayerBoard.jsx` to import and render `PlayerBoardDesktopRow`
+- Removed the in-file desktop repeated row block from `PlayerBoard.jsx`
+- Kept selection state, filters, map behavior, loading / empty states, selected-post derivation, helper logic, and `PlayerBoardDetailPanel` rendering in `PlayerBoard.jsx`
+- Localhost passed
+- PR merged to `main`
+- Production verified
+- No intended UI or behavior change
 
-Active branch
-- `refactor/playerboard-desktop-row`
+## Next inspection target
+- `PlayerBoard` mobile repeated card row
+- Stay in `PlayerBoard` before moving to `RosterSpots`
+- Do not create a new branch until the mobile repeated card inspection is complete
 
-## Guardrails for the next branch
+## Guardrails for the next work
 ### Do
-- keep extraction presentational
-- keep helper / derived logic in the parent file if that lowers risk
-- extract only the live desktop repeated row render block from `PlayerBoard.jsx`
-- pass required props into the new row component
-- keep selection state, filters, map behavior, loading / empty states, selected-post derivation, and detail panel rendering in `PlayerBoard.jsx`
-- test localhost before commit
-- test Vercel preview before merge
-- verify production after merge
-- update `NOTES.md` as part of the work
-- inspect sibling files in `src/components/playerboard/` before creating the new file
+- inspection only first
+- confirm the mobile repeated card is still the live rendered mobile path
+- find the exact mobile `filtered.map((post) => { ... })` block in `PlayerBoard.jsx`
+- list all dependencies before approving extraction
+- inspect sibling files in `src/components/playerboard/` before naming a new file
+- keep the next branch limited to one safe extraction target only
 
 ### Do not
 - do hooks
 - do filter panel extraction
 - do map abstraction
-- do logic cleanup outside the exact extraction target
+- do logic cleanup outside the exact inspection target
 - do unrelated renames or formatting-only changes
 - do more than one extraction type in the same branch
-- move detail-panel logic back into the row extraction
-- jump into implementation beyond the approved desktop row target
+- move on to `RosterSpots` yet
+- create a branch before the mobile repeated card inspection is complete
+
+## Bug audit
+Deferred until file size reduction is complete.
+Some known bugs from prior sessions may already be resolved.
+Full audit to be done after Phase 2 extractions are finished.
 
 ## Execution reminder
 - If a new file is being created from code already identified in an existing file, provide the full paste-ready file contents in the chat, not just a summary of what should go into it
