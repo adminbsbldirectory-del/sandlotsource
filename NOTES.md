@@ -23,11 +23,13 @@ Phase 2 - Presentational component extractions only
 - Facilities desktop row extraction is complete and merged
 - Facilities mobile row extraction is complete and merged
 - Facilities preview card extraction is complete and merged
+- PlayerBoard detail panel extraction is complete and merged
+- PlayerBoard desktop row inspection is complete
 - Vercel production has been verified after the latest merged refactor
 - Local repo is on `main`
 - Local `main` is up to date with `origin/main`
 - Working tree is clean
-- No active refactor branch is in progress
+- Active refactor branch: refactor/playerboard-desktop-row
 
 ## Local branches to keep
 - `main`
@@ -75,8 +77,10 @@ Before each new extraction:
 8. Phase 2 Facilities desktop row extraction from `Facilities`
 9. Phase 2 Facilities mobile row extraction from `Facilities`
 10. Phase 2 Facilities preview card extraction from `Facilities`
+11. Phase 2 PlayerBoard detail panel extraction from `PlayerBoard`
 
 ### Not completed yet
+- PlayerBoard desktop repeated row extraction
 - Remaining later Phase 2 targets only if explicitly chosen after inspection
 - Do NOT jump ahead to hooks, filters, map abstraction, submit-form splits, or unrelated cleanup
 
@@ -218,23 +222,72 @@ Completed:
 - Preview passed
 - Merged and production verified
 
-## Next inspection target
-- Not yet selected after `MobileCoachRow`
-- Return to inspection-first workflow before creating any new branch
-- Recommended next inspection order:
-  1. `PlayerBoard`
-  2. `RosterSpots`
-  3. `AdminPage` tab splitting later, only if still needed after smaller presentational candidates are exhausted
+### Phase 2 - PlayerBoard
+Completed:
+- Branch: `refactor/playerboard-detail-panel`
+
+Inspection outcome:
+- Confirmed the live desktop selected-post detail UI was rendered from `PlayerBoard.jsx`
+- Confirmed this was a safe presentational extraction target
+
+Extraction outcome:
+- Created `src/components/playerboard/PlayerBoardDetailPanel.jsx`
+- Updated `src/components/PlayerBoard.jsx` to import and render `PlayerBoardDetailPanel`
+- Removed the in-file desktop detail panel block from `PlayerBoard.jsx`
+- Kept selection state, filters, map behavior, auth, helper logic, and owner actions in `PlayerBoard.jsx`
+- Localhost passed
+- PR merged to `main`
+- Production verified
+- Additional live validation:
+  - tested 1 player needed post
+  - tested 1 player available post
+  - cards opened correctly
+- No intended UI or behavior change
+
+Inspection completed:
+- Next candidate inspected: live PlayerBoard desktop repeated row in `PlayerBoard.jsx`
+
+Inspection outcome:
+- Confirmed the live desktop repeated row is rendered inline from the desktop `filtered.map((post) => { ... })` path in `PlayerBoard.jsx`
+- Confirmed this is the current live desktop repeated row path
+- Confirmed the row is not a dead local component
+- Confirmed the row sits above the already extracted `PlayerBoardDetailPanel`
+- Confirmed the row is a safe presentational extraction target if selection state, filtering, loading/empty states, helper logic, and detail-panel rendering remain in `PlayerBoard.jsx`
+- Confirmed the row depends on:
+  - `user`
+  - `selectedPostId`
+  - `setSelectedPostId`
+  - `getTypeChipStyle`
+  - `getSportChipStyle`
+  - `getPostTitle`
+  - `getDesktopLocationPreview`
+  - `getNeededLocationParts`
+  - `getPostPositionDetails`
+  - `getPostDateLabel`
+- Confirmed owner-state display logic is inline via `isOwner`
+- Confirmed row click / keyboard open behavior sets `selectedPostId(post.id)`
+- Confirmed the row button stops propagation and toggles open / close state
+- Confirmed nearby sibling folder `src/components/playerboard/` is consistent with adding a desktop row component there
+
+Approved next extraction target:
+- `PlayerBoardDesktopRow`
+- Target file: `src/components/playerboard/PlayerBoardDesktopRow.jsx`
+
+Active branch
+- `refactor/playerboard-desktop-row`
 
 ## Guardrails for the next branch
 ### Do
 - keep extraction presentational
 - keep helper / derived logic in the parent file if that lowers risk
+- extract only the live desktop repeated row render block from `PlayerBoard.jsx`
+- pass required props into the new row component
+- keep selection state, filters, map behavior, loading / empty states, selected-post derivation, and detail panel rendering in `PlayerBoard.jsx`
 - test localhost before commit
 - test Vercel preview before merge
 - verify production after merge
 - update `NOTES.md` as part of the work
-- inspect live render path before creating any new file or branch
+- inspect sibling files in `src/components/playerboard/` before creating the new file
 
 ### Do not
 - do hooks
@@ -243,7 +296,8 @@ Completed:
 - do logic cleanup outside the exact extraction target
 - do unrelated renames or formatting-only changes
 - do more than one extraction type in the same branch
-- jump into implementation before confirming the exact live render block and dependency scope
+- move detail-panel logic back into the row extraction
+- jump into implementation beyond the approved desktop row target
 
 ## Execution reminder
 - If a new file is being created from code already identified in an existing file, provide the full paste-ready file contents in the chat, not just a summary of what should go into it
