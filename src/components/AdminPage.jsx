@@ -3,6 +3,7 @@ import { supabase } from '../supabase.js'
 import ClaimRequestRow from './admin/ClaimRequestRow.jsx'
 import ClaimRequestsToolbar from './admin/ClaimRequestsToolbar.jsx'
 import AdminTabs from './admin/AdminTabs.jsx'
+import PasswordGate from './admin/PasswordGate.jsx'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 const REVIEWED_BY = 'admin'
@@ -599,77 +600,6 @@ function deriveClaimDecision(record) {
   return 'resolved'
 }
 
-function PasswordGate({ onUnlock }) {
-  const [val, setVal] = useState('')
-  const [err, setErr] = useState(false)
-
-  function attempt() {
-    if (val === ADMIN_PASSWORD) {
-      sessionStorage.setItem('admin_unlocked', '1')
-      onUnlock()
-    } else {
-      setErr(true)
-      setVal('')
-    }
-  }
-
-  return (
-    <div style={s.passwordWrap}>
-      <div style={s.passwordCard}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>🔐</div>
-        <div
-          style={{
-            fontFamily: 'var(--font-head)',
-            fontSize: 20,
-            fontWeight: 700,
-            color: '#1b3a5c',
-            marginBottom: 6,
-          }}
-        >
-          Admin Access
-        </div>
-        <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>Sandlot Source</div>
-        <input
-          type="password"
-          value={val}
-          autoFocus
-          onChange={(e) => {
-            setVal(e.target.value)
-            setErr(false)
-          }}
-          onKeyDown={(e) => e.key === 'Enter' && attempt()}
-          placeholder="Password"
-          style={{
-            ...s.searchInput,
-            width: '100%',
-            maxWidth: '100%',
-            marginBottom: 12,
-            boxSizing: 'border-box',
-            border: err ? '1px solid #dc2626' : '1px solid #dde3ec',
-          }}
-        />
-        {err && <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 10 }}>Incorrect password</div>}
-        <button
-          onClick={attempt}
-          style={{
-            width: '100%',
-            padding: '10px',
-            background: '#1b3a5c',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: 700,
-            fontSize: 14,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-          }}
-        >
-          Unlock
-        </button>
-      </div>
-    </div>
-  )
-}
 
 function EditableCell({ tableName, record, field, onSave, isFeaturedTab }) {
   const [value, setValue] = useState(record[field.key] ?? '')
@@ -1217,7 +1147,13 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('Coaches')
 
   if (!unlocked) {
-    return <PasswordGate onUnlock={() => setUnlocked(true)} />
+    return (
+      <PasswordGate
+        adminPassword={ADMIN_PASSWORD}
+        onUnlock={() => setUnlocked(true)}
+        styles={s}
+      />
+    )
   }
 
   return (
