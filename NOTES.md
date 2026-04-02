@@ -13,10 +13,11 @@ Phase 2 - Presentational component extractions only
 - Always verify Vercel production after merge
 
 ## Current confirmed state
-- Working branch is `refactor/playerboard-browse-sidebar`
+- Working branch is `refactor/rosterspots-row`
 - Branch was created from `main`
-- PlayerBoard browse sidebar extraction is in progress
-- Local testing is required before commit
+- `RosterRow` extraction from `RosterSpots.jsx` is complete locally
+- Localhost testing passed for the extracted row
+- `NOTES.md` is being updated before commit
 - Vercel production was verified after the last merged refactor on `main`
 
 ## Completed extractions
@@ -34,14 +35,20 @@ Phase 2 - Presentational component extractions only
 12. PlayerBoardDesktopRow - `PlayerBoard`
 13. PlayerBoardMobileCard - `PlayerBoard`
 14. PlayerBoardBrowseSidebar - `PlayerBoard`
+15. RosterRow - `RosterSpots`
+
+## Current conclusions
+- `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
+- `PlayerBoard.jsx` will likely need additional reduction in a later structural phase rather than through more simple presentational extraction
+- `RosterSpots.jsx` had a clean still-live presentational leaf, and `RosterRow` was the correct next extraction target
 
 ## Next target
-- Re-inspect `PlayerBoard.jsx` for one more still-live presentational extraction target
-- If no worthwhile safe `PlayerBoard` target remains after sidebar extraction, say so explicitly and only then move to `RosterSpots` inspection
+- Re-inspect `RosterSpots.jsx` for one more still-live safe presentational extraction target after `RosterRow`
+- If no worthwhile safe presentational target remains, say so explicitly and defer further `RosterSpots` reduction to a later structural phase
 
 ## Remaining queue
-1. Remaining safe `PlayerBoard` extraction only if inspection confirms one still exists
-2. `RosterSpots` extractions
+1. Remaining safe `RosterSpots` extraction only if inspection confirms one still exists
+2. Later-phase structural reduction for oversized files like `PlayerBoard` and possibly `RosterSpots`
 3. `AdminPage` tab splitting
 4. Bug audit (deferred until files are smaller)
 
