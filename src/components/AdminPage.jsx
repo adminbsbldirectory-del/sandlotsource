@@ -5,6 +5,7 @@ import ClaimRequestsToolbar from './admin/ClaimRequestsToolbar.jsx'
 import AdminTabs from './admin/AdminTabs.jsx'
 import PasswordGate from './admin/PasswordGate.jsx'
 import GenericAdminTableContent from './admin/GenericAdminTableContent.jsx'
+import AdminCell from './admin/AdminCell.jsx'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 const REVIEWED_BY = 'admin'
@@ -494,13 +495,6 @@ function formatFilterOption(value) {
     .join(' ')
 }
 
-function toDateInputValue(val) {
-  if (!val) return ''
-  const d = new Date(val)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toISOString().slice(0, 10)
-}
-
 function formatDateDisplay(val) {
   if (!val) return '—'
   const d = new Date(val)
@@ -512,11 +506,6 @@ function formatDateDisplay(val) {
     hour: 'numeric',
     minute: '2-digit',
   })
-}
-
-function isExpired(val) {
-  if (!val) return false
-  return new Date(val) < new Date()
 }
 
 function displayFieldValue(record, field) {
@@ -599,163 +588,6 @@ function deriveClaimDecision(record) {
   if (notes.startsWith('[APPROVED]')) return 'approved'
   if (notes.startsWith('[REJECTED]')) return 'rejected'
   return 'resolved'
-}
-
-
-function EditableCell({ tableName, record, field, onSave, isFeaturedTab }) {
-  const [value, setValue] = useState(record[field.key] ?? '')
-  const [status, setStatus] = useState('')
-
-  useEffect(() => {
-    setValue(record[field.key] ?? '')
-    setStatus('')
-  }, [record, field.key])
-
-  const tdStyle = isFeaturedTab ? s.featuredTd : s.td
-
-  async function save(nextValue) {
-    setStatus('Saving…')
-
-    const update = {}
-    update[field.key] = nextValue === '' ? null : nextValue
-
-    const { error } = await supabase.from(tableName).update(update).eq('id', record.id)
-
-    if (error) {
-      console.error('Admin save error:', error)
-      setStatus('Error')
-      setTimeout(() => setStatus(''), 2000)
-      return
-    }
-
-    setStatus('Saved')
-    onSave(record.id, field.key, nextValue === '' ? null : nextValue)
-    setTimeout(() => setStatus(''), 1200)
-  }
-
-  function statusNode() {
-    return status ? <div style={s.smallStatus}>{status}</div> : null
-  }
-
-  if (field.type === 'joined') {
-    return (
-      <td style={tdStyle}>
-        <div>{displayFieldValue(record, field) || '—'}</div>
-      </td>
-    )
-  }
-
-  if (field.type === 'readonly') {
-    return (
-      <td style={tdStyle}>
-        <div style={{ lineHeight: 1.45 }}>{displayFieldValue(record, field) || '—'}</div>
-      </td>
-    )
-  }
-
-  if (field.type === 'stars') {
-    return (
-      <td style={tdStyle}>
-        <div>{Number(record[field.key] || 0)} / 5</div>
-      </td>
-    )
-  }
-
-  if (field.type === 'date-readonly') {
-    return (
-      <td style={tdStyle}>
-        <div>{formatDateDisplay(record[field.key])}</div>
-      </td>
-    )
-  }
-
-  if (field.type === 'date-edit') {
-    const expired = field.key === 'featured_until' && isExpired(record[field.key])
-
-    return (
-      <td style={tdStyle}>
-        <div style={{ fontSize: 12, color: expired ? '#991b1b' : '#64748b', marginBottom: 6 }}>
-          {formatDateDisplay(record[field.key])}
-        </div>
-        <input
-          type="date"
-          value={toDateInputValue(record[field.key])}
-          onChange={(e) => save(e.target.value || '')}
-          style={s.dateInput}
-        />
-        {statusNode()}
-      </td>
-    )
-  }
-
-  if (field.type === 'boolean') {
-    return (
-      <td style={tdStyle}>
-        <select
-          value={record[field.key] ? 'true' : 'false'}
-          onChange={(e) => save(e.target.value === 'true')}
-          style={s.inlineSelect}
-        >
-          <option value="true">Yes</option>
-          <option value="false">No</option>
-        </select>
-        {statusNode()}
-      </td>
-    )
-  }
-
-  if (field.type === 'select') {
-    return (
-      <td style={tdStyle}>
-        <select
-          value={record[field.key] ?? ''}
-          onChange={(e) => save(e.target.value)}
-          style={s.inlineSelect}
-        >
-          <option value="">Select…</option>
-          {field.options.map((option) => (
-            <option key={option} value={option}>
-              {formatFilterOption(option)}
-            </option>
-          ))}
-        </select>
-        {statusNode()}
-      </td>
-    )
-  }
-
-  if (field.type === 'number') {
-    return (
-      <td style={tdStyle}>
-        <input
-          type="number"
-          value={value ?? ''}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={() => {
-            const nextValue = value === '' ? '' : Number(value)
-            if ((record[field.key] ?? '') !== nextValue) save(nextValue)
-          }}
-          style={s.inlineInput}
-        />
-        {statusNode()}
-      </td>
-    )
-  }
-
-  return (
-    <td style={tdStyle}>
-      <input
-        type="text"
-        value={value ?? ''}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => {
-          if ((record[field.key] ?? '') !== value) save(value)
-        }}
-        style={s.inlineInput}
-      />
-      {statusNode()}
-    </td>
-  )
 }
 
 function GenericAdminTable({ tabName }) {
@@ -849,7 +681,7 @@ function GenericAdminTable({ tabName }) {
     return sortRows(result, sortKey, sortDir, cfg.fields)
   }, [cfg.fields, filterValues, filters, rows, search, sortDir, sortKey])
 
-     return (
+  return (
     <GenericAdminTableContent
       tabName={tabName}
       cfg={cfg}
@@ -871,12 +703,12 @@ function GenericAdminTable({ tabName }) {
       sortDir={sortDir}
       onSort={handleSort}
       onSave={handleSave}
-      CellComponent={EditableCell}
+      CellComponent={AdminCell}
       styles={s}
       formatFilterOption={formatFilterOption}
     />
   )
-} 
+}
 
 function ClaimRequestsTable() {
   const [rows, setRows] = useState([])
@@ -889,7 +721,9 @@ function ClaimRequestsTable() {
   const [sortOrder, setSortOrder] = useState('newest')
   const [notesById, setNotesById] = useState({})
   const [busyId, setBusyId] = useState(null)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1200 : false)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1200 : false
+  )
 
   useEffect(() => {
     function handleResize() {
@@ -900,12 +734,24 @@ function ClaimRequestsTable() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  async function loadRows() {
+    async function loadRows() {
     setLoading(true)
     setLoadError('')
 
     try {
       const response = await fetch('/api/admin-claim-requests')
+      const contentType = response.headers.get('content-type') || ''
+
+      if (!contentType.includes('application/json')) {
+        setLoadError(
+          'Claim requests API is not available in this local mode. Use Vercel preview or vercel dev to test claim workflow.'
+        )
+        setRows([])
+        setLoading(false)
+        return
+      }
+
+      const payload = await response.json().catch(() => null)
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -913,7 +759,6 @@ function ClaimRequestsTable() {
             'Claim requests API is not available in this local mode. Use Vercel preview or vercel dev to test claim workflow.'
           )
         } else {
-          const payload = await response.json().catch(() => ({}))
           setLoadError(payload?.error || 'Failed to load claim requests.')
         }
         setRows([])
@@ -921,7 +766,6 @@ function ClaimRequestsTable() {
         return
       }
 
-      const payload = await response.json()
       const nextRows = payload?.rows || []
 
       setRows(nextRows)
@@ -934,7 +778,9 @@ function ClaimRequestsTable() {
       setLoading(false)
     } catch (error) {
       console.error('Claim Requests load error:', error)
-      setLoadError('Failed to load claim requests.')
+      setLoadError(
+        'Claim requests API is not available in this local mode. Use Vercel preview or vercel dev to test claim workflow.'
+      )
       setRows([])
       setLoading(false)
     }
@@ -1022,31 +868,33 @@ function ClaimRequestsTable() {
     return result
   }, [listingType, requestKind, rows, search, sortOrder, statusFilter])
 
-    return (
-      <div style={s.card}>
-              <ClaimRequestsToolbar
-                search={search}
-                onSearchChange={setSearch}
-                listingType={listingType}
-                onListingTypeChange={setListingType}
-                requestKind={requestKind}
-                onRequestKindChange={setRequestKind}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-                sortOrder={sortOrder}
-                onSortOrderChange={setSortOrder}
-                shownCount={displayed.length}
-                styles={s}
-              />
+  return (
+    <div style={s.card}>
+      <ClaimRequestsToolbar
+        search={search}
+        onSearchChange={setSearch}
+        listingType={listingType}
+        onListingTypeChange={setListingType}
+        requestKind={requestKind}
+        onRequestKindChange={setRequestKind}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
+        shownCount={displayed.length}
+        styles={s}
+      />
 
       {loadError ? <div style={s.errorBox}>{loadError}</div> : null}
 
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading…</div>
       ) : displayed.length === 0 ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>No claim requests match.</div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>
+          No claim requests match.
+        </div>
       ) : (
-               <div style={s.claimList}>
+        <div style={s.claimList}>
           {displayed.map((row) => {
             const decision = deriveClaimDecision(row)
             const isResolved = row.status === 'resolved'
@@ -1077,7 +925,7 @@ function ClaimRequestsTable() {
               />
             )
           })}
-        </div> 
+        </div>
       )}
     </div>
   )

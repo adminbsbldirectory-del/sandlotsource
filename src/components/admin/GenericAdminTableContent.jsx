@@ -82,6 +82,8 @@ export default function GenericAdminTableContent({
                       field={field}
                       onSave={onSave}
                       isFeaturedTab={isFeaturedTab}
+                      styles={styles}
+                      formatFilterOption={formatFilterOption}
                     />
                   ))}
                 </tr>
