@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
+import { geocodeZip, distanceMiles } from '../lib/submit/geocode.js'
 import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
 import AdSlot from './AdSlot.jsx'
-import { US_STATES } from '../constants/usStates';
+import { US_STATES } from '../constants/usStates'
 import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
+import { normalizeSportValue } from '../utils/sportUtils.js'
 import TeamCard from './teams/TeamCard.jsx'
 import TeamPreviewCard from './teams/TeamPreviewCard.jsx'
 import TeamDesktopRow from './teams/TeamDesktopRow.jsx'
@@ -62,15 +64,6 @@ function normalizeStateValue(value) {
   return STATE_NAME_TO_ABBR[upper] || upper
 }
 
-function normalizeSportValue(value) {
-  const raw = String(value || '').trim().toLowerCase()
-  if (!raw) return 'baseball'
-  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
-  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
-  if (raw.includes('softball')) return 'softball'
-  return 'baseball'
-}
-
 function makeIcon(background) {
   return L.divIcon({
     className: '',
@@ -89,36 +82,6 @@ function teamPinColor(team) {
   if (sport === 'softball') return PIN_COLORS.softball
   if (sport === 'both') return PIN_COLORS.both
   return PIN_COLORS.baseball
-}
-
-async function geocodeZip(zip) {
-  try {
-    const res = await fetch('https://api.zippopotam.us/us/' + zip)
-    if (!res.ok) return null
-    const data = await res.json()
-    const place = data.places && data.places[0]
-    if (!place) return null
-    return {
-      lat: parseFloat(place.latitude),
-      lng: parseFloat(place.longitude),
-      state: place['state abbreviation'] || '',
-      city: place['place name'] || '',
-    }
-  } catch {
-    return null
-  }
-}
-
-function distanceMiles(lat1, lng1, lat2, lng2) {
-  const R = 3958.8
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
 function getSportChipStyle(sport) {
