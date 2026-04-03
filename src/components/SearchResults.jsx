@@ -4,6 +4,7 @@ import { supabase } from '../supabase.js'
 import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
 import CoachResult from './search/CoachResult'
 import TeamResult from './search/TeamResult'
+import FacilityResult from './search/FacilityResult'
 
 // ─── Haversine distance (miles) ───────────────────────────
 function distanceMiles(lat1, lng1, lat2, lng2) {
@@ -37,31 +38,16 @@ async function geocodeZip(zip) {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────
-function getZip(item) {
-  return item.zip_code || item.zip || ''
-}
-
-function getLocationLine(item) {
-  const zip = getZip(item)
-  const parts = [item.city, item.state].filter(Boolean)
-  if (parts.length === 0 && zip) return zip
-  if (parts.length === 0) return item.county ? `${item.county} Co.` : ''
-  return parts.join(', ') + (zip ? ` ${zip}` : '')
-}
-
 // ─── Style tokens ─────────────────────────────────────────
 const RED = '#e63329'
 const DARK = '#1a1a1a'
 const BORDER = '#eaeae6'
 const MUTED = '#888'
-const LIGHT = '#f5f5f2'
 
 const BADGE_STYLES = {
   team: { background: '#eaf3de', color: '#285010' },
   roster: { background: '#fff3e0', color: '#7a4200' },
   tryout: { background: '#f0eefe', color: '#3d2fa0' },
-  facility: { background: '#e8f4ff', color: '#1d4ed8' },
 }
 
 
@@ -122,134 +108,6 @@ function SectionHeader({ title, count, isCollapsed, onToggle }) {
         {isCollapsed ? '▼ Show' : '▲ Hide'}
       </span>
     </div>
-  )
-}
-
-
-
-function FacilityCard({ facility, distanceMi, to }) {
-  const amenities = Array.isArray(facility.amenities) ? facility.amenities : []
-  const locationLine = getLocationLine(facility)
-
-  return (
-    <Link
-      to={to}
-      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-    >
-      <div
-        style={{
-          border: `1px solid ${BORDER}`,
-          borderRadius: 12,
-          padding: '14px 16px',
-          background: '#fff',
-          cursor: 'pointer',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 6,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: DARK,
-                marginBottom: 2,
-              }}
-            >
-              {facility.name}
-            </div>
-            {facility.address && (
-              <div style={{ fontSize: 12, color: MUTED }}>{facility.address}</div>
-            )}
-          </div>
-
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              padding: '3px 8px',
-              borderRadius: 5,
-              flexShrink: 0,
-              marginLeft: 12,
-              ...BADGE_STYLES.facility,
-            }}
-          >
-            🏟️ Facility
-          </span>
-        </div>
-
-        <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
-          📍 {locationLine || 'Location not listed'}
-          {distanceMi != null && (
-            <span style={{ marginLeft: 8, color: RED, fontWeight: 500 }}>
-              {Math.round(distanceMi)} mi away
-            </span>
-          )}
-        </div>
-
-        {amenities.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
-            {amenities.slice(0, 4).map((a) => (
-              <span
-                key={a}
-                style={{
-                  background: LIGHT,
-                  color: MUTED,
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 20,
-                }}
-              >
-                {a}
-              </span>
-            ))}
-            {amenities.length > 4 && (
-              <span
-                style={{
-                  background: LIGHT,
-                  color: MUTED,
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 20,
-                }}
-              >
-                +{amenities.length - 4} more
-              </span>
-            )}
-          </div>
-        )}
-
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderTop: '1px solid #f2f2ee',
-            paddingTop: 9,
-            marginTop: 4,
-          }}
-        >
-          <span style={{ fontSize: 12, fontWeight: 500, color: RED }}>
-            View facility →
-          </span>
-          {facility.sport && (
-            <span style={{ fontSize: 11, color: MUTED, textTransform: 'capitalize' }}>
-              {facility.sport === 'both'
-                ? '⚾🥎 Baseball & Softball'
-                : facility.sport === 'softball'
-                  ? '🥎 Softball'
-                  : '⚾ Baseball'}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
   )
 }
 
@@ -845,7 +703,7 @@ export default function SearchResults() {
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: resultsGridColumns, gap: isMobile ? 12 : 10 }}>
                       {filteredFacilities.map((facility) => (
-                        <FacilityCard
+                        <FacilityResult
                           key={facility.id}
                           facility={facility}
                           distanceMi={getDistance(facility)}
