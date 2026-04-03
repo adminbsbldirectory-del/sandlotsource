@@ -36,8 +36,14 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
 - Local repo is back on `main`
 - Local `main` is up to date with `origin/main`
-- Working tree should be clean after final `NOTES.md` save/commit
+- Working tree is clean after final `NOTES.md` save/commit
 - No active refactor branch is currently in progress
+- `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
+- No additional clearly worthwhile narrow render-structure split remains in `SearchResults.jsx`
+- `GenericAdminTableContent` extraction from `AdminPage.jsx` is complete and merged
+- Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
+- Vercel preview looked good and production deployed correctly after the `GenericAdminTableContent` merge
+- `AdminPage.jsx` should be re-inspected from merged `main`
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -67,6 +73,7 @@ Current phase is guarded later-phase structural refactor planning and execution.
 25. TeamResult - `SearchResults`
 26. FacilityResult - `SearchResults`
 27. SearchResultsContent - `SearchResults`
+28. `GenericAdminTableContent` - `AdminPage`
 
 ## Audit comparison summary
 - The original audit path was directionally correct about the largest pain points: oversized page files, duplicated shared utilities, repeated presentational leaf UI, and later structural refactor needs
@@ -85,7 +92,7 @@ Current phase is guarded later-phase structural refactor planning and execution.
 
 ## Original audit items not completed exactly as first proposed
 - `AdminCell` was not extracted as its own file
-- `AdminTable` was not extracted as its own file
+- `AdminTable` was not extracted exactly as first proposed; later guarded structural work instead extracted `GenericAdminTableContent` from `AdminPage.jsx`
 - `RosterResult` was not extracted from `SearchResults.jsx`
 - Broad data-hook extraction phase was not pursued project-wide
 - Shared map abstraction phase was not pursued
@@ -114,23 +121,27 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - The remaining live results-page shell was the best target because it contained the loading/empty/results branches, section wrappers, mobile sponsored placeholders, and desktop sidebar sponsored placeholder layout
 - `SearchResultsContent` was the correct narrow structural extraction target
 - `SearchResultsContent` has now been merged and production-verified
-- `SearchResults.jsx` should be re-inspected from merged `main` before deciding whether any additional narrow worthwhile structural split remains
-- During localhost validation after `SearchResultsContent` extraction, search results links for teams and facilities behaved correctly
-- Search result coach click-through to `/coaches?...&select=...` still lands on the coach directory browse view instead of surfacing the selected coach detail state
-- That coach click-through issue appears separate from the current extraction and remains out of scope for the `SearchResultsContent` branch
-- `AdminPage.jsx` remains the next later structural target after `SearchResults.jsx` is re-inspected
+- - `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
+- No additional clearly worthwhile narrow render-structure split remains in `SearchResults.jsx`
+- Remaining `SearchResults.jsx` bulk is now mostly state, geocode/fetch, filtering, query construction, navigation, and small search/filter header orchestration rather than another clean narrow render-shell extraction target
+- `SearchResults.jsx` should move out of immediate extraction focus and remain deferred for later guarded structural cleanup if needed
+- `AdminPage.jsx` still had one clearly worthwhile narrow later-phase structural split after `PasswordGate`, `ClaimRequestRow`, `ClaimRequestsToolbar`, and `AdminTabs`
+- The generic admin data-table render shell was the best remaining target because it contained the card wrapper, toolbar/filter row, shown count, loading/empty states, and generic table/head/body rendering
+- `GenericAdminTableContent` was the correct narrow structural extraction target
+- `GenericAdminTableContent` has now been merged and production-verified
+- `AdminPage.jsx` should be re-inspected from merged `main` before deciding whether any additional narrow worthwhile structural split remains
 - The remaining oversized files are now primarily in later structural refactor territory
 
 ## Next target
-- Re-inspect merged `SearchResults.jsx`
-- Determine whether any additional narrow worthwhile render-structure split remains in `SearchResults.jsx`
-- If not, move to `AdminPage.jsx`
+- Re-inspect merged `AdminPage.jsx`
+- Determine whether any additional narrow worthwhile render-structure split remains in `AdminPage.jsx`
+- If not, move `AdminPage.jsx` out of immediate focus
 
 ## Remaining queue
-1. Re-inspect merged `SearchResults.jsx`
-2. Determine whether any additional narrow worthwhile render-structure split remains in `SearchResults.jsx`
-3. If not, move to `AdminPage.jsx`
-4. Continue later-phase structural reduction planning for `AdminPage.jsx`
+1. Re-inspect merged `AdminPage.jsx`
+2. Determine whether any additional narrow worthwhile render-structure split remains in `AdminPage.jsx`
+3. If not, move `AdminPage.jsx` out of immediate focus
+4. Reassess remaining oversized files in later structural territory
 5. Bug audit remains deferred until file-reduction work is complete
 
 ## Local branches to keep
