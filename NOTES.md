@@ -1,7 +1,8 @@
 # Sandlot Source Refactor Notes
 
 ## Current phase
-Phase 2 - Presentational component extractions only
+Phase 2 presentational extraction work is effectively complete  
+Next phase: later structural refactor planning
 
 ## Working repo / workflow
 - Working repo: `C:\GitHub\sandlotsource`
@@ -17,16 +18,19 @@ Phase 2 - Presentational component extractions only
 - `CoachSubmitForm` modular refactor is complete and merged
 - `PasswordGate` extraction from `AdminPage.jsx` is complete and merged
 - `ClaimRequestRow` extraction from `AdminPage.jsx` is complete and merged
-- `AdminTabs` extraction from `AdminPage.jsx` is complete and merged
 - `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete and merged
+- `AdminTabs` extraction from `AdminPage.jsx` is complete and merged
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
 - `CoachResult` extraction from `SearchResults.jsx` is complete and merged
 - `TeamResult` extraction from `SearchResults.jsx` is complete and merged
-- `FacilityResult` extraction from `SearchResults.jsx` is complete locally and passed localhost testing
-- Vercel production was verified after the latest previously merged refactor on `main`
-- Local repo is no longer on clean synced `main`
-- Active refactor branch is in progress for `FacilityResult` extraction from `SearchResults.jsx`
+- `FacilityResult` extraction from `SearchResults.jsx` is complete and merged
+- `PlayerBoardBrowseContent` structural extraction from `PlayerBoard.jsx` is complete and merged
+- Vercel production was verified after the latest merged refactor on `main`
+- Local repo is on `main`
+- Local `main` is up to date with `origin/main`
+- Working tree is clean
+- No active refactor branch is in progress
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -44,44 +48,80 @@ Phase 2 - Presentational component extractions only
 13. PlayerBoardDesktopRow - `PlayerBoard`
 14. PlayerBoardMobileCard - `PlayerBoard`
 15. PlayerBoardBrowseSidebar - `PlayerBoard`
-16. RosterRow - `RosterSpots`
-17. RosterSubmittedState - `RosterSpots`
-18. ClaimRequestRow - `AdminPage`
-19. ClaimRequestsToolbar - `AdminPage`
-20. AdminTabs - `AdminPage`
-21. PasswordGate - `AdminPage`
-22. CoachResult - `SearchResults`
-23. TeamResult - `SearchResults`
-24. FacilityResult - `SearchResults`
+16. PlayerBoardBrowseContent - `PlayerBoard`
+17. RosterRow - `RosterSpots`
+18. RosterSubmittedState - `RosterSpots`
+19. ClaimRequestRow - `AdminPage`
+20. ClaimRequestsToolbar - `AdminPage`
+21. AdminTabs - `AdminPage`
+22. PasswordGate - `AdminPage`
+23. CoachResult - `SearchResults`
+24. TeamResult - `SearchResults`
+25. FacilityResult - `SearchResults`
+
+## Audit comparison summary
+- The original audit path was directionally correct about the largest pain points: oversized page files, duplicated shared utilities, repeated presentational leaf UI, and later structural refactor needs
+- Actual project execution has followed the audit direction in a more conservative, safer, leaf-by-leaf way
+- The project has completed most of the worthwhile low-risk Phase 2 presentational extraction work across the largest files
+- The project has gone further than the original audit in some files by extracting multiple safe presentational leaves instead of only the first obvious card/row
+- The project has intentionally *not* followed the original audit into heavier structural extraction work until now
+- This was the correct strategy under the locked Phase 2 rules
+- `AdSlot.jsx` consolidation is confirmed in `CoachDirectory.jsx`, `TravelTeams.jsx`, `Facilities.jsx`, and `PlayerBoard.jsx`
+- `SearchResults.jsx` still contains inline sponsored placeholder UI and was not converted to `AdSlot.jsx`
+- Therefore the original audit ad-consolidation item is effectively complete for the major directory-style pages, with `SearchResults.jsx` intentionally left outside that cleanup path
+- The project has now begun later structural refactor work with the first narrow structural split in `PlayerBoard.jsx`
+
+## Original audit items that were effectively completed
+- Shared utilities phase completed
+- Major `CoachSubmitForm` modular reduction completed
+- Safe presentational extraction work completed across `CoachDirectory`, `TravelTeams`, `Facilities`, `PlayerBoard`, `RosterSpots`, `AdminPage`, and `SearchResults`
+
+## Original audit items not completed exactly as first proposed
+- `AdminCell` was not extracted as its own file
+- `AdminTable` was not extracted as its own file
+- `RosterResult` was not extracted from `SearchResults.jsx`
+- Broad data-hook extraction phase was not pursued project-wide
+- Shared map abstraction phase was not pursued
+- Broad filter-panel extraction phase was not pursued
+- These remaining items are increasingly structural and therefore intentionally deferred
 
 ## Current conclusions
-- `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
-- Further meaningful reduction of `PlayerBoard.jsx` now appears to require later structural refactor work rather than additional simple presentational extraction
+- `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, and `PlayerBoardBrowseSidebar` was the last clearly worthwhile Phase 2 presentational extraction there
+- Further meaningful reduction of `PlayerBoard.jsx` required later structural refactor work rather than additional simple presentational extraction
+- `PlayerBoardBrowseContent` was the first later-phase structural split completed in `PlayerBoard.jsx`
+- `PlayerBoard.jsx` now has an initial structural split, but any further reduction should still remain narrow and guarded
+- `PlayerBoard.jsx` should be re-inspected from current merged `main` before choosing any second structural split
 - `RosterSpots.jsx` had one more clearly safe live presentational leaf after `RosterRow`, and `RosterSubmittedState` was the correct final worthwhile Phase 2 extraction there
 - `RosterSubmittedState` was the last clearly worthwhile safe presentational leaf in `RosterSpots.jsx`
 - Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional simple presentational extraction
 - `AdminPage.jsx` contained multiple clearly live Phase 2 presentational leaves, and `ClaimRequestRow`, `ClaimRequestsToolbar`, `AdminTabs`, and `PasswordGate` have now been extracted successfully
-- `AdminPage.jsx` should be re-inspected before any further extraction work, because the remaining sections are more logic-heavy and may no longer qualify as worthwhile safe Phase 2 presentational leaves
-- `SearchResults.jsx` has begun Phase 2 extraction work with `CoachResult` and `TeamResult`
-- `SearchResults.jsx` should now be re-inspected from the current merged `main` state before choosing any additional extraction target
+- `AdminPage.jsx` received a final Phase 2 inspection after those extractions
+- The tiny top header shell was explicitly reviewed as a final go/no-go candidate and was not recommended for extraction
+- No additional clearly worthwhile safe Phase 2 presentational leaf remains in `AdminPage.jsx`
+- Further meaningful reduction of `AdminPage.jsx` now appears to require later structural refactor work rather than additional simple presentational extraction
+- `SearchResults.jsx` has now completed Phase 2 extraction work for `CoachResult`, `TeamResult`, and `FacilityResult`
+- `SearchResults.jsx` was re-inspected from the current merged `main` state after `FacilityResult`
+- No further clearly worthwhile safe Phase 2 presentational leaf was confirmed in `SearchResults.jsx`
+- Remaining local `SearchResults.jsx` pieces (`ResultCount`, `SectionHeader`, `EmptyState`, right-rail placeholder block, and small sponsored placeholder blocks) are too small or too placeholder-oriented to justify another extraction branch
+- Further meaningful reduction of `SearchResults.jsx` now appears to require later structural refactor work rather than additional simple presentational extraction
 - The remaining oversized files are increasingly moving from safe presentational extraction territory into later structural refactor territory
-- `FacilityResult` has now been extracted successfully from `SearchResults.jsx` in the current local branch and passed localhost testing
-- `SearchResults.jsx` should be re-inspected after merge to determine whether any further clearly worthwhile safe Phase 2 presentational leaf remains
+- Phase 2 presentational extraction work is effectively complete
 
 ## Next target
-- `FacilityResult` extraction from `SearchResults.jsx` is complete locally and passed localhost testing
-- Next step is to commit, push, merge, and verify Vercel production
-- After merge, re-inspect `SearchResults.jsx` from merged `main` to determine whether any further clearly worthwhile safe presentational leaf remains
-- If not, move `SearchResults.jsx` into later structural refactor planning
+- There is no additional Phase 2 extraction target currently recommended
+- `SearchResults.jsx` should remain in later structural refactor planning
+- `AdminPage.jsx` should remain in later structural refactor planning
+- `PlayerBoard.jsx` should be re-inspected from current merged `main` before any further structural split is chosen
+- The next step is to determine whether one more narrow structural split remains worthwhile in `PlayerBoard.jsx`
+- If not, move to the next later-phase structural target
 
 ## Remaining queue
-1. Commit and merge `FacilityResult` extraction from `SearchResults.jsx`
-2. Verify Vercel production after merge
-3. Re-inspect `SearchResults.jsx` from merged `main` for any final worthwhile safe Phase 2 presentational extraction
-4. Re-inspect `AdminPage.jsx` before any further extraction work; remaining reductions may now be structural rather than presentational
-5. Later-phase structural reduction for oversized files like `PlayerBoard`, `RosterSpots`, `AdminPage`, and likely `SearchResults`
-6. `AdminPage` tab splitting
-7. Bug audit (deferred until files are smaller)
+1. Re-inspect `PlayerBoard.jsx` after `PlayerBoardBrowseContent` extraction
+2. Determine whether one more narrow structural split remains worthwhile in `PlayerBoard.jsx`
+3. If no additional narrow `PlayerBoard.jsx` split is worthwhile, move to the next structural target
+4. Later-phase structural reduction for oversized files like `RosterSpots`, `AdminPage`, and `SearchResults`
+5. `AdminPage` tab/table structural splitting if later-phase rules allow it
+6. Bug audit (still deferred until file-reduction work is complete)
 
 ## Local branches to keep
 - `main`
@@ -118,6 +158,7 @@ Phase 2 - Presentational component extractions only
 - Provide the exact import line(s) and clearly state what in-file block to remove
 - Check sibling files in the target folder for naming and prop-pattern consistency before creating a new file
 - Before proposing any new extraction, first confirm whether the current target still has a clearly live presentational leaf or whether it has crossed into structural-refactor territory
+- For later structural work, define a narrow scope before creating any branch
 
 ## Thread closeout checklist
 - `NOTES.md` updated before ending thread
@@ -139,4 +180,4 @@ Phase 2 - Presentational component extractions only
 - If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
 
 ## Bug audit
-Deferred until Phase 2 extractions are complete. Some prior known bugs may already be resolved. Do not chase bugs during refactor sessions.
+Deferred until file-reduction work is complete. Some prior known bugs may already be resolved. Do not chase bugs during refactor sessions.
