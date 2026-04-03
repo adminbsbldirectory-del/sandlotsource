@@ -22,18 +22,22 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - `AdminTabs` extraction from `AdminPage.jsx` is complete and merged
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
+- `RosterBrowseContent` structural extraction from `RosterSpots.jsx` is complete and merged
 - `CoachResult` extraction from `SearchResults.jsx` is complete and merged
 - `TeamResult` extraction from `SearchResults.jsx` is complete and merged
 - `FacilityResult` extraction from `SearchResults.jsx` is complete and merged
+- `SearchResultsContent` structural extraction from `SearchResults.jsx` is complete and merged
 - `PlayerBoardBrowseContent` structural extraction from `PlayerBoard.jsx` is complete and merged
 - `PlayerBoard.jsx` was re-inspected from merged `main`
 - No additional clearly worthwhile narrow render-structure split remains in `PlayerBoard.jsx`
-- `RosterBrowseContent` structural extraction from `RosterSpots.jsx` is complete locally on branch `refactor/roster-spots-browse-content`
-- Local localhost testing passed for the `RosterBrowseContent` extraction
-- PR / merge / Vercel production verification for `RosterBrowseContent` are still pending
-- Local repo is on a working refactor branch for the `RosterBrowseContent` extraction unless changed after this note
-- `main` remains the production-aligned source of truth
-- Do not mark the latest `RosterSpots.jsx` structural extraction as merged until PR merge and production verification are confirmed
+- `RosterSpots.jsx` was re-inspected from merged `main` after `RosterBrowseContent` extraction
+- No additional clearly worthwhile narrow render-structure split remains in `RosterSpots.jsx`
+- Vercel production was verified after the `RosterBrowseContent` merge
+- Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
+- Local repo is back on `main`
+- Local `main` is up to date with `origin/main`
+- Working tree should be clean after final `NOTES.md` save/commit
+- No active refactor branch is currently in progress
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -54,14 +58,15 @@ Current phase is guarded later-phase structural refactor planning and execution.
 16. PlayerBoardBrowseContent - `PlayerBoard`
 17. RosterRow - `RosterSpots`
 18. RosterSubmittedState - `RosterSpots`
-19. ClaimRequestRow - `AdminPage`
-20. ClaimRequestsToolbar - `AdminPage`
-21. AdminTabs - `AdminPage`
-22. PasswordGate - `AdminPage`
-23. CoachResult - `SearchResults`
-24. TeamResult - `SearchResults`
-25. FacilityResult - `SearchResults`
-26. RosterBrowseContent - `RosterSpots` (**local branch only until merged**)
+19. RosterBrowseContent - `RosterSpots`
+20. ClaimRequestRow - `AdminPage`
+21. ClaimRequestsToolbar - `AdminPage`
+22. AdminTabs - `AdminPage`
+23. PasswordGate - `AdminPage`
+24. CoachResult - `SearchResults`
+25. TeamResult - `SearchResults`
+26. FacilityResult - `SearchResults`
+27. SearchResultsContent - `SearchResults`
 
 ## Audit comparison summary
 - The original audit path was directionally correct about the largest pain points: oversized page files, duplicated shared utilities, repeated presentational leaf UI, and later structural refactor needs
@@ -97,39 +102,41 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - `RosterSpots.jsx` had one more clearly worthwhile narrow later-phase structural split after `RosterRow` and `RosterSubmittedState`
 - The browse-mode shell was the best remaining structural target because it contained the live browse header/filter band, map section, prompt/no-results states, mobile inline ad, and result list
 - `RosterBrowseContent` was the correct narrow structural extraction target
-- `RosterBrowseContent` is complete locally and localhost-tested
-- Remaining `RosterSpots.jsx` weight is now increasingly concentrated in form logic, team-match lookup, zip/search state, and page orchestration rather than another clearly worthwhile render-structure split
-- `AdminPage.jsx` has already completed all clearly worthwhile Phase 2 presentational work and remains in later structural planning
-- `SearchResults.jsx` has already completed all clearly worthwhile Phase 2 presentational work and remains in later structural planning
+- `RosterBrowseContent` has now been merged and production-verified
+- `RosterSpots.jsx` was re-inspected from merged `main`
+- No additional clearly worthwhile narrow render-structure split remains in `RosterSpots.jsx`
+- Remaining `RosterSpots.jsx` bulk is now mostly page state, ZIP/radius filtering, view switching, desktop wrapper layout, and `RosterForm` submit/match/geocode logic
+- `RosterSpots.jsx` should move out of immediate extraction focus and remain deferred for later guarded structural/form cleanup if needed
+- `Facilities.jsx` was reviewed as a possible alternate target, but no better immediate narrow structural split was identified than `SearchResults.jsx`
+- Remaining `Facilities.jsx` bulk is now mostly browse/map/filter orchestration rather than another clean narrow extraction target
+- `CoachSubmitForm.jsx` was reviewed as a possible alternate target, but it remains outside immediate focus because remaining bulk is primarily form/validation/geocode/duplicate-check logic territory
+- `SearchResults.jsx` still had one clearly worthwhile narrow later-phase structural split after `CoachResult`, `TeamResult`, and `FacilityResult`
+- The remaining live results-page shell was the best target because it contained the loading/empty/results branches, section wrappers, mobile sponsored placeholders, and desktop sidebar sponsored placeholder layout
+- `SearchResultsContent` was the correct narrow structural extraction target
+- `SearchResultsContent` has now been merged and production-verified
+- `SearchResults.jsx` should be re-inspected from merged `main` before deciding whether any additional narrow worthwhile structural split remains
+- During localhost validation after `SearchResultsContent` extraction, search results links for teams and facilities behaved correctly
+- Search result coach click-through to `/coaches?...&select=...` still lands on the coach directory browse view instead of surfacing the selected coach detail state
+- That coach click-through issue appears separate from the current extraction and remains out of scope for the `SearchResultsContent` branch
+- `AdminPage.jsx` remains the next later structural target after `SearchResults.jsx` is re-inspected
 - The remaining oversized files are now primarily in later structural refactor territory
 
 ## Next target
-- Finish the branch lifecycle for `RosterBrowseContent`:
-  - update `NOTES.md`
-  - commit
-  - push
-  - open PR
-  - merge
-  - verify Vercel production
-- Then re-inspect merged `RosterSpots.jsx`
-- If no further narrow worthwhile split remains in merged `RosterSpots.jsx`, move to the next later-phase structural target
-- Current likely next later-phase targets after `RosterSpots.jsx` are:
-  1. `AdminPage.jsx`
-  2. `SearchResults.jsx`
+- Re-inspect merged `SearchResults.jsx`
+- Determine whether any additional narrow worthwhile render-structure split remains in `SearchResults.jsx`
+- If not, move to `AdminPage.jsx`
 
 ## Remaining queue
-1. Merge and production-verify `RosterBrowseContent` extraction from `RosterSpots.jsx`
-2. Re-inspect merged `RosterSpots.jsx`
-3. Determine whether any additional narrow worthwhile render-structure split remains in `RosterSpots.jsx`
-4. If not, move to the next later-phase structural target
-5. Continue later-phase structural reduction planning for `AdminPage.jsx` and `SearchResults.jsx`
-6. Bug audit remains deferred until file-reduction work is complete
+1. Re-inspect merged `SearchResults.jsx`
+2. Determine whether any additional narrow worthwhile render-structure split remains in `SearchResults.jsx`
+3. If not, move to `AdminPage.jsx`
+4. Continue later-phase structural reduction planning for `AdminPage.jsx`
+5. Bug audit remains deferred until file-reduction work is complete
 
 ## Local branches to keep
 - `main`
 - `refactor/shared-utilities-phase-1`
 - `refactor/submit-form-modular`
-- `refactor/roster-spots-browse-content` (**until merged and production-verified**)
 
 ## Locked rules
 - Move slowly and cleanly
