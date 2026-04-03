@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
+import { geocodeZip, distanceMiles } from "../lib/submit/geocode";
 import { supabase } from "../supabase.js";
 import CoachProfile from "./CoachProfile.jsx";
 import AdSlot from "./AdSlot.jsx";
@@ -123,37 +124,6 @@ function getSportBadgeMeta(value) {
     color: "#173B73",
     border: "#C7D3E8",
   };
-}
-
-async function geocodeZip(zip) {
-  if (!zip || zip.length !== 5) return null;
-  try {
-    const res = await fetch("https://api.zippopotam.us/us/" + zip);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const place = data.places && data.places[0];
-    if (!place) return null;
-    return {
-      lat: parseFloat(place.latitude),
-      lng: parseFloat(place.longitude),
-      state: place["state abbreviation"] || "",
-      city: place["place name"] || "",
-    };
-  } catch {
-    return null;
-  }
-}
-
-function distanceMiles(lat1, lng1, lat2, lng2) {
-  const R = 3958.8;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function parseFirstPhone(raw) {
