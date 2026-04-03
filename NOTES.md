@@ -2,7 +2,7 @@
 
 ## Current phase
 Phase 2 presentational extraction work is effectively complete.  
-Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 shared-utility import cleanup, then transition to bug audit.
+Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 shared-utility import cleanup in `CoachDirectory.jsx`, then transition to bug audit.
 
 ## Working repo / workflow
 - Working repo: `C:\GitHub\sandlotsource`
@@ -40,18 +40,27 @@ Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 
 - `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
 - No additional clearly worthwhile narrow render-structure split remains in `SearchResults.jsx`
 - `AdminPage.jsx` closeout is complete and should move out of immediate refactor focus
+- `Facilities.jsx` shared-utility import cleanup is complete and merged
+- `Facilities.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
+- `Facilities.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
+- Unused local helpers `getSportLabel` and `handleZipBlur` were removed from `Facilities.jsx`
+- `TravelTeams.jsx` shared-utility import cleanup is complete and merged
+- `TravelTeams.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
+- `TravelTeams.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
+- Duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were removed from `TravelTeams.jsx`
 - Vercel production was verified after the `RosterBrowseContent` merge
 - Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
 - Vercel preview looked good and production deployed correctly after the `GenericAdminTableContent` merge
 - Vercel preview looked good and production deployed correctly after the `AdminPage.jsx` closeout cleanup merge
+- Vercel production was verified after the `Facilities.jsx` shared-utility cleanup merge
+- Vercel preview looked good and production deployed correctly after the `TravelTeams.jsx` shared-utility cleanup merge
 - Local repo is back on `main`
 - Local `main` is up to date with `origin/main`
-- Working tree is clean after final `NOTES.md` save/commit
-- No active refactor branch is currently in progress
+- `NOTES.md` is being reconciled on local `main`
 - Closeout audit was completed against current merged `main`
 - Current-state inventory confirms 29 completed extractions / major modular reductions
 - Several files remain large due to new feature growth during the refactor period; this is not refactor regression
-- Incomplete Phase 1 shared-utility import cleanup remains in `CoachDirectory.jsx`, `Facilities.jsx`, and `TravelTeams.jsx`
+- Incomplete Phase 1 shared-utility import cleanup remains only in `CoachDirectory.jsx`
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -103,6 +112,7 @@ Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 
 - Targeted later structural shell splits completed where they were clearly justified (`PlayerBoardBrowseContent`, `RosterBrowseContent`, `SearchResultsContent`, `GenericAdminTableContent`)
 - `AdminCell` extraction completed as the final clearly justified narrow AdminPage closeout extraction
 - `AdminPage.jsx` post-extraction cleanup completed and merged
+- `TravelTeams.jsx` shared-utility import cleanup completed and merged
 
 ## Original audit items not completed exactly as first proposed
 - `AdminTable` was not extracted exactly as first proposed; later guarded structural work instead extracted `GenericAdminTableContent` from `AdminPage.jsx`
@@ -158,8 +168,15 @@ Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 
 - `CoachSubmitForm.jsx` was reviewed as a possible target, but it remains outside immediate focus because the remaining bulk is almost entirely form/validation/geocode/duplicate-check/state logic territory
 - `CoachSubmitForm.jsx` should remain deferred unless a future dedicated form-extraction phase is explicitly chosen
 
-- `CoachDirectory.jsx`, `Facilities.jsx`, and `TravelTeams.jsx` still contain some incomplete Phase 1 shared-utility import cleanup
-- The remaining bulk in those files is otherwise primarily map/filter/state orchestration territory
+- `TravelTeams.jsx` shared-utility import cleanup is now complete and merged
+- `TravelTeams.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
+- `TravelTeams.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
+- Duplicate local helper definitions for those utilities were removed from `TravelTeams.jsx`
+- Remaining `TravelTeams.jsx` bulk is otherwise primarily map/filter/state orchestration territory and should remain deferred
+
+- `CoachDirectory.jsx` still contains incomplete Phase 1 shared-utility import cleanup
+- `Facilities.jsx` shared-utility import cleanup is complete and should remain out of immediate closeout focus
+- The remaining bulk in `CoachDirectory.jsx` is otherwise primarily map/filter/state orchestration territory
 - That remaining orchestration work is not currently a clean narrow render-structure target and should remain deferred
 
 - `HomePage.jsx` grew substantially because of organic feature development and is not currently a refactor target
@@ -178,22 +195,17 @@ Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 
 
 - The refactor is substantially complete
 - The project has reached a natural closeout stage for safe, narrow, render-structure extraction work
-- After the remaining closeout items, the next phase should be bug audit rather than broader structural abstraction unless explicitly chosen
+- After the remaining closeout item, the next phase should be bug audit rather than broader structural abstraction unless explicitly chosen
 
 ## Next target
-- Execute the remaining incomplete Phase 1 shared-utility import cleanup one file per branch:
-  - `Facilities.jsx`
-  - `TravelTeams.jsx`
-  - `CoachDirectory.jsx`
-- After those merges, declare refactor closeout complete and begin bug audit
+- Execute the remaining incomplete Phase 1 shared-utility import cleanup in `CoachDirectory.jsx`
+- After that merge, declare refactor closeout complete and begin bug audit
 
 ## Remaining queue
-1. Cleanup shared-utility imports in `Facilities.jsx`
-2. Cleanup shared-utility imports in `TravelTeams.jsx`
-3. Cleanup shared-utility imports in `CoachDirectory.jsx`
-4. Reconcile `NOTES.md` after each merge
-5. Declare refactor closeout complete
-6. Begin bug audit
+1. Cleanup shared-utility imports in `CoachDirectory.jsx`
+2. Reconcile `NOTES.md` after merge
+3. Declare refactor closeout complete
+4. Begin bug audit
 
 ## Local branches to keep
 - `main`
@@ -262,7 +274,7 @@ Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 
 - If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
 
 ## Bug audit
-Deferred until refactor closeout items are complete:
-- Remaining Phase 1 shared-utility import cleanup in `Facilities.jsx`, `TravelTeams.jsx`, and `CoachDirectory.jsx`
+Deferred until refactor closeout item is complete:
+- Remaining Phase 1 shared-utility import cleanup in `CoachDirectory.jsx`
 
-After those closeout items, transition to bug audit.
+After that closeout item, transition to bug audit.
