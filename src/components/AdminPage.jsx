@@ -4,6 +4,7 @@ import ClaimRequestRow from './admin/ClaimRequestRow.jsx'
 import ClaimRequestsToolbar from './admin/ClaimRequestsToolbar.jsx'
 import AdminTabs from './admin/AdminTabs.jsx'
 import PasswordGate from './admin/PasswordGate.jsx'
+import GenericAdminTableContent from './admin/GenericAdminTableContent.jsx'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Grogans@2017'
 const REVIEWED_BY = 'admin'
@@ -848,86 +849,34 @@ function GenericAdminTable({ tabName }) {
     return sortRows(result, sortKey, sortDir, cfg.fields)
   }, [cfg.fields, filterValues, filters, rows, search, sortDir, sortKey])
 
-  return (
-    <div style={s.card}>
-      <div style={s.toolbar}>
-        <div style={s.filterRow}>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${tabName.toLowerCase()}…`}
-            style={s.searchInput}
-          />
-
-          {filters.map((filter) => (
-            <select
-              key={filter.key}
-              value={filterValues[filter.key] || ''}
-              onChange={(e) =>
-                setFilterValues((prev) => ({
-                  ...prev,
-                  [filter.key]: e.target.value,
-                }))
-              }
-              style={s.filterSelect}
-            >
-              <option value="">{filter.placeholder}</option>
-              {(filterOptions[filter.key] || []).map((option) => (
-                <option key={option} value={option}>
-                  {formatFilterOption(option)}
-                </option>
-              ))}
-            </select>
-          ))}
-
-          <span style={s.countBadge}>{displayed.length} shown</span>
-        </div>
-      </div>
-
-      <div style={s.tableWrap}>
-        {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Loading…</div>
-        ) : displayed.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>No records match.</div>
-        ) : (
-          <table style={s.table}>
-            <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              <tr>
-                {cfg.fields.map((field) => (
-                  <th
-                    key={field.key}
-                    style={isFeaturedTab ? s.featuredTh : s.th}
-                    onClick={() => handleSort(field.key)}
-                    title="Click to sort"
-                  >
-                    {field.label}
-                    {sortKey === field.key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {displayed.map((record) => (
-                <tr key={record.id}>
-                  {cfg.fields.map((field) => (
-                    <EditableCell
-                      key={field.key}
-                      tableName={cfg.table}
-                      record={record}
-                      field={field}
-                      onSave={handleSave}
-                      isFeaturedTab={isFeaturedTab}
-                    />
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+     return (
+    <GenericAdminTableContent
+      tabName={tabName}
+      cfg={cfg}
+      isFeaturedTab={isFeaturedTab}
+      filters={filters}
+      search={search}
+      onSearchChange={setSearch}
+      filterValues={filterValues}
+      onFilterValueChange={(key, value) =>
+        setFilterValues((prev) => ({
+          ...prev,
+          [key]: value,
+        }))
+      }
+      filterOptions={filterOptions}
+      displayed={displayed}
+      loading={loading}
+      sortKey={sortKey}
+      sortDir={sortDir}
+      onSort={handleSort}
+      onSave={handleSave}
+      CellComponent={EditableCell}
+      styles={s}
+      formatFilterOption={formatFilterOption}
+    />
   )
-}
+} 
 
 function ClaimRequestsTable() {
   const [rows, setRows] = useState([])
