@@ -2,7 +2,7 @@
 
 ## Current phase
 Phase 2 presentational extraction work is effectively complete.  
-Current phase is guarded later-phase structural refactor planning and execution.
+Current phase is **refactor closeout**: finish the remaining incomplete Phase 1 shared-utility import cleanup, then transition to bug audit.
 
 ## Working repo / workflow
 - Working repo: `C:\GitHub\sandlotsource`
@@ -20,6 +20,7 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - `ClaimRequestRow` extraction from `AdminPage.jsx` is complete and merged
 - `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete and merged
 - `AdminTabs` extraction from `AdminPage.jsx` is complete and merged
+- `AdminCell` extraction from `AdminPage.jsx` is complete and merged
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterBrowseContent` structural extraction from `RosterSpots.jsx` is complete and merged
@@ -28,22 +29,29 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - `FacilityResult` extraction from `SearchResults.jsx` is complete and merged
 - `SearchResultsContent` structural extraction from `SearchResults.jsx` is complete and merged
 - `PlayerBoardBrowseContent` structural extraction from `PlayerBoard.jsx` is complete and merged
+- `GenericAdminTableContent` extraction from `AdminPage.jsx` is complete and merged
+- `AdminPage.jsx` post-extraction closeout cleanup is complete and merged
+- `GenericAdminTableContent.jsx` now passes required props to `AdminCell`
+- `ClaimRequestsTable` now fails gracefully in local mode when the API is unavailable or returns non-JSON
 - `PlayerBoard.jsx` was re-inspected from merged `main`
 - No additional clearly worthwhile narrow render-structure split remains in `PlayerBoard.jsx`
 - `RosterSpots.jsx` was re-inspected from merged `main` after `RosterBrowseContent` extraction
 - No additional clearly worthwhile narrow render-structure split remains in `RosterSpots.jsx`
+- `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
+- No additional clearly worthwhile narrow render-structure split remains in `SearchResults.jsx`
+- `AdminPage.jsx` closeout is complete and should move out of immediate refactor focus
 - Vercel production was verified after the `RosterBrowseContent` merge
 - Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
+- Vercel preview looked good and production deployed correctly after the `GenericAdminTableContent` merge
+- Vercel preview looked good and production deployed correctly after the `AdminPage.jsx` closeout cleanup merge
 - Local repo is back on `main`
 - Local `main` is up to date with `origin/main`
 - Working tree is clean after final `NOTES.md` save/commit
 - No active refactor branch is currently in progress
-- `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
-- No additional clearly worthwhile narrow render-structure split remains in `SearchResults.jsx`
-- `GenericAdminTableContent` extraction from `AdminPage.jsx` is complete and merged
-- Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
-- Vercel preview looked good and production deployed correctly after the `GenericAdminTableContent` merge
-- `AdminPage.jsx` should be re-inspected from merged `main`
+- Closeout audit was completed against current merged `main`
+- Current-state inventory confirms 29 completed extractions / major modular reductions
+- Several files remain large due to new feature growth during the refactor period; this is not refactor regression
+- Incomplete Phase 1 shared-utility import cleanup remains in `CoachDirectory.jsx`, `Facilities.jsx`, and `TravelTeams.jsx`
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -73,25 +81,30 @@ Current phase is guarded later-phase structural refactor planning and execution.
 25. TeamResult - `SearchResults`
 26. FacilityResult - `SearchResults`
 27. SearchResultsContent - `SearchResults`
-28. `GenericAdminTableContent` - `AdminPage`
+28. GenericAdminTableContent - `AdminPage`
+29. AdminCell - `AdminPage`
 
 ## Audit comparison summary
 - The original audit path was directionally correct about the largest pain points: oversized page files, duplicated shared utilities, repeated presentational leaf UI, and later structural refactor needs
-- Actual project execution has followed the audit direction in a more conservative, safer, leaf-by-leaf way
+- Actual project execution followed the audit direction in a more conservative, safer, leaf-by-leaf way
 - The project completed most worthwhile low-risk Phase 2 presentational extraction work across the largest files
-- The project intentionally avoided heavy structural extraction work until Phase 2 presentational work was effectively exhausted
+- The project intentionally avoided heavy structural extraction work until low-risk presentational work was effectively exhausted
 - This was the correct strategy under the locked rules
+- The project completed the bulk of the original audit’s practical value without prematurely jumping into higher-risk hook, map, or filter-panel abstraction work
 - `AdSlot.jsx` consolidation is confirmed in `CoachDirectory.jsx`, `TravelTeams.jsx`, `Facilities.jsx`, and `PlayerBoard.jsx`
 - `SearchResults.jsx` still contains inline sponsored placeholder UI and was intentionally left outside ad-slot cleanup
-- The project has now moved into guarded later-phase structural work, beginning with browse-shell style splits where the render surface is still large enough to justify extraction
+- Remaining unexecuted original-audit items are mostly the intentionally deferred higher-risk categories: broad data hooks, shared map abstraction, and broad filter-panel extraction
+- The project is now in closeout mode rather than open-ended later-phase structural planning
 
 ## Original audit items effectively completed
 - Shared utilities phase completed
 - Major `CoachSubmitForm` modular reduction completed
 - Safe presentational extraction work completed across `CoachDirectory`, `TravelTeams`, `Facilities`, `PlayerBoard`, `RosterSpots`, `AdminPage`, and `SearchResults`
+- Targeted later structural shell splits completed where they were clearly justified (`PlayerBoardBrowseContent`, `RosterBrowseContent`, `SearchResultsContent`, `GenericAdminTableContent`)
+- `AdminCell` extraction completed as the final clearly justified narrow AdminPage closeout extraction
+- `AdminPage.jsx` post-extraction cleanup completed and merged
 
 ## Original audit items not completed exactly as first proposed
-- `AdminCell` was not extracted as its own file
 - `AdminTable` was not extracted exactly as first proposed; later guarded structural work instead extracted `GenericAdminTableContent` from `AdminPage.jsx`
 - `RosterResult` was not extracted from `SearchResults.jsx`
 - Broad data-hook extraction phase was not pursued project-wide
@@ -99,50 +112,88 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - Broad filter-panel extraction phase was not pursued
 - These remaining items are increasingly structural and were intentionally deferred
 
+## Current-state file inventory summary
+- Files still over 1,000 lines in merged `main` include:
+  - `CoachDirectory.jsx`
+  - `CoachSubmitForm.jsx`
+  - `Facilities.jsx`
+  - `PlayerBoard.jsx`
+  - `TravelTeams.jsx`
+  - `RosterSpots.jsx`
+  - `AdminPage.jsx`
+  - `HomePage.jsx`
+- Important context: `CoachDirectory.jsx`, `Facilities.jsx`, `AdminPage.jsx`, and `HomePage.jsx` grew during the refactor period because of new feature development, not because the extraction work failed
+- `SearchResults.jsx` was reduced substantially and is no longer in the same critical category as in the original audit
+- The remaining large files are now mostly either:
+  - product-growth files
+  - logic-dense files
+  - or both
+
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work
 - `PlayerBoardBrowseContent` was the first later-phase structural split completed in `PlayerBoard.jsx`
 - `PlayerBoard.jsx` was re-inspected from merged `main`
 - No additional clearly worthwhile narrow render-structure split remains in `PlayerBoard.jsx`
-- Remaining `PlayerBoard.jsx` bulk is now mostly helper, state, modal, auth, geocode, and form/edit logic territory rather than another clean render-shell extraction target
-- `PlayerBoard.jsx` should move out of immediate extraction focus and remain deferred for later guarded structural cleanup if needed
+- Remaining `PlayerBoard.jsx` bulk is now mostly state, modal/auth flow, geocode/filter logic, submit/edit logic, and map viewport management rather than another clean render-shell extraction target
+- `PlayerBoard.jsx` should remain out of immediate extraction focus unless a future dedicated state/form phase is explicitly chosen
+
 - `RosterSpots.jsx` had one more clearly worthwhile narrow later-phase structural split after `RosterRow` and `RosterSubmittedState`
 - The browse-mode shell was the best remaining structural target because it contained the live browse header/filter band, map section, prompt/no-results states, mobile inline ad, and result list
 - `RosterBrowseContent` was the correct narrow structural extraction target
 - `RosterBrowseContent` has now been merged and production-verified
 - `RosterSpots.jsx` was re-inspected from merged `main`
 - No additional clearly worthwhile narrow render-structure split remains in `RosterSpots.jsx`
-- Remaining `RosterSpots.jsx` bulk is now mostly page state, ZIP/radius filtering, view switching, desktop wrapper layout, and `RosterForm` submit/match/geocode logic
-- `RosterSpots.jsx` should move out of immediate extraction focus and remain deferred for later guarded structural/form cleanup if needed
-- `Facilities.jsx` was reviewed as a possible alternate target, but no better immediate narrow structural split was identified than `SearchResults.jsx`
-- Remaining `Facilities.jsx` bulk is now mostly browse/map/filter orchestration rather than another clean narrow extraction target
-- `CoachSubmitForm.jsx` was reviewed as a possible alternate target, but it remains outside immediate focus because remaining bulk is primarily form/validation/geocode/duplicate-check logic territory
+- Remaining `RosterSpots.jsx` bulk is now mostly page state, ZIP/radius filtering, desktop wrapper layout, and `RosterForm` submit/match/geocode/auth logic
+- `RosterSpots.jsx` should remain out of immediate extraction focus unless a future dedicated state/form phase is explicitly chosen
+
 - `SearchResults.jsx` still had one clearly worthwhile narrow later-phase structural split after `CoachResult`, `TeamResult`, and `FacilityResult`
 - The remaining live results-page shell was the best target because it contained the loading/empty/results branches, section wrappers, mobile sponsored placeholders, and desktop sidebar sponsored placeholder layout
 - `SearchResultsContent` was the correct narrow structural extraction target
 - `SearchResultsContent` has now been merged and production-verified
-- - `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
+- `SearchResults.jsx` was re-inspected from merged `main` after `SearchResultsContent` extraction
 - No additional clearly worthwhile narrow render-structure split remains in `SearchResults.jsx`
 - Remaining `SearchResults.jsx` bulk is now mostly state, geocode/fetch, filtering, query construction, navigation, and small search/filter header orchestration rather than another clean narrow render-shell extraction target
-- `SearchResults.jsx` should move out of immediate extraction focus and remain deferred for later guarded structural cleanup if needed
-- `AdminPage.jsx` still had one clearly worthwhile narrow later-phase structural split after `PasswordGate`, `ClaimRequestRow`, `ClaimRequestsToolbar`, and `AdminTabs`
+- `SearchResults.jsx` should remain out of immediate extraction focus
+
+- `CoachSubmitForm.jsx` was reviewed as a possible target, but it remains outside immediate focus because the remaining bulk is almost entirely form/validation/geocode/duplicate-check/state logic territory
+- `CoachSubmitForm.jsx` should remain deferred unless a future dedicated form-extraction phase is explicitly chosen
+
+- `CoachDirectory.jsx`, `Facilities.jsx`, and `TravelTeams.jsx` still contain some incomplete Phase 1 shared-utility import cleanup
+- The remaining bulk in those files is otherwise primarily map/filter/state orchestration territory
+- That remaining orchestration work is not currently a clean narrow render-structure target and should remain deferred
+
+- `HomePage.jsx` grew substantially because of organic feature development and is not currently a refactor target
+- No structural split is currently justified there under the locked rules
+
+- `AdminPage.jsx` had one clearly worthwhile narrow later-phase structural split after `PasswordGate`, `ClaimRequestRow`, `ClaimRequestsToolbar`, and `AdminTabs`
 - The generic admin data-table render shell was the best remaining target because it contained the card wrapper, toolbar/filter row, shown count, loading/empty states, and generic table/head/body rendering
 - `GenericAdminTableContent` was the correct narrow structural extraction target
 - `GenericAdminTableContent` has now been merged and production-verified
-- `AdminPage.jsx` should be re-inspected from merged `main` before deciding whether any additional narrow worthwhile structural split remains
-- The remaining oversized files are now primarily in later structural refactor territory
+- `AdminCell` was the final clearly worthwhile bounded extraction candidate in `AdminPage.jsx`
+- `AdminCell` has now been merged and production-verified
+- Follow-up cleanup corrected `AdminPage.jsx` helper integrity, `GenericAdminTableContent.jsx` prop pass-through, and local-mode `ClaimRequestsTable` handling
+- No additional clearly worthwhile narrow render-structure split remains in `AdminPage.jsx`
+- Everything else remaining in `AdminPage.jsx` is now mostly field config data, sort/filter helpers, generic table wiring, and claim-request/admin logic rather than another broad render-shell candidate
+- `AdminPage.jsx` should remain out of immediate extraction focus unless a future dedicated admin-logic phase is explicitly chosen
+
+- The refactor is substantially complete
+- The project has reached a natural closeout stage for safe, narrow, render-structure extraction work
+- After the remaining closeout items, the next phase should be bug audit rather than broader structural abstraction unless explicitly chosen
 
 ## Next target
-- Re-inspect merged `AdminPage.jsx`
-- Determine whether any additional narrow worthwhile render-structure split remains in `AdminPage.jsx`
-- If not, move `AdminPage.jsx` out of immediate focus
+- Execute the remaining incomplete Phase 1 shared-utility import cleanup one file per branch:
+  - `Facilities.jsx`
+  - `TravelTeams.jsx`
+  - `CoachDirectory.jsx`
+- After those merges, declare refactor closeout complete and begin bug audit
 
 ## Remaining queue
-1. Re-inspect merged `AdminPage.jsx`
-2. Determine whether any additional narrow worthwhile render-structure split remains in `AdminPage.jsx`
-3. If not, move `AdminPage.jsx` out of immediate focus
-4. Reassess remaining oversized files in later structural territory
-5. Bug audit remains deferred until file-reduction work is complete
+1. Cleanup shared-utility imports in `Facilities.jsx`
+2. Cleanup shared-utility imports in `TravelTeams.jsx`
+3. Cleanup shared-utility imports in `CoachDirectory.jsx`
+4. Reconcile `NOTES.md` after each merge
+5. Declare refactor closeout complete
+6. Begin bug audit
 
 ## Local branches to keep
 - `main`
@@ -151,20 +202,22 @@ Current phase is guarded later-phase structural refactor planning and execution.
 
 ## Locked rules
 - Move slowly and cleanly
-- One extraction per branch
+- One extraction or one cleanup per branch
 - One type of change at a time
 - No giant rewrites
 - Inspect before editing
 - Test each affected page before moving on
 - Keep `NOTES.md` updated
 - No file should exceed 1000 lines when the audit path is complete
+- Do not expand scope just because a file is still large if the remaining bulk is logic-dense or product-growth territory
 
-## Later-phase structural guardrails
-- Later-phase structural work must still stay narrow and guarded
-- Keep scope narrow and render-structure focused first
-- Do not jump to hooks, form/auth extraction, shared utility reshuffling, or broad logic refactors unless explicitly chosen as the next phase
+## Closeout-phase guardrails
+- Closeout work must stay narrow and guarded
+- Prioritize only clearly justified low-risk extraction or import-cleanup work
+- Do not jump to hooks, form/auth extraction, shared map abstraction, filter-panel extraction, or broad logic refactors unless explicitly chosen as a new phase
 - Do not create a branch until inspection is complete and the exact target is confirmed
-- If no clearly worthwhile narrow split remains, say so and move the file out of immediate focus
+- If no clearly worthwhile narrow split remains, say so clearly and move the file out of immediate focus
+- Treat new feature growth separately from refactor regression
 
 ## Inspection rule - required before every extraction
 1. Find the candidate component/function
@@ -186,7 +239,8 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - Provide the exact import line(s) and clearly state what in-file block to remove
 - Check sibling files in the target folder for naming and prop-pattern consistency before creating a new file
 - Before proposing any new extraction, first confirm whether the current target still has a clearly live presentational leaf or whether it has crossed into structural-refactor territory
-- For later structural work, define a narrow scope before creating any branch
+- For closeout work, define a narrow scope before creating any branch
+- For shared-utility cleanup, treat each consuming file as its own branch unless explicitly combined
 
 ## Thread closeout checklist
 - `NOTES.md` updated before ending thread
@@ -208,4 +262,7 @@ Current phase is guarded later-phase structural refactor planning and execution.
 - If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
 
 ## Bug audit
-Deferred until file-reduction work is complete. Some prior known bugs may already be resolved. Do not chase bugs during refactor sessions.
+Deferred until refactor closeout items are complete:
+- Remaining Phase 1 shared-utility import cleanup in `Facilities.jsx`, `TravelTeams.jsx`, and `CoachDirectory.jsx`
+
+After those closeout items, transition to bug audit.
