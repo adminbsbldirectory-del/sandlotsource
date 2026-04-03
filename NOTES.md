@@ -22,11 +22,11 @@ Phase 2 - Presentational component extractions only
 - `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
 - `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
 - `CoachResult` extraction from `SearchResults.jsx` is complete and merged
-- `TeamResult` extraction from `SearchResults.jsx` is complete on the active branch and has passed localhost testing
-- `TeamResult` has not yet been pushed, merged, or production-verified
-- Active working branch is `refactor/search-results-team-result`
-- Local repo is not yet back on `main`
-- `NOTES.md` has been reconciled to reflect current branch state and tested status without overstating merge/production state
+- `TeamResult` extraction from `SearchResults.jsx` is complete and merged
+- `FacilityResult` extraction from `SearchResults.jsx` is complete locally and passed localhost testing
+- Vercel production was verified after the latest previously merged refactor on `main`
+- Local repo is no longer on clean synced `main`
+- Active refactor branch is in progress for `FacilityResult` extraction from `SearchResults.jsx`
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -51,7 +51,8 @@ Phase 2 - Presentational component extractions only
 20. AdminTabs - `AdminPage`
 21. PasswordGate - `AdminPage`
 22. CoachResult - `SearchResults`
-23. TeamResult - `SearchResults` *(complete on active branch; not yet merged)*
+23. TeamResult - `SearchResults`
+24. FacilityResult - `SearchResults`
 
 ## Current conclusions
 - `PlayerBoard.jsx` was reduced substantially through safe presentational extraction work, but no additional clearly safe Phase 2 presentational leaf was confirmed after `PlayerBoardBrowseSidebar`
@@ -61,26 +62,22 @@ Phase 2 - Presentational component extractions only
 - Further meaningful reduction of `RosterSpots.jsx` now appears to require later structural refactor work rather than additional simple presentational extraction
 - `AdminPage.jsx` contained multiple clearly live Phase 2 presentational leaves, and `ClaimRequestRow`, `ClaimRequestsToolbar`, `AdminTabs`, and `PasswordGate` have now been extracted successfully
 - `AdminPage.jsx` should be re-inspected before any further extraction work, because the remaining sections are more logic-heavy and may no longer qualify as worthwhile safe Phase 2 presentational leaves
-- `SearchResults.jsx` has begun Phase 2 extraction work with `CoachResult` and now `TeamResult`
-- `TeamResult` has passed localhost testing on the active branch
-- `SearchResults.jsx` should be re-inspected again only after `TeamResult` is pushed, merged to `main`, production-verified, and local repo is returned to synced `main`
+- `SearchResults.jsx` has begun Phase 2 extraction work with `CoachResult` and `TeamResult`
+- `SearchResults.jsx` should now be re-inspected from the current merged `main` state before choosing any additional extraction target
 - The remaining oversized files are increasingly moving from safe presentational extraction territory into later structural refactor territory
+- `FacilityResult` has now been extracted successfully from `SearchResults.jsx` in the current local branch and passed localhost testing
+- `SearchResults.jsx` should be re-inspected after merge to determine whether any further clearly worthwhile safe Phase 2 presentational leaf remains
 
 ## Next target
-- Immediate next task is to finish the current branch cleanly:
-  - push `refactor/search-results-team-result`
-  - open PR
-  - merge to `main`
-  - verify Vercel production
-  - return local repo to clean synced `main`
-- After that, `SearchResults.jsx` remains the current inspection target
-- Re-inspect `SearchResults.jsx` from the new merged state for the next safe presentational extraction target
-- Do not begin the next extraction on the current branch
+- `FacilityResult` extraction from `SearchResults.jsx` is complete locally and passed localhost testing
+- Next step is to commit, push, merge, and verify Vercel production
+- After merge, re-inspect `SearchResults.jsx` from merged `main` to determine whether any further clearly worthwhile safe presentational leaf remains
+- If not, move `SearchResults.jsx` into later structural refactor planning
 
 ## Remaining queue
-1. Finish and merge `TeamResult` extraction from `SearchResults.jsx`
-2. Re-inspect `SearchResults.jsx` from merged `main` for the next safe Phase 2 presentational extraction target after `TeamResult`
-3. If `SearchResults.jsx` still has a worthwhile safe leaf, extract only one target on the next branch
+1. Commit and merge `FacilityResult` extraction from `SearchResults.jsx`
+2. Verify Vercel production after merge
+3. Re-inspect `SearchResults.jsx` from merged `main` for any final worthwhile safe Phase 2 presentational extraction
 4. Re-inspect `AdminPage.jsx` before any further extraction work; remaining reductions may now be structural rather than presentational
 5. Later-phase structural reduction for oversized files like `PlayerBoard`, `RosterSpots`, `AdminPage`, and likely `SearchResults`
 6. `AdminPage` tab splitting
