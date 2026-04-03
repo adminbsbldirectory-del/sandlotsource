@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
+import { distanceMiles, geocodeZip } from '../lib/submit/geocode'
+import { normalizeSportValue } from '../utils/sportUtils'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
 import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
@@ -24,17 +26,6 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'school_field', label: 'School Field' },
   { value: 'other', label: 'Other' },
 ]
-
-
-function normalizeSportValue(value) {
-  const raw = String(value || '').trim().toLowerCase()
-  if (!raw) return ''
-  if (raw === 'baseball' || raw === 'softball' || raw === 'both') return raw
-  if (raw.includes('baseball') && raw.includes('softball')) return 'both'
-  if (raw.includes('softball')) return 'softball'
-  if (raw.includes('baseball')) return 'baseball'
-  return ''
-}
 
 function getFacilitySport(facility) {
   const primary = normalizeSportValue(facility?.sport)
@@ -103,13 +94,6 @@ function normalizeInstagramHandle(value) {
   return 'https://instagram.com/' + trimmed.replace(/^@/, '')
 }
 
-function getSportLabel(sport) {
-  if (sport === 'both') return 'Baseball & Softball'
-  if (sport === 'softball') return 'Softball'
-  if (sport === 'baseball') return 'Baseball'
-  return sport || ''
-}
-
 function getSportBadgeMeta(sport) {
   if (sport === 'softball') return { bg: '#F3F0D7', color: '#5F5A17', label: 'Softball', border: '#DDD59A' }
   if (sport === 'both') {
@@ -130,30 +114,6 @@ function matchesSportFilter(facilitySport, selectedSport) {
   if (selectedSport === 'baseball') return facilitySport === 'baseball' || facilitySport === 'both'
   if (selectedSport === 'softball') return facilitySport === 'softball' || facilitySport === 'both'
   return true
-}
-
-async function geocodeZip(zip) {
-  if (!zip || zip.length !== 5) return null
-  try {
-    const res = await fetch('https://api.zippopotam.us/us/' + zip)
-    if (!res.ok) return null
-    const data = await res.json()
-    const place = data.places && data.places[0]
-    if (!place) return null
-    return { lat: parseFloat(place.latitude), lng: parseFloat(place.longitude) }
-  } catch {
-    return null
-  }
-}
-
-function distanceMiles(lat1, lng1, lat2, lng2) {
-  const R = 3958.8
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
 function FitBounds({ facilities }) {
@@ -629,19 +589,6 @@ export default function Facilities() {
     if (mobileView === 'map') params.set('view', 'map')
     const suffix = params.toString()
     return `/facilities/${facilityId}${suffix ? `?${suffix}` : ''}`
-  }
-
-  async function handleZipBlur() {
-    if (!zip || zip.length !== 5) return
-    setZipStatus('loading')
-    const geo = await geocodeZip(zip)
-    if (geo) {
-      setGeoCenter(geo)
-      setZipStatus('ok')
-    } else {
-      setGeoCenter(null)
-      setZipStatus('error')
-    }
   }
 
   function clearZipFilter() {
