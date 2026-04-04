@@ -8,8 +8,8 @@ The project should **not** move to bug audit yet.
 Reason:
 - Several major JSX files still remain above the original under-1000-lines finish target
 - Prior closeout language called the stopping point too early
-- The earlier notes drifted into “refactor closeout is complete / begin bug audit” even though the notes also retained the under-1000-lines rule
-- Current priority is to keep reducing oversized files into more manageable edit surfaces through safe, bounded extraction work
+- Earlier notes drifted into “refactor closeout is complete / begin bug audit” even though the under-1000-lines rule was still active
+- Current priority is to keep reducing oversized files into more manageable edit surfaces through safe, bounded extraction work or narrowly scoped cleanup
 - Minor bugs should be addressed after the oversized-file work is pushed further and the remaining large files are easier to edit
 
 ## Working repo / workflow
@@ -56,6 +56,11 @@ Reason:
 - Shared `DirectoryAdBand` and `RailAdSlot` components were added under `src/components/ads/`
 - `CoachDirectory.jsx` now imports shared `DirectoryAdBand` and `RailAdSlot`
 - Local inlined `DirectoryAdBand` and `RailAdSlot` definitions were removed from `CoachDirectory.jsx`
+- `RatingRow` extraction from `CoachDirectory.jsx` is complete and merged
+- `CoachDirectory.jsx` now imports `RatingRow` from `src/components/coaches/RatingRow.jsx`
+- Live render verification confirmed local `CoachCard` in `CoachDirectory.jsx` was not used in the active browse flow
+- Unused legacy `CoachCard` cleanup in `CoachDirectory.jsx` is complete and merged
+- Dead `CoachCard` block and newly unused local helpers/imports tied only to that block were removed from `CoachDirectory.jsx`
 - Vercel production was verified after the `RosterBrowseContent` merge
 - Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
 - Vercel preview looked good and production deployed correctly after the `GenericAdminTableContent` merge
@@ -64,10 +69,13 @@ Reason:
 - Vercel preview looked good and production deployed correctly after the `TravelTeams.jsx` shared-utility cleanup merge
 - Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` shared-utility cleanup merge
 - Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` ad-wrapper extraction merge
+- Vercel preview looked good and production deployed correctly after the `RatingRow` extraction merge
+- Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` unused `CoachCard` cleanup merge
 - Local repo is back on `main`
-- Local `main` should be kept up to date with `origin/main`
+- Local `main` is up to date with `origin/main`
+- Working tree is clean
 - Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 30 completed extractions / major modular reductions
+- Current-state inventory confirms 31 completed extractions / major modular reductions plus the completed `CoachCard` unused-code cleanup
 - Earlier closeout language is no longer the active source-of-truth framing
 - Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
 - Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
@@ -103,6 +111,10 @@ Reason:
 28. GenericAdminTableContent - `AdminPage`
 29. AdminCell - `AdminPage`
 30. DirectoryAdBand + RailAdSlot - `CoachDirectory`
+31. RatingRow - `CoachDirectory`
+
+## Completed cleanup items that materially reduced oversized-file noise
+- `CoachDirectory.jsx` unused `CoachCard` cleanup
 
 ## Audit reconciliation
 - The original audit direction was useful and led to substantial safe extraction work across the codebase
@@ -115,15 +127,15 @@ Reason:
 
 ## Current-state file inventory summary
 Current remaining oversized JSX files from the latest repo comparison:
-- `CoachDirectory.jsx` — 3,010
-- `CoachSubmitForm.jsx` — 2,224
-- `Facilities.jsx` — 1,784
-- `PlayerBoard.jsx` — 1,614
-- `TravelTeams.jsx` — 1,334
-- `RosterSpots.jsx` — 1,268
-- `HomePage.jsx` — 1,060
+- `CoachDirectory.jsx`
+- `CoachSubmitForm.jsx`
+- `Facilities.jsx`
+- `PlayerBoard.jsx`
+- `TravelTeams.jsx`
+- `RosterSpots.jsx`
+- `HomePage.jsx`
 
-`AdminPage.jsx` is now below the target at 996 and is no longer part of the oversized-file queue.
+`AdminPage.jsx` is now below the target and is no longer part of the oversized-file queue.
 
 Important context:
 - `CoachDirectory.jsx`, `Facilities.jsx`, and `HomePage.jsx` grew during the refactor period because of new feature development, not because the extraction work failed
@@ -154,35 +166,33 @@ Do not mark refactor complete while an oversized file lacks one of the above exp
 **Status:** Active reduction path identified
 
 Fresh inspection confirms:
-- the main `CoachDirectory` orchestration shell alone is ~1,838 lines
+- the main `CoachDirectory` orchestration shell remains large
 - `DirectoryAdBand` and `RailAdSlot` extraction is complete and merged
-- shared ad-wrapper location under `src/components/ads/` was used because the same wrapper pattern is also present in `Facilities.jsx` and `TravelTeams.jsx`
+- `RatingRow` extraction is complete and merged
+- live render verification confirmed local `CoachCard` was unused legacy code rather than an active extraction target
+- unused `CoachCard` cleanup is complete and merged
 - confirmed remaining inlined extractable pieces still include:
-  - `CoachCard` (~522)
-  - `RatingRow` (~80)
-  - `MapMarkers` (~102)
-  - `MapLegend` (~58)
-  - `EmptyState` (~28)
+  - `MapMarkers`
+  - `MapLegend`
+  - `EmptyState`
 
-Confirmed practical next sequence:
-1. extract `RatingRow`
-2. verify whether `CoachCard` is still actually rendered in the live browse flow before any extraction decision
-3. only then decide whether `CoachCard` remains a real extraction target or should be treated as legacy / unused-code cleanup instead
+Current practical next sequence for this file:
+1. decide whether `MapLegend` or `EmptyState` is the next narrow worthwhile live extraction
+2. treat `MapMarkers` as possible later work only if the branch can stay narrow and testable
+3. do not casually mix helper moves, map abstraction, or broad logic rewrites into that step
 
 Important dependency note:
-- `CoachCard` uses `parseFirstPhone`, `getCoachZip`, `getSportBadgeMeta`, `parseSpecialties`, `priceLabel`, and `RatingRow`
-- `parseSpecialties` and `getSportBadgeMeta` are also used by the main file, so any future `CoachCard` extraction still requires careful sequencing and either temporary duplication of small pure helpers or a later dedicated helper move
+- `MapMarkers` still depends on local helpers and selection/profile behavior
+- any future `MapMarkers` extraction must remain inspection-first and narrowly scoped
 - keep that branch focused; do not combine helper centralization casually with the component extraction
-
-Additional pieces (`MapMarkers`, `MapLegend`, `EmptyState`) remain possible later but are lower in the immediate order than `RatingRow`.
 
 ### `Facilities.jsx`
 **Status:** Needs refreshed inspection after current reset
 
 Current confirmed context:
 - the same inlined `DirectoryAdBand` / `RailAdSlot` wrapper pattern is still present
-- do not adopt those shared wrappers in the same branch as the `CoachDirectory.jsx` extraction
-- re-inspect current merged `main` for the next narrow worthwhile step after the `CoachDirectory.jsx` ad-wrapper branch closeout
+- do not adopt those shared wrappers in the same branch as unrelated extraction work
+- re-inspect current merged `main` for the next narrow worthwhile step
 
 ### `TravelTeams.jsx`
 **Status:** Needs refreshed inspection after current reset
@@ -190,7 +200,7 @@ Current confirmed context:
 Current confirmed context:
 - the same inlined `DirectoryAdBand` / `RailAdSlot` wrapper pattern is still present
 - `MapLegend` and `EmptyState` may still remain as possible later candidates
-- re-inspect current merged `main` for the next narrow worthwhile step after the `CoachDirectory.jsx` ad-wrapper branch closeout
+- re-inspect current merged `main` for the next narrow worthwhile step
 
 ### `PlayerBoard.jsx`
 **Status:** Blocked by structural territory unless future inspection proves otherwise
@@ -222,31 +232,32 @@ Either identify a bounded extraction path later or formally mark as an approved 
 
 ## Current conclusions
 - The project completed the bulk of the earlier safe leaf and narrow structural extraction work
-- The project also completed the final previously identified shared-utility cleanup items in `Facilities.jsx`, `TravelTeams.jsx`, and `CoachDirectory.jsx`
-- The project has now also completed the next bounded `CoachDirectory.jsx` ad-wrapper extraction
+- The project also completed the previously identified shared-utility cleanup items in `Facilities.jsx`, `TravelTeams.jsx`, and `CoachDirectory.jsx`
+- The project completed the next bounded `CoachDirectory.jsx` ad-wrapper extraction
+- The project completed the next bounded `CoachDirectory.jsx` `RatingRow` extraction
+- The project also resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
 - However, the project has **not** yet reached the intended maintainability end state for the remaining oversized files
-- Refactor continuation is therefore active again
+- Refactor continuation is therefore still active
 - Bug audit is postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
 
 ## Active objective
 Continue reducing oversized JSX files into more manageable edit surfaces using the narrowest safe live extraction path available per file.
 
 ## Next target
-`CoachDirectory.jsx`
+Re-baseline `Facilities.jsx`
 
-## Confirmed next extraction order
-1. inspect and execute `RatingRow`
-2. verify whether `CoachCard` is still actually rendered in the live browse flow before any extraction decision
-3. re-rebaseline `Facilities.jsx`
-4. re-baseline `TravelTeams.jsx`
+## Confirmed next inspection order
+1. Re-baseline `Facilities.jsx`
+2. Re-baseline `TravelTeams.jsx`
+3. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
+4. Return to later `CoachDirectory.jsx` candidates only if one of `MapLegend`, `EmptyState`, or `MapMarkers` still offers a clearly worthwhile narrow step
 
 ## Remaining queue
-1. `CoachDirectory.jsx` — `RatingRow`
-2. `CoachDirectory.jsx` — verify whether `CoachCard` is still actively rendered before any extraction decision
-3. Re-baseline `Facilities.jsx`
-4. Re-baseline `TravelTeams.jsx`
-5. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
-6. Begin bug audit only after the above queue has progressed and the oversized files all have explicit statuses
+1. Re-baseline `Facilities.jsx`
+2. Re-baseline `TravelTeams.jsx`
+3. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
+4. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
+5. Begin bug audit only after the above queue has progressed and the oversized files all have explicit statuses
 
 ## Local branches to keep
 - `main`
