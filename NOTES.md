@@ -12,8 +12,8 @@ Once a branch is merged, Vercel is verified, and the repo is back on `main` with
 ---
 
 ## Current phase
-Refactor continuation is active. Do not move to bug audit.
-Remaining oversized files need explicit per-file status before any phase change.
+Safe extraction / file-size reduction work is effectively complete.
+Next phase is bug audit.
 
 ---
 
@@ -72,44 +72,43 @@ Remaining oversized files need explicit per-file status before any phase change.
 - `CoachDirectory.jsx` — unused `CoachCard` dead-code block removed
 - `TravelTeams.jsx` — shared ad-wrapper adoption (replaced inlined DirectoryAdBand/RailAdSlot with shared imports)
 - `Facilities.jsx` — shared ad-wrapper adoption (replaced inlined DirectoryAdBand/RailAdSlot with shared imports)
+- `Facilities.jsx` — unused `FacilityCard` dead-code block removed
+- `Facilities.jsx` — orphaned `normalizeUrl` and `normalizeInstagramHandle` removed
 
 ---
 
 ## Per-file status
 
-### `CoachDirectory.jsx` — ACTIVE
-`MapLegend` and `MapMarkers` extractions are complete and merged.
-Next: re-inspect current merged `main` before approving any further CoachDirectory work. Do not combine any future inspection with helper cleanup or broader map abstraction unless a new clearly bounded live candidate is confirmed.
+### `CoachDirectory.jsx` — BLOCKED
+`MapLegend` and `MapMarkers` extractions are complete and merged. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. No additional clearly worthwhile narrow live extraction remains in the current phase.
 
-### `Facilities.jsx` — ACTIVE
-Shared ad-wrapper adoption cleanup is complete and merged.
-Next: re-baseline from current merged `main`, then decide whether another narrow live extraction remains or whether the file should move toward blocked/structural territory. Do not combine re-baseline with any other cleanup.
+### `Facilities.jsx` — BLOCKED
+Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Remaining bulk is primarily ZIP/filter/map/layout orchestration. No additional clearly worthwhile narrow live extraction remains in the current phase.
 
-### `TravelTeams.jsx` — ACTIVE
-`EmptyState` extraction is complete and merged.
-Next: `MapLegend` remains later optional work only. Do not combine any future inspection with map abstraction, helper cleanup, or ad-wrapper changes.
+### `TravelTeams.jsx` — OPTIONAL-ONLY
+`EmptyState` extraction is complete and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so do not force another extraction unless a very small, clearly bounded candidate is needed for a specific future reason.
 
 ### `HomePage.jsx` — BLOCKED
-All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Re-inspection of current merged `main` did not identify another clearly worthwhile narrow live extraction. Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections. Do not force another extraction without a fresh code-level candidate that is materially more leaf-like than the current hero block.
+All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Re-inspection of current merged `main` did not identify another clearly worthwhile narrow live extraction. Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections.
 
 ### `AdminPage.jsx` — DONE
 Below target. Out of oversized-file queue.
 
-### `CoachSubmitForm.jsx` — BLOCKED
+### `CoachSubmitForm.jsx` — DEFERRED
 Remaining bulk is multi-form validation, geocode, and Supabase logic. No clean narrow split remains. Do not reopen without a dedicated form phase decision.
 
 ### `PlayerBoard.jsx` — BLOCKED
-Remaining bulk is state/auth/geocode/form/map-viewport logic. Do not reopen without a new confirmed extraction candidate from a fresh inspection.
+Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase.
 
 ### `RosterSpots.jsx` — BLOCKED
-Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not reopen without a new confirmed extraction candidate from a fresh inspection.
+Remaining bulk is RosterForm, geocode/filter state, and orchestration. No additional clearly worthwhile narrow extraction remains in the current phase.
 
 ---
 
 ## Next branch queue
-1. Re-baseline `Facilities.jsx` — decide next narrow extraction vs blocked status
-2. Re-inspect `CoachDirectory.jsx` from current merged `main` only if a new bounded live candidate is suspected
-3. Bug audit begins only after every oversized file above has an explicit blocked/excepted/done status
+1. Begin bug audit from current merged `main`
+2. Inspect live behavior and fragile flows file-by-file or feature-by-feature
+3. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
 
 ---
 
@@ -118,10 +117,9 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not re
 - Inspect before creating any branch — confirm the target is live-rendered
 - List all dependencies before writing code
 - No giant rewrites. No scope creep mid-branch.
-- Do not move to bug audit while any oversized file lacks an explicit status
-- Do not use "natural stopping point" language as a substitute for per-file status
-- If a file is blocked, state exactly why. If excepted, state exactly why.
-- Prefer the narrowest safe extraction that materially improves the edit surface
+- If a file is blocked, state exactly why. If deferred, state exactly why.
+- Prefer the narrowest safe extraction only when it materially improves the edit surface
+- Bug audit work should focus on actual behavior, regressions, edge cases, and fragile flows — not forced line-count reduction
 
 ## Inspection checklist — required before every extraction
 1. Find the candidate component/function
@@ -137,13 +135,13 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not re
 - Confirm repo path and device before creating any branch
 
 ## Thread closeout checklist
-- [ ] Last completed item recorded in extractions list
-- [ ] Affected per-file status block updated
-- [ ] Next branch queue updated
-- [ ] Repo state confirmed: `main` / clean / synced
+- [x] Last completed item recorded in extractions list
+- [x] Affected per-file status block updated
+- [x] Next branch queue updated
+- [x] Repo state confirmed: `main` / clean / synced
 - [ ] NOTES.md rewritten (not appended) and committed
 
 ---
 
 ## Bug audit
-Deferred. Begin only after every oversized file has a status of blocked, excepted, or below target.
+Active next phase. Start from current merged `main`. Prioritize real behavior issues, fragile UX flows, edge cases, validation gaps, geocode/search failure handling, mobile layout issues, and Supabase/data-state problems.
