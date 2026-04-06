@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import FeaturedCard from './home/FeaturedCard'
 import HomePageAdBand from './home/HomePageAdBand'
 import HomePageSectionHeader from './home/HomePageSectionHeader'
+import HomePageBand from './home/HomePageBand'
 import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
-
 
 const FEATURED_LISTINGS = [
   {
@@ -84,29 +84,9 @@ const URGENT_POSTS = [
 const RED = '#e63329'
 const NAVY = '#1b3a5c'
 const DARK = '#1a1a1a'
-const LIGHT = '#f5f4f0'
 const BORDER = '#e2e0db'
 const MUTED = '#888'
 const FAINT = '#bbb'
-
-
-
-function Band({ children, style }) {
-  return (
-    <div
-      style={{
-        background: LIGHT,
-        borderTop: '1px solid ' + BORDER,
-        borderBottom: '1px solid ' + BORDER,
-        padding: '24px 0',
-        marginTop: 24,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  )
-}
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -471,7 +451,7 @@ export default function HomePage() {
           </section>
         </div>
 
-        <Band>
+        <HomePageBand>
           <div style={col}>
             <HomePageSectionHeader title="How it works" />
 
@@ -541,7 +521,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </Band>
+        </HomePageBand>
 
         <div style={{ ...col, marginTop: 28 }}>
           <HomePageSectionHeader title="What are you looking for?" />
@@ -634,9 +614,13 @@ export default function HomePage() {
           marginTop={24}
         />
 
-        <Band style={{ marginTop: 28 }}>
+        <HomePageBand style={{ marginTop: 28 }}>
           <div style={col}>
-            <HomePageSectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all →" />
+            <HomePageSectionHeader
+              title="Featured coaches"
+              linkTo="/coaches"
+              linkLabel="View all →"
+            />
 
             <div
               style={{
@@ -650,7 +634,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </Band>
+        </HomePageBand>
 
         <div style={{ ...col, marginTop: 28 }}>
           <HomePageSectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all →" />
@@ -668,9 +652,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        <Band style={{ marginTop: 28 }}>
+        <HomePageBand style={{ marginTop: 28 }}>
           <div style={col}>
-            <HomePageSectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
+            <HomePageSectionHeader
+              title="Urgent pickup needs"
+              linkTo="/find"
+              linkLabel="View all →"
+            />
 
             <div
               style={{
@@ -754,7 +742,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </Band>
+        </HomePageBand>
 
         <div style={{ ...col, marginTop: 28 }}>
           <div
