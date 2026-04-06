@@ -1,451 +1,145 @@
 # Sandlot Source Refactor Notes
 
+---
+
+## ⚠️ MANDATORY CLOSEOUT STEP — DO THIS BEFORE ENDING EVERY THREAD
+Once a branch is merged, Vercel is verified, and the repo is back on `main` with a clean working tree:
+1. **DELETE this entire file and rewrite it from scratch** using this document as the template
+2. Update only what changed: add one line to the extractions list, update the affected per-file status block, update the next branch queue
+3. **Do NOT append. Do NOT preserve old bullet points or narrative.** The doc must stay this length.
+4. The thread is not done until NOTES.md is rewritten and committed to `main`
+
+---
+
 ## Current phase
-Refactor continuation is active.
+Refactor continuation is active. Do not move to bug audit.
+Remaining oversized files need explicit per-file status before any phase change.
 
-The project should **not** move to bug audit yet.
+---
 
-Reason:
-- Several major JSX files still remain above the original under-1000-lines finish target
-- Prior closeout language called the stopping point too early
-- Earlier notes drifted into “refactor closeout is complete / begin bug audit” even though the under-1000-lines rule was still active
-- Current priority is to keep reducing oversized files into more manageable edit surfaces through safe, bounded extraction work or narrowly scoped cleanup
-- Minor bugs should be addressed only after the oversized-file queue is pushed further and each remaining oversized file has an explicit status
-
-## Working repo / workflow
-- Desktop working repo: `C:\GitHub\sandlotsource`
-- Laptop working repo: `C:\Users\sshap\Documents\GitHub\sandlotsource`
-- Use the repo that matches the device currently being used
-- If repo path is uncertain, confirm device/repo path before creating a branch or editing files
-- Do not use any other duplicate/local repo path unless explicitly confirmed
+## Repo / workflow
+- **Desktop:** `C:\GitHub\sandlotsource` — pull before any new branch when returning from laptop work
+- **Laptop:** `C:\Users\sshap\Documents\GitHub\sandlotsource`
+- Confirm active device and repo path at the start of every execution thread
 - Local workflow only: VS Code + terminal + GitHub Desktop
-- No GitHub browser edits except tiny text-only changes
-- Production deploys from `main` only
-- Always test locally before merge
-- Always verify Vercel production after merge
+- One branch per change. No edits on `main`. Test locally before merge. Verify Vercel after every merge.
 
-## Current confirmed state
-- Phase 1 shared utilities is complete and merged
-- `CoachSubmitForm` modular refactor is complete and merged
-- `PasswordGate` extraction from `AdminPage.jsx` is complete and merged
-- `ClaimRequestRow` extraction from `AdminPage.jsx` is complete and merged
-- `ClaimRequestsToolbar` extraction from `AdminPage.jsx` is complete and merged
-- `AdminTabs` extraction from `AdminPage.jsx` is complete and merged
-- `AdminCell` extraction from `AdminPage.jsx` is complete and merged
-- `RosterSubmittedState` extraction from `RosterSpots.jsx` is complete and merged
-- `RosterRow` extraction from `RosterSpots.jsx` is complete and merged
-- `RosterBrowseContent` structural extraction from `RosterSpots.jsx` is complete and merged
-- `CoachResult` extraction from `SearchResults.jsx` is complete and merged
-- `TeamResult` extraction from `SearchResults.jsx` is complete and merged
-- `FacilityResult` extraction from `SearchResults.jsx` is complete and merged
-- `SearchResultsContent` structural extraction from `SearchResults.jsx` is complete and merged
-- `PlayerBoardBrowseContent` structural extraction from `PlayerBoard.jsx` is complete and merged
-- `GenericAdminTableContent` extraction from `AdminPage.jsx` is complete and merged
-- `AdminPage.jsx` post-extraction closeout cleanup is complete and merged
-- `GenericAdminTableContent.jsx` now passes required props to `AdminCell`
-- `ClaimRequestsTable` now fails gracefully in local mode when the API is unavailable or returns non-JSON
-- `Facilities.jsx` shared-utility import cleanup is complete and merged
-- `Facilities.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
-- `Facilities.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
-- Unused local helpers `getSportLabel` and `handleZipBlur` were removed from `Facilities.jsx`
-- `TravelTeams.jsx` shared-utility import cleanup is complete and merged
-- `TravelTeams.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
-- `TravelTeams.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
-- Duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were removed from `TravelTeams.jsx`
-- `TravelTeams.jsx` shared ad-wrapper adoption cleanup is complete and merged
-- `TravelTeams.jsx` now imports shared `DirectoryAdBand` from `src/components/ads/DirectoryAdBand.jsx`
-- `TravelTeams.jsx` now imports shared `RailAdSlot` from `src/components/ads/RailAdSlot.jsx`
-- Local inlined `DirectoryAdBand` and `RailAdSlot` definitions were removed from `TravelTeams.jsx`
-- Localhost review looked good after the `TravelTeams.jsx` shared ad-wrapper adoption cleanup
-- `CoachDirectory.jsx` shared-utility import cleanup is complete and merged
-- `CoachDirectory.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
-- Duplicate local helper definitions for `geocodeZip` and `distanceMiles` were removed from `CoachDirectory.jsx`
-- `CoachDirectory.jsx` ad-wrapper extraction is complete and merged
-- Shared `DirectoryAdBand` and `RailAdSlot` components were added under `src/components/ads/`
-- `CoachDirectory.jsx` now imports shared `DirectoryAdBand` and `RailAdSlot`
-- Local inlined `DirectoryAdBand` and `RailAdSlot` definitions were removed from `CoachDirectory.jsx`
-- `RatingRow` extraction from `CoachDirectory.jsx` is complete and merged
-- `CoachDirectory.jsx` now imports `RatingRow` from `src/components/coaches/RatingRow.jsx`
-- Live render verification confirmed local `CoachCard` in `CoachDirectory.jsx` was not used in the active browse flow
-- Unused legacy `CoachCard` cleanup in `CoachDirectory.jsx` is complete and merged
-- Dead `CoachCard` block and newly unused local helpers/imports tied only to that block were removed from `CoachDirectory.jsx`
-- `CoachDirectoryEmptyState` extraction from `CoachDirectory.jsx` is complete and merged
-- `CoachDirectory.jsx` now imports `CoachDirectoryEmptyState` from `src/components/coaches/CoachDirectoryEmptyState.jsx`
-- Local `EmptyState` definition was removed from `CoachDirectory.jsx`
-- `CoachDirectoryEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows in `CoachDirectory.jsx`
-- Localhost review looked good after the `CoachDirectoryEmptyState` extraction
-- Vercel preview looked good and production deployed correctly after the `CoachDirectoryEmptyState` extraction merge
-- `FacilitiesEmptyState` extraction from `Facilities.jsx` is complete and merged
-- `Facilities.jsx` now imports `FacilitiesEmptyState` from `src/components/facilities/FacilitiesEmptyState.jsx`
-- Local `EmptyState` definition was removed from `Facilities.jsx`
-- `FacilitiesEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows in `Facilities.jsx`
-- `HomePage.jsx` re-inspection from current merged `main` confirmed a real bounded extraction path remained
-- `FeaturedCard` extraction from `HomePage.jsx` is complete and merged
-- `HomePage.jsx` now imports `FeaturedCard` from `src/components/home/FeaturedCard.jsx`
-- Local `FeaturedCard` block was removed from `HomePage.jsx`
-- Local `SPORT_LABEL` constant was removed from `HomePage.jsx` after the extraction because it became unused
-- Localhost review looked good after the `FeaturedCard` extraction
-- `npm run build` passed after the `FeaturedCard` extraction
-- Vercel preview looked good and production deployed correctly after the `FeaturedCard` extraction merge
-- `HomePageAdBand` extraction from `HomePage.jsx` is complete and merged
-- `HomePage.jsx` now imports `HomePageAdBand` from `src/components/home/HomePageAdBand.jsx`
-- Local `HomePageAdBand` block was removed from `HomePage.jsx`
-- Localhost review looked good after the `HomePageAdBand` extraction
-- `npm run build` passed after the `HomePageAdBand` extraction
-- Vercel preview looked good and production deployed correctly after the `HomePageAdBand` extraction merge
-- `HomePageAdBand` now handles the live homepage top desktop, inline, and footer ad-band placements
-- `HomePageSectionHeader` extraction from `HomePage.jsx` is complete and merged
-- `HomePage.jsx` now imports `HomePageSectionHeader` from `src/components/home/HomePageSectionHeader.jsx`
-- Local `SectionHeader` block was removed from `HomePage.jsx`
-- Localhost review looked good after the `HomePageSectionHeader` extraction
-- `npm run build` passed after the `HomePageSectionHeader` extraction
-- Vercel preview looked good and production deployed correctly after the `HomePageSectionHeader` extraction merge
-- `HomePageBand` extraction from `HomePage.jsx` is complete and merged
-- `HomePage.jsx` now imports `HomePageBand` from `src/components/home/HomePageBand.jsx`
-- Local `Band` block was removed from `HomePage.jsx`
-- Local `LIGHT` constant was removed from `HomePage.jsx` after the extraction because it became unused
-- Localhost review looked good after the `HomePageBand` extraction
-- Vercel preview looked good and production deployed correctly after the `HomePageBand` extraction merge
-- Search results ad placeholders appearing empty on live site were observed during the earlier homepage thread, but that was not treated as a blocker because the branch scope only touched homepage code and the search-results ad containers still rendered
-- Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 37 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
-- Earlier closeout language is no longer the active source-of-truth framing
-- Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
-- Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
-- Local repo is back on `main`
-- Local `main` is up to date with `origin/main`
-- Working tree is clean
-- No active refactor branch is in progress
+---
 
-## Completed extractions / major completed refactors
+## Completed extractions (38 total)
 1. Phase 1 shared utilities
 2. `CoachSubmitForm` modular refactor
-3. `CoachRow` - `CoachDirectory`
-4. `CoachDetailPanel` - `CoachDirectory`
-5. `MobileCoachRow` - `CoachDirectory`
-6. `TeamCard` - `TravelTeams`
-7. `TeamPreviewCard` - `TravelTeams`
-8. `TeamDesktopRow` - `TravelTeams`
-9. `FacilityDesktopRow` - `Facilities`
-10. `MobileFacilityRow` - `Facilities`
-11. `FacilityPreviewCard` - `Facilities`
-12. `FacilitiesEmptyState` - `Facilities`
-13. `PlayerBoardDetailPanel` - `PlayerBoard`
-14. `PlayerBoardDesktopRow` - `PlayerBoard`
-15. `PlayerBoardMobileCard` - `PlayerBoard`
-16. `PlayerBoardBrowseSidebar` - `PlayerBoard`
-17. `PlayerBoardBrowseContent` - `PlayerBoard`
-18. `RosterRow` - `RosterSpots`
-19. `RosterSubmittedState` - `RosterSpots`
-20. `RosterBrowseContent` - `RosterSpots`
-21. `ClaimRequestRow` - `AdminPage`
-22. `ClaimRequestsToolbar` - `AdminPage`
-23. `AdminTabs` - `AdminPage`
-24. `PasswordGate` - `AdminPage`
-25. `CoachResult` - `SearchResults`
-26. `TeamResult` - `SearchResults`
-27. `FacilityResult` - `SearchResults`
-28. `SearchResultsContent` - `SearchResults`
-29. `GenericAdminTableContent` - `AdminPage`
-30. `AdminCell` - `AdminPage`
-31. `DirectoryAdBand + RailAdSlot` - `CoachDirectory`
-32. `RatingRow` - `CoachDirectory`
-33. `CoachDirectoryEmptyState` - `CoachDirectory`
-34. `FeaturedCard` - `HomePage`
-35. `HomePageAdBand` - `HomePage`
-36. `HomePageSectionHeader` - `HomePage`
-37. `HomePageBand` - `HomePage`
+3. `CoachRow` — CoachDirectory
+4. `CoachDetailPanel` — CoachDirectory
+5. `MobileCoachRow` — CoachDirectory
+6. `RatingRow` — CoachDirectory
+7. `CoachDirectoryEmptyState` — CoachDirectory
+8. `TeamCard` — TravelTeams
+9. `TeamPreviewCard` — TravelTeams
+10. `TeamDesktopRow` — TravelTeams
+11. `FacilityDesktopRow` — Facilities
+12. `MobileFacilityRow` — Facilities
+13. `FacilityPreviewCard` — Facilities
+14. `FacilitiesEmptyState` — Facilities
+15. `PlayerBoardDetailPanel` — PlayerBoard
+16. `PlayerBoardDesktopRow` — PlayerBoard
+17. `PlayerBoardMobileCard` — PlayerBoard
+18. `PlayerBoardBrowseSidebar` — PlayerBoard
+19. `PlayerBoardBrowseContent` — PlayerBoard
+20. `RosterRow` — RosterSpots
+21. `RosterSubmittedState` — RosterSpots
+22. `RosterBrowseContent` — RosterSpots
+23. `ClaimRequestRow` — AdminPage
+24. `ClaimRequestsToolbar` — AdminPage
+25. `AdminTabs` — AdminPage
+26. `PasswordGate` — AdminPage
+27. `AdminCell` — AdminPage
+28. `GenericAdminTableContent` — AdminPage
+29. `CoachResult` — SearchResults
+30. `TeamResult` — SearchResults
+31. `FacilityResult` — SearchResults
+32. `SearchResultsContent` — SearchResults
+33. `DirectoryAdBand + RailAdSlot` — shared to `src/components/ads/`
+34. `FeaturedCard` — HomePage
+35. `HomePageAdBand` — HomePage
+36. `HomePageSectionHeader` — HomePage
+37. `HomePageBand` — HomePage
+38. `MapLegend` — CoachDirectory
 
-## Completed cleanup items that materially reduced oversized-file noise
-- `CoachDirectory.jsx` unused `CoachCard` cleanup
-- `TravelTeams.jsx` shared ad-wrapper adoption cleanup
+## Completed cleanup items
+- `CoachDirectory.jsx` — unused `CoachCard` dead-code block removed
+- `TravelTeams.jsx` — shared ad-wrapper adoption (replaced inlined DirectoryAdBand/RailAdSlot with shared imports)
 
-## Audit reconciliation
-- The original audit direction was useful and led to substantial safe extraction work across the codebase
-- Later closeout language drifted into “natural stopping point” logic before the original finish-line intent was actually satisfied
-- That drift is now being corrected
-- The project is returning to the practical finish-line principle:
-  - keep reducing oversized files into more manageable edit surfaces
-  - keep using one bounded extraction or cleanup per branch
-  - explicitly document what remains in each oversized file instead of letting files drift into deferred status without a clear disposition
+---
 
-## Current-state file inventory summary
-Current remaining oversized JSX files from the latest repo comparison:
-- `CoachDirectory.jsx`
-- `CoachSubmitForm.jsx`
-- `Facilities.jsx`
-- `PlayerBoard.jsx`
-- `TravelTeams.jsx`
-- `RosterSpots.jsx`
-- `HomePage.jsx`
+## Per-file status
 
-`AdminPage.jsx` is now below the target and is no longer part of the oversized-file queue.
+### `CoachDirectory.jsx` — ACTIVE
+`MapLegend` extraction is complete and merged.
+Next: inspect `MapMarkers` as a later optional live extraction candidate. Keep it inspect-first, branch-narrow, and do not combine with helper cleanup or map abstraction.
 
-Important context:
-- `CoachDirectory.jsx`, `Facilities.jsx`, and `HomePage.jsx` grew during the refactor period because of new feature development, not because the extraction work failed
-- That context does **not** by itself close the refactor
-- The active goal is still to keep reducing the remaining oversized JSX files through safe, bounded, inspect-first work where worthwhile live extractions remain
+### `Facilities.jsx` — ACTIVE
+Next: shared ad-wrapper adoption cleanup. Current merged `main` still contains local inline `DirectoryAdBand` / `RailAdSlot`; do not combine ad-wrapper work with any other extraction.
 
-## Oversized file status framework
-Every JSX file still over 1,000 lines must carry one of these statuses in the notes:
+### `TravelTeams.jsx` — ACTIVE
+Next: inspect `EmptyState` as the next narrow live extraction. `MapLegend` is later optional work. Do not mix either step with map abstraction, helper cleanup, or ad-wrapper changes.
 
-1. **Active reduction path identified**
-   - at least one confirmed live bounded extraction remains
-   - next extraction order is explicitly recorded
+### `HomePage.jsx` — BLOCKED
+All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Re-inspection of current merged `main` did not identify another clearly worthwhile narrow live extraction. Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections. Do not force another extraction without a fresh code-level candidate that is materially more leaf-like than the current hero block.
 
-2. **Blocked by structural territory**
-   - no additional worthwhile bounded extraction remains from current inspection
-   - remaining bulk is predominantly orchestration/state/form/auth/map/hook territory
+### `AdminPage.jsx` — DONE
+Below target. Out of oversized-file queue.
 
-3. **Explicit exception approved**
-   - file remains oversized by deliberate decision
-   - reason is stated explicitly
-   - do not silently treat this as closeout complete
+### `CoachSubmitForm.jsx` — BLOCKED
+Remaining bulk is multi-form validation, geocode, and Supabase logic. No clean narrow split remains. Do not reopen without a dedicated form phase decision.
 
-Do not mark refactor complete while an oversized JSX file lacks one of the above explicit statuses.
+### `PlayerBoard.jsx` — BLOCKED
+Remaining bulk is state/auth/geocode/form/map-viewport logic. Do not reopen without a new confirmed extraction candidate from a fresh inspection.
 
-## Per-file current status
+### `RosterSpots.jsx` — BLOCKED
+Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not reopen without a new confirmed extraction candidate from a fresh inspection.
 
-### `CoachDirectory.jsx`
-**Status:** Active reduction path identified
+---
 
-Fresh inspection confirms:
-- the main `CoachDirectory` orchestration shell remains large
-- `DirectoryAdBand` and `RailAdSlot` extraction is complete and merged
-- `RatingRow` extraction is complete and merged
-- live render verification confirmed local `CoachCard` was unused legacy code rather than an active extraction target
-- unused `CoachCard` cleanup is complete and merged
-- `CoachDirectoryEmptyState` extraction is complete and merged
-- local `EmptyState` was removed from `CoachDirectory.jsx`
-- `CoachDirectoryEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows
-- confirmed remaining inlined extractable pieces still include:
-  - `MapMarkers`
-  - `MapLegend`
+## Next branch queue
+1. Execute shared ad-wrapper adoption cleanup in `Facilities.jsx`
+2. Inspect `EmptyState` in `TravelTeams.jsx` — go/no-go for extraction
+3. Inspect `MapMarkers` in `CoachDirectory.jsx` — go/no-go only, later optional
+4. Bug audit begins only after every oversized file above has an explicit blocked/excepted/done status
 
-Current practical next sequence for this file:
-1. decide whether `MapLegend` is the next narrow worthwhile live extraction
-2. treat `MapMarkers` as possible later work only if the branch can stay narrow and testable
-3. do not casually mix helper moves, map abstraction, or broad logic rewrites into that step
+---
 
-Important dependency note:
-- `MapMarkers` still depends on local helpers and selection/profile behavior
-- any future `MapMarkers` extraction must remain inspection-first and narrowly scoped
-- keep that branch focused
-- do not combine helper centralization casually with the component extraction
+## Rules
+- One branch, one file, one type of change
+- Inspect before creating any branch — confirm the target is live-rendered
+- List all dependencies before writing code
+- No giant rewrites. No scope creep mid-branch.
+- Do not move to bug audit while any oversized file lacks an explicit status
+- Do not use "natural stopping point" language as a substitute for per-file status
+- If a file is blocked, state exactly why. If excepted, state exactly why.
+- Prefer the narrowest safe extraction that materially improves the edit surface
 
-### `Facilities.jsx`
-**Status:** Active reduction path identified
-
-Current confirmed context:
-- `FacilitiesEmptyState` extraction is complete and merged
-- local `EmptyState` was removed from `Facilities.jsx`
-- `FacilitiesEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows
-- the same inlined `DirectoryAdBand` / `RailAdSlot` wrapper pattern is still present
-- do not adopt those shared wrappers in the same branch as unrelated extraction work
-
-Current practical next sequence for this file:
-1. re-baseline `Facilities.jsx` again from merged `main`
-2. only then decide whether shared ad-wrapper adoption or another narrow live extraction still remains worthwhile
-
-### `TravelTeams.jsx`
-**Status:** Active reduction path identified
-
-Fresh inspection from current merged `main` confirmed:
-- `TravelTeams.jsx` remained oversized and contained live inlined presentational/helper blocks
-- the earlier shared-utility cleanup is complete and merged
-- `TravelTeams.jsx` imports `normalizeSportValue` from `src/utils/sportUtils.js`
-- `TravelTeams.jsx` imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
-- duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were previously removed from `TravelTeams.jsx`
-- shared ad-wrapper adoption cleanup is now complete and merged
-- `TravelTeams.jsx` now imports shared `DirectoryAdBand` and `RailAdSlot`
-- local inlined `DirectoryAdBand` definition was removed from `TravelTeams.jsx`
-- local inlined `RailAdSlot` definition was removed from `TravelTeams.jsx`
-- local `MapLegend` is still present and live
-- local `EmptyState` is still present and live
-
-Confirmed remaining live render usage:
-- `MapLegend` renders directly below the live map
-- `EmptyState` renders in both the mobile and desktop empty-results flows
-
-Current practical next sequence for this file:
-1. revisit whether `EmptyState` is the next narrow worthwhile live extraction
-2. treat `MapLegend` as later optional leaf extraction
-3. do not mix either step with helper cleanup, map abstraction, ad-wrapper work, or broader logic refactors
-
-### `PlayerBoard.jsx`
-**Status:** Blocked by structural territory unless future inspection proves otherwise
-
-Latest earlier inspection said no additional clearly worthwhile narrow render-structure split remained.
-Remaining bulk is primarily state/auth/form/geocode/map viewport logic.
-Keep out of immediate focus unless a new bounded live extraction is confirmed.
-
-### `RosterSpots.jsx`
-**Status:** Blocked by structural territory unless future inspection proves otherwise
-
-Latest earlier inspection said no additional clearly worthwhile narrow render-structure split remained.
-Remaining bulk is primarily `RosterForm`, geocode/filter state, and wrapper/orchestration logic.
-Keep out of immediate focus unless a new bounded live extraction is confirmed.
-
-### `CoachSubmitForm.jsx`
-**Status:** Blocked by structural territory
-
-Still primarily form/validation/geocode/Supabase logic across multiple submit flows.
-Do not reopen casually.
-Only revisit under a deliberate dedicated form phase.
-
-### `HomePage.jsx`
-**Status:** Active reduction path identified
-
-Current confirmed context:
-- explicit re-inspection from current merged `main` confirmed `HomePage.jsx` still had a real bounded extraction path
-- `FeaturedCard` extraction from `HomePage.jsx` is complete and merged
-- `HomePageAdBand` extraction from `HomePage.jsx` is complete and merged
-- `HomePageSectionHeader` extraction from `HomePage.jsx` is complete and merged
-- `HomePageBand` extraction from `HomePage.jsx` is complete and merged
-- `HomePageAdBand` now handles the live homepage top desktop, inline, and footer ad-band placements
-
-Current practical next sequence:
-1. re-inspect `HomePage.jsx` from current merged `main`
-2. determine whether any additional narrow worthwhile extraction remains
-3. if no worthwhile bounded extraction remains, move `HomePage.jsx` to explicit exception or blocked-by-structural-territory review instead of forcing another extraction
-
-Important dependency note:
-- keep any future homepage leaf extraction homepage-scoped unless a deliberate later shared decision is made in a separate thread
-
-## Current conclusions
-- The project completed the bulk of the earlier safe leaf and narrow structural extraction work
-- The project also completed the previously identified shared-utility cleanup items in `Facilities.jsx`, `TravelTeams.jsx`, and `CoachDirectory.jsx`
-- The project completed the bounded `CoachDirectory.jsx` ad-wrapper extraction
-- The project completed the bounded `CoachDirectory.jsx` `RatingRow` extraction
-- The project resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
-- The project completed the bounded `CoachDirectory.jsx` `CoachDirectoryEmptyState` extraction
-- The project completed the bounded `Facilities.jsx` `FacilitiesEmptyState` extraction
-- The project completed the bounded `TravelTeams.jsx` shared ad-wrapper adoption cleanup
-- The project completed the bounded `HomePage.jsx` `FeaturedCard` extraction
-- The project completed the bounded `HomePage.jsx` `HomePageAdBand` extraction
-- The project completed the bounded `HomePage.jsx` `HomePageSectionHeader` extraction
-- The project completed the bounded `HomePage.jsx` `HomePageBand` extraction
-- `HomePage.jsx` still remains in active refactor scope because the file is still oversized and needs a fresh current-main re-inspection
-- The project has **not** yet reached the intended maintainability end state for the remaining oversized files
-- Refactor continuation is therefore still active
-- Bug audit remains postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
-
-## Active objective
-Continue reducing oversized JSX files into more manageable edit surfaces using the narrowest safe live extraction path available per file.
-
-## Next target
-Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction.
-
-## Confirmed next inspection order
-1. Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction
-2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `MapMarkers`) only if still worthwhile from current merged `main`
-3. Re-baseline `Facilities.jsx` again from merged `main`
-4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
-
-## Remaining queue
-1. Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction
-2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `MapMarkers`) only if still worthwhile from current merged `main`
-3. Re-baseline `Facilities.jsx` again from merged `main`
-4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
-5. Begin bug audit only after the above queue has progressed and the oversized files all have explicit statuses
-
-## Local branches to keep
-- `main`
-- `refactor/shared-utilities-phase-1`
-- `refactor/submit-form-modular`
-- `refactor/homepage-featured-card`
-
-## Locked rules
-- Move slowly and cleanly
-- One extraction or one cleanup per branch
-- One type of change at a time
-- No giant rewrites
-- Inspect before editing
-- Test each affected page before moving on
-- Keep `NOTES.md` updated
-- Once a branch is merged and the repo is back on `main` with a clean working tree, rewrite the full `NOTES.md` so it becomes the new single source of truth
-- No file should exceed 1000 lines when the audit path is complete
-- Do not expand scope just because a file is still large if the remaining bulk is logic-dense or product-growth territory
-- If the under-1000 target remains difficult for a given file, continue tracking maintainability wins via bounded extractions rather than prematurely declaring closeout complete
-
-## Refactor-continuation guardrails
-- Do not jump to bug audit yet
-- Do not casually reopen everything at once
-- Do not jump blindly into hooks, shared map abstraction, or broad logic rewrites unless they become the only reasonable path for a specific file and are explicitly chosen
-- Prefer the narrowest safe live extraction that materially reduces a target file
-- Keep each step independently testable
-- Use current merged `main` as the source of truth for what remains
-- Do not let natural stopping point language replace explicit per-file status tracking
-
-## Drift-prevention rules
-- Do not mark refactor complete while any oversized JSX file lacks an explicit status
-- Do not move phases based on broad closeout complete wording alone
-- For every oversized file, record either:
-  - next bounded extraction target
-  - blocked-by-structural-territory status
-  - explicit approved exception
-- If a file still contains confirmed live extractable UI blocks, it remains in active refactor scope
-- If a file is blocked, say exactly why
-- If a file is excepted, say exactly why
-- Final task of every thread is reconciling `NOTES.md` so no stale next-phase wording remains
-
-## Inspection rule - required before every extraction
+## Inspection checklist — required before every extraction
 1. Find the candidate component/function
-2. Confirm it is actually rendered in the live UI
-3. Find the exact live render block
-4. List all dependencies (state, handlers, refs, helpers)
-5. Only then create files/imports and start extraction
-
-## Prompt guardrails
-- Do not suggest alternatives to the current stack
-- Do not expand scope because you see a related opportunity
-- Do not assume repo state if uncertain
-- If a thread gets long, prepare a clean handoff prompt before continuing
-- Do not jump casually into hooks, filters, map abstraction, submit-form splits, or unrelated cleanup
-- Do not create a branch before inspection is complete and confirmed
-- Do not switch to bug-audit planning while refactor continuation is still active
-
-## Branch timing rule
-- Once inspection is complete and the next bounded step is confirmed, create the branch before making any code edits
-- Do not begin editing on `main`
-- Do not create the branch before inspection is complete
+2. Confirm it is actually rendered in the live UI (grep for usage, not just definition)
+3. Identify the exact line range
+4. List all dependencies (state, handlers, refs, helpers, imports)
+5. Only then open a branch and write code
 
 ## Execution reminders
-- Provide full paste-ready file contents for any new component, not just a summary
-- Provide the exact import line(s) and clearly state what in-file block to remove
-- Check sibling files in the target folder for naming and prop-pattern consistency before creating a new file
-- Before proposing any new extraction, first confirm whether the current target still has a clearly live presentational leaf or a bounded structural shell that materially improves maintainability
-- For continued oversized-file work, define a narrow scope before creating any branch
-- Keep the focus on the next live reduction step, not broad architectural ambition
+- Provide full paste-ready file contents for any new component file
+- Provide the exact import line and clearly state what block to remove
+- Check sibling files in the target folder for naming/prop-pattern consistency
+- Confirm repo path and device before creating any branch
 
 ## Thread closeout checklist
-- `NOTES.md` updated before ending thread
-- Last completed item recorded
-- Next inspection target recorded
-- Repo state recorded (`main` / clean / synced or active branch / local only / pending merge)
-- Active branch status recorded
-- Any unresolved ambiguity explicitly called out
-- Ready-to-paste kickoff prompt prepared for next thread if needed
+- [ ] Last completed item recorded in extractions list
+- [ ] Affected per-file status block updated
+- [ ] Next branch queue updated
+- [ ] Repo state confirmed: `main` / clean / synced
+- [ ] NOTES.md rewritten (not appended) and committed
 
-## State integrity rules
-- Do not leave branch-specific wording in notes unless verified
-- Do not say complete locally if repo is already back on `main` and clean
-- Do not mark items merged unless explicitly confirmed
-- Do not let the next thread begin without pasting the latest `NOTES.md`
-- Every new thread must review the pasted latest `NOTES.md` before proposing the next step
-- Final task of every thread is reconciling and updating `NOTES.md`
-- If a branch has been merged, production has been verified, and the repo is back on `main` with a clean working tree, replace the prior notes with a fully rewritten current-state version rather than appending partial updates
-- If any state statement conflicts with another, stop and reconcile the notes before proposing the next step
-- If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
-
-## Repo path confirmation rule
-- At the start of any execution thread, confirm the active machine and active repo path before branch creation
-- All git commands, file edits, and testing in that thread must use that confirmed repo path
+---
 
 ## Bug audit
-Deferred for now.
-
-Bug audit should begin only after:
-- the oversized-file queue has been pushed further
-- each oversized file has an explicit status
-- the project is no longer drifting between refactor continuation and premature closeout language
+Deferred. Begin only after every oversized file has a status of blocked, excepted, or below target.
