@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import FeaturedCard from './home/FeaturedCard'
 import HomePageAdBand from './home/HomePageAdBand'
+import HomePageSectionHeader from './home/HomePageSectionHeader'
 import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
 
 
@@ -103,47 +104,6 @@ function Band({ children, style }) {
       }}
     >
       {children}
-    </div>
-  )
-}
-
-function SectionHeader({ title, linkTo, linkLabel }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-        gap: 12,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: NAVY,
-        }}
-      >
-        {title}
-      </span>
-
-      {linkTo && (
-        <Link
-          to={linkTo}
-          style={{
-            fontSize: 12,
-            fontWeight: 500,
-            color: RED,
-            textDecoration: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {linkLabel || 'View all'}
-        </Link>
-      )}
     </div>
   )
 }
@@ -513,7 +473,7 @@ export default function HomePage() {
 
         <Band>
           <div style={col}>
-            <SectionHeader title="How it works" />
+            <HomePageSectionHeader title="How it works" />
 
             <div
               style={{
@@ -584,7 +544,7 @@ export default function HomePage() {
         </Band>
 
         <div style={{ ...col, marginTop: 28 }}>
-          <SectionHeader title="What are you looking for?" />
+          <HomePageSectionHeader title="What are you looking for?" />
 
           <div
             style={{
@@ -676,7 +636,7 @@ export default function HomePage() {
 
         <Band style={{ marginTop: 28 }}>
           <div style={col}>
-            <SectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all →" />
+            <HomePageSectionHeader title="Featured coaches" linkTo="/coaches" linkLabel="View all →" />
 
             <div
               style={{
@@ -693,7 +653,7 @@ export default function HomePage() {
         </Band>
 
         <div style={{ ...col, marginTop: 28 }}>
-          <SectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all →" />
+          <HomePageSectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all →" />
 
           <div
             style={{
@@ -710,7 +670,7 @@ export default function HomePage() {
 
         <Band style={{ marginTop: 28 }}>
           <div style={col}>
-            <SectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
+            <HomePageSectionHeader title="Urgent pickup needs" linkTo="/find" linkLabel="View all →" />
 
             <div
               style={{
