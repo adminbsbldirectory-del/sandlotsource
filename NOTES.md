@@ -52,6 +52,12 @@ Reason:
 - `TravelTeams.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
 - `TravelTeams.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
 - Duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were removed from `TravelTeams.jsx`
+- `TravelTeams.jsx` shared ad-wrapper adoption cleanup is complete and merged
+- `TravelTeams.jsx` now imports shared `DirectoryAdBand` from `src/components/ads/DirectoryAdBand.jsx`
+- `TravelTeams.jsx` now imports shared `RailAdSlot` from `src/components/ads/RailAdSlot.jsx`
+- Local inlined `DirectoryAdBand` definition was removed from `TravelTeams.jsx`
+- Local inlined `RailAdSlot` definition was removed from `TravelTeams.jsx`
+- Localhost review looked good after the `TravelTeams.jsx` shared ad-wrapper adoption cleanup
 - `CoachDirectory.jsx` shared-utility import cleanup is complete and merged
 - `CoachDirectory.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
 - Duplicate local helper definitions for `geocodeZip` and `distanceMiles` were removed from `CoachDirectory.jsx`
@@ -79,11 +85,12 @@ Reason:
 - Vercel preview looked good and production deployed correctly after the `RatingRow` extraction merge
 - Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` unused `CoachCard` cleanup merge
 - Vercel preview looked good and production deployed correctly after the `FacilitiesEmptyState` extraction merge
+- `TravelTeams.jsx` shared ad-wrapper adoption cleanup is merged to `main`
 - Local repo is back on `main`
 - Local `main` is up to date with `origin/main`
 - Working tree is clean
 - Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 32 completed extractions / major modular reductions plus the completed `CoachCard` unused-code cleanup
+- Current-state inventory confirms 32 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
 - Earlier closeout language is no longer the active source-of-truth framing
 - Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
 - Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
@@ -124,6 +131,7 @@ Reason:
 
 ## Completed cleanup items that materially reduced oversized-file noise
 - `CoachDirectory.jsx` unused `CoachCard` cleanup
+- `TravelTeams.jsx` shared ad-wrapper adoption cleanup
 
 ## Audit reconciliation
 - The original audit direction was useful and led to substantial safe extraction work across the codebase
@@ -213,60 +221,27 @@ Current practical next sequence for this file:
 ### `TravelTeams.jsx`
 **Status:** Active reduction path identified
 
-Fresh inspection from current merged `main` confirms:
-- `TravelTeams.jsx` remains oversized and still contains live inlined presentational/helper blocks
+Fresh inspection from current merged `main` confirmed:
+- `TravelTeams.jsx` remained oversized and contained live inlined presentational/helper blocks
 - the earlier shared-utility cleanup is complete and merged
-- `TravelTeams.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
-- `TravelTeams.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
-- duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were removed from `TravelTeams.jsx`
-- local inlined `DirectoryAdBand` is still present and live
-- local inlined `RailAdSlot` is still present and live
+- `TravelTeams.jsx` imports `normalizeSportValue` from `src/utils/sportUtils.js`
+- `TravelTeams.jsx` imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
+- duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were previously removed from `TravelTeams.jsx`
+- shared ad-wrapper adoption cleanup is now complete and merged
+- `TravelTeams.jsx` now imports shared `DirectoryAdBand` and `RailAdSlot`
+- local inlined `DirectoryAdBand` definition was removed from `TravelTeams.jsx`
+- local inlined `RailAdSlot` definition was removed from `TravelTeams.jsx`
 - local `MapLegend` is still present and live
 - local `EmptyState` is still present and live
 
-Confirmed live render usage:
-- `DirectoryAdBand` is used for:
-  - desktop top ad placement
-  - mobile inline ad placement
-  - mobile footer ad placement
-- `RailAdSlot` is used for:
-  - left desktop rail placement
-  - right desktop rail 1 placement
-  - right desktop rail 2 placement
+Confirmed remaining live render usage:
 - `MapLegend` renders directly below the live map
 - `EmptyState` renders in both the mobile and desktop empty-results flows
 
 Current practical next sequence for this file:
-1. adopt shared `DirectoryAdBand` / `RailAdSlot` first as the next bounded cleanup
-2. revisit `EmptyState` as the next small live extraction
-3. treat `MapLegend` as later optional leaf extraction
-4. do not mix ad-wrapper adoption with helper moves, map abstraction, or broader logic refactors
-
-Current recommended next step:
-- execute `TravelTeams.jsx` shared ad-wrapper adoption cleanup only
-- remove the local `DirectoryAdBand` and `RailAdSlot` definitions from `TravelTeams.jsx`
-- import the shared components from `src/components/ads/`
-- keep `MapLegend` and `EmptyState` in place for now
-- do not combine this step with any unrelated cleanup or extraction work
-
-Execution sequence for this step:
-1. inspection complete and confirmed from current merged `main`
-2. create a dedicated branch for `TravelTeams.jsx` shared ad-wrapper adoption cleanup
-3. make only the bounded code changes for shared `DirectoryAdBand` / `RailAdSlot` adoption
-4. review code changes before any localhost testing
-5. test locally only after code review
-6. merge/push only after local verification
-
-Branch rule for this step:
-- do not edit on `main`
-- create the branch only after inspection is complete
-- keep the branch scoped to `TravelTeams.jsx` shared ad-wrapper adoption cleanup only
-- do not mix `EmptyState`, `MapLegend`, helper cleanup, or unrelated refactors into this branch
-
-Current confirmed context:
-- the same inlined `DirectoryAdBand` / `RailAdSlot` wrapper pattern is still present
-- `MapLegend` and `EmptyState` may still remain as possible later candidates
-- re-inspect current merged `main` for the next narrow worthwhile step
+1. revisit whether `EmptyState` is the next narrow worthwhile live extraction
+2. treat `MapLegend` as later optional leaf extraction
+3. do not mix either step with helper cleanup, map abstraction, ad-wrapper work, or broader logic refactors
 
 ### `PlayerBoard.jsx`
 **Status:** Blocked by structural territory unless future inspection proves otherwise
@@ -303,6 +278,7 @@ Either identify a bounded extraction path later or formally mark as an approved 
 - The project completed the next bounded `CoachDirectory.jsx` `RatingRow` extraction
 - The project also resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
 - The project completed the next bounded `Facilities.jsx` `FacilitiesEmptyState` extraction
+- The project completed the next bounded `TravelTeams.jsx` shared ad-wrapper adoption cleanup
 - However, the project has **not** yet reached the intended maintainability end state for the remaining oversized files
 - Refactor continuation is therefore still active
 - Bug audit is postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
@@ -311,19 +287,19 @@ Either identify a bounded extraction path later or formally mark as an approved 
 Continue reducing oversized JSX files into more manageable edit surfaces using the narrowest safe live extraction path available per file.
 
 ## Next target
-Re-baseline `TravelTeams.jsx`
+Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception.
 
 ## Confirmed next inspection order
-1. Re-baseline `TravelTeams.jsx`
-2. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
-3. Return to later `CoachDirectory.jsx` candidates only if one of `MapLegend`, `EmptyState`, or `MapMarkers` still offers a clearly worthwhile narrow step
-4. Re-baseline `Facilities.jsx` again from merged `main`
+1. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
+2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
+3. Re-baseline `Facilities.jsx` again from merged `main`
+4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
 
 ## Remaining queue
-1. Re-baseline `TravelTeams.jsx`
-2. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
-3. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
-4. Re-baseline `Facilities.jsx` again from merged `main`
+1. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
+2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
+3. Re-baseline `Facilities.jsx` again from merged `main`
+4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
 5. Begin bug audit only after the above queue has progressed and the oversized files all have explicit statuses
 
 ## Local branches to keep
@@ -380,10 +356,10 @@ Re-baseline `TravelTeams.jsx`
 - Do not create a branch before inspection is complete and confirmed
 - Do not switch to bug-audit planning while refactor continuation is still active
 
-Branch timing rule:
-- once inspection is complete and the next bounded step is confirmed, create the branch before making any code edits
-- do not begin editing on `main`
-- do not create the branch before inspection is complete
+## Branch timing rule
+- Once inspection is complete and the next bounded step is confirmed, create the branch before making any code edits
+- Do not begin editing on `main`
+- Do not create the branch before inspection is complete
 
 ## Execution reminders
 - Provide full paste-ready file contents for any new component, not just a summary
@@ -412,7 +388,7 @@ Branch timing rule:
 - If any state statement conflicts with another, stop and reconcile the notes before proposing the next step
 - If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
 
-Repo path confirmation rule:
+## Repo path confirmation rule
 - At the start of any execution thread, confirm the active machine and active repo path before branch creation
 - All git commands, file edits, and testing in that thread must use that confirmed repo path
 
