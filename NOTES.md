@@ -69,6 +69,7 @@ Remaining oversized files need explicit per-file status before any phase change.
 ## Completed cleanup items
 - `CoachDirectory.jsx` — unused `CoachCard` dead-code block removed
 - `TravelTeams.jsx` — shared ad-wrapper adoption (replaced inlined DirectoryAdBand/RailAdSlot with shared imports)
+- `Facilities.jsx` — shared ad-wrapper adoption (replaced inlined DirectoryAdBand/RailAdSlot with shared imports)
 
 ---
 
@@ -79,7 +80,8 @@ Remaining oversized files need explicit per-file status before any phase change.
 Next: inspect `MapMarkers` as a later optional live extraction candidate. Keep it inspect-first, branch-narrow, and do not combine with helper cleanup or map abstraction.
 
 ### `Facilities.jsx` — ACTIVE
-Next: shared ad-wrapper adoption cleanup. Current merged `main` still contains local inline `DirectoryAdBand` / `RailAdSlot`; do not combine ad-wrapper work with any other extraction.
+Shared ad-wrapper adoption cleanup is complete and merged.
+Next: re-baseline from current merged `main`, then decide whether another narrow live extraction remains or whether the file should move toward blocked/structural territory. Do not combine re-baseline with any other cleanup.
 
 ### `TravelTeams.jsx` — ACTIVE
 Next: inspect `EmptyState` as the next narrow live extraction. `MapLegend` is later optional work. Do not mix either step with map abstraction, helper cleanup, or ad-wrapper changes.
@@ -102,9 +104,9 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not re
 ---
 
 ## Next branch queue
-1. Execute shared ad-wrapper adoption cleanup in `Facilities.jsx`
-2. Inspect `EmptyState` in `TravelTeams.jsx` — go/no-go for extraction
-3. Inspect `MapMarkers` in `CoachDirectory.jsx` — go/no-go only, later optional
+1. Inspect `EmptyState` in `TravelTeams.jsx` — go/no-go for extraction
+2. Inspect `MapMarkers` in `CoachDirectory.jsx` — go/no-go only, later optional
+3. Re-baseline `Facilities.jsx` — decide next narrow extraction vs blocked status
 4. Bug audit begins only after every oversized file above has an explicit blocked/excepted/done status
 
 ---
