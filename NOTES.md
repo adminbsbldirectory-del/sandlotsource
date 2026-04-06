@@ -26,7 +26,7 @@ Remaining oversized files need explicit per-file status before any phase change.
 
 ---
 
-## Completed extractions (38 total)
+## Completed extractions (39 total)
 1. Phase 1 shared utilities
 2. `CoachSubmitForm` modular refactor
 3. `CoachRow` — CoachDirectory
@@ -65,6 +65,7 @@ Remaining oversized files need explicit per-file status before any phase change.
 36. `HomePageSectionHeader` — HomePage
 37. `HomePageBand` — HomePage
 38. `MapLegend` — CoachDirectory
+39. `EmptyState` — TravelTeams
 
 ## Completed cleanup items
 - `CoachDirectory.jsx` — unused `CoachCard` dead-code block removed
@@ -84,7 +85,8 @@ Shared ad-wrapper adoption cleanup is complete and merged.
 Next: re-baseline from current merged `main`, then decide whether another narrow live extraction remains or whether the file should move toward blocked/structural territory. Do not combine re-baseline with any other cleanup.
 
 ### `TravelTeams.jsx` — ACTIVE
-Next: inspect `EmptyState` as the next narrow live extraction. `MapLegend` is later optional work. Do not mix either step with map abstraction, helper cleanup, or ad-wrapper changes.
+`EmptyState` extraction is complete and merged.
+Next: `MapLegend` remains later optional work only. Do not combine any future inspection with map abstraction, helper cleanup, or ad-wrapper changes.
 
 ### `HomePage.jsx` — BLOCKED
 All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Re-inspection of current merged `main` did not identify another clearly worthwhile narrow live extraction. Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections. Do not force another extraction without a fresh code-level candidate that is materially more leaf-like than the current hero block.
@@ -104,10 +106,9 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not re
 ---
 
 ## Next branch queue
-1. Inspect `EmptyState` in `TravelTeams.jsx` — go/no-go for extraction
-2. Inspect `MapMarkers` in `CoachDirectory.jsx` — go/no-go only, later optional
-3. Re-baseline `Facilities.jsx` — decide next narrow extraction vs blocked status
-4. Bug audit begins only after every oversized file above has an explicit blocked/excepted/done status
+1. Inspect `MapMarkers` in `CoachDirectory.jsx` — go/no-go only, later optional
+2. Re-baseline `Facilities.jsx` — decide next narrow extraction vs blocked status
+3. Bug audit begins only after every oversized file above has an explicit blocked/excepted/done status
 
 ---
 
