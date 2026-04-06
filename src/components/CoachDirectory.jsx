@@ -12,6 +12,7 @@ import { COACH_SPECIALTIES } from '../constants/coachSpecialties'
 import { normalizeSportValue } from '../utils/sportUtils'
 import CoachRow from "./coaches/CoachRow.jsx";
 import CoachDetailPanel from "./coaches/CoachDetailPanel.jsx";
+import CoachDirectoryEmptyState from "./coaches/CoachDirectoryEmptyState.jsx";
 import MobileCoachRow from "./coaches/MobileCoachRow.jsx";
 import DirectoryAdBand from "./ads/DirectoryAdBand.jsx";
 import RailAdSlot from "./ads/RailAdSlot.jsx";
@@ -445,34 +446,6 @@ function MapLegend() {
           </span>
         </div>
       ))}
-    </div>
-  );
-}
-
-function EmptyState({ facilityContextName, hasLocationSearch }) {
-  if (!facilityContextName && !hasLocationSearch) {
-    return (
-      <div className="empty-state">
-        <h3>Start with your ZIP code</h3>
-        <p>
-          Enter a ZIP code and choose a radius to see coaches near you first.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="empty-state">
-      <h3>
-        {facilityContextName
-          ? "No linked coaches found"
-          : "No coaches match your filters"}
-      </h3>
-      <p>
-        {facilityContextName
-          ? `We couldn’t find approved active coaches linked to ${facilityContextName}.`
-          : "Try changing your search, widening the radius, or clearing one of the filters."}
-      </p>
     </div>
   );
 }
@@ -1617,7 +1590,7 @@ export default function CoachDirectory() {
                     </div>
                   )}
                   {!loading && displayedCoaches.length === 0 && (
-                    <EmptyState
+                    <CoachDirectoryEmptyState
                       facilityContextName={facilityContext?.name}
                       hasLocationSearch={hasLocationSearch}
                     />
@@ -2242,7 +2215,7 @@ export default function CoachDirectory() {
                         )}
                         {!loading && displayedCoaches.length === 0 && (
                           <div style={{ padding: 18 }}>
-                            <EmptyState
+                            <CoachDirectoryEmptyState
                               facilityContextName={facilityContext?.name}
                               hasLocationSearch={hasLocationSearch}
                             />
