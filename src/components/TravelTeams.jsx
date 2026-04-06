@@ -9,6 +9,7 @@ import TeamProfile from './TeamProfile.jsx'
 import { US_STATES } from '../constants/usStates'
 import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
 import { normalizeSportValue } from '../utils/sportUtils.js'
+import EmptyState from './teams/EmptyState.jsx'
 import TeamCard from './teams/TeamCard.jsx'
 import TeamPreviewCard from './teams/TeamPreviewCard.jsx'
 import TeamDesktopRow from './teams/TeamDesktopRow.jsx'
@@ -255,32 +256,6 @@ function MapLegend({ hasPins }) {
     </div>
   )
 }
-
-function EmptyState({ hasFilters, stateName, zipActive, radius }) {
-  if (!zipActive) {
-    return (
-      <div className="empty-state" style={{ margin: 0 }}>
-        <h3>Start with your ZIP code</h3>
-        <p>Enter a ZIP code and choose a radius to see nearby teams first.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="empty-state" style={{ margin: 0 }}>
-      <h3>{hasFilters ? 'No teams match your filters' : `No teams listed yet${stateName ? ' in ' + stateName : ''}`}</h3>
-      <p>
-        {zipActive
-          ? `No teams found within ${radius} miles. Try increasing the radius or removing a filter.`
-          : hasFilters
-            ? 'Try widening your search — remove a filter or select a different state.'
-            : 'Know a travel team in this area? Help grow the directory.'}
-      </p>
-      {!hasFilters && <a href="/submit">Add a Team Listing</a>}
-    </div>
-  )
-}
-
 
 export default function TravelTeams() {
   const rowRefs = useRef({})
