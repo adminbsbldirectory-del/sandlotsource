@@ -12,6 +12,7 @@ import { FEATURED_BADGE_STYLE } from '../constants/featuredBadgeStyle'
 import FacilityDesktopRow from './facilities/FacilityDesktopRow.jsx'
 import MobileFacilityRow from './facilities/MobileFacilityRow.jsx'
 import FacilityPreviewCard from './facilities/FacilityPreviewCard.jsx'
+import FacilitiesEmptyState from './facilities/FacilitiesEmptyState.jsx'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -641,11 +642,11 @@ export default function Facilities() {
   }
 
   const mobileActiveFilterCount = [sport, facilityType !== 'all' ? facilityType : '', search || searchInput, zipStatus === 'ok' ? zip : '']
-    .filter(Boolean)
-    .length
+  .filter(Boolean)
+  .length
 
   const hasLocationSearch = zipStatus === 'ok' && !!geoCenter
-
+  const hasFilters = !!(sport || search || facilityType !== 'all')
   const filtered = useMemo(() => {
     if (!hasLocationSearch) return []
 
@@ -760,29 +761,6 @@ export default function Facilities() {
     color: 'var(--gray)',
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
-  }
-
-  function EmptyState() {
-    if (!hasLocationSearch) {
-      return (
-        <div className="empty-state">
-          <h3>Start with your ZIP code</h3>
-          <p>Enter a ZIP code and choose a radius to see facilities near you first.</p>
-        </div>
-      )
-    }
-
-    const hasFilters = sport || search || facilityType !== 'all'
-    return (
-      <div className="empty-state">
-        <h3>{hasFilters ? 'No facilities match your filters' : 'No facilities found in this area'}</h3>
-        <p>
-          {hasFilters
-            ? 'Try widening your search — clear a filter or increase the radius.'
-            : 'Try a different ZIP code or a larger radius.'}
-        </p>
-      </div>
-    )
   }
 
   return (
@@ -1245,7 +1223,9 @@ export default function Facilities() {
                       </div>
                     )}
 
-                    {!loading && filtered.length === 0 && <EmptyState />}
+                    {!loading && filtered.length === 0 && (
+                      <FacilitiesEmptyState hasLocationSearch={hasLocationSearch} hasFilters={hasFilters} />
+                    )}
 
                     {!loading && filtered.map((f) => (
                       <div
@@ -1708,7 +1688,7 @@ export default function Facilities() {
 
                         {!loading && filtered.length === 0 && (
                           <div style={{ padding: '16px 14px' }}>
-                            <EmptyState />
+                            <FacilitiesEmptyState hasLocationSearch={hasLocationSearch} hasFilters={hasFilters} />
                           </div>
                         )}
 

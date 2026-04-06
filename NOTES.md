@@ -71,11 +71,15 @@ Reason:
 - Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` ad-wrapper extraction merge
 - Vercel preview looked good and production deployed correctly after the `RatingRow` extraction merge
 - Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` unused `CoachCard` cleanup merge
-- Local repo is back on `main`
-- Local `main` is up to date with `origin/main`
-- Working tree is clean
+- `FacilitiesEmptyState` extraction from `Facilities.jsx` is complete locally on the active branch
+- `Facilities.jsx` now imports `FacilitiesEmptyState` from `src/components/facilities/FacilitiesEmptyState.jsx`
+- Local `EmptyState` definition was removed from `Facilities.jsx`
+- `FacilitiesEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows in `Facilities.jsx`
+- Active branch: `refactor/facilities-empty-state`
+- Current working copy for this thread is local/laptop only and not yet merged
+- Local testing is pending before PR / merge
 - Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 31 completed extractions / major modular reductions plus the completed `CoachCard` unused-code cleanup
+- Current-state inventory confirms 32 completed extractions / major modular reductions plus the completed `CoachCard` unused-code cleanup
 - Earlier closeout language is no longer the active source-of-truth framing
 - Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
 - Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
@@ -112,6 +116,7 @@ Reason:
 29. AdminCell - `AdminPage`
 30. DirectoryAdBand + RailAdSlot - `CoachDirectory`
 31. RatingRow - `CoachDirectory`
+32. FacilitiesEmptyState - `Facilities`
 
 ## Completed cleanup items that materially reduced oversized-file noise
 - `CoachDirectory.jsx` unused `CoachCard` cleanup
@@ -184,15 +189,25 @@ Current practical next sequence for this file:
 Important dependency note:
 - `MapMarkers` still depends on local helpers and selection/profile behavior
 - any future `MapMarkers` extraction must remain inspection-first and narrowly scoped
-- keep that branch focused; do not combine helper centralization casually with the component extraction
+- keep that branch focused
+- do not combine helper centralization casually with the component extraction
 
 ### `Facilities.jsx`
-**Status:** Needs refreshed inspection after current reset
+**Status:** Active reduction path identified
 
 Current confirmed context:
+- `FacilitiesEmptyState` extraction is complete locally on the active branch
+- local `EmptyState` was removed from `Facilities.jsx`
+- `FacilitiesEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows
 - the same inlined `DirectoryAdBand` / `RailAdSlot` wrapper pattern is still present
 - do not adopt those shared wrappers in the same branch as unrelated extraction work
-- re-inspect current merged `main` for the next narrow worthwhile step
+
+Current practical next sequence for this file:
+1. test the bounded `FacilitiesEmptyState` extraction locally
+2. open PR and merge `FacilitiesEmptyState` extraction after local validation
+3. verify production after merge
+4. re-baseline `Facilities.jsx` again from merged `main`
+5. only then decide whether shared ad-wrapper adoption or another narrow live extraction still remains worthwhile
 
 ### `TravelTeams.jsx`
 **Status:** Needs refreshed inspection after current reset
@@ -236,6 +251,7 @@ Either identify a bounded extraction path later or formally mark as an approved 
 - The project completed the next bounded `CoachDirectory.jsx` ad-wrapper extraction
 - The project completed the next bounded `CoachDirectory.jsx` `RatingRow` extraction
 - The project also resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
+- `Facilities.jsx` has now advanced through the next bounded local extraction step with `FacilitiesEmptyState`
 - However, the project has **not** yet reached the intended maintainability end state for the remaining oversized files
 - Refactor continuation is therefore still active
 - Bug audit is postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
@@ -244,16 +260,16 @@ Either identify a bounded extraction path later or formally mark as an approved 
 Continue reducing oversized JSX files into more manageable edit surfaces using the narrowest safe live extraction path available per file.
 
 ## Next target
-Re-baseline `Facilities.jsx`
+- Test and merge `FacilitiesEmptyState` extraction from `Facilities.jsx`
 
 ## Confirmed next inspection order
-1. Re-baseline `Facilities.jsx`
+1. Test and merge `FacilitiesEmptyState` extraction from `Facilities.jsx`
 2. Re-baseline `TravelTeams.jsx`
 3. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
 4. Return to later `CoachDirectory.jsx` candidates only if one of `MapLegend`, `EmptyState`, or `MapMarkers` still offers a clearly worthwhile narrow step
 
 ## Remaining queue
-1. Re-baseline `Facilities.jsx`
+1. Test and merge `FacilitiesEmptyState` extraction from `Facilities.jsx`
 2. Re-baseline `TravelTeams.jsx`
 3. Revisit whether `HomePage.jsx` gets a bounded extraction path or explicit exception
 4. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
@@ -263,6 +279,7 @@ Re-baseline `Facilities.jsx`
 - `main`
 - `refactor/shared-utilities-phase-1`
 - `refactor/submit-form-modular`
+- `refactor/facilities-empty-state` (until merged or intentionally abandoned)
 
 ## Locked rules
 - Move slowly and cleanly
