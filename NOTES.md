@@ -26,7 +26,7 @@ Remaining oversized files need explicit per-file status before any phase change.
 
 ---
 
-## Completed extractions (39 total)
+## Completed extractions (40 total)
 1. Phase 1 shared utilities
 2. `CoachSubmitForm` modular refactor
 3. `CoachRow` — CoachDirectory
@@ -65,7 +65,8 @@ Remaining oversized files need explicit per-file status before any phase change.
 36. `HomePageSectionHeader` — HomePage
 37. `HomePageBand` — HomePage
 38. `MapLegend` — CoachDirectory
-39. `EmptyState` — TravelTeams
+39. `MapMarkers` — CoachDirectory
+40. `EmptyState` — TravelTeams
 
 ## Completed cleanup items
 - `CoachDirectory.jsx` — unused `CoachCard` dead-code block removed
@@ -77,8 +78,8 @@ Remaining oversized files need explicit per-file status before any phase change.
 ## Per-file status
 
 ### `CoachDirectory.jsx` — ACTIVE
-`MapLegend` extraction is complete and merged.
-Next: inspect `MapMarkers` as a later optional live extraction candidate. Keep it inspect-first, branch-narrow, and do not combine with helper cleanup or map abstraction.
+`MapLegend` and `MapMarkers` extractions are complete and merged.
+Next: re-inspect current merged `main` before approving any further CoachDirectory work. Do not combine any future inspection with helper cleanup or broader map abstraction unless a new clearly bounded live candidate is confirmed.
 
 ### `Facilities.jsx` — ACTIVE
 Shared ad-wrapper adoption cleanup is complete and merged.
@@ -106,8 +107,8 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. Do not re
 ---
 
 ## Next branch queue
-1. Inspect `MapMarkers` in `CoachDirectory.jsx` — go/no-go only, later optional
-2. Re-baseline `Facilities.jsx` — decide next narrow extraction vs blocked status
+1. Re-baseline `Facilities.jsx` — decide next narrow extraction vs blocked status
+2. Re-inspect `CoachDirectory.jsx` from current merged `main` only if a new bounded live candidate is suspected
 3. Bug audit begins only after every oversized file above has an explicit blocked/excepted/done status
 
 ---
