@@ -69,6 +69,12 @@ Reason:
 - Live render verification confirmed local `CoachCard` in `CoachDirectory.jsx` was not used in the active browse flow
 - Unused legacy `CoachCard` cleanup in `CoachDirectory.jsx` is complete and merged
 - Dead `CoachCard` block and newly unused local helpers/imports tied only to that block were removed from `CoachDirectory.jsx`
+- `CoachDirectoryEmptyState` extraction from `CoachDirectory.jsx` is complete and merged
+- `CoachDirectory.jsx` now imports `CoachDirectoryEmptyState` from `src/components/coaches/CoachDirectoryEmptyState.jsx`
+- Local `EmptyState` definition was removed from `CoachDirectory.jsx`
+- `CoachDirectoryEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows in `CoachDirectory.jsx`
+- Localhost review looked good after the `CoachDirectoryEmptyState` extraction
+- Vercel preview looked good and production deployed correctly after the `CoachDirectoryEmptyState` extraction merge
 - `FacilitiesEmptyState` extraction from `Facilities.jsx` is complete and merged
 - `Facilities.jsx` now imports `FacilitiesEmptyState` from `src/components/facilities/FacilitiesEmptyState.jsx`
 - Local `EmptyState` definition was removed from `Facilities.jsx`
@@ -102,7 +108,7 @@ Reason:
 - Vercel preview looked good and production deployed correctly after the `HomePageBand` extraction merge
 - Search results ad placeholders appearing empty on live site were observed during the earlier homepage thread, but that was not treated as a blocker because the branch scope only touched homepage code and the search-results ad containers still rendered
 - Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 36 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
+- Current-state inventory confirms 37 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
 - Earlier closeout language is no longer the active source-of-truth framing
 - Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
 - Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
@@ -144,10 +150,11 @@ Reason:
 30. `AdminCell` - `AdminPage`
 31. `DirectoryAdBand + RailAdSlot` - `CoachDirectory`
 32. `RatingRow` - `CoachDirectory`
-33. `FeaturedCard` - `HomePage`
-34. `HomePageAdBand` - `HomePage`
-35. `HomePageSectionHeader` - `HomePage`
-36. `HomePageBand` - `HomePage`
+33. `CoachDirectoryEmptyState` - `CoachDirectory`
+34. `FeaturedCard` - `HomePage`
+35. `HomePageAdBand` - `HomePage`
+36. `HomePageSectionHeader` - `HomePage`
+37. `HomePageBand` - `HomePage`
 
 ## Completed cleanup items that materially reduced oversized-file noise
 - `CoachDirectory.jsx` unused `CoachCard` cleanup
@@ -208,13 +215,15 @@ Fresh inspection confirms:
 - `RatingRow` extraction is complete and merged
 - live render verification confirmed local `CoachCard` was unused legacy code rather than an active extraction target
 - unused `CoachCard` cleanup is complete and merged
+- `CoachDirectoryEmptyState` extraction is complete and merged
+- local `EmptyState` was removed from `CoachDirectory.jsx`
+- `CoachDirectoryEmptyState` now handles the live empty-results state for both the mobile and desktop browse flows
 - confirmed remaining inlined extractable pieces still include:
   - `MapMarkers`
   - `MapLegend`
-  - `EmptyState`
 
 Current practical next sequence for this file:
-1. decide whether `MapLegend` or `EmptyState` is the next narrow worthwhile live extraction
+1. decide whether `MapLegend` is the next narrow worthwhile live extraction
 2. treat `MapMarkers` as possible later work only if the branch can stay narrow and testable
 3. do not casually mix helper moves, map abstraction, or broad logic rewrites into that step
 
@@ -309,6 +318,7 @@ Important dependency note:
 - The project completed the bounded `CoachDirectory.jsx` ad-wrapper extraction
 - The project completed the bounded `CoachDirectory.jsx` `RatingRow` extraction
 - The project resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
+- The project completed the bounded `CoachDirectory.jsx` `CoachDirectoryEmptyState` extraction
 - The project completed the bounded `Facilities.jsx` `FacilitiesEmptyState` extraction
 - The project completed the bounded `TravelTeams.jsx` shared ad-wrapper adoption cleanup
 - The project completed the bounded `HomePage.jsx` `FeaturedCard` extraction
@@ -328,13 +338,13 @@ Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` ex
 
 ## Confirmed next inspection order
 1. Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction
-2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
+2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `MapMarkers`) only if still worthwhile from current merged `main`
 3. Re-baseline `Facilities.jsx` again from merged `main`
 4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
 
 ## Remaining queue
 1. Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction
-2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
+2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `MapMarkers`) only if still worthwhile from current merged `main`
 3. Re-baseline `Facilities.jsx` again from merged `main`
 4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
 5. Begin bug audit only after the above queue has progressed and the oversized files all have explicit statuses
