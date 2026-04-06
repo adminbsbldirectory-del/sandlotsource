@@ -13,8 +13,11 @@ Reason:
 - Minor bugs should be addressed after the oversized-file work is pushed further and the remaining large files are easier to edit
 
 ## Working repo / workflow
-- Working repo: `C:\GitHub\sandlotsource`
-- Do not use: `C:\Users\sshap\Documents\GitHub\sandlotsource`
+- Desktop working repo: `C:\GitHub\sandlotsource`
+- Laptop working repo: `C:\Users\sshap\Documents\GitHub\sandlotsource`
+- Use the repo that matches the device currently being used
+- If repo path is uncertain, confirm device/repo path before creating a branch or editing files
+- Do not use any other duplicate/local repo path unless explicitly confirmed
 - Local workflow only: VS Code + terminal + GitHub Desktop
 - No GitHub browser edits except tiny text-only changes
 - Production deploys from `main` only
@@ -208,7 +211,57 @@ Current practical next sequence for this file:
 2. only then decide whether shared ad-wrapper adoption or another narrow live extraction still remains worthwhile
 
 ### `TravelTeams.jsx`
-**Status:** Needs refreshed inspection after current reset
+**Status:** Active reduction path identified
+
+Fresh inspection from current merged `main` confirms:
+- `TravelTeams.jsx` remains oversized and still contains live inlined presentational/helper blocks
+- the earlier shared-utility cleanup is complete and merged
+- `TravelTeams.jsx` now imports `normalizeSportValue` from `src/utils/sportUtils.js`
+- `TravelTeams.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
+- duplicate local helper definitions for `normalizeSportValue`, `geocodeZip`, and `distanceMiles` were removed from `TravelTeams.jsx`
+- local inlined `DirectoryAdBand` is still present and live
+- local inlined `RailAdSlot` is still present and live
+- local `MapLegend` is still present and live
+- local `EmptyState` is still present and live
+
+Confirmed live render usage:
+- `DirectoryAdBand` is used for:
+  - desktop top ad placement
+  - mobile inline ad placement
+  - mobile footer ad placement
+- `RailAdSlot` is used for:
+  - left desktop rail placement
+  - right desktop rail 1 placement
+  - right desktop rail 2 placement
+- `MapLegend` renders directly below the live map
+- `EmptyState` renders in both the mobile and desktop empty-results flows
+
+Current practical next sequence for this file:
+1. adopt shared `DirectoryAdBand` / `RailAdSlot` first as the next bounded cleanup
+2. revisit `EmptyState` as the next small live extraction
+3. treat `MapLegend` as later optional leaf extraction
+4. do not mix ad-wrapper adoption with helper moves, map abstraction, or broader logic refactors
+
+Current recommended next step:
+- execute `TravelTeams.jsx` shared ad-wrapper adoption cleanup only
+- remove the local `DirectoryAdBand` and `RailAdSlot` definitions from `TravelTeams.jsx`
+- import the shared components from `src/components/ads/`
+- keep `MapLegend` and `EmptyState` in place for now
+- do not combine this step with any unrelated cleanup or extraction work
+
+Execution sequence for this step:
+1. inspection complete and confirmed from current merged `main`
+2. create a dedicated branch for `TravelTeams.jsx` shared ad-wrapper adoption cleanup
+3. make only the bounded code changes for shared `DirectoryAdBand` / `RailAdSlot` adoption
+4. review code changes before any localhost testing
+5. test locally only after code review
+6. merge/push only after local verification
+
+Branch rule for this step:
+- do not edit on `main`
+- create the branch only after inspection is complete
+- keep the branch scoped to `TravelTeams.jsx` shared ad-wrapper adoption cleanup only
+- do not mix `EmptyState`, `MapLegend`, helper cleanup, or unrelated refactors into this branch
 
 Current confirmed context:
 - the same inlined `DirectoryAdBand` / `RailAdSlot` wrapper pattern is still present
@@ -327,6 +380,11 @@ Re-baseline `TravelTeams.jsx`
 - Do not create a branch before inspection is complete and confirmed
 - Do not switch to bug-audit planning while refactor continuation is still active
 
+Branch timing rule:
+- once inspection is complete and the next bounded step is confirmed, create the branch before making any code edits
+- do not begin editing on `main`
+- do not create the branch before inspection is complete
+
 ## Execution reminders
 - Provide full paste-ready file contents for any new component, not just a summary
 - Provide the exact import line(s) and clearly state what in-file block to remove
@@ -353,6 +411,10 @@ Re-baseline `TravelTeams.jsx`
 - Final task of every thread is reconciling and updating `NOTES.md`
 - If any state statement conflicts with another, stop and reconcile the notes before proposing the next step
 - If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
+
+Repo path confirmation rule:
+- At the start of any execution thread, confirm the active machine and active repo path before branch creation
+- All git commands, file edits, and testing in that thread must use that confirmed repo path
 
 ## Bug audit
 Deferred for now.

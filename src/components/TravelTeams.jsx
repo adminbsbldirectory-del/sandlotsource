@@ -6,13 +6,14 @@ import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { geocodeZip, distanceMiles } from '../lib/submit/geocode.js'
 import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
-import AdSlot from './AdSlot.jsx'
 import { US_STATES } from '../constants/usStates'
 import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
 import { normalizeSportValue } from '../utils/sportUtils.js'
 import TeamCard from './teams/TeamCard.jsx'
 import TeamPreviewCard from './teams/TeamPreviewCard.jsx'
 import TeamDesktopRow from './teams/TeamDesktopRow.jsx'
+import DirectoryAdBand from './ads/DirectoryAdBand.jsx'
+import RailAdSlot from './ads/RailAdSlot.jsx'
 
 ensureLeafletDefaultMarkerIcons()
 
@@ -254,82 +255,6 @@ function MapLegend({ hasPins }) {
     </div>
   )
 }
-
-function DirectoryAdBand({ slotKey, maxWidth, reservedHeight, isMobile, marginTop = 24 }) {
-  return (
-    <div
-      style={{
-        background: '#F5F4F0',
-        borderTop: '1px solid #E2E0DB',
-        borderBottom: '1px solid #E2E0DB',
-        padding: isMobile ? '16px 0' : '18px 0',
-        marginTop,
-      }}
-    >
-      <div style={{ padding: isMobile ? '0 12px' : '0 14px' }}>
-        <div style={{ width: '100%', maxWidth, margin: '0 auto' }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'var(--gray)',
-              margin: '0 0 8px 2px',
-            }}
-          >
-            Sponsored
-          </div>
-
-          <div
-            style={{
-              minHeight: reservedHeight,
-              background: '#fff',
-              border: '1px solid #E2E0DB',
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
-          >
-            <AdSlot slotKey={slotKey} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function RailAdSlot({ slotKey, reservedHeight = 250 }) {
-  return (
-    <div style={{ width: '100%' }}>
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 800,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: 'var(--gray)',
-          margin: '0 0 8px 2px',
-        }}
-      >
-        Sponsored
-      </div>
-
-      <div
-        style={{
-          minHeight: reservedHeight,
-          background: '#fff',
-          border: '1px solid #E2E0DB',
-          borderRadius: 12,
-          overflow: 'hidden',
-          boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
-        }}
-      >
-        <AdSlot slotKey={slotKey} />
-      </div>
-    </div>
-  )
-}
-
 
 function EmptyState({ hasFilters, stateName, zipActive, radius }) {
   if (!zipActive) {
