@@ -10,7 +10,7 @@ Reason:
 - Prior closeout language called the stopping point too early
 - Earlier notes drifted into “refactor closeout is complete / begin bug audit” even though the under-1000-lines rule was still active
 - Current priority is to keep reducing oversized files into more manageable edit surfaces through safe, bounded extraction work or narrowly scoped cleanup
-- Minor bugs should be addressed after the oversized-file work is pushed further and the remaining large files are easier to edit
+- Minor bugs should be addressed only after the oversized-file queue is pushed further and each remaining oversized file has an explicit status
 
 ## Working repo / workflow
 - Desktop working repo: `C:\GitHub\sandlotsource`
@@ -55,8 +55,7 @@ Reason:
 - `TravelTeams.jsx` shared ad-wrapper adoption cleanup is complete and merged
 - `TravelTeams.jsx` now imports shared `DirectoryAdBand` from `src/components/ads/DirectoryAdBand.jsx`
 - `TravelTeams.jsx` now imports shared `RailAdSlot` from `src/components/ads/RailAdSlot.jsx`
-- Local inlined `DirectoryAdBand` definition was removed from `TravelTeams.jsx`
-- Local inlined `RailAdSlot` definition was removed from `TravelTeams.jsx`
+- Local inlined `DirectoryAdBand` and `RailAdSlot` definitions were removed from `TravelTeams.jsx`
 - Localhost review looked good after the `TravelTeams.jsx` shared ad-wrapper adoption cleanup
 - `CoachDirectory.jsx` shared-utility import cleanup is complete and merged
 - `CoachDirectory.jsx` now imports `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js`
@@ -81,62 +80,67 @@ Reason:
 - Local `SPORT_LABEL` constant was removed from `HomePage.jsx` after the extraction because it became unused
 - Localhost review looked good after the `FeaturedCard` extraction
 - `npm run build` passed after the `FeaturedCard` extraction
-- Vercel preview looked good after the `FeaturedCard` extraction
-- Vercel production deployed correctly after the `FeaturedCard` extraction merge
-- Search results ad placeholders appearing empty on live site were observed during this thread, but that was not treated as a blocker for the `HomePage.jsx` extraction because the branch scope only touched homepage code and the search-results ad containers still rendered
-- Vercel production was verified after the `RosterBrowseContent` merge
-- Vercel preview looked good and production deployed correctly after the `SearchResultsContent` merge
-- Vercel preview looked good and production deployed correctly after the `GenericAdminTableContent` merge
-- Vercel preview looked good and production deployed correctly after the `AdminPage.jsx` closeout cleanup merge
-- Vercel production was verified after the `Facilities.jsx` shared-utility cleanup merge
-- Vercel preview looked good and production deployed correctly after the `TravelTeams.jsx` shared-utility cleanup merge
-- Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` shared-utility cleanup merge
-- Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` ad-wrapper extraction merge
-- Vercel preview looked good and production deployed correctly after the `RatingRow` extraction merge
-- Vercel preview looked good and production deployed correctly after the `CoachDirectory.jsx` unused `CoachCard` cleanup merge
-- Vercel preview looked good and production deployed correctly after the `FacilitiesEmptyState` extraction merge
-- `TravelTeams.jsx` shared ad-wrapper adoption cleanup is merged to `main`
-- `FeaturedCard` extraction from `HomePage.jsx` is merged to `main`
+- Vercel preview looked good and production deployed correctly after the `FeaturedCard` extraction merge
+- `HomePageAdBand` extraction from `HomePage.jsx` is complete and merged
+- `HomePage.jsx` now imports `HomePageAdBand` from `src/components/home/HomePageAdBand.jsx`
+- Local `HomePageAdBand` block was removed from `HomePage.jsx`
+- Localhost review looked good after the `HomePageAdBand` extraction
+- `npm run build` passed after the `HomePageAdBand` extraction
+- Vercel preview looked good and production deployed correctly after the `HomePageAdBand` extraction merge
+- `HomePageAdBand` now handles the live homepage top desktop, inline, and footer ad-band placements
+- `HomePageSectionHeader` extraction from `HomePage.jsx` is complete and merged
+- `HomePage.jsx` now imports `HomePageSectionHeader` from `src/components/home/HomePageSectionHeader.jsx`
+- Local `SectionHeader` block was removed from `HomePage.jsx`
+- Localhost review looked good after the `HomePageSectionHeader` extraction
+- `npm run build` passed after the `HomePageSectionHeader` extraction
+- Vercel preview looked good and production deployed correctly after the `HomePageSectionHeader` extraction merge
+- Search results ad placeholders appearing empty on live site were observed during the earlier homepage thread, but that was not treated as a blocker because the branch scope only touched homepage code and the search-results ad containers still rendered
 - Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 33 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
+- Current-state inventory confirms 35 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
 - Earlier closeout language is no longer the active source-of-truth framing
 - Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
 - Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
+- Local repo is back on `main`
+- Local `main` is up to date with `origin/main`
+- Active branch work for `refactor/homepage-section-header` is complete and merged
+- Working tree is **not yet clean** because `NOTES.md` is being reconciled in this thread
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
 2. `CoachSubmitForm` modular refactor
-3. CoachRow - `CoachDirectory`
-4. CoachDetailPanel - `CoachDirectory`
-5. MobileCoachRow - `CoachDirectory`
-6. TeamCard - `TravelTeams`
-7. TeamPreviewCard - `TravelTeams`
-8. TeamDesktopRow - `TravelTeams`
-9. FacilityDesktopRow - `Facilities`
-10. MobileFacilityRow - `Facilities`
-11. FacilityPreviewCard - `Facilities`
-12. FacilitiesEmptyState - `Facilities`
-13. PlayerBoardDetailPanel - `PlayerBoard`
-14. PlayerBoardDesktopRow - `PlayerBoard`
-15. PlayerBoardMobileCard - `PlayerBoard`
-16. PlayerBoardBrowseSidebar - `PlayerBoard`
-17. PlayerBoardBrowseContent - `PlayerBoard`
-18. RosterRow - `RosterSpots`
-19. RosterSubmittedState - `RosterSpots`
-20. RosterBrowseContent - `RosterSpots`
-21. ClaimRequestRow - `AdminPage`
-22. ClaimRequestsToolbar - `AdminPage`
-23. AdminTabs - `AdminPage`
-24. PasswordGate - `AdminPage`
-25. CoachResult - `SearchResults`
-26. TeamResult - `SearchResults`
-27. FacilityResult - `SearchResults`
-28. SearchResultsContent - `SearchResults`
-29. GenericAdminTableContent - `AdminPage`
-30. AdminCell - `AdminPage`
-31. DirectoryAdBand + RailAdSlot - `CoachDirectory`
-32. RatingRow - `CoachDirectory`
-33. FeaturedCard - `HomePage`
+3. `CoachRow` - `CoachDirectory`
+4. `CoachDetailPanel` - `CoachDirectory`
+5. `MobileCoachRow` - `CoachDirectory`
+6. `TeamCard` - `TravelTeams`
+7. `TeamPreviewCard` - `TravelTeams`
+8. `TeamDesktopRow` - `TravelTeams`
+9. `FacilityDesktopRow` - `Facilities`
+10. `MobileFacilityRow` - `Facilities`
+11. `FacilityPreviewCard` - `Facilities`
+12. `FacilitiesEmptyState` - `Facilities`
+13. `PlayerBoardDetailPanel` - `PlayerBoard`
+14. `PlayerBoardDesktopRow` - `PlayerBoard`
+15. `PlayerBoardMobileCard` - `PlayerBoard`
+16. `PlayerBoardBrowseSidebar` - `PlayerBoard`
+17. `PlayerBoardBrowseContent` - `PlayerBoard`
+18. `RosterRow` - `RosterSpots`
+19. `RosterSubmittedState` - `RosterSpots`
+20. `RosterBrowseContent` - `RosterSpots`
+21. `ClaimRequestRow` - `AdminPage`
+22. `ClaimRequestsToolbar` - `AdminPage`
+23. `AdminTabs` - `AdminPage`
+24. `PasswordGate` - `AdminPage`
+25. `CoachResult` - `SearchResults`
+26. `TeamResult` - `SearchResults`
+27. `FacilityResult` - `SearchResults`
+28. `SearchResultsContent` - `SearchResults`
+29. `GenericAdminTableContent` - `AdminPage`
+30. `AdminCell` - `AdminPage`
+31. `DirectoryAdBand + RailAdSlot` - `CoachDirectory`
+32. `RatingRow` - `CoachDirectory`
+33. `FeaturedCard` - `HomePage`
+34. `HomePageAdBand` - `HomePage`
+35. `HomePageSectionHeader` - `HomePage`
 
 ## Completed cleanup items that materially reduced oversized-file noise
 - `CoachDirectory.jsx` unused `CoachCard` cleanup
@@ -149,7 +153,7 @@ Reason:
 - The project is returning to the practical finish-line principle:
   - keep reducing oversized files into more manageable edit surfaces
   - keep using one bounded extraction or cleanup per branch
-  - explicitly document what remains in each oversized file instead of letting files drift into “deferred” status without a clear disposition
+  - explicitly document what remains in each oversized file instead of letting files drift into deferred status without a clear disposition
 
 ## Current-state file inventory summary
 Current remaining oversized JSX files from the latest repo comparison:
@@ -182,7 +186,7 @@ Every JSX file still over 1,000 lines must carry one of these statuses in the no
 3. **Explicit exception approved**
    - file remains oversized by deliberate decision
    - reason is stated explicitly
-   - do not silently treat this as “closeout complete”
+   - do not silently treat this as closeout complete
 
 Do not mark refactor complete while an oversized JSX file lacks one of the above explicit statuses.
 
@@ -279,53 +283,49 @@ Only revisit under a deliberate dedicated form phase.
 Current confirmed context:
 - explicit re-inspection from current merged `main` confirmed `HomePage.jsx` still had a real bounded extraction path
 - `FeaturedCard` extraction from `HomePage.jsx` is complete and merged
-- `HomePage.jsx` now imports `FeaturedCard` from `src/components/home/FeaturedCard.jsx`
-- local `FeaturedCard` block was removed from `HomePage.jsx`
-- local `SPORT_LABEL` constant was removed from `HomePage.jsx` after the extraction because it became unused
-- localhost review looked good after the extraction
-- `npm run build` passed after the extraction
-- Vercel preview looked good and production deployed correctly after the merge
-- `HomePageAdBand` remains local and live
-- `SectionHeader` remains local and live
+- `HomePageAdBand` extraction from `HomePage.jsx` is complete and merged
+- `HomePageSectionHeader` extraction from `HomePage.jsx` is complete and merged
+- `HomePageAdBand` now handles the live homepage top desktop, inline, and footer ad-band placements
 - `Band` remains local and live
 
 Current practical next sequence:
-1. revisit whether `HomePageAdBand` is the next narrow worthwhile live extraction
-2. only then consider later smaller homepage leaves like `SectionHeader` or `Band` if they still feel worthwhile from current merged `main`
-3. do not mix shared ad-wrapper centralization, broader homepage structural work, or unrelated cleanup into that step
+1. revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`
+2. if `Band` is not worthwhile enough from current merged `main`, move `HomePage.jsx` to explicit exception or blocked-by-structural-territory review instead of forcing another extraction
+3. do not mix any future homepage leaf step with broader homepage structural work, helper centralization, or shared-component standardization
 
 Important dependency note:
-- `HomePageAdBand` depends on local constants and `AdSlot`, but remains a bounded homepage-scoped extraction candidate
-- keep any future `HomePageAdBand` work homepage-scoped unless a deliberate later shared-wrapper decision is made in a separate thread
+- keep any future homepage leaf extraction homepage-scoped unless a deliberate later shared decision is made in a separate thread
 
 ## Current conclusions
 - The project completed the bulk of the earlier safe leaf and narrow structural extraction work
 - The project also completed the previously identified shared-utility cleanup items in `Facilities.jsx`, `TravelTeams.jsx`, and `CoachDirectory.jsx`
-- The project completed the next bounded `CoachDirectory.jsx` ad-wrapper extraction
-- The project completed the next bounded `CoachDirectory.jsx` `RatingRow` extraction
-- The project also resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
-- The project completed the next bounded `Facilities.jsx` `FacilitiesEmptyState` extraction
-- The project completed the next bounded `TravelTeams.jsx` shared ad-wrapper adoption cleanup
-- The project completed the next bounded `HomePage.jsx` `FeaturedCard` extraction
-- `HomePage.jsx` no longer needs “re-inspection before either reduction or exception” language because it now has a confirmed active reduction path and one completed bounded extraction
-- However, the project has **not** yet reached the intended maintainability end state for the remaining oversized files
+- The project completed the bounded `CoachDirectory.jsx` ad-wrapper extraction
+- The project completed the bounded `CoachDirectory.jsx` `RatingRow` extraction
+- The project resolved the `CoachCard` question by confirming it was not rendered in the live browse flow and removing it as unused legacy code
+- The project completed the bounded `Facilities.jsx` `FacilitiesEmptyState` extraction
+- The project completed the bounded `TravelTeams.jsx` shared ad-wrapper adoption cleanup
+- The project completed the bounded `HomePage.jsx` `FeaturedCard` extraction
+- The project completed the bounded `HomePage.jsx` `HomePageAdBand` extraction
+- The project completed the bounded `HomePage.jsx` `HomePageSectionHeader` extraction
+- `HomePage.jsx` still remains in active refactor scope because `Band` remains local and the file is still oversized
+- The project has **not** yet reached the intended maintainability end state for the remaining oversized files
 - Refactor continuation is therefore still active
-- Bug audit is postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
+- Bug audit remains postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
 
 ## Active objective
 Continue reducing oversized JSX files into more manageable edit surfaces using the narrowest safe live extraction path available per file.
 
 ## Next target
-Revisit whether `HomePageAdBand` is the next narrow worthwhile extraction from `HomePage.jsx`.
+Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`.
 
 ## Confirmed next inspection order
-1. Revisit whether `HomePageAdBand` is the next narrow worthwhile extraction from `HomePage.jsx`
+1. Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`
 2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
 3. Re-baseline `Facilities.jsx` again from merged `main`
 4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
 
 ## Remaining queue
-1. Revisit whether `HomePageAdBand` is the next narrow worthwhile extraction from `HomePage.jsx`
+1. Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`
 2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
 3. Re-baseline `Facilities.jsx` again from merged `main`
 4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
@@ -356,15 +356,15 @@ Revisit whether `HomePageAdBand` is the next narrow worthwhile extraction from `
 - Prefer the narrowest safe live extraction that materially reduces a target file
 - Keep each step independently testable
 - Use current merged `main` as the source of truth for what remains
-- Do not let “natural stopping point” language replace explicit per-file status tracking
+- Do not let natural stopping point language replace explicit per-file status tracking
 
 ## Drift-prevention rules
 - Do not mark refactor complete while any oversized JSX file lacks an explicit status
-- Do not move phases based on broad “closeout complete” wording alone
+- Do not move phases based on broad closeout complete wording alone
 - For every oversized file, record either:
   - next bounded extraction target
   - blocked-by-structural-territory status
-  - or explicit approved exception
+  - explicit approved exception
 - If a file still contains confirmed live extractable UI blocks, it remains in active refactor scope
 - If a file is blocked, say exactly why
 - If a file is excepted, say exactly why
@@ -410,7 +410,7 @@ Revisit whether `HomePageAdBand` is the next narrow worthwhile extraction from `
 
 ## State integrity rules
 - Do not leave branch-specific wording in notes unless verified
-- Do not say “complete locally” if repo is already back on `main` and clean
+- Do not say complete locally if repo is already back on `main` and clean
 - Do not mark items merged unless explicitly confirmed
 - Do not let the next thread begin without pasting the latest `NOTES.md`
 - Every new thread must review the pasted latest `NOTES.md` before proposing the next step
@@ -426,6 +426,6 @@ Revisit whether `HomePageAdBand` is the next narrow worthwhile extraction from `
 Deferred for now.
 
 Bug audit should begin only after:
-- the oversized-file queue has been pushed further,
-- each oversized file has an explicit status,
-- and the project is no longer drifting between refactor continuation and premature closeout language.
+- the oversized-file queue has been pushed further
+- each oversized file has an explicit status
+- the project is no longer drifting between refactor continuation and premature closeout language
