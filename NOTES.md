@@ -94,16 +94,22 @@ Reason:
 - Localhost review looked good after the `HomePageSectionHeader` extraction
 - `npm run build` passed after the `HomePageSectionHeader` extraction
 - Vercel preview looked good and production deployed correctly after the `HomePageSectionHeader` extraction merge
+- `HomePageBand` extraction from `HomePage.jsx` is complete and merged
+- `HomePage.jsx` now imports `HomePageBand` from `src/components/home/HomePageBand.jsx`
+- Local `Band` block was removed from `HomePage.jsx`
+- Local `LIGHT` constant was removed from `HomePage.jsx` after the extraction because it became unused
+- Localhost review looked good after the `HomePageBand` extraction
+- Vercel preview looked good and production deployed correctly after the `HomePageBand` extraction merge
 - Search results ad placeholders appearing empty on live site were observed during the earlier homepage thread, but that was not treated as a blocker because the branch scope only touched homepage code and the search-results ad containers still rendered
 - Refactor closeout audit was completed against current merged `main`
-- Current-state inventory confirms 35 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
+- Current-state inventory confirms 36 completed extractions / major modular reductions plus completed bounded cleanup items that further reduced oversized-file noise
 - Earlier closeout language is no longer the active source-of-truth framing
 - Refactor work is **not** considered complete yet because the remaining oversized JSX files still need additional bounded reduction work where safely possible
 - Bug audit is deferred until the active refactor continuation work is pushed further or the remaining oversized files are explicitly dispositioned
 - Local repo is back on `main`
 - Local `main` is up to date with `origin/main`
-- Active branch work for `refactor/homepage-section-header` is complete and merged
-- Working tree is **not yet clean** because `NOTES.md` is being reconciled in this thread
+- Working tree is clean
+- No active refactor branch is in progress
 
 ## Completed extractions / major completed refactors
 1. Phase 1 shared utilities
@@ -141,6 +147,7 @@ Reason:
 33. `FeaturedCard` - `HomePage`
 34. `HomePageAdBand` - `HomePage`
 35. `HomePageSectionHeader` - `HomePage`
+36. `HomePageBand` - `HomePage`
 
 ## Completed cleanup items that materially reduced oversized-file noise
 - `CoachDirectory.jsx` unused `CoachCard` cleanup
@@ -285,13 +292,13 @@ Current confirmed context:
 - `FeaturedCard` extraction from `HomePage.jsx` is complete and merged
 - `HomePageAdBand` extraction from `HomePage.jsx` is complete and merged
 - `HomePageSectionHeader` extraction from `HomePage.jsx` is complete and merged
+- `HomePageBand` extraction from `HomePage.jsx` is complete and merged
 - `HomePageAdBand` now handles the live homepage top desktop, inline, and footer ad-band placements
-- `Band` remains local and live
 
 Current practical next sequence:
-1. revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`
-2. if `Band` is not worthwhile enough from current merged `main`, move `HomePage.jsx` to explicit exception or blocked-by-structural-territory review instead of forcing another extraction
-3. do not mix any future homepage leaf step with broader homepage structural work, helper centralization, or shared-component standardization
+1. re-inspect `HomePage.jsx` from current merged `main`
+2. determine whether any additional narrow worthwhile extraction remains
+3. if no worthwhile bounded extraction remains, move `HomePage.jsx` to explicit exception or blocked-by-structural-territory review instead of forcing another extraction
 
 Important dependency note:
 - keep any future homepage leaf extraction homepage-scoped unless a deliberate later shared decision is made in a separate thread
@@ -307,7 +314,8 @@ Important dependency note:
 - The project completed the bounded `HomePage.jsx` `FeaturedCard` extraction
 - The project completed the bounded `HomePage.jsx` `HomePageAdBand` extraction
 - The project completed the bounded `HomePage.jsx` `HomePageSectionHeader` extraction
-- `HomePage.jsx` still remains in active refactor scope because `Band` remains local and the file is still oversized
+- The project completed the bounded `HomePage.jsx` `HomePageBand` extraction
+- `HomePage.jsx` still remains in active refactor scope because the file is still oversized and needs a fresh current-main re-inspection
 - The project has **not** yet reached the intended maintainability end state for the remaining oversized files
 - Refactor continuation is therefore still active
 - Bug audit remains postponed until the remaining oversized-file queue is pushed further and every oversized file has an explicit status
@@ -316,16 +324,16 @@ Important dependency note:
 Continue reducing oversized JSX files into more manageable edit surfaces using the narrowest safe live extraction path available per file.
 
 ## Next target
-Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`.
+Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction.
 
 ## Confirmed next inspection order
-1. Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`
+1. Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction
 2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
 3. Re-baseline `Facilities.jsx` again from merged `main`
 4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
 
 ## Remaining queue
-1. Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.jsx`
+1. Re-inspect `HomePage.jsx` from current merged `main` after the `HomePageBand` extraction
 2. Re-check later `CoachDirectory.jsx` candidates (`MapLegend`, `EmptyState`, `MapMarkers`) only if still worthwhile from current merged `main`
 3. Re-baseline `Facilities.jsx` again from merged `main`
 4. Return to later `TravelTeams.jsx` candidates (`EmptyState`, then `MapLegend`) after the higher-priority queue progresses
@@ -345,6 +353,7 @@ Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.j
 - Inspect before editing
 - Test each affected page before moving on
 - Keep `NOTES.md` updated
+- Once a branch is merged and the repo is back on `main` with a clean working tree, rewrite the full `NOTES.md` so it becomes the new single source of truth
 - No file should exceed 1000 lines when the audit path is complete
 - Do not expand scope just because a file is still large if the remaining bulk is logic-dense or product-growth territory
 - If the under-1000 target remains difficult for a given file, continue tracking maintainability wins via bounded extractions rather than prematurely declaring closeout complete
@@ -415,6 +424,7 @@ Revisit whether `Band` is the next narrow worthwhile extraction from `HomePage.j
 - Do not let the next thread begin without pasting the latest `NOTES.md`
 - Every new thread must review the pasted latest `NOTES.md` before proposing the next step
 - Final task of every thread is reconciling and updating `NOTES.md`
+- If a branch has been merged, production has been verified, and the repo is back on `main` with a clean working tree, replace the prior notes with a fully rewritten current-state version rather than appending partial updates
 - If any state statement conflicts with another, stop and reconcile the notes before proposing the next step
 - If there is uncertainty about whether something was merged, tested, or production-verified, mark it as uncertain instead of guessing
 
