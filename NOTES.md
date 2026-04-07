@@ -85,6 +85,7 @@ Current phase is bug audit.
 - `HomePage.jsx` — replaced homepage urgent pickup placeholder cards with live `player_board` + `roster_spots` data and added empty-state fallback when no active urgent items exist
 - `HomePage.jsx` — relocated homepage stats band above `How it works`, replaced placeholder counts with live Supabase-backed values, and changed `Counties covered` to `States covered`
 - `CoachSubmitForm.jsx` / `DuplicateWarning.jsx` — added coach and travel-team duplicate warning flow to submit UI, generalized duplicate warning display across facility/coach/team modes, and kept the behavior as review-and-continue soft warnings rather than DB hard blocking
+- `HomePage.jsx` / `FeaturedCard.jsx` / `index.html` — improved homepage desktop readability by raising undersized desktop text, darkening faint secondary text, and adding Barlow 700 to the Google Fonts import; kept scope limited to readability polish only, with broader font/color harmonization and logo/footer follow-on deferred
 
 ---
 
@@ -103,7 +104,7 @@ Mobile hero/header spacing collapse bug is fixed and merged. Current file is bel
 `EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering update matched to `CoachDetailPanel`. Duplicate warning coverage now exists in the submit flow through `CoachSubmitForm.jsx` for likely team duplicates once enough identifying context is present. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
-All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Homepage featured coaches and teams no longer use hard-coded filler data; they now load from Supabase using existing featured fields and link to the correct selected coach/team records. Homepage urgent pickup needs no longer use placeholder cards; they now pull live `player_board` and `roster_spots` records with a real empty-state fallback when no active urgent items exist. Homepage stats band now sits above `How it works` and uses live Supabase-backed values for coaches, travel teams, and states covered. Remaining homepage work should stay narrow and behavior-focused only. Geo-aware / IP-aware featured or urgent-item localization remains a future feature, not a current bug-audit requirement.
+All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Homepage featured coaches and teams no longer use hard-coded filler data; they now load from Supabase using existing featured fields and link to the correct selected coach/team records. Homepage urgent pickup needs no longer use placeholder cards; they now pull live `player_board` and `roster_spots` records with a real empty-state fallback when no active urgent items exist. Homepage stats band now sits above `How it works` and uses live Supabase-backed values for coaches, travel teams, and states covered. Homepage desktop readability polish is now complete for key homepage sections and featured cards, including a real loaded Barlow 700 weight. Remaining homepage work should stay narrow and behavior- or presentation-focused only. Header logo sizing and any footer-logo follow-on remain deferred.
 
 ### `SearchResults.jsx` — BUG-AUDIT ACTIVE
 Leaf result extractions are complete and merged. Mobile browser search-results behavior issue is fixed and merged. Future work here should remain narrow and behavior-focused only.
@@ -124,10 +125,10 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. Site font harmonization; consider larger header logo and optional footer logo placement
-3. Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
-4. Work on hidden spam blocking and profile accuracy scoring
-5. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
+2. Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
+3. Work on hidden spam blocking and profile accuracy scoring
+4. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
+5. Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
 
 ---
 
@@ -135,7 +136,7 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 - Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
-- Site font harmonization; consider larger header logo and optional footer logo placement
+- Header logo sizing and optional footer logo placement remain deferred follow-on polish items after homepage desktop readability calibration
 - Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
