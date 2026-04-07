@@ -8,7 +8,7 @@ const SPORT_LABEL = {
 const RED = '#e63329'
 const DARK = '#1a1a1a'
 const BORDER = '#e2e0db'
-const FAINT = '#bbb'
+const FAINT = '#888'
 
 export default function FeaturedCard({ listing, isMobile }) {
   return (
@@ -35,7 +35,7 @@ export default function FeaturedCard({ listing, isMobile }) {
       >
         <span
           style={{
-            fontSize: isMobile ? 16 : 14,
+            fontSize: isMobile ? 16 : 15,
             fontWeight: 600,
             color: DARK,
             lineHeight: 1.28,
@@ -46,7 +46,7 @@ export default function FeaturedCard({ listing, isMobile }) {
 
         <span
           style={{
-            fontSize: isMobile ? 11 : 10,
+            fontSize: isMobile ? 11 : 11,
             fontWeight: 600,
             padding: '3px 8px',
             borderRadius: 8,
@@ -59,13 +59,13 @@ export default function FeaturedCard({ listing, isMobile }) {
         </span>
       </div>
 
-      <div style={{ fontSize: isMobile ? 14 : 12, color: '#777', marginBottom: 3 }}>
+      <div style={{ fontSize: isMobile ? 14 : 13, color: '#777', marginBottom: 3 }}>
         {listing.meta}
       </div>
 
-            <div
+      <div
         style={{
-          fontSize: isMobile ? 12 : 11,
+          fontSize: isMobile ? 12 : 12,
           color: FAINT,
           display: 'flex',
           alignItems: 'center',
@@ -88,7 +88,7 @@ export default function FeaturedCard({ listing, isMobile }) {
         {listing.distance === 'Featured' ? (
           <span
             style={{
-              fontSize: isMobile ? 11 : 10,
+              fontSize: isMobile ? 11 : 11,
               fontWeight: 600,
               color: '#666',
               background: '#f5f5f2',
@@ -117,7 +117,7 @@ export default function FeaturedCard({ listing, isMobile }) {
         <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: RED }}>
           {listing.type === 'coach' ? 'View profile' : 'View team'} &rarr;
         </span>
-        <span style={{ fontSize: isMobile ? 12 : 10, color: FAINT }}>
+        <span style={{ fontSize: isMobile ? 12 : 11, color: FAINT }}>
           {SPORT_LABEL[listing.sport]}
         </span>
       </div>

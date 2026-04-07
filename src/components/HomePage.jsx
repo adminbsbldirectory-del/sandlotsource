@@ -12,8 +12,8 @@ const RED = '#e63329'
 const NAVY = '#1b3a5c'
 const DARK = '#1a1a1a'
 const BORDER = '#e2e0db'
-const MUTED = '#888'
-const FAINT = '#bbb'
+const MUTED = '#6B7280'
+const FAINT = '#888'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -758,7 +758,7 @@ export default function HomePage() {
             {homepageStatsItems.map((s) => (
               <div key={s.label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 22, fontWeight: 600, color: NAVY }}>{s.num}</div>
-                <div style={{ fontSize: isMobile ? 13 : 11, color: MUTED, marginTop: 3 }}>
+                <div style={{ fontSize: isMobile ? 13 : 12, color: MUTED, marginTop: 3 }}>
                   {s.label}
                 </div>
               </div>
@@ -812,7 +812,7 @@ export default function HomePage() {
                   <div>
                     <h4
                       style={{
-                        fontSize: isMobile ? 16 : 13,
+                        fontSize: isMobile ? 16 : 14,
                         fontWeight: 600,
                         color: DARK,
                         margin: '0 0 4px',
@@ -823,7 +823,7 @@ export default function HomePage() {
 
                     <p
                       style={{
-                        fontSize: isMobile ? 13 : 11,
+                        fontSize: isMobile ? 13 : 14,
                         color: MUTED,
                         lineHeight: 1.5,
                         margin: 0,
@@ -885,7 +885,7 @@ export default function HomePage() {
                   <div style={{ minWidth: 0 }}>
                     <h3
                       style={{
-                        fontSize: isMobile ? 18 : 14,
+                        fontSize: isMobile ? 18 : 15,
                         fontWeight: 600,
                         color: DARK,
                         margin: '0 0 4px',
@@ -896,7 +896,7 @@ export default function HomePage() {
 
                     <p
                       style={{
-                        fontSize: isMobile ? 13 : 12,
+                       fontSize: isMobile ? 13 : 14,
                         color: MUTED,
                         lineHeight: 1.5,
                         margin: 0,
@@ -999,7 +999,7 @@ export default function HomePage() {
                 >
                   <span
                     style={{
-                      fontSize: isMobile ? 12 : 10,
+                      fontSize: isMobile ? 12 : 11,
                       fontWeight: 600,
                       color: '#b93025',
                       background: '#fdf0ee',
@@ -1014,7 +1014,7 @@ export default function HomePage() {
 
                   <div
                     style={{
-                      fontSize: isMobile ? 16 : 13,
+                      fontSize: isMobile ? 16 : 15,
                       fontWeight: 600,
                       color: DARK,
                       marginBottom: 4,
@@ -1026,7 +1026,7 @@ export default function HomePage() {
 
                   <div
                     style={{
-                      fontSize: isMobile ? 14 : 11,
+                      fontSize: isMobile ? 14 : 13,
                       color: MUTED,
                       marginBottom: 6,
                     }}
@@ -1036,7 +1036,7 @@ export default function HomePage() {
 
                   <div
                     style={{
-                      fontSize: isMobile ? 12 : 10,
+                      fontSize: isMobile ? 12 : 11,
                       color: FAINT,
                       display: 'flex',
                       alignItems: 'center',
@@ -1104,7 +1104,7 @@ export default function HomePage() {
 
               <p
                 style={{
-                  fontSize: isMobile ? 15 : 13,
+                  fontSize: isMobile ? 15 : 14,
                   color: 'rgba(255,255,255,0.65)',
                   lineHeight: 1.55,
                   margin: 0,
@@ -1129,7 +1129,7 @@ export default function HomePage() {
                   color: '#fff',
                   borderRadius: 10,
                   padding: isMobile ? '13px 18px' : '9px 20px',
-                  fontSize: isMobile ? 16 : 13,
+                  fontSize: isMobile ? 16 : 14,
                   fontWeight: 600,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
@@ -1147,7 +1147,7 @@ export default function HomePage() {
                   border: '1px solid rgba(255,255,255,0.3)',
                   borderRadius: 10,
                   padding: isMobile ? '13px 18px' : '9px 20px',
-                  fontSize: isMobile ? 16 : 13,
+                  fontSize: isMobile ? 16 : 14,
                   fontWeight: 600,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
