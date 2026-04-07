@@ -78,13 +78,14 @@ Current phase is bug audit.
 - `FacilityProfile.jsx` — fixed mobile hero/header spacing collapse so facility names no longer compress into a narrow vertical column on mobile
 - `SearchResults.jsx` / mobile browser behavior — fixed mobile browser search-results issue (`Daily`, `MJCCA`, `BSBL` repros) and merged
 - `TravelTeams.jsx` — fixed ZIP radius control mismatch so `/teams` now uses the same always-visible shared dropdown pattern used on `/coaches` and `/facilities`
+- `CoachDirectory.jsx` — fixed `/coaches` desktop search-bar / header consistency by restoring ZIP-first sidebar order to match `/facilities` and `/teams`
 
 ---
 
 ## Per-file status
 
 ### `CoachDirectory.jsx` — BUG-AUDIT ACTIVE
-`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is fixed. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. Future work here should stay in bug-audit / behavior-fix mode only.
+`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is fixed. Desktop search-bar / header consistency issue is fixed and merged. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. Future work here should stay in bug-audit / behavior-fix mode only.
 
 ### `Facilities.jsx` — BLOCKED
 Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Remaining bulk is primarily ZIP/filter/map/layout orchestration. No additional clearly worthwhile narrow live extraction remains in the current phase.
@@ -116,16 +117,15 @@ Linking roster spots to teams / facilities when related records exist remains fu
 ---
 
 ## Next branch queue
-1. Inspect search-bar / header consistency on `/coaches` if still open after current merged fixes
-2. Continue bug audit from current merged `main`
-3. Link teams, facilities, and roster spots where related records already exist
-4. Revisit homepage featured coaches only if live / ZIP-aware behavior becomes the next priority
+1. Continue bug audit from current merged `main`
+2. Link teams, facilities, and roster spots where related records already exist
+3. Revisit homepage featured coaches only if live / ZIP-aware behavior becomes the next priority
+4. Relocate homepage stats/banner section and align displayed counts with database totals
 5. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
 
 ---
 
 ## Bug audit backlog
-- Fix or remove the open search-bar space only on `/coaches` if still visually inconsistent
 - Link teams, facilities, and roster spots where related records already exist
 - Homepage featured coaches are still constant-based; evaluate live / ZIP-aware replacement without breaking nationwide behavior
 - Relocate homepage stats/banner section and align displayed counts with database totals
@@ -166,7 +166,7 @@ Linking roster spots to teams / facilities when related records exist remains fu
 - [x] Last completed item recorded in extractions list
 - [x] Affected per-file status block updated
 - [x] Next branch queue updated
-- [x] Repo state confirmed: `main` / clean / synced
+- [ ] Repo state confirmed: `main` / clean / synced
 - [ ] NOTES.md rewritten (not appended) and committed
 
 ---
