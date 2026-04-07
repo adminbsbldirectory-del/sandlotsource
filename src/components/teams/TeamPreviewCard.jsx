@@ -20,11 +20,11 @@ export default function TeamPreviewCard({
     <div
       style={{
         position: 'fixed',
-        top: 128,
-        left: '56%',
-        transform: 'translateX(-50%)',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
         width: 'min(720px, calc(100vw - 48px))',
-        maxHeight: 'calc(100vh - 156px)',
+        maxHeight: 'calc(100vh - 120px)',
         overflowY: 'auto',
         background: 'rgba(255,255,255,0.985)',
         border: '1px solid rgba(15,23,42,0.10)',
