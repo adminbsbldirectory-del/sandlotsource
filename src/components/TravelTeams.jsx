@@ -8,6 +8,7 @@ import { supabase } from '../supabase.js'
 import TeamProfile from './TeamProfile.jsx'
 import { US_STATES } from '../constants/usStates'
 import { TEAM_AGE_GROUPS } from '../constants/teamAgeGroups'
+import { DIRECTORY_RADIUS_OPTIONS } from '../constants/directoryRadiusOptions'
 import { normalizeSportValue } from '../utils/sportUtils.js'
 import EmptyState from './teams/EmptyState.jsx'
 import TeamCard from './teams/TeamCard.jsx'
@@ -629,34 +630,23 @@ export default function TravelTeams() {
                   }}
                 />
 
-                {zip.length === 5 && (
-                  <div style={{ marginTop: 8 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        fontSize: 12,
-                        color: 'var(--gray)',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span>Distance</span>
-                      <strong style={{ color: 'var(--navy)' }}>{radius} miles</strong>
-                    </div>
-                    <input
-                      type="range"
-                      min={5}
-                      max={100}
-                      step={5}
-                      value={radius}
-                      onChange={(e) => {
-                        setRadius(Number(e.target.value))
-                        setSelectedTeamId(null)
-                      }}
-                      style={{ width: '100%', accentColor: 'var(--red)' }}
-                    />
-                  </div>
-                )}
+                 <div style={{ marginTop: 8 }}>
+                  <div style={sectionLabelStyle}>Radius</div>
+                  <select
+                    value={radius}
+                    onChange={(e) => {
+                      setRadius(Number(e.target.value))
+                      setSelectedTeamId(null)
+                    }}
+                    style={filterSelectStyle}
+                  >
+                    {DIRECTORY_RADIUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 {zipError && (
                   <div style={{ marginTop: 4, fontSize: 11, color: 'var(--red)' }}>
