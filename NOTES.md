@@ -75,6 +75,7 @@ Current phase is bug audit.
 - `Facilities.jsx` — unused `FacilityCard` dead-code block removed
 - `Facilities.jsx` — orphaned `normalizeUrl` and `normalizeInstagramHandle` removed
 - `CoachDirectory.jsx` — fixed coach click-through from `/search` so URL-driven coach selection is preserved on `/coaches`
+- `FacilityProfile.jsx` — fixed mobile hero/header spacing collapse so facility names no longer compress into a narrow vertical column on mobile
 
 ---
 
@@ -85,6 +86,9 @@ Current phase is bug audit.
 
 ### `Facilities.jsx` — BLOCKED
 Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Remaining bulk is primarily ZIP/filter/map/layout orchestration. No additional clearly worthwhile narrow live extraction remains in the current phase.
+
+### `FacilityProfile.jsx` — BUG-AUDIT ACTIVE
+Mobile hero/header spacing collapse bug is fixed and merged. Current file is below the oversized-file concern level, but future work here should stay narrow and behavior-focused only.
 
 ### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
 `EmptyState` extraction is complete and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration. Current likely bug-audit target includes the radius control presentation mismatch after ZIP search.
