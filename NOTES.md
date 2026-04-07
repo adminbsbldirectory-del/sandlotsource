@@ -26,7 +26,7 @@ Current phase is bug audit.
 
 ---
 
-## Completed extractions (40 total)
+## Completed extractions (41 total)
 1. Phase 1 shared utilities
 2. `CoachSubmitForm` modular refactor
 3. `CoachRow` — CoachDirectory
@@ -67,6 +67,7 @@ Current phase is bug audit.
 38. `MapLegend` — CoachDirectory
 39. `MapMarkers` — CoachDirectory
 40. `EmptyState` — TravelTeams
+41. `AdvertisePage` — public advertising page
 
 ## Completed cleanup items
 - `CoachDirectory.jsx` — unused `CoachCard` dead-code block removed
@@ -86,6 +87,7 @@ Current phase is bug audit.
 - `HomePage.jsx` — relocated homepage stats band above `How it works`, replaced placeholder counts with live Supabase-backed values, and changed `Counties covered` to `States covered`
 - `CoachSubmitForm.jsx` / `DuplicateWarning.jsx` — added coach and travel-team duplicate warning flow to submit UI, generalized duplicate warning display across facility/coach/team modes, and kept the behavior as review-and-continue soft warnings rather than DB hard blocking
 - `HomePage.jsx` / `FeaturedCard.jsx` / `index.html` — improved homepage desktop readability by raising undersized desktop text, darkening faint secondary text, and adding Barlow 700 to the Google Fonts import; kept scope limited to readability polish only, with broader font/color harmonization and logo/footer follow-on deferred
+- `App.jsx` / `AdvertisePage.jsx` — added new public `/advertise` page, linked it from the footer Support section only, used forward-looking readable typography for the new page, and kept the intake form as a page-shell v1 with user-facing confirmation only; storage, upload wiring, and admin/email routing remain deferred
 
 ---
 
@@ -121,11 +123,14 @@ Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clea
 ### `RosterSpots.jsx` — BUG-AUDIT ACTIVE
 Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Future work should focus only on narrow launch-hardening, spam control, or UX polish if needed.
 
+### `AdvertisePage.jsx` — BUG-AUDIT ACTIVE
+New public advertising page is now live as a footer-linked v1 page. Current scope includes sponsor-facing page copy, placement/spec guidance, and a lightweight inquiry form shell with user-facing confirmation only. Header nav placement was intentionally rejected for v1 in favor of footer-only visibility. Future work should stay narrow: Supabase intake storage, file upload wiring, and admin/email routing only. Do not fold this page into legal content or expand it into full ad operations in a single branch.
+
 ---
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
+2. Wire advertising inquiry form to Supabase storage / upload / admin-email routing
 3. Work on hidden spam blocking and profile accuracy scoring
 4. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
 5. Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
@@ -137,13 +142,14 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
 - Header logo sizing and optional footer logo placement remain deferred follow-on polish items after homepage desktop readability calibration
-- Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
+- Wire advertising inquiry form to Supabase storage / upload / admin-email routing
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
 - Determine whether teams should auto-expire after ~14 months if not updated, with reminder email ~30 days before expiration and season-aging update prompt
 - Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
 - On admin page, include facility / team / coach addresses and other form-driven fields that need update visibility
 - Consider a future follow-on polish for earlier soft team duplicate warnings on exact normalized name before age/city/state are filled, only if it can be done without creating noisy false positives
+- Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
 
 ---
 
