@@ -84,6 +84,7 @@ Current phase is bug audit.
 - `TeamPreviewCard.jsx` / `FacilityPreviewCard.jsx` — aligned desktop team and facility preview cards with `CoachDetailPanel` by matching true centered modal anchoring and max-height behavior
 - `HomePage.jsx` — replaced homepage urgent pickup placeholder cards with live `player_board` + `roster_spots` data and added empty-state fallback when no active urgent items exist
 - `HomePage.jsx` — relocated homepage stats band above `How it works`, replaced placeholder counts with live Supabase-backed values, and changed `Counties covered` to `States covered`
+- `CoachSubmitForm.jsx` / `DuplicateWarning.jsx` — added coach and travel-team duplicate warning flow to submit UI, generalized duplicate warning display across facility/coach/team modes, and kept the behavior as review-and-continue soft warnings rather than DB hard blocking
 
 ---
 
@@ -99,7 +100,7 @@ Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` c
 Mobile hero/header spacing collapse bug is fixed and merged. Current file is below the oversized-file concern level, but future work here should stay narrow and behavior-focused only.
 
 ### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
-`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering update matched to `CoachDetailPanel`. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work should stay narrow and behavior-focused.
+`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering update matched to `CoachDetailPanel`. Duplicate warning coverage now exists in the submit flow through `CoachSubmitForm.jsx` for likely team duplicates once enough identifying context is present. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
 All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Homepage featured coaches and teams no longer use hard-coded filler data; they now load from Supabase using existing featured fields and link to the correct selected coach/team records. Homepage urgent pickup needs no longer use placeholder cards; they now pull live `player_board` and `roster_spots` records with a real empty-state fallback when no active urgent items exist. Homepage stats band now sits above `How it works` and uses live Supabase-backed values for coaches, travel teams, and states covered. Remaining homepage work should stay narrow and behavior-focused only. Geo-aware / IP-aware featured or urgent-item localization remains a future feature, not a current bug-audit requirement.
@@ -110,8 +111,8 @@ Leaf result extractions are complete and merged. Mobile browser search-results b
 ### `AdminPage.jsx` — DONE
 Below target. Out of oversized-file queue.
 
-### `CoachSubmitForm.jsx` — DEFERRED
-Remaining bulk is multi-form validation, geocode, and Supabase logic. No clean narrow split remains. Do not reopen without a dedicated form phase decision.
+### `CoachSubmitForm.jsx` — BUG-AUDIT ACTIVE
+Previous refactor phase is complete. Current submit-flow hardening now includes duplicate-warning behavior for coach and travel-team submissions, while facility duplicate flow remains intact. Duplicate handling is intentionally soft-warning only, not DB hard blocking, because shared facility contacts, shared org emails, and shared park/address data can be legitimate. Remaining work here should stay narrow and focused on submit UX, validation, geocode handling, or spam/quality controls only.
 
 ### `PlayerBoard.jsx` — BLOCKED
 Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase.
@@ -123,10 +124,10 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. Homepage featured cards minor polish — consider removing or reworking the `· Featured` location-line treatment
-3. Site font harmonization; consider larger header logo and optional footer logo placement
-4. Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
-5. Add more duplicate triggers for coaches / facilities / teams, including email-based checks
+2. Site font harmonization; consider larger header logo and optional footer logo placement
+3. Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
+4. Work on hidden spam blocking and profile accuracy scoring
+5. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
 
 ---
 
@@ -136,12 +137,12 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
 - Site font harmonization; consider larger header logo and optional footer logo placement
 - Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
-- Add more duplicate triggers for coaches / facilities / teams, including email-based checks
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
 - Determine whether teams should auto-expire after ~14 months if not updated, with reminder email ~30 days before expiration and season-aging update prompt
 - Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
 - On admin page, include facility / team / coach addresses and other form-driven fields that need update visibility
+- Consider a future follow-on polish for earlier soft team duplicate warnings on exact normalized name before age/city/state are filled, only if it can be done without creating noisy false positives
 
 ---
 
