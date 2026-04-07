@@ -277,6 +277,423 @@ function useFacilityDuplicateCheck({ facilityName, address, city, state, zipCode
   return { matches, loading }
 }
 
+function normalizePhoneDigits(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function normalizeCoachName(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\bcoach\b/g, ' ')
+    .replace(/\btrainer\b/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function scoreCoachCandidate(input, row) {
+  const inputName = normalizeCoachName(input.name)
+  const rowName = normalizeCoachName(row.name)
+  const inputCity = String(input.city || '').trim().toLowerCase()
+  const rowCity = String(row.city || '').trim().toLowerCase()
+  const inputState = String(input.state || '').trim().toLowerCase()
+  const rowState = String(row.state || '').trim().toLowerCase()
+  const inputEmail = String(input.email || '').trim().toLowerCase()
+  const rowEmail = String(row.email || '').trim().toLowerCase()
+  const inputPhone = normalizePhoneDigits(input.phone)
+  const rowPhone = normalizePhoneDigits(row.phone)
+
+  const exactName = !!inputName && !!rowName && inputName === rowName
+  const nameSimilarity =
+    inputName && rowName
+      ? Math.max(
+          tokenSimilarity(inputName, rowName),
+          inputName.includes(rowName) || rowName.includes(inputName) ? 0.92 : 0
+        )
+      : 0
+
+  const sameCity = !!inputCity && !!rowCity && inputCity === rowCity
+  const sameState = !!inputState && !!rowState && inputState === rowState
+  const sameCityState = sameCity && sameState
+  const sameEmail = !!inputEmail && !!rowEmail && inputEmail === rowEmail
+  const samePhone = !!inputPhone && !!rowPhone && inputPhone === rowPhone
+
+  let score = nameSimilarity
+  if (exactName && sameCityState) score = Math.max(score, 0.97)
+  else if (exactName) score = Math.max(score, 0.9)
+  else if (nameSimilarity >= 0.76 && sameCityState) score = Math.max(score, 0.84)
+
+  if ((sameEmail || samePhone) && (exactName || nameSimilarity >= 0.6 || sameCityState)) {
+    score = Math.max(score, sameEmail ? 0.95 : 0.9)
+  }
+
+  let matchType = null
+  if (
+    (exactName && sameCityState) ||
+    (sameEmail && (exactName || nameSimilarity >= 0.6 || sameCityState)) ||
+    (samePhone && (exactName || nameSimilarity >= 0.6 || sameCityState))
+  ) {
+    matchType = 'strong'
+  } else if (exactName || (nameSimilarity >= 0.76 && sameCityState)) {
+    matchType = 'soft'
+  }
+
+  if (!matchType) return null
+
+  const reasons = []
+  if (exactName) reasons.push('same normalized name')
+  else if (nameSimilarity >= 0.76) reasons.push('similar name')
+  if (sameCityState) reasons.push('same city/state')
+  if (sameEmail) reasons.push('same email')
+  if (samePhone) reasons.push('same phone')
+
+  return {
+    ...row,
+    score,
+    matchType,
+    reasons: [...new Set(reasons)],
+  }
+}
+
+async function searchCoachCandidates({ name, city, state, email, phone }) {
+  const trimmedName = String(name || '').trim()
+  const trimmedCity = String(city || '').trim()
+  const trimmedState = String(state || '').trim()
+  const trimmedEmail = String(email || '').trim().toLowerCase()
+  const trimmedPhone = normalizePhoneDigits(phone)
+
+  if (!trimmedName && !trimmedEmail && !trimmedPhone) return []
+
+  const map = new Map()
+  const addRows = (rows) => {
+    for (const row of rows || []) {
+      if (row?.id && !map.has(row.id)) map.set(row.id, row)
+    }
+  }
+
+  if (trimmedEmail) {
+    const { data, error } = await supabase
+      .from('coaches')
+      .select('id, name, city, state, phone, email, facility_name')
+      .eq('email', trimmedEmail)
+      .limit(10)
+
+    if (error) throw error
+    addRows(data)
+  }
+
+  if (trimmedCity && trimmedState) {
+    const { data, error } = await supabase
+      .from('coaches')
+      .select('id, name, city, state, phone, email, facility_name')
+      .ilike('city', trimmedCity)
+      .eq('state', trimmedState)
+      .limit(40)
+
+    if (error) throw error
+    addRows(data)
+  }
+
+  if (trimmedName) {
+    const firstToken = normalizeCoachName(trimmedName).split(' ')[0]
+    if (firstToken) {
+      const { data, error } = await supabase
+        .from('coaches')
+        .select('id, name, city, state, phone, email, facility_name')
+        .ilike('name', `%${firstToken}%`)
+        .limit(40)
+
+      if (error) throw error
+      addRows(data)
+    }
+  }
+
+  const scored = Array.from(map.values())
+    .map((row) =>
+      scoreCoachCandidate(
+        {
+          name: trimmedName,
+          city: trimmedCity,
+          state: trimmedState,
+          email: trimmedEmail,
+          phone: trimmedPhone,
+        },
+        row
+      )
+    )
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+
+  return scored
+}
+
+function useCoachDuplicateCheck({ name, city, state, email, phone, enabled = true }) {
+  const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      setMatches([])
+      setLoading(false)
+      return
+    }
+
+    if (!String(name || '').trim() && !String(email || '').trim() && !String(phone || '').trim()) {
+      setMatches([])
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const nextMatches = await searchCoachCandidates({ name, city, state, email, phone })
+        if (!cancelled) setMatches(nextMatches)
+      } catch (err) {
+        console.error('Coach duplicate lookup error', err)
+        if (!cancelled) setMatches([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [name, city, state, email, phone, enabled])
+
+  return { matches, loading }
+}
+
+function normalizeTeamIdentity(name, orgAffiliation) {
+  return String(`${orgAffiliation || ''} ${name || ''}`)
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\bga\b/g, ' georgia ')
+    .replace(/\b(\d{1,2})u\b/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function normalizeAgeGroup(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim()
+}
+
+function scoreTeamCandidate(input, row) {
+  const inputIdentity = normalizeTeamIdentity(input.name, input.org_affiliation)
+  const rowIdentity = normalizeTeamIdentity(row.name, row.org_affiliation)
+  const inputAge = normalizeAgeGroup(input.age_group)
+  const rowAge = normalizeAgeGroup(row.age_group)
+  const inputCity = String(input.city || '').trim().toLowerCase()
+  const rowCity = String(row.city || '').trim().toLowerCase()
+  const inputState = String(input.state || '').trim().toLowerCase()
+  const rowState = String(row.state || '').trim().toLowerCase()
+  const inputEmail = String(input.contact_email || '').trim().toLowerCase()
+  const rowEmail = String(row.contact_email || '').trim().toLowerCase()
+
+  const exactIdentity = !!inputIdentity && !!rowIdentity && inputIdentity === rowIdentity
+  const identitySimilarity =
+    inputIdentity && rowIdentity
+      ? Math.max(
+          tokenSimilarity(inputIdentity, rowIdentity),
+          inputIdentity.includes(rowIdentity) || rowIdentity.includes(inputIdentity) ? 0.92 : 0
+        )
+      : 0
+
+  const sameAge = !!inputAge && !!rowAge && inputAge === rowAge
+  const sameCity = !!inputCity && !!rowCity && inputCity === rowCity
+  const sameState = !!inputState && !!rowState && inputState === rowState
+  const sameCityState = sameCity && sameState
+  const sameEmail = !!inputEmail && !!rowEmail && inputEmail === rowEmail
+
+  let score = identitySimilarity
+  if (exactIdentity && sameAge) score = Math.max(score, 0.97)
+  else if (exactIdentity && sameCityState) score = Math.max(score, 0.94)
+  else if (exactIdentity) score = Math.max(score, 0.82)
+  else if (identitySimilarity >= 0.76 && sameAge && sameCityState) score = Math.max(score, 0.88)
+
+  if (sameEmail && (exactIdentity || identitySimilarity >= 0.65 || sameAge)) {
+    score = Math.max(score, 0.9)
+  }
+
+  let matchType = null
+  if (
+    (exactIdentity && sameAge) ||
+    (exactIdentity && sameCityState) ||
+    (sameEmail && (exactIdentity || identitySimilarity >= 0.65 || sameAge))
+  ) {
+    matchType = 'strong'
+  } else if (
+    exactIdentity ||
+    (identitySimilarity >= 0.76 && sameAge) ||
+    (identitySimilarity >= 0.76 && sameCityState)
+  ) {
+    matchType = 'soft'
+  }
+
+  if (!matchType) return null
+
+  const reasons = []
+  if (exactIdentity) reasons.push('same normalized team/org name')
+  else if (identitySimilarity >= 0.76) reasons.push('similar team/org name')
+  if (sameAge) reasons.push('same age group')
+  if (sameCityState) reasons.push('same city/state')
+  if (sameEmail) reasons.push('same contact email')
+
+  return {
+    ...row,
+    score,
+    matchType,
+    reasons: [...new Set(reasons)],
+  }
+}
+
+async function searchTeamCandidates({
+  name,
+  org_affiliation,
+  age_group,
+  city,
+  state,
+  contact_email,
+}) {
+  const trimmedName = String(name || '').trim()
+  const trimmedOrg = String(org_affiliation || '').trim()
+  const trimmedAge = String(age_group || '').trim()
+  const trimmedCity = String(city || '').trim()
+  const trimmedState = String(state || '').trim()
+  const trimmedEmail = String(contact_email || '').trim().toLowerCase()
+
+  if (!trimmedName && !trimmedOrg && !trimmedEmail) return []
+
+  const map = new Map()
+  const addRows = (rows) => {
+    for (const row of rows || []) {
+      if (row?.id && !map.has(row.id)) map.set(row.id, row)
+    }
+  }
+
+  if (trimmedEmail) {
+    const { data, error } = await supabase
+      .from('travel_teams')
+      .select('id, name, org_affiliation, age_group, city, state, contact_email')
+      .eq('contact_email', trimmedEmail)
+      .limit(20)
+
+    if (error) throw error
+    addRows(data)
+  }
+
+  if (trimmedCity && trimmedState) {
+    const { data, error } = await supabase
+      .from('travel_teams')
+      .select('id, name, org_affiliation, age_group, city, state, contact_email')
+      .ilike('city', trimmedCity)
+      .eq('state', trimmedState)
+      .limit(40)
+
+    if (error) throw error
+    addRows(data)
+  }
+
+  const firstToken = normalizeTeamIdentity(trimmedName, trimmedOrg).split(' ')[0]
+  if (firstToken) {
+    const { data, error } = await supabase
+      .from('travel_teams')
+      .select('id, name, org_affiliation, age_group, city, state, contact_email')
+      .or(`name.ilike.%${firstToken}%,org_affiliation.ilike.%${firstToken}%`)
+      .limit(40)
+
+    if (error) throw error
+    addRows(data)
+  }
+
+  const scored = Array.from(map.values())
+    .map((row) =>
+      scoreTeamCandidate(
+        {
+          name: trimmedName,
+          org_affiliation: trimmedOrg,
+          age_group: trimmedAge,
+          city: trimmedCity,
+          state: trimmedState,
+          contact_email: trimmedEmail,
+        },
+        row
+      )
+    )
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+
+  return scored
+}
+
+function useTeamDuplicateCheck({
+  name,
+  org_affiliation,
+  age_group,
+  city,
+  state,
+  contact_email,
+  enabled = true,
+}) {
+  const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled) {
+      setMatches([])
+      setLoading(false)
+      return
+    }
+
+    if (
+      !String(name || '').trim() &&
+      !String(org_affiliation || '').trim() &&
+      !String(contact_email || '').trim()
+    ) {
+      setMatches([])
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const nextMatches = await searchTeamCandidates({
+          name,
+          org_affiliation,
+          age_group,
+          city,
+          state,
+          contact_email,
+        })
+        if (!cancelled) setMatches(nextMatches)
+      } catch (err) {
+        console.error('Team duplicate lookup error', err)
+        if (!cancelled) setMatches([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }, 350)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [name, org_affiliation, age_group, city, state, contact_email, enabled])
+
+  return { matches, loading }
+}
 
 function appendLabeledNote(existingNotes, label, value) {
   const trimmedValue = String(value || '').trim()
@@ -566,6 +983,8 @@ function CoachForm({ isMobile }) {
   const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
   const [selectedFacilityId, setSelectedFacilityId] = useState(null)
   const [allowCreateNewFacility, setAllowCreateNewFacility] = useState(false)
+  const [selectedCoachMatch, setSelectedCoachMatch] = useState(null)
+  const [allowCreateDuplicateCoach, setAllowCreateDuplicateCoach] = useState(false)
 
   const hasFacilityName = Boolean(String(form.facility_name || '').trim())
 
@@ -583,16 +1002,56 @@ function CoachForm({ isMobile }) {
     return facilityMatches
   }, [facilityMatches, allowCreateNewFacility, selectedFacilityMatch, hasFacilityName])
 
+  const hasCoachIdentity = Boolean(
+    String(form.name || '').trim() ||
+    String(form.email || '').trim() ||
+    String(form.phone || '').trim()
+  )
+
+  const { matches: coachMatches, loading: coachMatchLoading } = useCoachDuplicateCheck({
+    name: form.name,
+    city: form.city,
+    state: form.state,
+    email: form.email,
+    phone: form.phone,
+    enabled: hasCoachIdentity,
+  })
+
+  const visibleCoachMatches = useMemo(() => {
+    if (!hasCoachIdentity || allowCreateDuplicateCoach || selectedCoachMatch) return []
+    return coachMatches
+  }, [coachMatches, allowCreateDuplicateCoach, selectedCoachMatch, hasCoachIdentity])
+
   function set(field, value) {
     const facilityIdentityFields = ['facility_name', 'address', 'city', 'state', 'zip_code']
+    const coachIdentityFields = ['name', 'email', 'phone', 'city', 'state']
+
     setError('')
     setForm((f) => {
-      const shouldReset = shouldResetAcceptedFacility(field, value, f[field], facilityIdentityFields)
-      if (shouldReset) {
+      const shouldResetFacility = shouldResetAcceptedFacility(
+        field,
+        value,
+        f[field],
+        facilityIdentityFields
+      )
+      const shouldResetCoach = shouldResetAcceptedFacility(
+        field,
+        value,
+        f[field],
+        coachIdentityFields
+      )
+
+      if (shouldResetFacility) {
         setAllowCreateNewFacility(false)
         setSelectedFacilityMatch(null)
         setSelectedFacilityId(null)
       }
+
+      if (shouldResetCoach) {
+        setAllowCreateDuplicateCoach(false)
+        setSelectedCoachMatch(null)
+      }
+
       return { ...f, [field]: value }
     })
   }
@@ -639,8 +1098,8 @@ function CoachForm({ isMobile }) {
       zip_code: f.zip_code || resolved.zip_code || '',
     }))
 
-      setAddrStatus('found')
-    }
+    setAddrStatus('found')
+  }
 
   function validate() {
     if (!form.name.trim()) return 'Coach / trainer name is required.'
@@ -664,8 +1123,30 @@ function CoachForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-      const blockingMatches = facilityMatches.filter((match) => match.id !== selectedFacilityMatch?.id)
-      if (hasFacilityName && !allowCreateNewFacility && !selectedFacilityMatch && blockingMatches.length > 0) {
+      const blockingCoachMatches = coachMatches.filter(
+        (match) => match.id !== selectedCoachMatch?.id
+      )
+
+      if (
+        !allowCreateDuplicateCoach &&
+        !selectedCoachMatch &&
+        blockingCoachMatches.length > 0
+      ) {
+        setError('Possible existing coach listing found. Please review the suggestion below before submitting.')
+        setSubmitting(false)
+        return
+      }
+
+      const blockingFacilityMatches = facilityMatches.filter(
+        (match) => match.id !== selectedFacilityMatch?.id
+      )
+
+      if (
+        hasFacilityName &&
+        !allowCreateNewFacility &&
+        !selectedFacilityMatch &&
+        blockingFacilityMatches.length > 0
+      ) {
         setError('Possible existing facility found. Please review the suggestion below before submitting.')
         setSubmitting(false)
         return
@@ -758,6 +1239,28 @@ function CoachForm({ isMobile }) {
 
   return (
     <div>
+      <DuplicateWarning
+        matches={visibleCoachMatches}
+        loading={coachMatchLoading}
+        mode="coach"
+        selectedId={selectedCoachMatch?.id || null}
+        onUseExisting={(match) => {
+          setSelectedCoachMatch(match)
+          setAllowCreateDuplicateCoach(true)
+          setError('')
+        }}
+        onCreateNewAnyway={() => {
+          setSelectedCoachMatch(null)
+          setAllowCreateDuplicateCoach(true)
+          setError('')
+        }}
+        onDismiss={() => {
+          setSelectedCoachMatch(null)
+          setAllowCreateDuplicateCoach(true)
+          setError('')
+        }}
+      />
+
       <DuplicateWarning
         matches={visibleFacilityMatches}
         loading={facilityMatchLoading}
@@ -900,19 +1403,65 @@ function TeamForm({ isMobile }) {
     lat: null,
     lng: null,
   })
+  const [selectedTeamMatch, setSelectedTeamMatch] = useState(null)
+  const [allowCreateDuplicateTeam, setAllowCreateDuplicateTeam] = useState(false)
+
+  const classificationOptions =
+    TEAM_CLASSIFICATION_OPTIONS[form.sport] || TEAM_CLASSIFICATION_OPTIONS.baseball
+
+  const hasTeamIdentity = Boolean(
+    String(form.name || '').trim() ||
+    String(form.org_affiliation || '').trim() ||
+    String(form.contact_email || '').trim()
+  )
+
+  const { matches: teamMatches, loading: teamMatchLoading } = useTeamDuplicateCheck({
+    name: form.name,
+    org_affiliation: form.org_affiliation,
+    age_group: form.age_group,
+    city: form.city,
+    state: form.state,
+    contact_email: form.contact_email,
+    enabled: hasTeamIdentity,
+  })
+
+  const visibleTeamMatches = useMemo(() => {
+    if (!hasTeamIdentity || allowCreateDuplicateTeam || selectedTeamMatch) return []
+    return teamMatches
+  }, [teamMatches, allowCreateDuplicateTeam, selectedTeamMatch, hasTeamIdentity])
 
   function set(field, value) {
+    const teamIdentityFields = [
+      'name',
+      'org_affiliation',
+      'age_group',
+      'city',
+      'state',
+      'contact_email',
+    ]
+
     setError('')
-    setForm((f) => ({ ...f, [field]: value }))
+    setForm((f) => {
+      const shouldResetTeam = shouldResetAcceptedFacility(
+        field,
+        value,
+        f[field],
+        teamIdentityFields
+      )
+
+      if (shouldResetTeam) {
+        setAllowCreateDuplicateTeam(false)
+        setSelectedTeamMatch(null)
+      }
+
+      return { ...f, [field]: value }
+    })
   }
 
   function setNewFacility(field, value) {
     setError('')
     setNewFacilityForm((f) => ({ ...f, [field]: value }))
   }
-
-  const classificationOptions =
-    TEAM_CLASSIFICATION_OPTIONS[form.sport] || TEAM_CLASSIFICATION_OPTIONS.baseball
 
   function handleGeocode(geo) {
     if (!geo) return
@@ -1017,6 +1566,19 @@ function TeamForm({ isMobile }) {
       return
     }
 
+    const blockingTeamMatches = teamMatches.filter(
+      (match) => match.id !== selectedTeamMatch?.id
+    )
+
+    if (
+      !allowCreateDuplicateTeam &&
+      !selectedTeamMatch &&
+      blockingTeamMatches.length > 0
+    ) {
+      setError('Possible existing team listing found. Please review the suggestion below before submitting.')
+      return
+    }
+
     setError('')
     setSubmitting(true)
 
@@ -1029,26 +1591,26 @@ function TeamForm({ isMobile }) {
         addressRequired: true,
       })
 
-    if (!practiceLocation.ok) {
-      if (isBlockedGeocodeFailure(practiceLocation.error)) {
-        await notifyBlockedGeocodeSubmit({
-          listing_type: 'team',
-          submitted_name: form.name,
-          address: form.address,
-          city: form.city,
-          state: form.state,
-          zip: form.zip_code,
-          contact_name: form.contact_name,
-          contact_email: form.contact_email,
-          contact_phone: form.contact_phone,
-          reason: practiceLocation.error,
-        })
-      }
+      if (!practiceLocation.ok) {
+        if (isBlockedGeocodeFailure(practiceLocation.error)) {
+          await notifyBlockedGeocodeSubmit({
+            listing_type: 'team',
+            submitted_name: form.name,
+            address: form.address,
+            city: form.city,
+            state: form.state,
+            zip: form.zip_code,
+            contact_name: form.contact_name,
+            contact_email: form.contact_email,
+            contact_phone: form.contact_phone,
+            reason: practiceLocation.error,
+          })
+        }
 
-      setError(practiceLocation.error)
-      setSubmitting(false)
-      return
-    }
+        setError(practiceLocation.error)
+        setSubmitting(false)
+        return
+      }
 
       let resolvedForm = applyResolvedCoordsPreservingLocality({ ...form }, practiceLocation.resolved)
 
@@ -1114,7 +1676,11 @@ function TeamForm({ isMobile }) {
         tryout_date: resolvedForm.tryout_date || null,
         tryout_notes: resolvedForm.tryout_notes.trim() || null,
         description: resolvedForm.description.trim() || null,
-        submission_notes: appendLabeledNote(resolvedForm.submission_notes, 'Practice Location Name', resolvedForm.practice_location_name),
+        submission_notes: appendLabeledNote(
+          resolvedForm.submission_notes,
+          'Practice Location Name',
+          resolvedForm.practice_location_name
+        ),
         approval_status: 'pending',
         source: 'website_form',
         active: true,
@@ -1137,45 +1703,67 @@ function TeamForm({ isMobile }) {
 
   return (
     <div>
+      <DuplicateWarning
+        matches={visibleTeamMatches}
+        loading={teamMatchLoading}
+        mode="team"
+        selectedId={selectedTeamMatch?.id || null}
+        onUseExisting={(match) => {
+          setSelectedTeamMatch(match)
+          setAllowCreateDuplicateTeam(true)
+          setError('')
+        }}
+        onCreateNewAnyway={() => {
+          setSelectedTeamMatch(null)
+          setAllowCreateDuplicateTeam(true)
+          setError('')
+        }}
+        onDismiss={() => {
+          setSelectedTeamMatch(null)
+          setAllowCreateDuplicateTeam(true)
+          setError('')
+        }}
+      />
+
       <TeamBasicsSection
-  g2={g2}
-  g3={g3}
-  form={form}
-  set={set}
-  addrStatus={addrStatus}
-  handlePracticeAddressBlur={handlePracticeAddressBlur}
-  handleGeocode={handleGeocode}
-  classificationOptions={classificationOptions}
-  labelStyle={labelStyle}
-  inputStyle={inputStyle}
-  selectStyle={selectStyle}
-  RequiredMark={RequiredMark}
-  US_STATE_ABBRS={US_STATE_ABBRS}
-/>
+        g2={g2}
+        g3={g3}
+        form={form}
+        set={set}
+        addrStatus={addrStatus}
+        handlePracticeAddressBlur={handlePracticeAddressBlur}
+        handleGeocode={handleGeocode}
+        classificationOptions={classificationOptions}
+        labelStyle={labelStyle}
+        inputStyle={inputStyle}
+        selectStyle={selectStyle}
+        RequiredMark={RequiredMark}
+        US_STATE_ABBRS={US_STATE_ABBRS}
+      />
 
       <TeamFacilitySection
-  g2={g2}
-  g3={g3}
-  linkToFacility={linkToFacility}
-  setLinkToFacility={setLinkToFacility}
-  selectedFacility={selectedFacility}
-  setSelectedFacility={setSelectedFacility}
-  showCreateFacilityForm={showCreateFacilityForm}
-  setShowCreateFacilityForm={setShowCreateFacilityForm}
-  newFacilityAddrStatus={newFacilityAddrStatus}
-  setNewFacilityAddrStatus={setNewFacilityAddrStatus}
-  newFacilityForm={newFacilityForm}
-  setNewFacilityForm={setNewFacilityForm}
-  setNewFacility={setNewFacility}
-  handleNewFacilityAddressBlur={handleNewFacilityAddressBlur}
-  handleNewFacilityZipGeocode={handleNewFacilityZipGeocode}
-  setError={setError}
-  labelStyle={labelStyle}
-  inputStyle={inputStyle}
-  selectStyle={selectStyle}
-  RequiredMark={RequiredMark}
-  US_STATE_ABBRS={US_STATE_ABBRS}
-/>
+        g2={g2}
+        g3={g3}
+        linkToFacility={linkToFacility}
+        setLinkToFacility={setLinkToFacility}
+        selectedFacility={selectedFacility}
+        setSelectedFacility={setSelectedFacility}
+        showCreateFacilityForm={showCreateFacilityForm}
+        setShowCreateFacilityForm={setShowCreateFacilityForm}
+        newFacilityAddrStatus={newFacilityAddrStatus}
+        setNewFacilityAddrStatus={setNewFacilityAddrStatus}
+        newFacilityForm={newFacilityForm}
+        setNewFacilityForm={setNewFacilityForm}
+        setNewFacility={setNewFacility}
+        handleNewFacilityAddressBlur={handleNewFacilityAddressBlur}
+        handleNewFacilityZipGeocode={handleNewFacilityZipGeocode}
+        setError={setError}
+        labelStyle={labelStyle}
+        inputStyle={inputStyle}
+        selectStyle={selectStyle}
+        RequiredMark={RequiredMark}
+        US_STATE_ABBRS={US_STATE_ABBRS}
+      />
 
       <TeamTryoutInfoSection
         form={form}
