@@ -15,6 +15,7 @@ import AdminGeocode from './components/AdminGeocode.jsx'
 import LegalPage from './components/LegalPage.jsx'
 import AdminPage from './components/AdminPage.jsx'
 import HelpPage from './components/HelpPage.jsx'
+import AdvertisePage from './components/AdvertisePage.jsx'
 
 const BORDER = '#eaeae6'
 const FAINT = '#bbb'
@@ -58,6 +59,7 @@ function SiteFooter() {
       heading: 'Support',
       links: [
         { label: 'Add a Listing', to: '/submit' },
+        { label: 'Advertise', to: '/advertise' },
         { label: 'Help / FAQ', to: '/help' },
         { label: 'Contact', href: 'mailto:admin@sandlotsource.com' },
       ],
@@ -207,6 +209,7 @@ function AppRoutes() {
           <Route path="/claim" element={<ClaimListing />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/legal" element={<LegalPage />} />
+          <Route path="/advertise" element={<AdvertisePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
