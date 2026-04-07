@@ -81,16 +81,16 @@ Current phase is bug audit.
 ## Per-file status
 
 ### `CoachDirectory.jsx` — BUG-AUDIT ACTIVE
-`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is now fixed so URL-driven selection from `/search` is preserved on `/coaches`. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. No additional clearly worthwhile narrow extraction remains; future work here should stay in bug-audit / behavior-fix mode.
+`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is fixed. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. Future work here should stay in bug-audit / behavior-fix mode only.
 
 ### `Facilities.jsx` — BLOCKED
 Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Remaining bulk is primarily ZIP/filter/map/layout orchestration. No additional clearly worthwhile narrow live extraction remains in the current phase.
 
-### `TravelTeams.jsx` — OPTIONAL-ONLY
-`EmptyState` extraction is complete and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so do not force another extraction unless a very small, clearly bounded candidate is needed for a specific future reason.
+### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
+`EmptyState` extraction is complete and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration. Current likely bug-audit target includes the radius control presentation mismatch after ZIP search.
 
-### `HomePage.jsx` — BLOCKED
-All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Re-inspection of current merged `main` did not identify another clearly worthwhile narrow live extraction. Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections.
+### `HomePage.jsx` — BUG-AUDIT ACTIVE
+All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections. Featured coaches are still constant-based and should later move toward live / ZIP-aware behavior if reopened.
 
 ### `AdminPage.jsx` — DONE
 Below target. Out of oversized-file queue.
@@ -101,16 +101,35 @@ Remaining bulk is multi-form validation, geocode, and Supabase logic. No clean n
 ### `PlayerBoard.jsx` — BLOCKED
 Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase.
 
-### `RosterSpots.jsx` — BLOCKED
-Remaining bulk is RosterForm, geocode/filter state, and orchestration. No additional clearly worthwhile narrow extraction remains in the current phase.
+### `RosterSpots.jsx` — BUG-AUDIT ACTIVE
+Linking roster spots to teams / facilities when related records exist remains future bug-audit / feature-followup territory.
 
 ---
 
 ## Next branch queue
-1. Continue bug audit from current merged `main`
-2. Inspect live behavior and fragile flows file-by-file or feature-by-feature
-3. Prioritize the next real user-facing navigation, filtering, or state-handoff bug
-4. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
+1. Inspect and fix mobile browser search-results behavior using current merged `main`
+2. Inspect `TravelTeams.jsx` radius control mismatch after ZIP search so it matches the dropdown behavior used on other pages
+3. Inspect search-bar / header consistency on `/coaches` if still open after current merged fix
+4. Continue bug audit from current merged `main`
+5. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
+
+---
+
+## Bug audit backlog
+- Fix and verify mobile browser search results behavior (`Daily`, `MJCCA`, `BSBL` repros)
+- On `TravelTeams.jsx`, ZIP radius control opens as a slider after search; should match dropdown behavior used on other pages
+- Fix or remove the open search-bar space only on `/coaches` if still visually inconsistent
+- Link teams, facilities, and roster spots where related records already exist
+- Homepage featured coaches are still constant-based; evaluate live / ZIP-aware replacement without breaking nationwide behavior
+- Relocate homepage stats/banner section and align displayed counts with database totals
+- Site font harmonization; consider larger header logo and optional footer logo placement
+- Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
+- Add more duplicate triggers for coaches / facilities / teams, including email-based checks
+- Work on hidden spam blocking and profile accuracy scoring
+- Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
+- Determine whether teams should auto-expire after ~14 months if not updated, with reminder email ~30 days before expiration and season-aging update prompt
+- Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
+- On admin page, include facility / team / coach addresses and other form-driven fields that need update visibility
 
 ---
 
