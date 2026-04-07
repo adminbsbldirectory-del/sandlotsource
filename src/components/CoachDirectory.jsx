@@ -1659,16 +1659,7 @@ export default function CoachDirectory() {
                       </div>
                     </div>
                   )}
-                  <div>
-                    <div style={sectionLabel}>Search</div>
-                    <input
-                      placeholder="Name, city, facility, zip..."
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyDown={onSearchKeyDown}
-                      style={{ ...inputStyle, minHeight: 40 }}
-                    />
-                  </div>
+
                   {!facilityContext && (
                     <>
                       <div>
@@ -1700,6 +1691,7 @@ export default function CoachDirectory() {
                           style={{ ...inputStyle, minHeight: 40 }}
                         />
                       </div>
+
                       <div>
                         <div style={sectionLabel}>Radius</div>
                         <select
@@ -1714,6 +1706,7 @@ export default function CoachDirectory() {
                           ))}
                         </select>
                       </div>
+
                       <div>
                         <div style={sectionLabel}>Specialty</div>
                         <select
@@ -1726,6 +1719,7 @@ export default function CoachDirectory() {
                           ))}
                         </select>
                       </div>
+
                       <button
                         type="button"
                         onClick={applyZipSearch}
@@ -1743,6 +1737,7 @@ export default function CoachDirectory() {
                       >
                         Show nearby coaches
                       </button>
+
                       <div
                         style={{
                           fontSize: 12,
@@ -1761,6 +1756,18 @@ export default function CoachDirectory() {
                       </div>
                     </>
                   )}
+
+                  <div>
+                    <div style={sectionLabel}>Search</div>
+                    <input
+                      placeholder="Name, city, facility, zip..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyDown={onSearchKeyDown}
+                      style={{ ...inputStyle, minHeight: 40 }}
+                    />
+                  </div>
+
                   <div>
                     <div style={sectionLabel}>Sport</div>
                     <div
@@ -1824,6 +1831,7 @@ export default function CoachDirectory() {
                       </button>
                     </div>
                   </div>
+
                   <div>
                     <div style={sectionLabel}>State</div>
                     <select
@@ -1836,6 +1844,7 @@ export default function CoachDirectory() {
                       ))}
                     </select>
                   </div>
+
                   <button
                     type="button"
                     onClick={applySearch}
@@ -1853,6 +1862,7 @@ export default function CoachDirectory() {
                   >
                     Search
                   </button>
+
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       type="button"
