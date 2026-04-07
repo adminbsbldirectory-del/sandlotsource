@@ -12,8 +12,8 @@ Once a branch is merged, Vercel is verified, and the repo is back on `main` with
 ---
 
 ## Current phase
-Safe extraction / file-size reduction work is effectively complete.
-Next phase is bug audit.
+Safe extraction / file-size reduction work is effectively complete.  
+Current phase is bug audit.
 
 ---
 
@@ -74,13 +74,14 @@ Next phase is bug audit.
 - `Facilities.jsx` — shared ad-wrapper adoption (replaced inlined DirectoryAdBand/RailAdSlot with shared imports)
 - `Facilities.jsx` — unused `FacilityCard` dead-code block removed
 - `Facilities.jsx` — orphaned `normalizeUrl` and `normalizeInstagramHandle` removed
+- `CoachDirectory.jsx` — fixed coach click-through from `/search` so URL-driven coach selection is preserved on `/coaches`
 
 ---
 
 ## Per-file status
 
-### `CoachDirectory.jsx` — BLOCKED
-`MapLegend` and `MapMarkers` extractions are complete and merged. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. No additional clearly worthwhile narrow live extraction remains in the current phase.
+### `CoachDirectory.jsx` — BUG-AUDIT ACTIVE
+`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is now fixed so URL-driven selection from `/search` is preserved on `/coaches`. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. No additional clearly worthwhile narrow extraction remains; future work here should stay in bug-audit / behavior-fix mode.
 
 ### `Facilities.jsx` — BLOCKED
 Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Remaining bulk is primarily ZIP/filter/map/layout orchestration. No additional clearly worthwhile narrow live extraction remains in the current phase.
@@ -106,9 +107,10 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. No additi
 ---
 
 ## Next branch queue
-1. Begin bug audit from current merged `main`
+1. Continue bug audit from current merged `main`
 2. Inspect live behavior and fragile flows file-by-file or feature-by-feature
-3. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
+3. Prioritize the next real user-facing navigation, filtering, or state-handoff bug
+4. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
 
 ---
 
@@ -144,4 +146,4 @@ Remaining bulk is RosterForm, geocode/filter state, and orchestration. No additi
 ---
 
 ## Bug audit
-Active next phase. Start from current merged `main`. Prioritize real behavior issues, fragile UX flows, edge cases, validation gaps, geocode/search failure handling, mobile layout issues, and Supabase/data-state problems.
+Active phase. Start from current merged `main`. Prioritize real behavior issues, fragile UX flows, edge cases, validation gaps, geocode/search failure handling, mobile layout issues, and Supabase/data-state problems.
