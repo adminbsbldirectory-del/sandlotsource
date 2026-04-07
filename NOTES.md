@@ -81,22 +81,23 @@ Current phase is bug audit.
 - `CoachDirectory.jsx` — fixed `/coaches` desktop search-bar / header consistency by restoring ZIP-first sidebar order to match `/facilities` and `/teams`
 - `RosterSpots.jsx` / `RosterBrowseContent.jsx` / `RosterRow.jsx` — verified live that linked roster spots already surface `Linked Team`, `View Team`, and `View Facility` when `team_id` and related facility data exist; no additional code change needed for this item
 - `HomePage.jsx` — replaced hard-coded homepage featured coaches and teams with Supabase-driven featured listings using existing `featured_status` / `featured_rank` fields; featured cards now link to selected coach/team records instead of generic directory pages
+- `TeamPreviewCard.jsx` / `FacilityPreviewCard.jsx` — aligned desktop team and facility preview cards with `CoachDetailPanel` by matching true centered modal anchoring and max-height behavior
 
 ---
 
 ## Per-file status
 
 ### `CoachDirectory.jsx` — BUG-AUDIT ACTIVE
-`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is fixed. Desktop search-bar / header consistency issue is fixed and merged. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. Future work here should stay in bug-audit / behavior-fix mode only.
+`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through bug is fixed. Desktop search-bar / header consistency issue is fixed and merged. `CoachDetailPanel` now serves as the alignment source of truth for desktop preview positioning. Remaining bulk is primarily map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and main page state flow. Future work here should stay in bug-audit / behavior-fix mode only.
 
-### `Facilities.jsx` — BLOCKED
-Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Remaining bulk is primarily ZIP/filter/map/layout orchestration. No additional clearly worthwhile narrow live extraction remains in the current phase.
+### `Facilities.jsx` — BUG-AUDIT ACTIVE
+Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete and merged, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Desktop facility preview alignment polish is fixed via `FacilityPreviewCard` centering update. Remaining bulk is primarily ZIP/filter/map/layout orchestration. Future work should stay narrow and behavior-focused only.
 
 ### `FacilityProfile.jsx` — BUG-AUDIT ACTIVE
 Mobile hero/header spacing collapse bug is fixed and merged. Current file is below the oversized-file concern level, but future work here should stay narrow and behavior-focused only.
 
 ### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
-`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work here should stay narrow and behavior-focused. Team profile / preview visual balance polish is now a valid future bug-audit target.
+`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering update matched to `CoachDetailPanel`. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
 All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Homepage featured coaches and teams no longer use hard-coded filler data; they now load from Supabase using existing featured fields and link to the correct selected coach/team records. Remaining homepage work should stay narrow and behavior-focused only. Geo-aware / IP-aware featured localization remains a future feature, not a current bug-audit requirement.
@@ -114,21 +115,20 @@ Remaining bulk is multi-form validation, geocode, and Supabase logic. No clean n
 Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase.
 
 ### `RosterSpots.jsx` — BUG-AUDIT ACTIVE
-Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Future work here should focus only on narrow launch-hardening, spam control, or UX polish if needed.
+Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Future work should focus only on narrow launch-hardening, spam control, or UX polish if needed.
 
 ---
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. TravelTeams / TeamProfile modal visual alignment / balance polish compared with CoachProfile
-3. Homepage featured cards minor polish — consider removing or reworking the `· Featured` location-line treatment
-4. Relocate homepage stats/banner section and align displayed counts with database totals
-5. Site font harmonization; consider larger header logo and optional footer logo placement
+2. Homepage featured cards minor polish — consider removing or reworking the `· Featured` location-line treatment
+3. Relocate homepage stats/banner section and align displayed counts with database totals
+4. Site font harmonization; consider larger header logo and optional footer logo placement
+5. Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
 
 ---
 
 ## Bug audit backlog
-- TravelTeams / TeamProfile modal visual balance and alignment polish to better match CoachProfile presentation
 - Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Relocate homepage stats/banner section and align displayed counts with database totals
@@ -169,7 +169,7 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 - [x] Last completed item recorded in extractions list
 - [x] Affected per-file status block updated
 - [x] Next branch queue updated
-- [ ] Repo state confirmed: `main` / clean / synced
+- [x] Repo state confirmed: `main` / clean / synced
 - [ ] NOTES.md rewritten (not appended) and committed
 
 ---
