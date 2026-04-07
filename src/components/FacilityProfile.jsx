@@ -493,22 +493,39 @@ export default function FacilityProfile() {
           marginBottom: 18,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: isMobile ? 0 : 260 }}>
-            <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 22 : 30, fontWeight: 800, lineHeight: 1.1, overflowWrap: 'anywhere' }}>{facility.name}</div>
-            {(facility.address || locationLine) && (
-              <div style={{ fontSize: 14, opacity: 0.9, marginTop: 10 }}>
-                📍 {facility.address || locationLine}
-              </div>
-            )}
-            {facility.facility_type && (
-              <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>
-                {getFacilityTypeLabel(facility.facility_type)}
-              </div>
-            )}
-          </div>
+        <div
+  style={{
+    display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: isMobile ? 12 : 18,
+    flexWrap: 'nowrap',
+  }}
+>
+  <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto' }}>
+    <div style={{ fontFamily: 'var(--font-head)', fontSize: isMobile ? 22 : 30, fontWeight: 800, lineHeight: 1.1, overflowWrap: 'anywhere' }}>{facility.name}</div>
+    {(facility.address || locationLine) && (
+      <div style={{ fontSize: 14, opacity: 0.9, marginTop: 10 }}>
+        📍 {facility.address || locationLine}
+      </div>
+    )}
+    {facility.facility_type && (
+      <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>
+        {getFacilityTypeLabel(facility.facility_type)}
+      </div>
+    )}
+  </div>
 
-           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+  <div
+    style={{
+      display: 'flex',
+      gap: 8,
+      flexWrap: 'wrap',
+      width: isMobile ? '100%' : 'auto',
+      justifyContent: 'flex-start',
+    }}
+  >
             {facility.verified_status && (
               <span style={{ background: '#DBEAFE', color: '#1D4ED8', fontSize: 11, fontWeight: 700, padding: '5px 10px', borderRadius: 999, letterSpacing: '0.03em' }}>
                 ✓ Verified
