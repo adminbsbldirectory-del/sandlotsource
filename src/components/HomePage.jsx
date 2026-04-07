@@ -1,61 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import FeaturedCard from './home/FeaturedCard'
 import HomePageAdBand from './home/HomePageAdBand'
 import HomePageSectionHeader from './home/HomePageSectionHeader'
 import HomePageBand from './home/HomePageBand'
 import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
+import { supabase } from '../supabase.js'
 
-const FEATURED_LISTINGS = [
-  {
-    id: 1,
-    type: 'coach',
-    name: 'Mike Torres',
-    meta: 'Pitching - Baseball - Ages 10-18',
-    location: 'Roswell, GA',
-    distance: '8 mi',
-    sport: 'baseball',
-    badge: 'Coach',
-    badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' },
-    link: '/coaches',
-  },
-  {
-    id: 2,
-    type: 'team',
-    name: 'North Georgia Elite 13U',
-    meta: 'Travel Baseball - 13U',
-    location: 'Alpharetta, GA',
-    distance: '12 mi',
-    sport: 'baseball',
-    badge: 'Open Roster',
-    badgeStyle: { background: '#fff3e0', color: '#7a4200' },
-    link: '/teams',
-  },
-  {
-    id: 3,
-    type: 'coach',
-    name: 'Sarah Kim',
-    meta: 'Hitting - Softball - All ages',
-    location: 'Marietta, GA',
-    distance: '14 mi',
-    sport: 'softball',
-    badge: 'Coach',
-    badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' },
-    link: '/coaches',
-  },
-  {
-    id: 4,
-    type: 'team',
-    name: 'Cherokee 14U Gold',
-    meta: 'Travel Baseball - 14U',
-    location: 'Canton, GA',
-    distance: '18 mi',
-    sport: 'baseball',
-    badge: 'Tryouts Open',
-    badgeStyle: { background: '#f0eefe', color: '#3d2fa0' },
-    link: '/teams',
-  },
-]
 
 const URGENT_POSTS = [
   {
@@ -100,6 +51,8 @@ export default function HomePage() {
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   )
+  const [featuredCoaches, setFeaturedCoaches] = useState([])
+  const [featuredTeams, setFeaturedTeams] = useState([])
 
   useEffect(() => {
     function handleResize() {
@@ -108,6 +61,154 @@ export default function HomePage() {
 
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
+  }, [])
+ 
+    useEffect(() => {
+    let cancelled = false
+
+    function normalizeSportValue(value) {
+      const raw = String(value || '').trim().toLowerCase()
+      if (raw === 'softball') return 'softball'
+      if (raw === 'both') return 'both'
+      return 'baseball'
+    }
+
+    function formatCoachMeta(coach) {
+      const specialty = Array.isArray(coach.specialty) && coach.specialty.length
+        ? coach.specialty[0]
+        : 'General coaching'
+
+      const sportLabel =
+        normalizeSportValue(coach.sport) === 'both'
+          ? 'Baseball & Softball'
+          : normalizeSportValue(coach.sport) === 'softball'
+            ? 'Softball'
+            : 'Baseball'
+
+      const ageGroups = Array.isArray(coach.age_groups) && coach.age_groups.length
+        ? coach.age_groups.join(', ')
+        : 'All ages'
+
+      return `${specialty} - ${sportLabel} - ${ageGroups}`
+    }
+
+    function formatCoachLocation(coach) {
+      return [coach.city, coach.state].filter(Boolean).join(', ') || 'Location not listed'
+    }
+
+    function formatTeamMeta(team) {
+      const sportLabel =
+        normalizeSportValue(team.sport) === 'both'
+          ? 'Baseball & Softball'
+          : normalizeSportValue(team.sport) === 'softball'
+            ? 'Softball'
+            : 'Baseball'
+
+      const classLabel = team.classification ? `${team.classification} ${sportLabel}` : `Travel ${sportLabel}`
+      const ageLabel = team.age_group || 'All ages'
+
+      return `${classLabel} - ${ageLabel}`
+    }
+
+    function formatTeamLocation(team) {
+      return [team.city, team.state].filter(Boolean).join(', ') || 'Location not listed'
+    }
+
+    function getTeamBadge(team) {
+      if (team.tryout_status === 'open') {
+        return {
+          badge: 'Tryouts Open',
+          badgeStyle: { background: '#f0eefe', color: '#3d2fa0' },
+        }
+      }
+
+      if (team.tryout_status === 'year_round') {
+        return {
+          badge: 'Year Round',
+          badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' },
+        }
+      }
+
+      return {
+        badge: 'Team',
+        badgeStyle: { background: '#fff3e0', color: '#7a4200' },
+      }
+    }
+
+    async function loadFeaturedListings() {
+      const [{ data: coachRows, error: coachError }, { data: teamRows, error: teamError }] =
+        await Promise.all([
+          supabase
+            .from('coaches')
+            .select('id, name, sport, specialty, age_groups, city, state, featured_rank, active, approval_status, featured_status')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded'])
+            .eq('featured_status', true)
+            .order('featured_rank', { ascending: true, nullsFirst: false })
+            .limit(2),
+
+          supabase
+            .from('travel_teams')
+            .select('id, name, sport, classification, age_group, city, state, tryout_status, featured_rank, active, approval_status, featured_status')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded'])
+            .eq('featured_status', true)
+            .order('featured_rank', { ascending: true, nullsFirst: false })
+            .limit(2),
+        ])
+
+      if (!cancelled) {
+        if (coachError) {
+          console.error('HomePage featured coaches load error:', coachError)
+          setFeaturedCoaches([])
+        } else {
+          setFeaturedCoaches(
+            (coachRows || []).map((coach) => ({
+              id: coach.id,
+              type: 'coach',
+              name: coach.name,
+              meta: formatCoachMeta(coach),
+              location: formatCoachLocation(coach),
+              distance: 'Featured',
+              sport: normalizeSportValue(coach.sport),
+              badge: 'Coach',
+              badgeStyle: { background: '#e8f2fc', color: '#0c4a8a' },
+              link: `/coaches?select=${coach.id}`,
+            }))
+          )
+        }
+
+        if (teamError) {
+          console.error('HomePage featured teams load error:', teamError)
+          setFeaturedTeams([])
+        } else {
+          setFeaturedTeams(
+            (teamRows || []).map((team) => {
+              const badgeInfo = getTeamBadge(team)
+
+              return {
+                id: team.id,
+                type: 'team',
+                name: team.name,
+                meta: formatTeamMeta(team),
+                location: formatTeamLocation(team),
+                distance: 'Featured',
+                sport: normalizeSportValue(team.sport),
+                badge: badgeInfo.badge,
+                badgeStyle: badgeInfo.badgeStyle,
+                link: `/teams?select=${team.id}`,
+              }
+            })
+          )
+        }
+      }
+    }
+
+    loadFeaturedListings()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   function handleSearch(e) {
@@ -124,16 +225,6 @@ export default function HomePage() {
 
     navigate('/search?' + params.toString())
   }
-
-  const featuredCoaches = useMemo(
-    () => FEATURED_LISTINGS.filter((l) => l.type === 'coach').slice(0, 2),
-    []
-  )
-
-  const featuredTeams = useMemo(
-    () => FEATURED_LISTINGS.filter((l) => l.type === 'team').slice(0, 2),
-    []
-  )
 
   const pillStyle = {
     display: 'flex',
