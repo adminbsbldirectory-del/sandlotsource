@@ -30,6 +30,11 @@ export default function HomePage() {
   const [featuredCoaches, setFeaturedCoaches] = useState([])
   const [featuredTeams, setFeaturedTeams] = useState([])
   const [urgentPosts, setUrgentPosts] = useState([])
+  const [homepageStats, setHomepageStats] = useState({
+    coachesCount: 0,
+    teamsCount: 0,
+    statesCovered: 0,
+  })
 
   useEffect(() => {
     function handleResize() {
@@ -210,8 +215,13 @@ export default function HomePage() {
         { data: teamRows, error: teamError },
         { data: playerBoardRows, error: playerBoardError },
         { data: rosterSpotRows, error: rosterSpotError },
+        { count: coachesCount, error: coachesCountError },
+        { count: teamsCount, error: teamsCountError },
+        { data: coachStates, error: coachStatesError },
+        { data: teamStates, error: teamStatesError },
+        { data: facilityStates, error: facilityStatesError },
       ] = await Promise.all([
-        supabase
+                supabase
           .from('coaches')
           .select('id, name, sport, specialty, age_groups, city, state, featured_rank, active, approval_status, featured_status')
           .eq('active', true)
@@ -246,6 +256,39 @@ export default function HomePage() {
           .gt('expires_at', nowIso)
           .order('created_at', { ascending: false })
           .limit(3),
+
+        supabase
+          .from('coaches')
+          .select('*', { count: 'exact', head: true })
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded']),
+
+        supabase
+          .from('travel_teams')
+          .select('*', { count: 'exact', head: true })
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded']),
+
+        supabase
+          .from('coaches')
+          .select('state')
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .not('state', 'is', null),
+
+        supabase
+          .from('travel_teams')
+          .select('state')
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .not('state', 'is', null),
+
+        supabase
+          .from('facilities')
+          .select('state')
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .not('state', 'is', null),
       ])
 
       if (!cancelled) {
@@ -309,6 +352,38 @@ export default function HomePage() {
           .slice(0, 3)
 
         setUrgentPosts(normalizedUrgentPosts)
+
+                if (coachesCountError) {
+          console.error('HomePage coaches count load error:', coachesCountError)
+        }
+
+        if (teamsCountError) {
+          console.error('HomePage travel teams count load error:', teamsCountError)
+        }
+
+        if (coachStatesError) {
+          console.error('HomePage coach states load error:', coachStatesError)
+        }
+
+        if (teamStatesError) {
+          console.error('HomePage team states load error:', teamStatesError)
+        }
+
+        if (facilityStatesError) {
+          console.error('HomePage facility states load error:', facilityStatesError)
+        }
+
+        const uniqueStates = new Set(
+          [...(coachStates || []), ...(teamStates || []), ...(facilityStates || [])]
+            .map((row) => String(row.state || '').trim().toUpperCase())
+            .filter(Boolean)
+        )
+
+        setHomepageStats({
+          coachesCount: coachesCount || 0,
+          teamsCount: teamsCount || 0,
+          statesCovered: uniqueStates.size,
+        })
       }
     }
 
@@ -420,6 +495,25 @@ export default function HomePage() {
   const col = {
     padding: isMobile ? '0 12px' : '0 20px',
   }
+
+  const homepageStatsItems = [
+    {
+      num: `${homepageStats.coachesCount}+`,
+      label: 'Coaches listed',
+    },
+    {
+      num: `${homepageStats.teamsCount}+`,
+      label: 'Travel teams',
+    },
+    {
+      num: String(homepageStats.statesCovered),
+      label: 'States covered',
+    },
+    {
+      num: 'Free',
+      label: 'Always free to browse',
+    },
+  ]
 
   return (
     <div style={pageShell}>
@@ -648,6 +742,28 @@ export default function HomePage() {
               optional.
             </div>
           </section>
+        </div>
+
+        <div style={{ ...col, marginTop: 28 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+              gap: 10,
+              background: '#edf2f8',
+              borderRadius: 12,
+              padding: isMobile ? '14px' : '18px 20px',
+            }}
+          >
+            {homepageStatsItems.map((s) => (
+              <div key={s.label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 22, fontWeight: 600, color: NAVY }}>{s.num}</div>
+                <div style={{ fontSize: isMobile ? 13 : 11, color: MUTED, marginTop: 3 }}>
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <HomePageBand>
@@ -959,33 +1075,6 @@ export default function HomePage() {
             </div>
           </div>
         </HomePageBand>
-
-        <div style={{ ...col, marginTop: 28 }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-              gap: 10,
-              background: '#edf2f8',
-              borderRadius: 12,
-              padding: isMobile ? '14px' : '18px 20px',
-            }}
-          >
-            {[
-              { num: '200+', label: 'Coaches listed' },
-              { num: '80+', label: 'Travel teams' },
-              { num: '15', label: 'Counties covered' },
-              { num: 'Free', label: 'Always free to browse' },
-            ].map((s) => (
-              <div key={s.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 600, color: NAVY }}>{s.num}</div>
-                <div style={{ fontSize: isMobile ? 13 : 11, color: MUTED, marginTop: 3 }}>
-                  {s.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         <div style={{ ...col, marginTop: 24, paddingBottom: 8 }}>
           <section
