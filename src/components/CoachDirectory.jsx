@@ -274,10 +274,14 @@ export default function CoachDirectory() {
   const [coaches, setCoaches] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(
-    () => searchParams.get("select") || null,
-  );
-  const [sport, setSport] = useState("Both");
+  const selectedFromUrl = searchParams.get("select") || null;
+  const facilityFromUrl = searchParams.get("facility") || null;
+  const zipFromUrl = searchParams.get("zip") || "";
+  const radiusFromUrl = Number(searchParams.get("radius")) || 25;
+  const sportFromUrl = searchParams.get("sport") || "Both";
+
+  const [selected, setSelected] = useState(() => selectedFromUrl);
+  const [sport, setSport] = useState(sportFromUrl);
   const [specialty, setSpecialty] = useState("All Specialties");
   const [state, setState] = useState("All States");
   const [searchInput, setSearchInput] = useState("");
@@ -286,18 +290,18 @@ export default function CoachDirectory() {
   const [showMap, setShowMap] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 768 : true,
   );
-  const [zip, setZip] = useState("");
+  const [zip, setZip] = useState(zipFromUrl);
   const [geoCenter, setGeoCenter] = useState(null);
   const [zipStatus, setZipStatus] = useState("");
-  const [radius, setRadius] = useState(25);
+  const [radius, setRadius] = useState(radiusFromUrl);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
   );
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [mobileView, setMobileView] = useState("list");
-
-  const selectedFromUrl = searchParams.get("select") || null;
-  const facilityFromUrl = searchParams.get("facility") || null;
+  const [isHydratingFromUrl, setIsHydratingFromUrl] = useState(
+    !!zipFromUrl && zipFromUrl.length === 5,
+  );
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -312,6 +316,60 @@ export default function CoachDirectory() {
       setShowMobileFilters(false);
     }
   }, [isMobile, selectedFromUrl]);
+
+ useEffect(() => {
+  setSelected(selectedFromUrl);
+  setZip(zipFromUrl);
+  setRadius(radiusFromUrl);
+  setSport(sportFromUrl);
+  setState("All States");
+
+  if (zipFromUrl && zipFromUrl.length === 5) {
+    setIsHydratingFromUrl(true);
+  } else {
+    setGeoCenter(null);
+    setZipStatus("");
+    setIsHydratingFromUrl(false);
+  }
+}, [selectedFromUrl, zipFromUrl, radiusFromUrl, sportFromUrl]);
+
+  useEffect(() => {
+  let cancelled = false;
+
+  async function hydrateGeoFromUrl() {
+    if (!zipFromUrl || zipFromUrl.length !== 5) {
+      if (!cancelled) {
+        setGeoCenter(null);
+        setZipStatus("");
+        setIsHydratingFromUrl(false);
+      }
+      return;
+    }
+
+    const geo = await geocodeZip(zipFromUrl);
+
+    if (cancelled) return;
+
+    if (geo) {
+      setGeoCenter(geo);
+      setZipStatus("ok");
+      setState((prev) =>
+        prev === "All States" && geo.state ? geo.state : prev
+      );
+    } else {
+      setGeoCenter(null);
+      setZipStatus("error");
+    }
+
+    setIsHydratingFromUrl(false);
+  }
+
+  hydrateGeoFromUrl();
+
+  return () => {
+    cancelled = true;
+  };
+  }, [zipFromUrl]);
 
   const applySearch = () => {
     setSearch(searchInput.trim());
@@ -369,10 +427,6 @@ export default function CoachDirectory() {
     setSearch("");
     clearZipFilter();
   }
-
-  useEffect(() => {
-    setSelected(selectedFromUrl);
-  }, [selectedFromUrl]);
 
   useEffect(() => {
     async function load() {
@@ -570,10 +624,30 @@ export default function CoachDirectory() {
   }, [selected, filtered, resolvedCoaches]);
 
   useEffect(() => {
-    if (selected && !filtered.some((c) => c.id === selected)) {
-      setSelected(null);
-    }
-  }, [filtered, selected]);
+  if (!selected) return;
+
+  const isUrlDrivenSelection =
+    !!selectedFromUrl && selected === selectedFromUrl;
+
+  if (isHydratingFromUrl && isUrlDrivenSelection) {
+    return;
+  }
+
+  if (isUrlDrivenSelection && !geoCenter && !facilityFromUrl) {
+    return;
+  }
+
+  if (!filtered.some((c) => c.id === selected)) {
+    setSelected(null);
+  }
+}, [
+  filtered,
+  selected,
+  isHydratingFromUrl,
+  selectedFromUrl,
+  geoCenter,
+  facilityFromUrl,
+]);
 
   function getDistance(coach) {
     if (!geoCenter || coach.lat == null || coach.lng == null) return null;
