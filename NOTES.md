@@ -79,6 +79,7 @@ Current phase is bug audit.
 - `SearchResults.jsx` / mobile browser behavior — fixed mobile browser search-results issue (`Daily`, `MJCCA`, `BSBL` repros) and merged
 - `TravelTeams.jsx` — fixed ZIP radius control mismatch so `/teams` now uses the same always-visible shared dropdown pattern used on `/coaches` and `/facilities`
 - `CoachDirectory.jsx` — fixed `/coaches` desktop search-bar / header consistency by restoring ZIP-first sidebar order to match `/facilities` and `/teams`
+- `RosterSpots.jsx` / `RosterBrowseContent.jsx` / `RosterRow.jsx` — verified live that linked roster spots already surface `Linked Team`, `View Team`, and `View Facility` when `team_id` and related facility data exist; no additional code change needed for this item
 
 ---
 
@@ -112,21 +113,20 @@ Remaining bulk is multi-form validation, geocode, and Supabase logic. No clean n
 Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase.
 
 ### `RosterSpots.jsx` — BUG-AUDIT ACTIVE
-Linking roster spots to teams / facilities when related records exist remains future bug-audit / feature-followup territory.
+Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Future work here should focus only on narrow launch-hardening, spam control, or UX polish if needed.
 
 ---
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. Link teams, facilities, and roster spots where related records already exist
-3. Revisit homepage featured coaches only if live / ZIP-aware behavior becomes the next priority
-4. Relocate homepage stats/banner section and align displayed counts with database totals
+2. Revisit homepage featured coaches only if live / ZIP-aware behavior becomes the next priority
+3. Relocate homepage stats/banner section and align displayed counts with database totals
+4. Site font harmonization; consider larger header logo and optional footer logo placement
 5. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
 
 ---
 
 ## Bug audit backlog
-- Link teams, facilities, and roster spots where related records already exist
 - Homepage featured coaches are still constant-based; evaluate live / ZIP-aware replacement without breaking nationwide behavior
 - Relocate homepage stats/banner section and align displayed counts with database totals
 - Site font harmonization; consider larger header logo and optional footer logo placement
