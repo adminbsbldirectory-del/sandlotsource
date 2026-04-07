@@ -76,6 +76,8 @@ Current phase is bug audit.
 - `Facilities.jsx` — orphaned `normalizeUrl` and `normalizeInstagramHandle` removed
 - `CoachDirectory.jsx` — fixed coach click-through from `/search` so URL-driven coach selection is preserved on `/coaches`
 - `FacilityProfile.jsx` — fixed mobile hero/header spacing collapse so facility names no longer compress into a narrow vertical column on mobile
+- `SearchResults.jsx` / mobile browser behavior — fixed mobile browser search-results issue (`Daily`, `MJCCA`, `BSBL` repros) and merged
+- `TravelTeams.jsx` — fixed ZIP radius control mismatch so `/teams` now uses the same always-visible shared dropdown pattern used on `/coaches` and `/facilities`
 
 ---
 
@@ -91,10 +93,13 @@ Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` c
 Mobile hero/header spacing collapse bug is fixed and merged. Current file is below the oversized-file concern level, but future work here should stay narrow and behavior-focused only.
 
 ### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
-`EmptyState` extraction is complete and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration. Current likely bug-audit target includes the radius control presentation mismatch after ZIP search.
+`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work here should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
 All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections. Featured coaches are still constant-based and should later move toward live / ZIP-aware behavior if reopened.
+
+### `SearchResults.jsx` — BUG-AUDIT ACTIVE
+Leaf result extractions are complete and merged. Mobile browser search-results behavior issue is fixed and merged. Future work here should remain narrow and behavior-focused only.
 
 ### `AdminPage.jsx` — DONE
 Below target. Out of oversized-file queue.
@@ -111,17 +116,15 @@ Linking roster spots to teams / facilities when related records exist remains fu
 ---
 
 ## Next branch queue
-1. Inspect and fix mobile browser search-results behavior using current merged `main`
-2. Inspect `TravelTeams.jsx` radius control mismatch after ZIP search so it matches the dropdown behavior used on other pages
-3. Inspect search-bar / header consistency on `/coaches` if still open after current merged fix
-4. Continue bug audit from current merged `main`
+1. Inspect search-bar / header consistency on `/coaches` if still open after current merged fixes
+2. Continue bug audit from current merged `main`
+3. Link teams, facilities, and roster spots where related records already exist
+4. Revisit homepage featured coaches only if live / ZIP-aware behavior becomes the next priority
 5. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
 
 ---
 
 ## Bug audit backlog
-- Fix and verify mobile browser search results behavior (`Daily`, `MJCCA`, `BSBL` repros)
-- On `TravelTeams.jsx`, ZIP radius control opens as a slider after search; should match dropdown behavior used on other pages
 - Fix or remove the open search-bar space only on `/coaches` if still visually inconsistent
 - Link teams, facilities, and roster spots where related records already exist
 - Homepage featured coaches are still constant-based; evaluate live / ZIP-aware replacement without breaking nationwide behavior
