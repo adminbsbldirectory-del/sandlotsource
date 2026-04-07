@@ -63,14 +63,15 @@ export default function FeaturedCard({ listing, isMobile }) {
         {listing.meta}
       </div>
 
-      <div
+            <div
         style={{
           fontSize: isMobile ? 12 : 11,
           color: FAINT,
           display: 'flex',
           alignItems: 'center',
-          gap: 5,
+          gap: 6,
           marginBottom: 8,
+          flexWrap: 'wrap',
         }}
       >
         <span
@@ -82,7 +83,26 @@ export default function FeaturedCard({ listing, isMobile }) {
             flexShrink: 0,
           }}
         />
-        {listing.location} &middot; {listing.distance}
+        <span>{listing.location}</span>
+
+        {listing.distance === 'Featured' ? (
+          <span
+            style={{
+              fontSize: isMobile ? 11 : 10,
+              fontWeight: 600,
+              color: '#666',
+              background: '#f5f5f2',
+              border: '1px solid #eceae4',
+              borderRadius: 999,
+              padding: '2px 7px',
+              lineHeight: 1.2,
+            }}
+          >
+            Featured
+          </span>
+        ) : listing.distance ? (
+          <span>&middot; {listing.distance}</span>
+        ) : null}
       </div>
 
       <div
