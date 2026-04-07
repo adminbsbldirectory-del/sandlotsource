@@ -8,30 +8,6 @@ import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
 import { supabase } from '../supabase.js'
 
 
-const URGENT_POSTS = [
-  {
-    id: 1,
-    postType: 'Need player',
-    title: 'Catcher needed - Sun 3/17',
-    meta: '12U - Alpharetta - Baseball',
-    expires: 'Expires in 18 hrs',
-  },
-  {
-    id: 2,
-    postType: 'Need team',
-    title: 'Two 14U players available',
-    meta: 'P / OF - Marietta - Baseball',
-    expires: 'Expires in 2 days',
-  },
-  {
-    id: 3,
-    postType: 'Need player',
-    title: 'Utility player needed ASAP',
-    meta: '10U - Kennesaw - Softball',
-    expires: 'Expires in 3 days',
-  },
-]
-
 const RED = '#e63329'
 const NAVY = '#1b3a5c'
 const DARK = '#1a1a1a'
@@ -53,6 +29,7 @@ export default function HomePage() {
   )
   const [featuredCoaches, setFeaturedCoaches] = useState([])
   const [featuredTeams, setFeaturedTeams] = useState([])
+  const [urgentPosts, setUrgentPosts] = useState([])
 
   useEffect(() => {
     function handleResize() {
@@ -135,27 +112,141 @@ export default function HomePage() {
       }
     }
 
-    async function loadFeaturedListings() {
-      const [{ data: coachRows, error: coachError }, { data: teamRows, error: teamError }] =
-        await Promise.all([
-          supabase
-            .from('coaches')
-            .select('id, name, sport, specialty, age_groups, city, state, featured_rank, active, approval_status, featured_status')
-            .eq('active', true)
-            .in('approval_status', ['approved', 'seeded'])
-            .eq('featured_status', true)
-            .order('featured_rank', { ascending: true, nullsFirst: false })
-            .limit(2),
+     function formatExpiresLabel(expiresAt) {
+      if (!expiresAt) return ''
+      const msRemaining = new Date(expiresAt).getTime() - Date.now()
+      const hoursRemaining = Math.ceil(msRemaining / (1000 * 60 * 60))
+      const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24))
 
-          supabase
-            .from('travel_teams')
-            .select('id, name, sport, classification, age_group, city, state, tryout_status, featured_rank, active, approval_status, featured_status')
-            .eq('active', true)
-            .in('approval_status', ['approved', 'seeded'])
-            .eq('featured_status', true)
-            .order('featured_rank', { ascending: true, nullsFirst: false })
-            .limit(2),
-        ])
+      if (hoursRemaining <= 24) {
+        return `Expires in ${Math.max(hoursRemaining, 1)} hr${Math.max(hoursRemaining, 1) !== 1 ? 's' : ''}`
+      }
+
+      return `Expires in ${Math.max(daysRemaining, 1)} day${Math.max(daysRemaining, 1) !== 1 ? 's' : ''}`
+    }
+
+    function formatUrgentSportLabel(value) {
+      const normalized = normalizeSportValue(value)
+      if (normalized === 'softball') return 'Softball'
+      if (normalized === 'both') return 'Baseball & Softball'
+      return 'Baseball'
+    }
+
+    function formatUrgentLocation(city, state) {
+      return [city, state].filter(Boolean).join(' - ') || 'Location pending'
+    }
+
+    function normalizePlayerBoardPost(post) {
+      const isPlayerAvailable = post.post_type === 'player_available'
+      const ageLabel =
+        post.post_type === 'player_available'
+          ? post.player_age
+            ? `${post.player_age}U`
+            : post.age_group || 'Age not listed'
+          : post.age_group || 'Age not listed'
+
+      const title = isPlayerAvailable
+        ? `${ageLabel} player available`
+        : post.team_name
+          ? `${post.team_name} needs player`
+          : 'Player needed'
+
+      const positionList = isPlayerAvailable
+        ? Array.isArray(post.player_position) && post.player_position.length
+          ? post.player_position.join(' / ')
+          : ''
+        : Array.isArray(post.position_needed) && post.position_needed.length
+          ? post.position_needed.join(' / ')
+          : ''
+
+      return {
+        id: `player-${post.id}`,
+        postType: isPlayerAvailable ? 'Need team' : 'Need player',
+        title,
+        meta: [
+          positionList,
+          formatUrgentLocation(post.city, post.state),
+          formatUrgentSportLabel(post.sport),
+        ]
+          .filter(Boolean)
+          .join(' - '),
+        expires: formatExpiresLabel(post.expires_at),
+        expiresAt: post.expires_at,
+        link: '/find',
+      }
+    }
+
+    function normalizeRosterSpotPost(spot) {
+      const positionList =
+        Array.isArray(spot.positions_needed) && spot.positions_needed.length
+          ? spot.positions_needed.join(' / ')
+          : ''
+
+      return {
+        id: `roster-${spot.id}`,
+        postType: 'Need player',
+        title: spot.team_name
+          ? `${spot.team_name} needs player`
+          : 'Roster spot available',
+        meta: [
+          spot.age_group || 'Age not listed',
+          positionList,
+          formatUrgentLocation(spot.city, spot.state),
+          formatUrgentSportLabel(spot.sport),
+        ]
+          .filter(Boolean)
+          .join(' - '),
+        expires: formatExpiresLabel(spot.expires_at),
+        expiresAt: spot.expires_at,
+        link: '/find',
+      }
+    }
+
+    async function loadFeaturedListings() {
+      const nowIso = new Date().toISOString()
+
+      const [
+        { data: coachRows, error: coachError },
+        { data: teamRows, error: teamError },
+        { data: playerBoardRows, error: playerBoardError },
+        { data: rosterSpotRows, error: rosterSpotError },
+      ] = await Promise.all([
+        supabase
+          .from('coaches')
+          .select('id, name, sport, specialty, age_groups, city, state, featured_rank, active, approval_status, featured_status')
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .eq('featured_status', true)
+          .order('featured_rank', { ascending: true, nullsFirst: false })
+          .limit(2),
+
+        supabase
+          .from('travel_teams')
+          .select('id, name, sport, classification, age_group, city, state, tryout_status, featured_rank, active, approval_status, featured_status')
+          .eq('active', true)
+          .in('approval_status', ['approved', 'seeded'])
+          .eq('featured_status', true)
+          .order('featured_rank', { ascending: true, nullsFirst: false })
+          .limit(2),
+
+        supabase
+          .from('player_board')
+          .select('id, post_type, sport, player_age, age_group, player_position, position_needed, team_name, city, state, expires_at, created_at, active, approval_status')
+          .eq('active', true)
+          .in('approval_status', ['pending', 'approved'])
+          .gt('expires_at', nowIso)
+          .order('created_at', { ascending: false })
+          .limit(3),
+
+        supabase
+          .from('roster_spots')
+          .select('id, sport, team_name, age_group, positions_needed, city, state, expires_at, created_at, active, approval_status')
+          .eq('active', true)
+          .in('approval_status', ['pending', 'approved'])
+          .gt('expires_at', nowIso)
+          .order('created_at', { ascending: false })
+          .limit(3),
+      ])
 
       if (!cancelled) {
         if (coachError) {
@@ -201,10 +292,27 @@ export default function HomePage() {
             })
           )
         }
+
+        if (playerBoardError) {
+          console.error('HomePage urgent player board load error:', playerBoardError)
+        }
+
+        if (rosterSpotError) {
+          console.error('HomePage urgent roster spots load error:', rosterSpotError)
+        }
+
+        const normalizedUrgentPosts = [
+          ...((playerBoardRows || []).map(normalizePlayerBoardPost)),
+          ...((rosterSpotRows || []).map(normalizeRosterSpotPost)),
+        ]
+          .sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime())
+          .slice(0, 3)
+
+        setUrgentPosts(normalizedUrgentPosts)
       }
     }
 
-    loadFeaturedListings()
+     loadFeaturedListings()
 
     return () => {
       cancelled = true
@@ -758,10 +866,11 @@ export default function HomePage() {
                 gap: 10,
               }}
             >
-              {URGENT_POSTS.map((p) => (
+             {urgentPosts.length > 0 ? (
+              urgentPosts.map((p) => (
                 <Link
                   key={p.id}
-                  to="/find"
+                  to={p.link}
                   style={{
                     border: '1px solid #f5cfc9',
                     borderRadius: 12,
@@ -830,7 +939,23 @@ export default function HomePage() {
                     {p.expires}
                   </div>
                 </Link>
-              ))}
+              ))
+            ) : (
+              <div
+                style={{
+                  gridColumn: '1 / -1',
+                  border: '1px solid #e2e0db',
+                  borderRadius: 12,
+                  padding: isMobile ? '18px 14px' : '20px 18px',
+                  background: '#fff',
+                  color: MUTED,
+                  fontSize: isMobile ? 14 : 13,
+                  lineHeight: 1.5,
+                }}
+              >
+                No active pickup needs at this time.
+              </div>
+              )}
             </div>
           </div>
         </HomePageBand>
