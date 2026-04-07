@@ -80,6 +80,7 @@ Current phase is bug audit.
 - `TravelTeams.jsx` — fixed ZIP radius control mismatch so `/teams` now uses the same always-visible shared dropdown pattern used on `/coaches` and `/facilities`
 - `CoachDirectory.jsx` — fixed `/coaches` desktop search-bar / header consistency by restoring ZIP-first sidebar order to match `/facilities` and `/teams`
 - `RosterSpots.jsx` / `RosterBrowseContent.jsx` / `RosterRow.jsx` — verified live that linked roster spots already surface `Linked Team`, `View Team`, and `View Facility` when `team_id` and related facility data exist; no additional code change needed for this item
+- `HomePage.jsx` — replaced hard-coded homepage featured coaches and teams with Supabase-driven featured listings using existing `featured_status` / `featured_rank` fields; featured cards now link to selected coach/team records instead of generic directory pages
 
 ---
 
@@ -95,10 +96,10 @@ Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` c
 Mobile hero/header spacing collapse bug is fixed and merged. Current file is below the oversized-file concern level, but future work here should stay narrow and behavior-focused only.
 
 ### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
-`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work here should stay narrow and behavior-focused.
+`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed and merged. `MapLegend` remains later optional work only. Remaining bulk is mostly map/filter/state orchestration, so future work here should stay narrow and behavior-focused. Team profile / preview visual balance polish is now a valid future bug-audit target.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
-All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Remaining bulk is primarily hero search/filter orchestration, page-local state/navigation coupling, and single-use homepage sections. Featured coaches are still constant-based and should later move toward live / ZIP-aware behavior if reopened.
+All four homepage leaf extractions are complete (`FeaturedCard`, `HomePageAdBand`, `HomePageSectionHeader`, `HomePageBand`). Homepage featured coaches and teams no longer use hard-coded filler data; they now load from Supabase using existing featured fields and link to the correct selected coach/team records. Remaining homepage work should stay narrow and behavior-focused only. Geo-aware / IP-aware featured localization remains a future feature, not a current bug-audit requirement.
 
 ### `SearchResults.jsx` — BUG-AUDIT ACTIVE
 Leaf result extractions are complete and merged. Mobile browser search-results behavior issue is fixed and merged. Future work here should remain narrow and behavior-focused only.
@@ -119,15 +120,17 @@ Linked roster spots to existing teams / facilities were inspected and verified l
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. Revisit homepage featured coaches only if live / ZIP-aware behavior becomes the next priority
-3. Relocate homepage stats/banner section and align displayed counts with database totals
-4. Site font harmonization; consider larger header logo and optional footer logo placement
-5. Only reopen extraction work if a new clearly bounded live candidate appears during future maintenance
+2. TravelTeams / TeamProfile modal visual alignment / balance polish compared with CoachProfile
+3. Homepage featured cards minor polish — consider removing or reworking the `· Featured` location-line treatment
+4. Relocate homepage stats/banner section and align displayed counts with database totals
+5. Site font harmonization; consider larger header logo and optional footer logo placement
 
 ---
 
 ## Bug audit backlog
-- Homepage featured coaches are still constant-based; evaluate live / ZIP-aware replacement without breaking nationwide behavior
+- TravelTeams / TeamProfile modal visual balance and alignment polish to better match CoachProfile presentation
+- Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
+- Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Relocate homepage stats/banner section and align displayed counts with database totals
 - Site font harmonization; consider larger header logo and optional footer logo placement
 - Add advertising page with submit form, image upload support, sizing requirements, and email-routing decision (`ads@` alias vs admin)
