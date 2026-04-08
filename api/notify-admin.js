@@ -11,6 +11,7 @@ import {
   facilityEmail,
   claimEmail,
   reviewEmail,
+  advertiserInquiryEmail,
 } from '../lib/emailTemplates.js';
 import { findDuplicates } from '../lib/duplicateCheck.js';
 
@@ -31,6 +32,7 @@ const templateMap = {
   facilities: facilityEmail,
   claim_requests: claimEmail,
   reviews: reviewEmail,
+  advertiser_inquiries: advertiserInquiryEmail,
 };
 
 export default async function handler(req, res) {
@@ -48,7 +50,7 @@ export default async function handler(req, res) {
   if (table !== 'reviews' && !record?.id) {
     return res.status(400).json({ error: 'Missing record id' });
   }
-  
+
   const buildEmail = templateMap[table];
   if (!buildEmail) {
     return res.status(200).json({ ok: true, skipped: true });
