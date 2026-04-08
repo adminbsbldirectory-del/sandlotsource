@@ -12,8 +12,8 @@ const NAV_TABS = [
 ]
 
 const CTA_IDS = ['roster', 'submit']
-const NAVY = '#1b3a5c'
-const RED = '#c0392b'
+const NAVY = '#0B1F3A'
+const RED = '#D42B2B'
 
 function getActiveTab(pathname) {
   const match = NAV_TABS.find((tab) => {
@@ -60,7 +60,7 @@ function NavButton({ tab, isActive, onClick, mobile = false }) {
           ? {
               width: '100%',
               padding: '12px 14px',
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 700,
               fontFamily: 'inherit',
               letterSpacing: '0.05em',

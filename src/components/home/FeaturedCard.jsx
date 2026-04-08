@@ -5,10 +5,10 @@ const SPORT_LABEL = {
   softball: 'Softball',
 }
 
-const RED = '#e63329'
+const RED = '#D42B2B'
 const DARK = '#1a1a1a'
 const BORDER = '#e2e0db'
-const FAINT = '#888'
+const MUTED = '#6B7280'
 
 export default function FeaturedCard({ listing, isMobile }) {
   return (
@@ -59,14 +59,14 @@ export default function FeaturedCard({ listing, isMobile }) {
         </span>
       </div>
 
-      <div style={{ fontSize: isMobile ? 14 : 13, color: '#777', marginBottom: 3 }}>
+      <div style={{ fontSize: isMobile ? 14 : 13, color: MUTED, marginBottom: 3 }}>
         {listing.meta}
       </div>
 
       <div
         style={{
           fontSize: isMobile ? 12 : 12,
-          color: FAINT,
+          color: MUTED,
           display: 'flex',
           alignItems: 'center',
           gap: 6,
@@ -90,7 +90,7 @@ export default function FeaturedCard({ listing, isMobile }) {
             style={{
               fontSize: isMobile ? 11 : 11,
               fontWeight: 600,
-              color: '#666',
+              color: MUTED,
               background: '#f5f5f2',
               border: '1px solid #eceae4',
               borderRadius: 999,
@@ -114,10 +114,10 @@ export default function FeaturedCard({ listing, isMobile }) {
           paddingTop: 8,
         }}
       >
-        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: RED }}>
+        <span style={{ fontSize: isMobile ? 13 : 13, fontWeight: 600, color: RED }}>
           {listing.type === 'coach' ? 'View profile' : 'View team'} &rarr;
         </span>
-        <span style={{ fontSize: isMobile ? 12 : 11, color: FAINT }}>
+        <span style={{ fontSize: isMobile ? 12 : 12, color: MUTED }}>
           {SPORT_LABEL[listing.sport]}
         </span>
       </div>
