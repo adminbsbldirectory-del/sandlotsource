@@ -96,6 +96,7 @@ Current phase is bug audit.
 - `src/utils/formSpamProtection.js` / `AdvertisePage.jsx` / `ClaimListing.jsx` / `CoachProfile.jsx` / `RosterSpots.jsx` / `CoachSubmitForm.jsx` — completed shared low-friction public-form anti-spam hardening across all targeted forms
 - `src/lib/submit/geocode.js` / `src/components/CoachSubmitForm.jsx` — geocode precision hardening branch remains active and synced. Query coverage was expanded, candidate filtering/scoring was tightened, and facility ZIP fallback remains intentionally disabled for facility creation paths so wrong fallback pins do not save as production behavior. North Glynn testing still indicates a provider/data limitation where a road-address point may be returned instead of the true sports-complex point. A narrow follow-up helper fix was also committed on this branch so pending facility creation consistently uses the passed `facility` payload fields rather than stale form references. Current conclusion remains provider/data limitation for rare edge-case facilities, not a broken submit path.
 - `CoachSubmitForm.jsx` — fixed coach submit `skill_level` payload mismatch by sending selected skill level as a single-item array to match existing `public.coaches.skill_level text[]` schema; issue was reproduced via live `Beginner` submission and confirmed to be submit-path/schema related, not a dropdown UI bug
+- `Header.jsx` — increased desktop header logo sizing so the site mark reads more prominently in the sticky header while keeping the current mobile logo size unchanged
 
 ---
 
@@ -114,7 +115,10 @@ Mobile hero/header spacing collapse is fixed and merged. The file is no longer o
 `EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering to match `CoachDetailPanel`. Duplicate warning coverage now exists through `CoachSubmitForm.jsx` for likely team duplicates once enough identifying detail is present. `MapLegend` remains optional later work only. Remaining work is mostly map/filter/state orchestration, so future changes should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
-All four homepage leaf extractions are complete. Featured coaches and teams now load from Supabase using existing featured fields and link to the correct selected records. Urgent pickup needs now pull live `player_board` and `roster_spots` data with real empty-state fallback. The stats band now sits above `How it works` and uses live Supabase-backed counts. Homepage desktop readability polish is complete, including proper Barlow 700 loading. Remaining work should stay narrow and behavior- or presentation-focused only. Header logo sizing and footer logo follow-on remain deferred.
+All four homepage leaf extractions are complete. Featured coaches and teams now load from Supabase using existing featured fields and link to the correct selected records. Urgent pickup needs now pull live `player_board` and `roster_spots` data with real empty-state fallback. The stats band now sits above `How it works` and uses live Supabase-backed counts. Homepage desktop readability polish is complete, including proper Barlow 700 loading. Remaining work should stay narrow and behavior- or presentation-focused only. Footer logo follow-on remains deferred unless explicitly selected later.
+
+### `Header.jsx` — BUG-AUDIT ACTIVE
+Desktop header logo sizing polish is fixed and merged. Current `/logo.png` asset was verified as sufficient for a larger desktop presentation without requiring a new source file. Mobile logo sizing remains unchanged. Any future header work should stay narrow and presentation-focused only.
 
 ### `SearchResults.jsx` — BUG-AUDIT ACTIVE
 Leaf result extractions are complete and merged. Mobile browser search-results behavior issue is fixed. Future work should remain narrow and behavior-focused.
@@ -153,6 +157,7 @@ This branch expanded address query construction, softened locality rejection whe
 5. Homepage featured cards — consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
 6. Work on hidden spam blocking and profile accuracy scoring
 7. Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
+8. Optional footer logo follow-on remains deferred unless explicitly selected later
 
 ---
 
@@ -160,7 +165,7 @@ This branch expanded address query construction, softened locality rejection whe
 - Homepage featured cards — consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
-- Header logo sizing and optional footer logo placement remain deferred follow-on polish after homepage desktop readability calibration
+- Optional footer logo placement remains deferred follow-on polish after header logo sizing completion
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
 - Determine whether teams should auto-expire after about 14 months if not updated, with reminder email about 30 days before expiration and a season-aging update prompt
