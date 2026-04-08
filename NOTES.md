@@ -88,6 +88,7 @@ Current phase is bug audit.
 - `CoachSubmitForm.jsx` / `DuplicateWarning.jsx` — added coach and travel-team duplicate warning flow to submit UI, generalized duplicate warning display across facility/coach/team modes, and kept the behavior as review-and-continue soft warnings rather than DB hard blocking
 - `HomePage.jsx` / `FeaturedCard.jsx` / `index.html` — improved homepage desktop readability by raising undersized desktop text, darkening faint secondary text, and adding Barlow 700 to the Google Fonts import; kept scope limited to readability polish only, with broader font/color harmonization and logo/footer follow-on deferred
 - `App.jsx` / `AdvertisePage.jsx` — added new public `/advertise` page, linked it from the footer Support section only, used forward-looking readable typography for the new page, and kept the intake form as a page-shell v1 with user-facing confirmation only; storage, upload wiring, and admin/email routing remain deferred
+- `AdvertisePage.jsx` / `api/notify-admin.js` / `lib/emailTemplates.js` / Supabase `advertiser_inquiries` — advertiser inquiry workflow is now live end-to-end: public form submissions save to Supabase, trigger admin email notifications through the existing webhook/notify path, creative upload remains deferred, and the success confirmation was moved below the submit button so users do not need to scroll back up to see it
 
 ---
 
@@ -124,13 +125,13 @@ Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clea
 Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Future work should focus only on narrow launch-hardening, spam control, or UX polish if needed.
 
 ### `AdvertisePage.jsx` — BUG-AUDIT ACTIVE
-New public advertising page is now live as a footer-linked v1 page. Current scope includes sponsor-facing page copy, placement/spec guidance, and a lightweight inquiry form shell with user-facing confirmation only. Header nav placement was intentionally rejected for v1 in favor of footer-only visibility. Future work should stay narrow: Supabase intake storage, file upload wiring, and admin/email routing only. Do not fold this page into legal content or expand it into full ad operations in a single branch.
+New public advertising page is live as a footer-linked page and the advertiser inquiry workflow is now wired to a real backend path. Public submissions now save into Supabase `advertiser_inquiries`, send admin email notifications through the existing notify-admin webhook flow, and show an inline success confirmation below the submit button after submission. Header nav placement remains intentionally deferred, creative upload remains deferred, and AdminPage surfacing is still out of scope for now. Future work here should stay narrow: upload wiring, spam controls, inquiry management visibility, and follow-on ad operations only.
 
 ---
 
 ## Next branch queue
 1. Continue bug audit from current merged `main`
-2. Wire advertising inquiry form to Supabase storage / upload / admin-email routing
+2. Add hidden spam blocking and/or honeypot protection to advertiser inquiry and other public submit flows
 3. Work on hidden spam blocking and profile accuracy scoring
 4. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
 5. Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
@@ -142,7 +143,7 @@ New public advertising page is now live as a footer-linked v1 page. Current scop
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
 - Header logo sizing and optional footer logo placement remain deferred follow-on polish items after homepage desktop readability calibration
-- Wire advertising inquiry form to Supabase storage / upload / admin-email routing
+- Add hidden spam blocking and/or honeypot protection to advertiser inquiry and other public submit flows
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
 - Determine whether teams should auto-expire after ~14 months if not updated, with reminder email ~30 days before expiration and season-aging update prompt
@@ -150,6 +151,8 @@ New public advertising page is now live as a footer-linked v1 page. Current scop
 - On admin page, include facility / team / coach addresses and other form-driven fields that need update visibility
 - Consider a future follow-on polish for earlier soft team duplicate warnings on exact normalized name before age/city/state are filled, only if it can be done without creating noisy false positives
 - Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
+- Advertiser inquiry creative upload wiring remains deferred until a narrow storage/policy path is chosen
+- Advertiser inquiry AdminPage surfacing or conversion into managed `advertisers` records remains deferred
 
 ---
 
@@ -160,7 +163,7 @@ New public advertising page is now live as a footer-linked v1 page. Current scop
 - No giant rewrites. No scope creep mid-branch.
 - If a file is blocked, state exactly why. If deferred, state exactly why.
 - Prefer the narrowest safe extraction only when it materially improves the edit surface
-- Bug audit work should focus on actual behavior, regressions, edge cases, and fragile flows — not forced line-count reduction
+- Bug audit work should focus on actual behavior, regressions, edge cases, validation gaps, geocode/search failure handling, mobile layout issues, and Supabase/data-state problems — not forced line-count reduction
 
 ## Inspection checklist — required before every extraction
 1. Find the candidate component/function
