@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { isSpamSubmission, withSpamProtection } from '../utils/formSpamProtection'
 import { supabase } from '../supabase'
 
 const BORDER = '#eaeae6'
@@ -209,7 +210,7 @@ function TextAreaField({ label, value, onChange, rows = 4 }) {
   )
 }
 
-const initialForm = {
+const initialForm = withSpamProtection({
   businessName: '',
   contactName: '',
   email: '',
@@ -220,13 +221,14 @@ const initialForm = {
   targetGeography: '',
   description: '',
   notes: '',
-}
+})
 
 export default function AdvertisePage() {
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const formStartedAtRef = useRef(Date.now())
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -237,9 +239,15 @@ export default function AdvertisePage() {
 
     if (submitting) return
 
-    setSubmitting(true)
     setSubmitError('')
     setSubmitSuccess(false)
+
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setSubmitSuccess(true)
+      return
+    }
+
+    setSubmitting(true)
 
     const payload = {
       business_name: form.businessName.trim(),
@@ -267,6 +275,7 @@ export default function AdvertisePage() {
 
     setSubmitSuccess(true)
     setForm(initialForm)
+    formStartedAtRef.current = Date.now()
     setSubmitting(false)
   }
 
@@ -511,6 +520,28 @@ export default function AdvertisePage() {
               gap: 14,
             }}
           >
+            <div
+              style={{
+                position: 'absolute',
+                left: '-9999px',
+                width: '1px',
+                height: '1px',
+                overflow: 'hidden',
+              }}
+              aria-hidden="true"
+            >
+              <label htmlFor="companyFax">Fax</label>
+              <input
+                id="companyFax"
+                name="companyFax"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.companyFax || ''}
+                onChange={(e) => updateField('companyFax', e.target.value)}
+              />
+            </div>
+
             <Field
               label="Business name"
               value={form.businessName}
