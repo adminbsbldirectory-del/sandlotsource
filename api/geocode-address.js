@@ -2,10 +2,17 @@ const APP_USER_AGENT =
   'SandlotSource/1.0 (+https://sandlotsource.com; contact: admin@sandlotsource.com)'
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept-Language')
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-
   const q = String(req.query?.q || '').trim()
   if (!q) {
     return res.status(400).json({ error: 'Missing q parameter.' })
