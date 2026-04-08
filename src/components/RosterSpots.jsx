@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
+import { isSpamSubmission, withSpamProtection } from '../utils/formSpamProtection'
 import { supabase } from '../supabase.js'
 import AdSlot from './AdSlot.jsx'
 import { POSITIONS_BB, POSITIONS_SB } from '../constants/positionOptions'
@@ -422,23 +423,24 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
 function RosterForm({ onSubmitted, isMobile }) {
   const gridCols = isMobile ? '1fr' : '1fr 1fr'
 
-  const [form, setForm] = useState({
-    sport: 'baseball',
-    team_name: '',
-    org_affiliation: '',
-    age_group: '',
-    positions_needed: [],
-    city: '',
-    state: '',
-    zip_code: '',
-    lat: null,
-    lng: null,
-    description: '',
-    contact_name: '',
-    contact_info: '',
-  })
+  const [form, setForm] = useState(withSpamProtection({
+  sport: 'baseball',
+  team_name: '',
+  org_affiliation: '',
+  age_group: '',
+  positions_needed: [],
+  city: '',
+  state: '',
+  zip_code: '',
+  lat: null,
+  lng: null,
+  description: '',
+  contact_name: '',
+  contact_info: '',
+}))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const formStartedAtRef = useRef(Date.now())
   const [matchLoading, setMatchLoading] = useState(false)
   const [teamMatches, setTeamMatches] = useState([])
   const [selectedMatchId, setSelectedMatchId] = useState(null)
@@ -535,6 +537,15 @@ function RosterForm({ onSubmitted, isMobile }) {
   }
 
   async function handleSubmit() {
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setError('')
+      onSubmitted({
+        matchedTeam: null,
+        postedStandalone: true,
+      })
+      return
+    }
+
     const err = validate()
     if (err) {
       setError(err)
@@ -577,6 +588,7 @@ function RosterForm({ onSubmitted, isMobile }) {
     if (sbError) {
       setError('Submission error: ' + (sbError.message || 'Please try again.'))
     } else {
+      formStartedAtRef.current = Date.now()
       onSubmitted({
         matchedTeam: selectedMatch,
         postedStandalone: matchChoiceMode === 'standalone' || !selectedMatch,
@@ -611,6 +623,28 @@ function RosterForm({ onSubmitted, isMobile }) {
         }}
       >
         Post a Roster Spot
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
+        aria-hidden="true"
+      >
+        <label htmlFor="companyFax">Fax</label>
+        <input
+          id="companyFax"
+          name="companyFax"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.companyFax || ''}
+          onChange={(e) => set('companyFax', e.target.value)}
+        />
       </div>
 
       <div style={{ marginBottom: 16 }}>

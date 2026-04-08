@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { isSpamSubmission, withSpamProtection } from '../utils/formSpamProtection'
 import { supabase } from '../supabase.js'
 import { COACH_AGE_GROUPS } from '../constants/coachAgeGroups'
 
@@ -48,18 +49,19 @@ function StarPicker({ value, onChange, sport }) {
 
 export default function CoachProfile({ coach, onClose, onClaim }) {
   const [reviews, setReviews] = useState([])
-  const [loadingReviews, setLoadingReviews] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
-  const [form, setForm] = useState({
-    rating: 0,
-    review_text: '',
-    reviewer_name: '',
-    player_age_group: '',
-    email: '',
-  })
-  const [errors, setErrors] = useState({})
+const [loadingReviews, setLoadingReviews] = useState(true)
+const [showForm, setShowForm] = useState(false)
+const [submitting, setSubmitting] = useState(false)
+const [submitted, setSubmitted] = useState(false)
+const [form, setForm] = useState(withSpamProtection({
+  rating: 0,
+  review_text: '',
+  reviewer_name: '',
+  player_age_group: '',
+  email: '',
+}))
+const [errors, setErrors] = useState({})
+const formStartedAtRef = useRef(Date.now())
 
   const firstPhone = parseFirstPhone(coach.phone)
   const specs = Array.isArray(coach.specialty)
@@ -103,6 +105,13 @@ export default function CoachProfile({ coach, onClose, onClaim }) {
   }
 
   async function handleSubmit() {
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setErrors({})
+      setSubmitted(true)
+      setShowForm(false)
+      return
+    }
+
     const e = validate()
     if (Object.keys(e).length) {
       setErrors(e)
@@ -151,16 +160,17 @@ export default function CoachProfile({ coach, onClose, onClaim }) {
       }
     }
 
-    setSubmitting(false)
+  setSubmitting(false)
 
-    if (!error) {
-      setSubmitted(true)
-      setShowForm(false)
-      setErrors({})
-    } else {
-      setErrors({ submit: 'Something went wrong. Please try again.' })
-    }
+  if (!error) {
+    setSubmitted(true)
+    setShowForm(false)
+    setErrors({})
+    formStartedAtRef.current = Date.now()
+  } else {
+    setErrors({ submit: 'Something went wrong. Please try again.' })
   }
+}
 
   const inputStyle = {
     width:'100%',
@@ -447,7 +457,10 @@ export default function CoachProfile({ coach, onClose, onClaim }) {
             </div>
           ) : !showForm ? (
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                formStartedAtRef.current = Date.now()
+                setShowForm(true)
+              }}
               style={{
                 width:'100%',
                 padding:'12px',
@@ -467,6 +480,28 @@ export default function CoachProfile({ coach, onClose, onClaim }) {
             <div style={{ background:'var(--cream)', borderRadius:12, padding:'20px' }}>
               <div style={{ fontFamily:'var(--font-head)', fontSize:15, fontWeight:700, color:'var(--navy)', marginBottom:16 }}>
                 Leave a Review
+              </div>
+
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '-9999px',
+                  width: '1px',
+                  height: '1px',
+                  overflow: 'hidden',
+                }}
+                aria-hidden="true"
+              >
+                <label htmlFor="companyFax">Fax</label>
+                <input
+                  id="companyFax"
+                  name="companyFax"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={form.companyFax || ''}
+                  onChange={e => setForm(f => ({ ...f, companyFax: e.target.value }))}
+                />
               </div>
 
               <div style={{ marginBottom:14 }}>

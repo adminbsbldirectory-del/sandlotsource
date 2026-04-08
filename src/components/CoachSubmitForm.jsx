@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../supabase.js'
+import { isSpamSubmission } from '../utils/formSpamProtection'
 import DuplicateWarning from './DuplicateWarning.jsx'
 import ZipField from './submit/ZipField.jsx'
 import FacilitySearchSelect from './submit/FacilitySearchSelect.jsx'
@@ -945,10 +946,10 @@ function DistanceSlider({ value, onChange }) {
 
 
 // ── COACH FORM ────────────────────────────────────────────
-// ── COACH FORM ────────────────────────────────────────────
 function CoachForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
+  const formStartedAtRef = useRef(Date.now())
 
   const [form, setForm] = useState({
     name: '',
@@ -974,6 +975,7 @@ function CoachForm({ isMobile }) {
     price_notes: '',
     contact_role: '',
     submission_notes: '',
+    companyFax: '',
   })
 
   const [submitting, setSubmitting] = useState(false)
@@ -1113,6 +1115,12 @@ function CoachForm({ isMobile }) {
   async function handleSubmit(e) {
     if (e) e.preventDefault()
 
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setError('')
+      setSubmitted(true)
+      return
+    }
+
     const err = validate()
     if (err) {
       setError(err)
@@ -1226,6 +1234,7 @@ function CoachForm({ isMobile }) {
       if (sbError) throw sbError
 
       setSubmitted(true)
+      formStartedAtRef.current = Date.now()
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {
@@ -1239,6 +1248,28 @@ function CoachForm({ isMobile }) {
 
   return (
     <div>
+      <div
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+        }}
+        aria-hidden="true"
+      >
+        <label htmlFor="companyFax">Fax</label>
+        <input
+          id="companyFax"
+          name="companyFax"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.companyFax || ''}
+          onChange={(e) => set('companyFax', e.target.value)}
+        />
+      </div>
+
       <DuplicateWarning
         matches={visibleCoachMatches}
         loading={coachMatchLoading}
@@ -1359,6 +1390,7 @@ function CoachForm({ isMobile }) {
 function TeamForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
+  const formStartedAtRef = useRef(Date.now())
 
   const [form, setForm] = useState({
     name: '',
@@ -1382,6 +1414,7 @@ function TeamForm({ isMobile }) {
     tryout_notes: '',
     description: '',
     submission_notes: '',
+    companyFax: '',
   })
 
   const [submitting, setSubmitting] = useState(false)
@@ -1560,6 +1593,12 @@ function TeamForm({ isMobile }) {
   }
 
   async function handleSubmit() {
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setError('')
+      setSubmitted(true)
+      return
+    }
+
     const err = validate()
     if (err) {
       setError(err)
@@ -1725,6 +1764,19 @@ function TeamForm({ isMobile }) {
         }}
       />
 
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <label htmlFor="team-company-fax">Company Fax</label>
+        <input
+          id="team-company-fax"
+          type="text"
+          name="companyFax"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.companyFax}
+          onChange={(e) => set('companyFax', e.target.value)}
+        />
+      </div>
+
       <TeamBasicsSection
         g2={g2}
         g3={g3}
@@ -1817,11 +1869,11 @@ function TeamForm({ isMobile }) {
 }
 
 // ── PLAYER FORM ───────────────────────────────────────────
-
 function PlayerForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
   const [postType, setPostType] = useState('player_needed')
+  const formStartedAtRef = useRef(Date.now())
 
   const [form, setForm] = useState({
     sport: 'baseball',
@@ -1846,6 +1898,7 @@ function PlayerForm({ isMobile }) {
     distance_travel: 25,
     bats: '',
     throws: '',
+    companyFax: '',
   })
 
   const [submitting, setSubmitting] = useState(false)
@@ -1932,6 +1985,12 @@ function PlayerForm({ isMobile }) {
   }
 
   async function handleSubmit() {
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setError('')
+      setSubmitted(true)
+      return
+    }
+
     const err = validate()
     if (err) {
       setError(err)
@@ -2040,6 +2099,19 @@ function PlayerForm({ isMobile }) {
 
   return (
     <div>
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <label htmlFor="player-company-fax">Company Fax</label>
+        <input
+          id="player-company-fax"
+          type="text"
+          name="companyFax"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.companyFax}
+          onChange={(e) => set('companyFax', e.target.value)}
+        />
+      </div>
+
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {[['player_needed','⚾ Player Needed'],['player_available','🧢 Player Available']].map(([val, label]) => (
           <button
@@ -2235,12 +2307,12 @@ function PlayerForm({ isMobile }) {
       {postType === 'player_available' && (
         <>
           <div style={{ marginBottom: 14, maxWidth: isMobile ? '100%' : 180 }}>
-          <label style={labelStyle}>Age Group <RequiredMark /></label>
-          <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
-            <option value="">Select</option>
-            {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
-          </select>
-         </div>
+            <label style={labelStyle}>Age Group <RequiredMark /></label>
+            <select value={form.age_group} onChange={(e) => set('age_group', e.target.value)} style={selectStyle}>
+              <option value="">Select</option>
+              {AGE_GROUPS.map((a) => <option key={a}>{a}</option>)}
+            </select>
+          </div>
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>Position(s) <RequiredMark /></label>
@@ -2389,6 +2461,7 @@ function PlayerForm({ isMobile }) {
 function FacilityForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
+  const formStartedAtRef = useRef(Date.now())
 
   const AMENITY_OPTIONS = ['Batting Cages','Pitching Mounds','Turf Infield','HitTrax','Rapsodo','Video Analysis','Weight Room','Bullpen','Indoor Facility','Outdoor Fields','Lights','Restrooms','Parking','Concessions']
 
@@ -2414,6 +2487,7 @@ function FacilityForm({ isMobile }) {
     contact_email: '',
     contact_phone: '',
     submission_notes: '',
+    companyFax: '',
   })
 
   const [submitting, setSubmitting] = useState(false)
@@ -2508,7 +2582,7 @@ function FacilityForm({ isMobile }) {
     }))
 
     setAddrStatus('found')
-}
+  }
 
   function validate() {
     if (!form.name.trim()) return 'Facility name is required.'
@@ -2520,6 +2594,12 @@ function FacilityForm({ isMobile }) {
   }
 
   async function handleSubmit() {
+    if (isSpamSubmission(form, formStartedAtRef.current)) {
+      setError('')
+      setSubmitted(true)
+      return
+    }
+
     const err = validate()
     if (err) {
       setError(err)
@@ -2542,15 +2622,15 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
-    const finalLocation = await finalizeListingLocation({
-      address: form.address,
-      city: form.city,
-      state: form.state,
-      zip: form.zip_code,
-      addressRequired: true,
-      preResolved: resolvedAddressRef.current,
-      listingName: form.name,
-    })
+      const finalLocation = await finalizeListingLocation({
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip_code,
+        addressRequired: true,
+        preResolved: resolvedAddressRef.current,
+        listingName: form.name,
+      })
 
       if (!finalLocation.ok) {
         if (isBlockedGeocodeFailure(finalLocation.error)) {
@@ -2620,6 +2700,19 @@ function FacilityForm({ isMobile }) {
 
   return (
     <div>
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <label htmlFor="facility-company-fax">Company Fax</label>
+        <input
+          id="facility-company-fax"
+          type="text"
+          name="companyFax"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.companyFax}
+          onChange={(e) => set('companyFax', e.target.value)}
+        />
+      </div>
+
       <DuplicateWarning
         matches={visibleFacilityMatches}
         loading={facilityMatchLoading}

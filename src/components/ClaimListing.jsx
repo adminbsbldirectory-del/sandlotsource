@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { isSpamSubmission, withSpamProtection } from '../utils/formSpamProtection'
 import { supabase } from '../supabase.js'
 
 const LISTING_TYPE_OPTIONS = [
@@ -116,7 +117,7 @@ export default function ClaimListing() {
   const [searchParams] = useSearchParams()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [requestMode, setRequestMode] = useState('claim')
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(withSpamProtection({
     listing_id: '',
     listing_type: '',
     listing_name: '',
@@ -131,10 +132,11 @@ export default function ClaimListing() {
     tryout_updates: '',
     availability_updates: '',
     notes: '',
-  })
+  }))
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [validationError, setValidationError] = useState('')
+  const formStartedAtRef = useRef(Date.now())
 
   const searchListingId = searchParams.get('listingId') || searchParams.get('listing_id') || ''
   const searchListingTypeRaw = searchParams.get('listingType') || searchParams.get('listing_type') || ''
@@ -241,55 +243,62 @@ export default function ClaimListing() {
     return ''
   }
 
-  async function handleSubmit() {
-    const err = validate()
-    if (err) {
-      setValidationError(err)
-      return
+    async function handleSubmit() {
+      if (isSpamSubmission(form, formStartedAtRef.current)) {
+        setValidationError('')
+        setSubmitted(true)
+        return
+      }
+
+      const err = validate()
+      if (err) {
+        setValidationError(err)
+        return
+      }
+
+      setValidationError('')
+      setSubmitting(true)
+
+      const requestKind = requestMode === 'update' ? 'update' : 'claim'
+      const requestedChange = requestMode === 'claim' ? CLAIM_CHANGE : form.requested_change
+
+      const payload = {
+        listing_id: form.listing_id,
+        listing_type: form.listing_type,
+        request_kind: requestKind,
+        listing_name: form.listing_name.trim(),
+        city: form.city.trim(),
+        requester_name: form.requester_name.trim(),
+        requester_email: form.requester_email.trim(),
+        requester_phone: form.requester_phone.trim() || null,
+        relationship_to_listing: form.relationship_to_listing,
+        requested_change: requestedChange,
+        corrected_contact_info: requestKind === 'update' ? form.corrected_contact_info.trim() || null : null,
+        website_social_updates: requestKind === 'update' ? form.website_social_updates.trim() || null : null,
+        tryout_updates:
+          requestKind === 'update' && requestedChange === 'Update tryout status'
+            ? form.tryout_updates.trim() || null
+            : null,
+        availability_updates:
+          requestKind === 'update' && requestedChange === 'Update availability'
+            ? form.availability_updates.trim() || null
+            : null,
+        notes: form.notes.trim() || null,
+        status: 'new',
+        submitted_at: new Date().toISOString(),
+      }
+
+      const { error } = await supabase.from('claim_requests').insert(payload)
+      setSubmitting(false)
+
+      if (!error) {
+        setSubmitted(true)
+        formStartedAtRef.current = Date.now()
+      } else {
+        console.error('claim_requests insert error:', error)
+        setValidationError('Something went wrong. Please email admin@sandlotsource.com directly.')
+      }
     }
-
-    setValidationError('')
-    setSubmitting(true)
-
-    const requestKind = requestMode === 'update' ? 'update' : 'claim'
-    const requestedChange = requestMode === 'claim' ? CLAIM_CHANGE : form.requested_change
-
-    const payload = {
-      listing_id: form.listing_id,
-      listing_type: form.listing_type,
-      request_kind: requestKind,
-      listing_name: form.listing_name.trim(),
-      city: form.city.trim(),
-      requester_name: form.requester_name.trim(),
-      requester_email: form.requester_email.trim(),
-      requester_phone: form.requester_phone.trim() || null,
-      relationship_to_listing: form.relationship_to_listing,
-      requested_change: requestedChange,
-      corrected_contact_info: requestKind === 'update' ? form.corrected_contact_info.trim() || null : null,
-      website_social_updates: requestKind === 'update' ? form.website_social_updates.trim() || null : null,
-      tryout_updates:
-        requestKind === 'update' && requestedChange === 'Update tryout status'
-          ? form.tryout_updates.trim() || null
-          : null,
-      availability_updates:
-        requestKind === 'update' && requestedChange === 'Update availability'
-          ? form.availability_updates.trim() || null
-          : null,
-      notes: form.notes.trim() || null,
-      status: 'new',
-      submitted_at: new Date().toISOString(),
-    }
-
-    const { error } = await supabase.from('claim_requests').insert(payload)
-    setSubmitting(false)
-
-    if (!error) {
-      setSubmitted(true)
-    } else {
-      console.error('claim_requests insert error:', error)
-      setValidationError('Something went wrong. Please email admin@sandlotsource.com directly.')
-    }
-  }
 
   if (submitted) {
     return (
@@ -431,6 +440,28 @@ export default function ClaimListing() {
         <div style={{ fontSize: isMobile ? 14 : 13, color: 'var(--gray)', marginBottom: 24, lineHeight: 1.5 }}>
           Use this form to either claim ownership of a listing or request an update.
           We review all requests manually and will contact you to verify.
+        </div>
+
+                <div
+          style={{
+            position: 'absolute',
+            left: '-9999px',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+          }}
+          aria-hidden="true"
+        >
+          <label htmlFor="companyFax">Fax</label>
+          <input
+            id="companyFax"
+            name="companyFax"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={form.companyFax || ''}
+            onChange={(e) => set('companyFax', e.target.value)}
+          />
         </div>
 
         {hasPrefill && (
