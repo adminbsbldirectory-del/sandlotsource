@@ -1039,8 +1039,9 @@ export default function Facilities() {
                       border: 'none',
                       borderRadius: 8,
                       padding: '10px 12px',
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 700,
+                      letterSpacing: '0.01em',
                       fontFamily: 'var(--font-head)',
                     }}
                   >
@@ -1134,8 +1135,9 @@ export default function Facilities() {
                         border: 'none',
                         borderRadius: 8,
                         padding: '10px 12px',
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: 700,
+                        letterSpacing: '0.01em',
                         fontFamily: 'var(--font-head)',
                       }}
                     >
@@ -1152,8 +1154,9 @@ export default function Facilities() {
                         border: '2px solid var(--lgray)',
                         borderRadius: 8,
                         padding: '10px 12px',
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: 700,
+                        letterSpacing: '0.01em',
                         fontFamily: 'var(--font-head)',
                       }}
                     >
@@ -1335,7 +1338,7 @@ export default function Facilities() {
                       )}
 
                       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                        <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>
+                        <div style={{ fontFamily: 'var(--font-head)', fontSize: 17, fontWeight: 700, letterSpacing: '0.01em', color: 'var(--navy)' }}>
                           {hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'}` : 'Nearby facilities will appear here'}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--gray)' }}>

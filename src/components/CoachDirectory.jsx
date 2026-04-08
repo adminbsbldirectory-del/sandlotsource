@@ -1730,8 +1730,9 @@ export default function CoachDirectory() {
                           border: "none",
                           borderRadius: 8,
                           padding: "10px 12px",
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: 700,
+                          letterSpacing: "0.01em",
                           fontFamily: "var(--font-head)",
                         }}
                       >
@@ -1855,8 +1856,9 @@ export default function CoachDirectory() {
                       border: "none",
                       borderRadius: 8,
                       padding: "10px 12px",
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 700,
+                      letterSpacing: "0.01em",
                       fontFamily: "var(--font-head)",
                     }}
                   >
@@ -1999,8 +2001,9 @@ export default function CoachDirectory() {
                       <div
                         style={{
                           fontFamily: "var(--font-head)",
-                          fontSize: 18,
-                          fontWeight: 800,
+                          fontSize: 17,
+                          fontWeight: 700,
+                          letterSpacing: "0.01em",
                           color: "var(--navy)",
                         }}
                       >

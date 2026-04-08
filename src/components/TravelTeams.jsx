@@ -752,7 +752,22 @@ export default function TravelTeams() {
                 </select>
               </div>
 
-              <button type="button" onClick={applySearch} style={{ width: '100%', background: 'var(--navy)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 12px', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-head)' }}>
+              <button
+                type="button"
+                onClick={applySearch}
+                style={{
+                  width: '100%',
+                  background: 'var(--navy)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: '0.01em',
+                  fontFamily: 'var(--font-head)',
+                }}
+              >
                 Search
               </button>
 
@@ -787,8 +802,9 @@ export default function TravelTeams() {
                     borderRadius: 'var(--btn-radius)',
                     background: 'var(--red)',
                     color: 'white',
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 700,
+                    letterSpacing: '0.01em',
                     fontFamily: 'var(--font-head)',
                     minHeight: 40,
                     display: 'flex',
@@ -1000,8 +1016,9 @@ export default function TravelTeams() {
                     <div
                       style={{
                         fontFamily: 'var(--font-head)',
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: 700,
+                        letterSpacing: '0.01em',
                         color: 'var(--navy)',
                       }}
                     >
