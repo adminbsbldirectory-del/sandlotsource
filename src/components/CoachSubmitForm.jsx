@@ -793,13 +793,15 @@ async function findOrCreateFacilityFromCoach(form, selectedExistingFacilityId = 
 
 async function createPendingFacilityRecord({ facility, sport, contactName, contactEmail, contactPhone, submissionNotes, source = 'website_form' }) {
   const finalLocation = await finalizeListingLocation({
-    address: facility.address,
-    city: facility.city,
-    state: facility.state,
-    zip: facility.zip_code,
-    addressRequired: true,
-    allowZipFallback: false,
-  })
+  address: form.address,
+  city: form.city,
+  state: form.state,
+  zip: form.zip_code,
+  addressRequired: true,
+  allowZipFallback: false,
+  preResolved: resolvedAddressRef.current,
+  listingName: form.name,
+})
 
   if (!finalLocation.ok) {
     throw new Error(finalLocation.error)
@@ -2628,6 +2630,7 @@ function FacilityForm({ isMobile }) {
         state: form.state,
         zip: form.zip_code,
         addressRequired: true,
+        allowZipFallback: true,
         preResolved: resolvedAddressRef.current,
         listingName: form.name,
       })

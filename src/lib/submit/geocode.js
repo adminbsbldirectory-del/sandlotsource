@@ -67,10 +67,6 @@ function normalizeStateValue(value) {
   return map[upper] || upper
 }
 
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase()
-}
-
 function normalizeLocalityText(value) {
   return String(value || '')
     .trim()
@@ -361,11 +357,24 @@ function buildAddressQueries(street, city, state, zip, listingName = '') {
   const cleanCity = String(city || '').trim()
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
+  const cleanName = String(listingName || '').trim()
 
-  return [
+  const queries = [
     [cleanStreet, cleanCity, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
     [cleanStreet, cleanCity, cleanState, 'USA'].filter(Boolean).join(', '),
+    [cleanStreet, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
+    [cleanStreet, cleanZip, 'USA'].filter(Boolean).join(', '),
   ].filter(Boolean)
+
+  if (cleanName) {
+    queries.push(
+      [cleanName, cleanCity, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
+      [cleanName, cleanState, cleanZip, 'USA'].filter(Boolean).join(', '),
+      [cleanName, cleanState, 'USA'].filter(Boolean).join(', ')
+    )
+  }
+
+  return Array.from(new Set(queries))
 }
 
 function isCompatibleCandidate({
@@ -386,12 +395,36 @@ function isCompatibleCandidate({
   const returnedZip = normalizeZipCode(addr.postcode || '')
 
   const inputStreet = parseStreetParts(street)
+  const streetMatchQuality = getStreetMatchQuality(street, addr.road || '')
 
   if (expectedState && returnedState && returnedState !== expectedState) {
     return false
   }
 
-  if (expectedCity && getResolvedCity(addr) && !cityMatches(expectedCity, row, addr)) {
+  const exactHouseMatch = Boolean(
+    inputStreet.houseNumber &&
+      addr.house_number &&
+      normalizeAddressToken(addr.house_number) === inputStreet.houseNumber
+  )
+
+  const zipDistance =
+    zipGeo && Number.isFinite(lat) && Number.isFinite(lng)
+      ? distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng)
+      : null
+
+  const strongExactAddressEvidence =
+    exactHouseMatch &&
+    streetMatchQuality >= 2 &&
+    (!expectedState || !returnedState || returnedState === expectedState) &&
+    ((expectedZip && returnedZip && returnedZip === expectedZip) ||
+      (zipDistance !== null && zipDistance <= 5))
+
+  if (
+    expectedCity &&
+    getResolvedCity(addr) &&
+    !cityMatches(expectedCity, row, addr) &&
+    !strongExactAddressEvidence
+  ) {
     return false
   }
 
@@ -403,7 +436,6 @@ function isCompatibleCandidate({
     return false
   }
 
-  const streetMatchQuality = getStreetMatchQuality(street, addr.road || '')
   if (inputStreet.road && addr.road && streetMatchQuality === 0) {
     return false
   }
@@ -433,13 +465,22 @@ function scoreCandidate({ row, addr, lat, lng, street, city, state, zip, zipGeo 
   const candidateStreet = parseStreetParts(addr.road || '')
   const streetMatchQuality = getStreetMatchQuality(street, addr.road || '')
 
+  const isVenueType =
+    row.type === 'park' ||
+    row.type === 'pitch' ||
+    row.type === 'sports_centre' ||
+    row.type === 'recreation_ground' ||
+    row.type === 'stadium' ||
+    row.addresstype === 'amenity' ||
+    row.addresstype === 'leisure'
+
   let score = 0
 
   if (inputStreet.houseNumber && addr.house_number) {
     if (normalizeAddressToken(addr.house_number) === inputStreet.houseNumber) score += 26
     else score -= 40
   } else if (inputStreet.houseNumber && !addr.house_number) {
-    score -= 12
+    score -= isVenueType ? 4 : 12
   }
 
   if (streetMatchQuality === 4) score += 30
@@ -449,7 +490,21 @@ function scoreCandidate({ row, addr, lat, lng, street, city, state, zip, zipGeo 
   else score -= 20
 
   if (row.addresstype === 'building' || row.type === 'house') score += 5
-  if (row.addresstype === 'amenity' || row.type === 'sports_centre' || row.type === 'stadium') score += 3
+  if (
+    row.addresstype === 'amenity' ||
+    row.type === 'sports_centre' ||
+    row.type === 'stadium'
+  ) {
+    score += 5
+  }
+  if (
+    row.type === 'park' ||
+    row.type === 'pitch' ||
+    row.type === 'recreation_ground' ||
+    row.addresstype === 'leisure'
+  ) {
+    score += 5
+  }
 
   if (expectedState && returnedState === expectedState) score += 18
 
@@ -484,7 +539,7 @@ function scoreCandidate({ row, addr, lat, lng, street, city, state, zip, zipGeo 
 
 async function fetchGeocodeRows(query) {
   const apiOrigin =
-    window.location.hostname === 'localhost' && window.location.port === '5173'
+    window.location.hostname === 'localhost'
       ? 'http://localhost:3000'
       : window.location.origin
 
@@ -533,15 +588,16 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
   const zipGeo = cleanZip ? await geocodeZip(cleanZip) : null
+  const listingName = String(options.listingName || '').trim()
 
   const streetVariants = buildStreetVariants(rawStreet)
   const queries = Array.from(
     new Set(
       streetVariants.flatMap((streetLine) =>
-        buildAddressQueries(streetLine, cleanCity, cleanState, cleanZip)
+        buildAddressQueries(streetLine, cleanCity, cleanState, cleanZip, listingName)
       )
     )
-  ).slice(0, 2)
+  ).slice(0, 7)
 
   const candidates = []
   const seen = new Set()
@@ -612,7 +668,16 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
           candidate.road === inputStreet.road
         const exactZip = cleanZip && candidate.zip_code === cleanZip
 
-        if (candidate.score >= 70 && exactHouse && exactRoad && exactZip) {
+        const isVenueLikeResult =
+          row.addresstype === 'amenity' ||
+          row.addresstype === 'leisure' ||
+          row.type === 'sports_centre' ||
+          row.type === 'stadium' ||
+          row.type === 'park' ||
+          row.type === 'pitch' ||
+          row.type === 'recreation_ground'
+
+        if (candidate.score >= 70 && exactHouse && exactRoad && exactZip && isVenueLikeResult) {
           return {
             lat: candidate.lat,
             lng: candidate.lng,
@@ -638,9 +703,8 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
     return a.display_name.length - b.display_name.length
   })
 
-    const best = candidates[0]
-  const inputStreet = parseStreetParts(rawStreet)
-  const minimumScore = inputStreet.houseNumber || cleanZip || cleanCity ? 40 : 28
+  const best = candidates[0]
+  const minimumScore = 28
 
   if (best.score < minimumScore) {
     return null
@@ -712,14 +776,16 @@ async function finalizeListingLocation({
       return { ok: true, resolved: { ...exact, source: 'address' } }
     }
 
-    return {
-      ok: false,
-      error:
-        'We could not confidently place that street address. Please verify it or contact admin@sandlotsource.com before submitting.',
+    if (!allowZipFallback) {
+      return {
+        ok: false,
+        error:
+          'We could not confidently place that street address. Please verify it or contact admin@sandlotsource.com before submitting.',
+      }
     }
   }
 
-  if (addressRequired) {
+  if (addressRequired && !cleanAddress) {
     return {
       ok: false,
       error: 'A street address is required for this listing.',
