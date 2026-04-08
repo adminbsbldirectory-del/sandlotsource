@@ -170,7 +170,7 @@ export default function Header() {
               src="/logo.png"
               alt="Sandlot Source"
               style={{
-                height: isMobile ? 42 : 64,
+                height: isMobile ? 42 : 84,
                 width: 'auto',
                 display: 'block',
                 objectFit: 'contain',
