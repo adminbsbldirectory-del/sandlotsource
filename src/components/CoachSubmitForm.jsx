@@ -1219,7 +1219,7 @@ function CoachForm({ isMobile }) {
         credentials: form.credentials.trim() || null,
         bio: form.bio.trim() || null,
         age_groups: parseAgeGroupsInput(form.age_groups),
-        skill_level: form.skill_level || null,
+        skill_level: form.skill_level ? [form.skill_level] : null,
         price_per_session: form.price_per_session ? parseFloat(form.price_per_session) : null,
         price_notes: form.price_notes.trim() || null,
         contact_role: form.contact_role.trim(),
