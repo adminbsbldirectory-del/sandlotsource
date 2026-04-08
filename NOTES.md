@@ -89,6 +89,7 @@ Current phase is bug audit.
 - `HomePage.jsx` / `FeaturedCard.jsx` / `index.html` — improved homepage desktop readability by raising undersized desktop text, darkening faint secondary text, and adding Barlow 700 to the Google Fonts import; kept scope limited to readability polish only, with broader font/color harmonization and logo/footer follow-on deferred
 - `App.jsx` / `AdvertisePage.jsx` — added new public `/advertise` page, linked it from the footer Support section only, used forward-looking readable typography for the new page, and kept the intake form as a page-shell v1 with user-facing confirmation only; storage, upload wiring, and admin/email routing remain deferred
 - `AdvertisePage.jsx` / `api/notify-admin.js` / `lib/emailTemplates.js` / Supabase `advertiser_inquiries` — advertiser inquiry workflow is now live end-to-end: public form submissions save to Supabase, trigger admin email notifications through the existing webhook/notify path, creative upload remains deferred, and the success confirmation was moved below the submit button so users do not need to scroll back up to see it
+- `src/utils/formSpamProtection.js` / `AdvertisePage.jsx` / `ClaimListing.jsx` / `CoachProfile.jsx` / `RosterSpots.jsx` / `CoachSubmitForm.jsx` — public-form anti-spam hardening is complete for this branch using a shared low-friction pattern (hidden honeypot + minimum submit-time check + silent success for flagged spam). `AdvertisePage`, `ClaimListing`, `CoachProfile`, `RosterSpots`, and all four `CoachSubmitForm.jsx` public subforms (`CoachForm`, `TeamForm`, `PlayerForm`, `FacilityForm`) are patched and merged. Follow-up testing confirmed the anti-spam/button wiring is working; remaining Team / Player address-submission failures are part of the separate known geocode/address-confidence issue, not this branch.
 
 ---
 
@@ -116,25 +117,32 @@ Leaf result extractions are complete and merged. Mobile browser search-results b
 Below target. Out of oversized-file queue.
 
 ### `CoachSubmitForm.jsx` — BUG-AUDIT ACTIVE
-Previous refactor phase is complete. Current submit-flow hardening now includes duplicate-warning behavior for coach and travel-team submissions, while facility duplicate flow remains intact. Duplicate handling is intentionally soft-warning only, not DB hard blocking, because shared facility contacts, shared org emails, and shared park/address data can be legitimate. Remaining work here should stay narrow and focused on submit UX, validation, geocode handling, or spam/quality controls only.
+Previous refactor phase is complete. Current submit-flow hardening includes duplicate-warning behavior for coach and travel-team submissions, while facility duplicate flow remains intact. Duplicate handling is intentionally soft-warning only, not DB hard blocking, because shared facility contacts, shared org emails, and shared park/address data can be legitimate. Public-form anti-spam hardening is now complete across all four public submit subforms (`CoachForm`, `TeamForm`, `PlayerForm`, `FacilityForm`) using the shared low-friction pattern (hidden honeypot + minimum submit-time check + silent success for flagged spam). Local testing confirmed Coach submit success and verified that the prior button-wiring regression was resolved. Remaining Team / Player address submission blocking is currently treated as part of the separate known geocode/address-confidence issue and should be handled in its own thread. Future work here should stay narrow and focused on submit UX, validation, geocode handling, spam controls, or other quality controls only.
 
 ### `PlayerBoard.jsx` — BLOCKED
-Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase.
+Remaining bulk is state/auth/geocode/form/map-viewport logic. No additional clearly worthwhile narrow extraction remains in the current phase. `CoachSubmitForm.jsx` player-form anti-spam coverage is now complete, so any further Player Board submit-path work should focus only on confirming whether this file still hosts an active separate public submit surface and, if so, whether it needs its own independent hardening or geocode handling pass.
 
 ### `RosterSpots.jsx` — BUG-AUDIT ACTIVE
-Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Future work should focus only on narrow launch-hardening, spam control, or UX polish if needed.
+Linked roster spots to existing teams / facilities were inspected and verified live without new code changes. Current launch direction is that roster spots may publish immediately and auto-expire after 15 days, rather than requiring manual pending/review moderation. Claim should not be required before roster spot creation. Public-form anti-spam hardening is now added to the `RosterForm` post flow and was locally tested. Future work should focus only on narrow launch-hardening, spam control, or UX polish if needed.
 
 ### `AdvertisePage.jsx` — BUG-AUDIT ACTIVE
-New public advertising page is live as a footer-linked page and the advertiser inquiry workflow is now wired to a real backend path. Public submissions now save into Supabase `advertiser_inquiries`, send admin email notifications through the existing notify-admin webhook flow, and show an inline success confirmation below the submit button after submission. Header nav placement remains intentionally deferred, creative upload remains deferred, and AdminPage surfacing is still out of scope for now. Future work here should stay narrow: upload wiring, spam controls, inquiry management visibility, and follow-on ad operations only.
+New public advertising page is live as a footer-linked page and the advertiser inquiry workflow is now wired to a real backend path. Public submissions save into Supabase `advertiser_inquiries`, send admin email notifications through the existing notify-admin webhook flow, and show an inline success confirmation below the submit button after submission. Narrow public-form anti-spam protection is now added here using the shared low-friction pattern (hidden honeypot + minimum submit-time check) and was locally tested successfully. Header nav placement remains intentionally deferred, creative upload remains deferred, and AdminPage surfacing is still out of scope for now. Future work here should stay narrow: upload wiring, spam controls, inquiry management visibility, and follow-on ad operations only.
+
+### `ClaimListing.jsx` — BUG-AUDIT ACTIVE
+Claim/update flow remains intentionally listing-linked and review-driven. Public-form anti-spam hardening is now added here using the shared low-friction pattern (hidden honeypot + minimum submit-time check) and was locally tested successfully. Future work should stay narrow and focused on ownership verification flow, claim routing edge cases, and related launch-hardening only.
+
+### `CoachProfile.jsx` — BUG-AUDIT ACTIVE
+Public review submission remains active and review-moderated. Public-form anti-spam hardening is now added here using the shared low-friction pattern (hidden honeypot + minimum submit-time check). Localhost testing confirmed review insert success and expected local `/api/notify-admin` 404 behavior during local review-submit testing, while production notify behavior remains deferred to production verification after merge. Future work should stay narrow and focused on moderation, review quality, and profile presentation only.
 
 ---
 
 ## Next branch queue
-1. Continue bug audit from current merged `main`
-2. Add hidden spam blocking and/or honeypot protection to advertiser inquiry and other public submit flows
-3. Work on hidden spam blocking and profile accuracy scoring
-4. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
-5. Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
+1. Resume bug audit from current merged `main`
+2. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
+3. Confirm whether standalone `PlayerBoard.jsx` still needs a separate anti-spam patch or whether all live public submit traffic now routes only through `CoachSubmitForm.jsx`
+4. Homepage featured cards: consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
+5. Work on hidden spam blocking and profile accuracy scoring
+6. Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
 
 ---
 
@@ -143,16 +151,17 @@ New public advertising page is live as a footer-linked page and the advertiser i
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
 - Header logo sizing and optional footer logo placement remain deferred follow-on polish items after homepage desktop readability calibration
-- Add hidden spam blocking and/or honeypot protection to advertiser inquiry and other public submit flows
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
 - Determine whether teams should auto-expire after ~14 months if not updated, with reminder email ~30 days before expiration and season-aging update prompt
 - Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
+- Separate known geocode/address-confidence issue: Team submit and Player Needed submit can currently block on confident street-address placement; anti-spam branch confirmed this is not caused by the honeypot/timing work
 - On admin page, include facility / team / coach addresses and other form-driven fields that need update visibility
 - Consider a future follow-on polish for earlier soft team duplicate warnings on exact normalized name before age/city/state are filled, only if it can be done without creating noisy false positives
 - Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
 - Advertiser inquiry creative upload wiring remains deferred until a narrow storage/policy path is chosen
 - Advertiser inquiry AdminPage surfacing or conversion into managed `advertisers` records remains deferred
+- Coach submit flow: malformed behavior when selecting `Beginner` in the coach level section
 
 ---
 
@@ -182,7 +191,7 @@ New public advertising page is live as a footer-linked page and the advertiser i
 - [x] Last completed item recorded in extractions list
 - [x] Affected per-file status block updated
 - [x] Next branch queue updated
-- [x] Repo state confirmed: `main` / clean / synced
+- [ ] Repo state confirmed: `main` / clean / synced
 - [ ] NOTES.md rewritten (not appended) and committed
 
 ---
