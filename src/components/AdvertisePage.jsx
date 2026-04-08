@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../supabase'
 
 const BORDER = '#eaeae6'
 const RED = '#D42B2B'
@@ -208,27 +209,65 @@ function TextAreaField({ label, value, onChange, rows = 4 }) {
   )
 }
 
+const initialForm = {
+  businessName: '',
+  contactName: '',
+  email: '',
+  phone: '',
+  website: '',
+  cityState: '',
+  placementInterest: '',
+  targetGeography: '',
+  description: '',
+  notes: '',
+}
+
 export default function AdvertisePage() {
-  const [form, setForm] = useState({
-    businessName: '',
-    contactName: '',
-    email: '',
-    phone: '',
-    website: '',
-    cityState: '',
-    placementInterest: '',
-    targetGeography: '',
-    description: '',
-    notes: '',
-  })
+  const [form, setForm] = useState(initialForm)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    alert('Thanks for your interest. We will follow up with placement options, pricing, and next steps.')
+
+    if (submitting) return
+
+    setSubmitting(true)
+    setSubmitError('')
+    setSubmitSuccess(false)
+
+    const payload = {
+      business_name: form.businessName.trim(),
+      contact_name: form.contactName.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim() || null,
+      website_url: form.website.trim() || null,
+      business_city_state: form.cityState.trim() || null,
+      placement_interest: form.placementInterest || null,
+      target_geography: form.targetGeography.trim() || null,
+      business_description: form.description.trim() || null,
+      notes_goals: form.notes.trim() || null,
+    }
+
+    const { error } = await supabase
+      .from('advertiser_inquiries')
+      .insert([payload])
+
+    if (error) {
+      console.error('Advertiser inquiry submit error:', error)
+      setSubmitError('Something went wrong while sending your inquiry. Please try again.')
+      setSubmitting(false)
+      return
+    }
+
+    setSubmitSuccess(true)
+    setForm(initialForm)
+    setSubmitting(false)
   }
 
   return (
@@ -447,6 +486,23 @@ export default function AdvertisePage() {
           next steps.
         </p>
 
+        {submitError && (
+          <div
+            style={{
+              marginBottom: 16,
+              padding: '12px 14px',
+              borderRadius: 10,
+              border: '1px solid #efc2c2',
+              background: '#fff5f5',
+              color: '#a12626',
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            {submitError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div
             style={{
@@ -531,9 +587,8 @@ export default function AdvertisePage() {
           </div>
 
           <div style={{ marginTop: 14 }}>
-            <label
+            <div
               style={{
-                display: 'block',
                 fontSize: 13,
                 fontWeight: 700,
                 color: DARK,
@@ -541,48 +596,62 @@ export default function AdvertisePage() {
               }}
             >
               Creative upload
-            </label>
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp"
-              style={{
-                display: 'block',
-                width: '100%',
-                fontSize: 14,
-                color: MUTED,
-              }}
-            />
+            </div>
             <div
               style={{
-                marginTop: 6,
-                fontSize: 12,
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: `1px solid ${BORDER}`,
+                background: LIGHT,
+                fontSize: 13,
                 color: MUTED,
-                lineHeight: 1.5,
+                lineHeight: 1.6,
               }}
             >
-              You can include a creative file now, or submit your inquiry first and share creative afterward.
+              Creative upload is not enabled yet. You can submit your inquiry now and share creative afterward.
             </div>
           </div>
 
           <div style={{ marginTop: 18 }}>
             <button
               type="submit"
+              disabled={submitting}
               style={{
                 minHeight: 44,
                 padding: '10px 16px',
                 borderRadius: 10,
                 border: 'none',
-                background: RED,
+                background: submitting ? '#cc6b6b' : RED,
                 color: '#fff',
                 fontSize: 14,
                 fontWeight: 700,
-                cursor: 'pointer',
+                cursor: submitting ? 'default' : 'pointer',
                 letterSpacing: '0.03em',
+                opacity: submitting ? 0.85 : 1,
               }}
             >
-              Send Inquiry
+              {submitting ? 'Sending...' : 'Send Inquiry'}
             </button>
           </div>
+
+          {submitSuccess && (
+            <div
+                style={{
+                marginTop: 12,
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid #b7dfc6',
+                background: '#f3fbf6',
+                color: '#1f6b3d',
+                fontSize: 14,
+                lineHeight: 1.6,
+                }}
+            >
+                Thanks for your interest. Your inquiry has been sent, and we&apos;ll follow up with placement
+                options, pricing, and next steps.
+            </div>
+            )}
+
         </form>
       </section>
     </div>
