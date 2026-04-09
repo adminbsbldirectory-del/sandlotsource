@@ -29,7 +29,7 @@ const COACH_FIELDS = [
   { key: 'address', label: 'Address', type: 'text' },
   { key: 'city', label: 'City', type: 'text' },
   { key: 'state', label: 'State', type: 'text' },
-  { key: 'zip_code', label: 'ZIP', type: 'text' },
+  { key: 'zip', label: 'ZIP', type: 'text' },
   { key: 'facility_name', label: 'Facility', type: 'text' },
   { key: 'phone', label: 'Phone', type: 'text' },
   { key: 'email', label: 'Email', type: 'text' },

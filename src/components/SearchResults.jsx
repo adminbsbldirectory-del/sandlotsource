@@ -170,7 +170,7 @@ export default function SearchResults() {
   function matchesRadius(item) {
     if (!geoResult) return true
     const dist = getDistance(item)
-    if (dist == null) return true
+    if (dist == null) return false
     return dist <= radius
   }
 

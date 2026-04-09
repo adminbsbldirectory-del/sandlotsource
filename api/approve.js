@@ -36,6 +36,29 @@ const tableLabels = {
   facilities: 'Facility',
 };
 
+// Tables where lat/lng must be present before approval is allowed
+const geoTables = new Set(['coaches', 'travel_teams', 'facilities']);
+
+function missingCoordsPage(table, id) {
+  const label = tableLabels[table] || table;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sandlot Source</title></head>
+  <body style="font-family:-apple-system,sans-serif;background:#f9fafb;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:12px;padding:40px;max-width:520px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;">
+  <div style="font-size:48px;margin-bottom:16px;">📍</div>
+  <h1 style="margin:0 0 8px;color:#111827;font-size:22px;">Coordinates Missing — Cannot Approve</h1>
+  <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">This ${label} record (ID: <code>${id}</code>) has no latitude or longitude. Approving it would make it invisible in proximity searches.</p>
+  <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:8px;padding:16px;margin-bottom:24px;text-align:left;">
+  <p style="margin:0 0 8px;font-weight:700;color:#92400e;font-size:14px;">⚠️ Action required before approving:</p>
+  <ol style="margin:0;padding-left:18px;font-size:13px;color:#78350f;line-height:1.7;">
+  <li>Open the Admin Panel on Sandlot Source.</li>
+  <li>Find this record and enter a valid address.</li>
+  <li>Save — geocoding will run automatically.</li>
+  <li>Return to your email and click Approve once coordinates are populated.</li>
+  </ol></div>
+  <a href="https://sandlotsource.com/admin" style="background:#1e3a5f;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block;">Open Admin Panel</a>
+  </div></body></html>`;
+}
+
 function confirmationPage(action, table, record) {
   const approved = action === 'approve';
   const label = tableLabels[table] || table;
@@ -63,6 +86,21 @@ export default async function handler(req, res) {
   if (!verifyToken(table, id, token)) {
     return res.status(403).send('<h2 style="font-family:sans-serif;color:#dc2626;">⛔ Invalid or expired link</h2>');
   }
+
+  // Guard: for geo-searchable listings, block approval when coordinates are missing
+  if (action === 'approve' && geoTables.has(table)) {
+    const { data: coords, error: coordsError } = await supabase
+      .from(table)
+      .select('lat, lng')
+      .eq('id', id)
+      .single();
+    if (coordsError) return res.status(500).send('Database error — could not verify coordinates before approving.');
+    if (coords.lat == null || coords.lng == null) {
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(200).send(missingCoordsPage(table, id));
+    }
+  }
+
   const { data, error } = await supabase
     .from(table)
     .update({ [statusColumn[table]]: action === 'approve' ? 'approved' : 'rejected' })

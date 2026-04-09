@@ -1,3 +1,7 @@
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function normalizeZipCode(value) {
   const match = String(value || '').match(/\b\d{5}\b/)
   return match ? match[0] : ''
@@ -103,6 +107,20 @@ function buildStreetVariants(value) {
     [/\bln\b/gi, 'lane'],
     [/\bcourt\b/gi, 'ct'],
     [/\bct\b/gi, 'court'],
+    [/\bext\b/gi, 'extension'],
+    [/\bextension\b/gi, 'ext'],
+    [/\bblvd\b/gi, 'boulevard'],
+    [/\bboulevard\b/gi, 'blvd'],
+    [/\bcir\b/gi, 'circle'],
+    [/\bcircle\b/gi, 'cir'],
+    [/\bter\b/gi, 'terrace'],
+    [/\bterrace\b/gi, 'ter'],
+    [/\bpkwy\b/gi, 'parkway'],
+    [/\bparkway\b/gi, 'pkwy'],
+    [/\bhwy\b/gi, 'highway'],
+    [/\bhighway\b/gi, 'hwy'],
+    [/\btrail\b/gi, 'trl'],
+    [/\btrl\b/gi, 'trail'],
   ]
 
   for (const current of Array.from(variants)) {
@@ -119,10 +137,50 @@ function buildStreetVariants(value) {
   return Array.from(variants).filter(Boolean).slice(0, 4)
 }
 
-async function geocodeZip(zip) {
+async function geocodeZip(zip, options = {}) {
   const cleanZip = normalizeZipCode(zip)
   if (cleanZip.length !== 5) return null
 
+  const skipDelay = options.skipDelay === true
+
+  // Respect Nominatim's 1 req/sec rate limit when called after a prior request.
+  // The geocodeAddress internal call passes { skipDelay: true } since it is always
+  // the first Nominatim request; submit-time fallback calls default to skipDelay=false.
+  if (!skipDelay) await sleep(1100)
+
+  // Primary: Nominatim zip query — returns 5-6 decimal place precision centroids
+  try {
+    const rows = await fetchGeocodeRows(cleanZip)
+    const row = Array.isArray(rows) ? rows.find((r) => {
+      const addr = r.address || {}
+      return (
+        normalizeZipCode(addr.postcode || '') === cleanZip ||
+        r.type === 'postcode' ||
+        r.class === 'boundary'
+      )
+    }) ?? rows[0] : null
+
+    if (row) {
+      const lat = parseFloat(row.lat)
+      const lng = parseFloat(row.lon)
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const addr = row.address || {}
+        return {
+          lat,
+          lng,
+          city: addr.city || addr.town || addr.village || addr.county || null,
+          state: normalizeStateValue(
+            addr.state_code || addr.state || addr['ISO3166-2-lvl4'] || ''
+          ),
+          zip_code: cleanZip,
+        }
+      }
+    }
+  } catch {
+    // fall through to zippopotam.us
+  }
+
+  // Fallback: zippopotam.us (2-4 decimal places, but reliable and no rate limit)
   try {
     const res = await fetch('https://api.zippopotam.us/us/' + cleanZip)
     if (!res.ok) return null
@@ -303,7 +361,11 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
   const cleanListingName = String(options.listingName || '').trim()
-  const zipGeo = cleanZip ? await geocodeZip(cleanZip) : null
+  const skipDelay = options.skipDelay === true
+  // Pass skipDelay:true — this is always the first Nominatim call, no prior request to
+  // rate-limit against. We then set firstQuery=false so the loop's first iteration waits
+  // 1100ms (when skipDelay is false), maintaining the 1 req/sec limit with the zip lookup.
+  const zipGeo = cleanZip ? await geocodeZip(cleanZip, { skipDelay: true }) : null
 
   const streetVariants = buildStreetVariants(rawStreet)
   const queries = Array.from(
@@ -316,12 +378,29 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
 
   const candidates = []
   const seen = new Set()
+  // If a zip centroid Nominatim call was made above, the first loop query must respect
+  // the 1 req/sec rate limit — treat the zip lookup as query #0.
+  let firstQuery = !cleanZip
+  let consecutiveEmpty = 0
 
   for (const query of queries) {
+    if (!firstQuery && !skipDelay) await sleep(1100)
+    firstQuery = false
     try {
       const data = await fetchGeocodeRows(query)
+      const rows = Array.isArray(data) ? data : []
 
-      for (const row of Array.isArray(data) ? data : []) {
+      // Early exit: two consecutive queries with zero Nominatim rows means the
+      // address is not in OSM data — stop burning delay slots and fall through
+      // to the zip fallback rather than waiting 80+ seconds on all variants.
+      if (rows.length === 0) {
+        consecutiveEmpty++
+        if (consecutiveEmpty >= (skipDelay ? 2 : 1)) break
+      } else {
+        consecutiveEmpty = 0
+      }
+
+      for (const row of rows) {
         const lat = parseFloat(row.lat)
         const lng = parseFloat(row.lon)
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
@@ -369,6 +448,8 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
       }
     } catch (err) {
       console.error('Geocode error', err)
+      consecutiveEmpty++
+      if (consecutiveEmpty >= (skipDelay ? 2 : 1)) break
     }
   }
 

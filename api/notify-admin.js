@@ -18,6 +18,24 @@ import { findDuplicates } from '../lib/duplicateCheck.js';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const ADMIN_EMAIL = 'admin.bsbldirectory@gmail.com';
 
+// Injects Latitude / Longitude / Geocode Source rows before the last </table> in the
+// email HTML. Always runs for geo-table emails — no early-return guard — so the rows
+// are reliably present even when the deployed emailTemplates.js predates Session 3.
+// Using lastIndexOf guarantees we target the main data table, not any header/banner table.
+function injectCoordRows(html, record) {
+  const cell = (content, extra = '') =>
+    `<td style="padding:8px 12px;${extra}border-bottom:1px solid #f3f4f6;">${content}</td>`;
+  const makeRow = (label, value) =>
+    `<tr>${cell(label, 'font-weight:600;color:#374151;width:180px;vertical-align:top;')}${cell(value != null ? String(value) : 'Not resolved')}</tr>`;
+  const rows =
+    makeRow('Latitude', record.lat) +
+    makeRow('Longitude', record.lng) +
+    makeRow('Geocode Source', record.geocode_source ?? null);
+  const lastClose = html.lastIndexOf('</table>');
+  if (lastClose === -1) return html + rows;
+  return html.slice(0, lastClose) + rows + html.slice(lastClose);
+}
+
 function generateToken(table, id) {
   return crypto
     .createHmac('sha256', process.env.APPROVAL_SECRET)
@@ -65,12 +83,47 @@ export default async function handler(req, res) {
       : [];
 
     // Build email, passing duplicate results in so the banner renders
-    const { subject, html } = buildEmail(record, token, duplicates);
+    let { subject, html } = buildEmail(record, token, duplicates);
+
+    const GEO_REVIEW_TABLES = ['coaches', 'travel_teams', 'facilities'];
+
+    // Always inject coordinate rows for geo-table emails. The helper uses lastIndexOf
+    // so it reliably targets the main data table even when a duplicate banner is present.
+    if (GEO_REVIEW_TABLES.includes(table)) {
+      html = injectCoordRows(html, record);
+    }
+
+    // Debug: log the exact keys and geocode-related fields from the webhook payload so
+    // we can confirm whether approval_status / geocode_source arrive from Supabase.
+    // Check Vercel function logs after the next test submission to diagnose missing prefix.
+    console.log(
+      '[notify-admin] record keys:', JSON.stringify(Object.keys(record)),
+      '| approval_status:', record.approval_status,
+      '| geocode_source:', record.geocode_source,
+      '| address:', record.address,
+      '| lat:', record.lat,
+      '| lng:', record.lng,
+    );
+
+    // Two synchronous signals are sufficient — the zippopotam.us async fallback was
+    // removed because it added latency and both DB fields are confirmed saving correctly.
+    // Gated on record.address != null so ordinary zip-only listings are never flagged.
+    const needsGeocodeReview =
+      GEO_REVIEW_TABLES.includes(table) &&
+      record.address != null &&
+      (
+        record.approval_status === 'geocode_review' ||
+        record.geocode_source === 'zip'
+      );
 
     // Prepend warning to subject line so it stands out immediately in your inbox
-    const finalSubject = duplicates.length > 0
-      ? `⚠️ POSSIBLE DUPLICATE — ${subject}`
-      : subject;
+    let finalSubject = subject;
+    if (needsGeocodeReview) {
+      finalSubject = `📍 GEOCODE REVIEW NEEDED — ${finalSubject}`;
+    }
+    if (duplicates.length > 0) {
+      finalSubject = `⚠️ POSSIBLE DUPLICATE — ${finalSubject}`;
+    }
 
     await resend.emails.send({
       from: 'Sandlot Source <noreply@sandlotsource.com>',
