@@ -67,9 +67,24 @@ export default async function handler(req, res) {
     // Build email, passing duplicate results in so the banner renders
     const { subject, html } = buildEmail(record, token, duplicates);
 
+    // Detect geocode_review records. The primary signal is approval_status, but if
+    // a DB-level DEFAULT or CHECK constraint coerces the value back to 'pending'
+    // before the webhook fires, fall back to geocode_source + address: the
+    // zip-centroid fallback path (Session 9) is the only path that stores
+    // geocode_source='zip' when a street address was also provided.
+    // Regular no-address zip fallbacks always have address=null, so the
+    // compound check is unambiguous.
+    const GEO_REVIEW_TABLES = ['coaches', 'travel_teams', 'facilities'];
+    const needsGeocodeReview =
+      GEO_REVIEW_TABLES.includes(table) &&
+      (
+        record.approval_status === 'geocode_review' ||
+        (record.geocode_source === 'zip' && record.address != null)
+      );
+
     // Prepend warning to subject line so it stands out immediately in your inbox
     let finalSubject = subject;
-    if (record.approval_status === 'geocode_review') {
+    if (needsGeocodeReview) {
       finalSubject = `📍 GEOCODE REVIEW NEEDED — ${finalSubject}`;
     }
     if (duplicates.length > 0) {

@@ -336,14 +336,26 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
   const candidates = []
   const seen = new Set()
   let firstQuery = true
+  let consecutiveEmpty = 0
 
   for (const query of queries) {
     if (!firstQuery && !skipDelay) await sleep(1100)
     firstQuery = false
     try {
       const data = await fetchGeocodeRows(query)
+      const rows = Array.isArray(data) ? data : []
 
-      for (const row of Array.isArray(data) ? data : []) {
+      // Early exit: two consecutive queries with zero Nominatim rows means the
+      // address is not in OSM data — stop burning delay slots and fall through
+      // to the zip fallback rather than waiting 80+ seconds on all variants.
+      if (rows.length === 0) {
+        consecutiveEmpty++
+        if (consecutiveEmpty >= 2) break
+      } else {
+        consecutiveEmpty = 0
+      }
+
+      for (const row of rows) {
         const lat = parseFloat(row.lat)
         const lng = parseFloat(row.lon)
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
@@ -391,6 +403,8 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
       }
     } catch (err) {
       console.error('Geocode error', err)
+      consecutiveEmpty++
+      if (consecutiveEmpty >= 2) break
     }
   }
 
