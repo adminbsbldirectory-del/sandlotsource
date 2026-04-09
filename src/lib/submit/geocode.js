@@ -350,7 +350,7 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
       // to the zip fallback rather than waiting 80+ seconds on all variants.
       if (rows.length === 0) {
         consecutiveEmpty++
-        if (consecutiveEmpty >= 2) break
+        if (consecutiveEmpty >= (skipDelay ? 2 : 1)) break
       } else {
         consecutiveEmpty = 0
       }
@@ -404,7 +404,7 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
     } catch (err) {
       console.error('Geocode error', err)
       consecutiveEmpty++
-      if (consecutiveEmpty >= 2) break
+      if (consecutiveEmpty >= (skipDelay ? 2 : 1)) break
     }
   }
 
