@@ -1,7 +1,3 @@
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 function normalizeZipCode(value) {
   const match = String(value || '').match(/\b\d{5}\b/)
   return match ? match[0] : ''
@@ -137,18 +133,11 @@ function buildStreetVariants(value) {
   return Array.from(variants).filter(Boolean).slice(0, 4)
 }
 
-async function geocodeZip(zip, options = {}) {
+async function geocodeZip(zip) {
   const cleanZip = normalizeZipCode(zip)
   if (cleanZip.length !== 5) return null
 
-  const skipDelay = options.skipDelay === true
-
-  // Respect Nominatim's 1 req/sec rate limit when called after a prior request.
-  // The geocodeAddress internal call passes { skipDelay: true } since it is always
-  // the first Nominatim request; submit-time fallback calls default to skipDelay=false.
-  if (!skipDelay) await sleep(1100)
-
-  // Primary: Nominatim zip query — returns 5-6 decimal place precision centroids
+  // Primary: Google zip query — returns precise centroids via the geocode proxy
   try {
     const rows = await fetchGeocodeRows(cleanZip)
     const row = Array.isArray(rows) ? rows.find((r) => {
@@ -363,11 +352,7 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
   const cleanListingName = String(options.listingName || '').trim()
-  const skipDelay = options.skipDelay === true
-  // Pass skipDelay:true — this is always the first Nominatim call, no prior request to
-  // rate-limit against. We then set firstQuery=false so the loop's first iteration waits
-  // 1100ms (when skipDelay is false), maintaining the 1 req/sec limit with the zip lookup.
-  const zipGeo = cleanZip ? await geocodeZip(cleanZip, { skipDelay: true }) : null
+  const zipGeo = cleanZip ? await geocodeZip(cleanZip) : null
 
   const streetVariants = buildStreetVariants(rawStreet)
   const queries = Array.from(
@@ -380,14 +365,9 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
 
   const candidates = []
   const seen = new Set()
-  // If a zip centroid Nominatim call was made above, the first loop query must respect
-  // the 1 req/sec rate limit — treat the zip lookup as query #0.
-  let firstQuery = !cleanZip
   let consecutiveEmpty = 0
 
   for (const query of queries) {
-    if (!firstQuery && !skipDelay) await sleep(1100)
-    firstQuery = false
     try {
       const data = await fetchGeocodeRows(query)
       const rows = Array.isArray(data) ? data : []
@@ -397,7 +377,7 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
       // to the zip fallback rather than waiting 80+ seconds on all variants.
       if (rows.length === 0) {
         consecutiveEmpty++
-        if (consecutiveEmpty >= (skipDelay ? 2 : 1)) break
+        if (consecutiveEmpty >= 2) break
       } else {
         consecutiveEmpty = 0
       }
@@ -451,7 +431,7 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
     } catch (err) {
       console.error('Geocode error', err)
       consecutiveEmpty++
-      if (consecutiveEmpty >= (skipDelay ? 2 : 1)) break
+      if (consecutiveEmpty >= 2) break
     }
   }
 
