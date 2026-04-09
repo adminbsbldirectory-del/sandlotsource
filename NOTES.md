@@ -98,6 +98,7 @@ Current phase is bug audit.
 - `CoachSubmitForm.jsx` — fixed coach submit `skill_level` payload mismatch by sending selected skill level as a single-item array to match existing `public.coaches.skill_level text[]` schema; issue was reproduced via live `Beginner` submission and confirmed to be submit-path/schema related, not a dropdown UI bug
 - `Header.jsx` — increased desktop header logo sizing so the site mark reads more prominently in the sticky header while keeping the current mobile logo size unchanged
 - `CoachRow.jsx` / `MobileCoachRow.jsx` / `TeamCard.jsx` / `TeamDesktopRow.jsx` / `MobileFacilityRow.jsx` / `FacilityDesktopRow.jsx` / `FacilityPreviewCard.jsx` — improved browse-result visibility and spacing across desktop and mobile so coach, team, and facility result surfaces scan more clearly and feel more visually consistent without changing behavior
+- `AdminPage.jsx` — added editable `address` and `zip_code` columns to Coaches, Travel Teams, and Facilities so common record corrections can be handled directly in `/admin` without searching and editing records in Supabase
 
 ---
 
@@ -116,7 +117,7 @@ Mobile hero/header spacing collapse is fixed and merged. The file is no longer o
 `EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering to match `CoachDetailPanel`. Duplicate warning coverage now exists through `CoachSubmitForm.jsx` for likely team duplicates once enough identifying detail is present. Result-surface readability is now improved through `TeamCard.jsx` and `TeamDesktopRow.jsx`. `MapLegend` remains optional later work only. Remaining work is mostly map/filter/state orchestration, so future changes should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
-All four homepage leaf extractions are complete. Featured coaches and teams now load from Supabase using existing featured fields and link to the correct selected records. Urgent pickup needs now pull live `player_board` and `roster_spots` data with real empty-state fallback. The stats band now sits above `How it works` and uses live Supabase-backed counts. Homepage desktop readability polish is complete, including proper Barlow 700 loading. Remaining work should stay narrow and behavior- or presentation-focused only. Footer logo follow-on remains deferred unless explicitly selected later.
+All four homepage leaf extractions are complete. Featured coaches and teams now load from Supabase using existing featured fields and link to the correct selected records. Urgent pickup needs now pull live `player_board` and `roster_spots` data with real empty-state fallback. The stats band now sits above `How it works` and uses live Supabase-backed counts. Homepage desktop readability polish is complete, including proper Barlow 700 loading. Current homepage featured card location + `Featured` line treatment remains optional follow-on presentation work only and should not be treated as the next bug target unless a fresh live visual issue is clearly identified. The larger future concern is geo-aware homepage relevance once multi-state inventory grows; geo-aware / IP-aware homepage featured listings and urgent-needs localization remain deferred product-scaling follow-on work, not current bug-audit priorities. Footer logo follow-on remains deferred unless explicitly selected later.
 
 ### `Header.jsx` — BUG-AUDIT ACTIVE
 Desktop header logo sizing polish is fixed and merged. Current `/logo.png` asset was verified as sufficient for a larger desktop presentation without requiring a new source file. Mobile logo sizing remains unchanged. Any future header work should stay narrow and presentation-focused only.
@@ -124,8 +125,8 @@ Desktop header logo sizing polish is fixed and merged. Current `/logo.png` asset
 ### `SearchResults.jsx` — BUG-AUDIT ACTIVE
 Leaf result extractions are complete and merged. Mobile browser search-results behavior issue is fixed. Future work should remain narrow and behavior-focused.
 
-### `AdminPage.jsx` — DONE
-Below target. Out of the oversized-file queue.
+### `AdminPage.jsx` — BUG-AUDIT ACTIVE
+Oversized-file extraction work is complete and merged. Admin review workflow is now improved by exposing editable `address` and `zip_code` fields for Coaches, Travel Teams, and Facilities directly in `/admin`, reducing the need to search and edit records in Supabase for routine claim/update corrections. Future admin follow-on should stay narrow and only expand visible editable fields if a specific recurring operational pain point is confirmed.
 
 ### `CoachSubmitForm.jsx` — BUG-AUDIT ACTIVE
 Previous refactor phase is complete. Submit-flow hardening now includes duplicate-warning behavior for coach and travel-team submissions, while facility duplicate flow remains intact. Duplicate handling is intentionally soft-warning only, not DB hard blocking, because shared facility contacts, shared org emails, and shared park/address data can be legitimate. Public-form anti-spam hardening is complete across all four public submit subforms using the shared low-friction pattern. Local testing confirmed Coach submit success and verified that the prior button-wiring regression was resolved. A live submit-path bug affecting coach `skill_level` was reproduced and fixed by changing the payload shape to match the existing `public.coaches.skill_level text[]` schema. The issue was not a dropdown UI/state bug; it was a backend payload/schema mismatch triggered by single-value submit behavior. Geocode precision hardening on the separate branch also re-verified that facility ZIP fallback should remain disabled for facility creation/submit paths, because wrong fallback placement is worse than a blocked submit for facility records. A narrow helper follow-up now ensures pending facility creation uses the passed facility payload fields consistently. Future work should stay narrow and focused on submit UX, validation, geocode handling, spam controls, or other quality controls only.
@@ -153,9 +154,9 @@ This branch expanded address query construction, softened locality rejection whe
 ## Next branch queue
 1. Resume bug audit from current merged `main`
 2. Decide whether geocode precision hardening should merge as-is or stay open pending a manual facility pin-correction strategy
-3. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
+3. Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
 4. Confirm whether standalone `PlayerBoard.jsx` still needs a separate anti-spam patch or whether all live public submit traffic now routes only through `CoachSubmitForm.jsx`
-5. Homepage featured cards — consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
+5. Inspect whether admin claim/update workflow still needs any additional high-value editable fields beyond address and ZIP, but only if a specific recurring operational pain point is confirmed
 6. Work on hidden spam blocking and profile accuracy scoring
 7. Broader page-by-page font/color consistency outside the updated browse-result surfaces remains deferred follow-on work
 8. Optional footer logo follow-on remains deferred unless explicitly selected later
@@ -163,16 +164,15 @@ This branch expanded address query construction, softened locality rejection whe
 ---
 
 ## Bug audit backlog
-- Homepage featured cards — consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
+- Homepage featured cards — consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display, but only if a fresh live visual issue is clearly identified
 - Evaluate future geo-aware / IP-aware homepage featured listings with safe fallback behavior
 - Evaluate future geo-aware / IP-aware homepage urgent-needs localization with safe fallback behavior
 - Optional footer logo placement remains deferred follow-on polish after header logo sizing completion
 - Work on hidden spam blocking and profile accuracy scoring
 - Add tournament pages with state-sorted links to known organizers; org-site links only for now, not calendars
 - Determine whether teams should auto-expire after about 14 months if not updated, with reminder email about 30 days before expiration and a season-aging update prompt
-- Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.)
+- Investigate better address parsing / recognition for CTFP-style addresses (`Pl`, `Blvd`, `Ct`, `Rd`, `Dr`, `Hwy`, `Rte`, etc.`)
 - Separate known geocode/address-confidence issue: some edge-case facilities can still resolve to road-address points rather than the true complex/field point, even after query-shaping improvements
-- On AdminPage, include facility / team / coach addresses and other form-driven fields that need update visibility
 - Consider a future follow-on polish for earlier soft team duplicate warnings on exact normalized name before age/city/state are filled, only if it can be done without creating noisy false positives
 - Broader page-by-page font/color consistency outside the updated browse-result surfaces remains deferred follow-on work
 - Advertiser inquiry creative upload wiring remains deferred until a narrow storage/policy path is chosen
