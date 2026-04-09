@@ -432,7 +432,8 @@ export default function TravelTeams() {
       if (tryoutFilter !== 'All' && t.tryout_status !== tryoutFilter) return false
       if (searchTerm && !haystack.includes(searchTerm)) return false
 
-      if (geoCenter && t.lat != null && t.lng != null) {
+      if (geoCenter) {
+        if (t.lat == null || t.lng == null) return false
         if (distanceMiles(geoCenter.lat, geoCenter.lng, t.lat, t.lng) > radius) return false
       }
 

@@ -1,3 +1,7 @@
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function normalizeZipCode(value) {
   const match = String(value || '').match(/\b\d{5}\b/)
   return match ? match[0] : ''
@@ -103,6 +107,20 @@ function buildStreetVariants(value) {
     [/\bln\b/gi, 'lane'],
     [/\bcourt\b/gi, 'ct'],
     [/\bct\b/gi, 'court'],
+    [/\bext\b/gi, 'extension'],
+    [/\bextension\b/gi, 'ext'],
+    [/\bblvd\b/gi, 'boulevard'],
+    [/\bboulevard\b/gi, 'blvd'],
+    [/\bcir\b/gi, 'circle'],
+    [/\bcircle\b/gi, 'cir'],
+    [/\bter\b/gi, 'terrace'],
+    [/\bterrace\b/gi, 'ter'],
+    [/\bpkwy\b/gi, 'parkway'],
+    [/\bparkway\b/gi, 'pkwy'],
+    [/\bhwy\b/gi, 'highway'],
+    [/\bhighway\b/gi, 'hwy'],
+    [/\btrail\b/gi, 'trl'],
+    [/\btrl\b/gi, 'trail'],
   ]
 
   for (const current of Array.from(variants)) {
@@ -303,6 +321,7 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
   const cleanState = normalizeStateValue(state)
   const cleanZip = normalizeZipCode(zip)
   const cleanListingName = String(options.listingName || '').trim()
+  const skipDelay = options.skipDelay === true
   const zipGeo = cleanZip ? await geocodeZip(cleanZip) : null
 
   const streetVariants = buildStreetVariants(rawStreet)
@@ -316,8 +335,11 @@ async function geocodeAddress(address, city, state, zip, options = {}) {
 
   const candidates = []
   const seen = new Set()
+  let firstQuery = true
 
   for (const query of queries) {
+    if (!firstQuery && !skipDelay) await sleep(1100)
+    firstQuery = false
     try {
       const data = await fetchGeocodeRows(query)
 

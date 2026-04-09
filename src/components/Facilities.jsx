@@ -366,7 +366,8 @@ export default function Facilities() {
           }
         }
 
-        if (geoCenter && f.lat != null && f.lng != null) {
+        if (geoCenter) {
+          if (f.lat == null || f.lng == null) return false
           if (distanceMiles(geoCenter.lat, geoCenter.lng, f.lat, f.lng) > radius) return false
         }
 

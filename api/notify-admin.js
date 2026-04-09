@@ -68,9 +68,13 @@ export default async function handler(req, res) {
     const { subject, html } = buildEmail(record, token, duplicates);
 
     // Prepend warning to subject line so it stands out immediately in your inbox
-    const finalSubject = duplicates.length > 0
-      ? `⚠️ POSSIBLE DUPLICATE — ${subject}`
-      : subject;
+    let finalSubject = subject;
+    if (record.approval_status === 'geocode_review') {
+      finalSubject = `📍 GEOCODE REVIEW NEEDED — ${finalSubject}`;
+    }
+    if (duplicates.length > 0) {
+      finalSubject = `⚠️ POSSIBLE DUPLICATE — ${finalSubject}`;
+    }
 
     await resend.emails.send({
       from: 'Sandlot Source <noreply@sandlotsource.com>',

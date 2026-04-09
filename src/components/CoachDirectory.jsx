@@ -539,10 +539,9 @@ export default function CoachDirectory() {
           }
         }
 
-        if (geoCenter && c.lat != null && c.lng != null) {
-          if (
-            distanceMiles(geoCenter.lat, geoCenter.lng, c.lat, c.lng) > radius
-          )
+        if (geoCenter) {
+          if (c.lat == null || c.lng == null) return false;
+          if (distanceMiles(geoCenter.lat, geoCenter.lng, c.lat, c.lng) > radius)
             return false;
         }
 

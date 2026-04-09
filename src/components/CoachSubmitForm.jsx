@@ -950,6 +950,7 @@ function CoachForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
   const formStartedAtRef = useRef(Date.now())
+  const resolvedAddressRef = useRef(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -980,6 +981,7 @@ function CoachForm({ isMobile }) {
 
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitSuccessMessage, setSubmitSuccessMessage] = useState("Your coach profile has been submitted for review. We'll have it live within a few days.")
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
   const [selectedFacilityMatch, setSelectedFacilityMatch] = useState(null)
@@ -1047,6 +1049,7 @@ function CoachForm({ isMobile }) {
         setAllowCreateNewFacility(false)
         setSelectedFacilityMatch(null)
         setSelectedFacilityId(null)
+        resolvedAddressRef.current = null
       }
 
       if (shouldResetCoach) {
@@ -1076,20 +1079,25 @@ function CoachForm({ isMobile }) {
     const cleanAddress = String(form.address || '').trim()
     if (!cleanAddress) {
       setAddrStatus('')
+      resolvedAddressRef.current = null
       return
     }
 
     if (!hasLocationContext(form.city, form.state, form.zip_code)) {
       setAddrStatus('needs_location')
+      resolvedAddressRef.current = null
       return
     }
 
     setAddrStatus('locating')
-    const resolved = await geocodeAddress(cleanAddress, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(cleanAddress, form.city, form.state, form.zip_code, { skipDelay: true })
     if (!resolved) {
       setAddrStatus('not_found')
+      resolvedAddressRef.current = null
       return
     }
+
+    resolvedAddressRef.current = { ...resolved, source: 'address' }
 
     setForm((f) => ({
       ...f,
@@ -1161,6 +1169,8 @@ function CoachForm({ isMobile }) {
       }
 
       let resolvedForm = { ...form }
+      let geocodeReviewNeeded = false
+      let geocodeSource = null
 
       if (selectedFacilityMatch) {
         resolvedForm = applyExistingFacilityToCoachForm(resolvedForm, selectedFacilityMatch)
@@ -1171,30 +1181,51 @@ function CoachForm({ isMobile }) {
           state: form.state,
           zip: form.zip_code,
           allowZipFallback: true,
+          preResolved: resolvedAddressRef.current,
         })
 
         if (!finalLocation.ok) {
           if (isBlockedGeocodeFailure(finalLocation.error)) {
-            await notifyBlockedGeocodeSubmit({
-              listing_type: 'coach',
-              submitted_name: form.name,
-              address: form.address,
-              city: form.city,
-              state: form.state,
-              zip: form.zip_code,
-              contact_name: form.name,
-              contact_email: form.email,
-              contact_phone: form.phone,
-              reason: finalLocation.error,
-            })
+            // Address geocoding failed — try zip centroid as soft fallback
+            const zipFallback = await geocodeZip(form.zip_code)
+            if (zipFallback) {
+              resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, {
+                lat: zipFallback.lat,
+                lng: zipFallback.lng,
+                city: zipFallback.city,
+                state: zipFallback.state,
+                zip_code: zipFallback.zip_code,
+                source: 'zip',
+              })
+              geocodeReviewNeeded = true
+              geocodeSource = 'zip'
+            } else {
+              // Zip lookup also failed — hard block remains
+              await notifyBlockedGeocodeSubmit({
+                listing_type: 'coach',
+                submitted_name: form.name,
+                address: form.address,
+                city: form.city,
+                state: form.state,
+                zip: form.zip_code,
+                contact_name: form.name,
+                contact_email: form.email,
+                contact_phone: form.phone,
+                reason: finalLocation.error,
+              })
+              setError(finalLocation.error)
+              setSubmitting(false)
+              return
+            }
+          } else {
+            setError(finalLocation.error)
+            setSubmitting(false)
+            return
           }
-
-          setError(finalLocation.error)
-          setSubmitting(false)
-          return
+        } else {
+          resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, finalLocation.resolved)
+          geocodeSource = finalLocation.resolved.source || 'address'
         }
-
-        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, finalLocation.resolved)
       }
 
       const facilityId = selectedFacilityMatch?.id || null
@@ -1224,7 +1255,8 @@ function CoachForm({ isMobile }) {
         price_notes: form.price_notes.trim() || null,
         contact_role: form.contact_role.trim(),
         submission_notes: form.submission_notes.trim() || null,
-        approval_status: 'pending',
+        approval_status: geocodeReviewNeeded ? 'geocode_review' : 'pending',
+        geocode_source: geocodeSource,
         source: 'website_form',
         active: true,
         verified_status: false,
@@ -1233,6 +1265,9 @@ function CoachForm({ isMobile }) {
       const { error: sbError } = await supabase.from('coaches').insert([payload])
       if (sbError) throw sbError
 
+      if (geocodeReviewNeeded) {
+        setSubmitSuccessMessage("Your listing was received but we could not verify your exact location automatically. Our team will review and confirm it before it goes live.")
+      }
       setSubmitted(true)
       formStartedAtRef.current = Date.now()
     } catch (err) {
@@ -1243,7 +1278,7 @@ function CoachForm({ isMobile }) {
   }
 
   if (submitted) {
-    return <SuccessBanner message="Your coach profile has been submitted for review. We'll have it live within a few days." />
+    return <SuccessBanner message={submitSuccessMessage} />
   }
 
   return (
@@ -1391,6 +1426,7 @@ function TeamForm({ isMobile }) {
   const g2 = isMobile ? '1fr' : '1fr 1fr'
   const g3 = isMobile ? '1fr' : '1fr 1fr 1fr'
   const formStartedAtRef = useRef(Date.now())
+  const resolvedPracticeAddressRef = useRef(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -1473,6 +1509,10 @@ function TeamForm({ isMobile }) {
       'contact_email',
     ]
 
+    if (['address', 'city', 'state', 'zip_code'].includes(field)) {
+      resolvedPracticeAddressRef.current = null
+    }
+
     setError('')
     setForm((f) => {
       const shouldResetTeam = shouldResetAcceptedFacility(
@@ -1509,20 +1549,25 @@ function TeamForm({ isMobile }) {
   async function handlePracticeAddressBlur() {
     if (!String(form.address || '').trim()) {
       setAddrStatus('')
+      resolvedPracticeAddressRef.current = null
       return
     }
 
     if (!hasLocationContext(form.city, form.state, form.zip_code)) {
       setAddrStatus('needs_location')
+      resolvedPracticeAddressRef.current = null
       return
     }
 
     setAddrStatus('locating')
-    const resolved = await geocodeAddress(form.address, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(form.address, form.city, form.state, form.zip_code, { skipDelay: true })
     if (!resolved) {
       setAddrStatus('not_found')
+      resolvedPracticeAddressRef.current = null
       return
     }
+
+    resolvedPracticeAddressRef.current = { ...resolved, source: 'address' }
 
     setForm((f) => ({
       ...f,
@@ -1553,6 +1598,7 @@ function TeamForm({ isMobile }) {
       newFacilityForm.city,
       newFacilityForm.state,
       newFacilityForm.zip_code,
+      { skipDelay: true },
     )
 
     if (!resolved) {
@@ -1628,6 +1674,7 @@ function TeamForm({ isMobile }) {
         state: form.state,
         zip: form.zip_code,
         addressRequired: true,
+        preResolved: resolvedPracticeAddressRef.current,
       })
 
       if (!practiceLocation.ok) {
@@ -2559,7 +2606,7 @@ function FacilityForm({ isMobile }) {
     }
 
     setAddrStatus('locating')
-    const resolved = await geocodeAddress(cleanAddress, form.city, form.state, form.zip_code)
+    const resolved = await geocodeAddress(cleanAddress, form.city, form.state, form.zip_code, { skipDelay: true })
 
     if (!resolved) {
       setAddrStatus('not_found')
