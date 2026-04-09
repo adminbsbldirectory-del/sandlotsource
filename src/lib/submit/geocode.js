@@ -289,7 +289,9 @@ function isCompatibleCandidate({ returnedState, returnedZip, lat, lng, state, zi
   if (expectedZip && returnedZip && returnedZip !== expectedZip) {
     if (!zipGeo) return false
     const dist = distanceMiles(zipGeo.lat, zipGeo.lng, lat, lng)
-    if (dist > 5) return false
+    // 10-mile threshold: parks, sports complexes, and named facilities often
+    // straddle zip code boundaries and may return a neighbouring zip from Nominatim.
+    if (dist > 10) return false
   }
 
   if (expectedZip && !returnedZip && zipGeo) {

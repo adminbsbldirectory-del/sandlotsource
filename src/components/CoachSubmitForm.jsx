@@ -1455,6 +1455,7 @@ function TeamForm({ isMobile }) {
 
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
   const [addrStatus, setAddrStatus] = useState('')
   const [linkToFacility, setLinkToFacility] = useState(false)
@@ -1668,6 +1669,9 @@ function TeamForm({ isMobile }) {
     setSubmitting(true)
 
     try {
+      let geocodeReviewNeeded = false
+      let geocodeSource = null
+
       const practiceLocation = await finalizeListingLocation({
         address: form.address,
         city: form.city,
@@ -1677,28 +1681,50 @@ function TeamForm({ isMobile }) {
         preResolved: resolvedPracticeAddressRef.current,
       })
 
+      let resolvedForm = { ...form }
+
       if (!practiceLocation.ok) {
         if (isBlockedGeocodeFailure(practiceLocation.error)) {
-          await notifyBlockedGeocodeSubmit({
-            listing_type: 'team',
-            submitted_name: form.name,
-            address: form.address,
-            city: form.city,
-            state: form.state,
-            zip: form.zip_code,
-            contact_name: form.contact_name,
-            contact_email: form.contact_email,
-            contact_phone: form.contact_phone,
-            reason: practiceLocation.error,
-          })
+          // Address geocoding failed — try zip centroid as soft fallback
+          const zipFallback = await geocodeZip(form.zip_code)
+          if (zipFallback) {
+            resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, {
+              lat: zipFallback.lat,
+              lng: zipFallback.lng,
+              city: zipFallback.city,
+              state: zipFallback.state,
+              zip_code: zipFallback.zip_code,
+              source: 'zip',
+            })
+            geocodeReviewNeeded = true
+            geocodeSource = 'zip'
+          } else {
+            // Zip lookup also failed — hard block remains
+            await notifyBlockedGeocodeSubmit({
+              listing_type: 'team',
+              submitted_name: form.name,
+              address: form.address,
+              city: form.city,
+              state: form.state,
+              zip: form.zip_code,
+              contact_name: form.contact_name,
+              contact_email: form.contact_email,
+              contact_phone: form.contact_phone,
+              reason: practiceLocation.error,
+            })
+            setError(practiceLocation.error)
+            setSubmitting(false)
+            return
+          }
+        } else {
+          setError(practiceLocation.error)
+          setSubmitting(false)
+          return
         }
-
-        setError(practiceLocation.error)
-        setSubmitting(false)
-        return
+      } else {
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, practiceLocation.resolved)
+        geocodeSource = practiceLocation.resolved.source || 'address'
       }
-
-      let resolvedForm = applyResolvedCoordsPreservingLocality({ ...form }, practiceLocation.resolved)
 
       let facilityRecord = selectedFacility
       if (linkToFacility && !selectedFacility && showCreateFacilityForm) {
@@ -1767,7 +1793,8 @@ function TeamForm({ isMobile }) {
           'Practice Location Name',
           resolvedForm.practice_location_name
         ),
-        approval_status: 'pending',
+        approval_status: geocodeReviewNeeded ? 'geocode_review' : 'pending',
+        geocode_source: geocodeSource,
         source: 'website_form',
         active: true,
       }
@@ -1775,6 +1802,9 @@ function TeamForm({ isMobile }) {
       const { error: sbError } = await supabase.from('travel_teams').insert([payload])
       if (sbError) throw sbError
 
+      if (geocodeReviewNeeded) {
+        setSuccessMessage("Your listing was received but we could not verify your exact location automatically. Our team will review and confirm it before it goes live.")
+      }
       setSubmitted(true)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -1784,7 +1814,7 @@ function TeamForm({ isMobile }) {
   }
 
   if (submitted) {
-    return <SuccessBanner message="Your travel team has been submitted for review. We'll have it live within a few days." />
+    return <SuccessBanner message={successMessage || "Your travel team has been submitted for review. We'll have it live within a few days."} />
   }
 
   return (
@@ -2669,6 +2699,9 @@ function FacilityForm({ isMobile }) {
     setSubmitting(true)
 
     try {
+      let geocodeReviewNeeded = false
+      let geocodeSource = null
+
       const finalLocation = await finalizeListingLocation({
         address: form.address,
         city: form.city,
@@ -2679,28 +2712,50 @@ function FacilityForm({ isMobile }) {
         listingName: form.name,
       })
 
+      let resolvedForm = { ...form }
+
       if (!finalLocation.ok) {
         if (isBlockedGeocodeFailure(finalLocation.error)) {
-          await notifyBlockedGeocodeSubmit({
-            listing_type: 'facility',
-            submitted_name: form.name,
-            address: form.address,
-            city: form.city,
-            state: form.state,
-            zip: form.zip_code,
-            contact_name: form.contact_name,
-            contact_email: form.contact_email,
-            contact_phone: form.contact_phone,
-            reason: finalLocation.error,
-          })
+          // Address geocoding failed — try zip centroid as soft fallback
+          const zipFallback = await geocodeZip(form.zip_code)
+          if (zipFallback) {
+            resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, {
+              lat: zipFallback.lat,
+              lng: zipFallback.lng,
+              city: zipFallback.city,
+              state: zipFallback.state,
+              zip_code: zipFallback.zip_code,
+              source: 'zip',
+            })
+            geocodeReviewNeeded = true
+            geocodeSource = 'zip'
+          } else {
+            // Zip lookup also failed — hard block remains
+            await notifyBlockedGeocodeSubmit({
+              listing_type: 'facility',
+              submitted_name: form.name,
+              address: form.address,
+              city: form.city,
+              state: form.state,
+              zip: form.zip_code,
+              contact_name: form.contact_name,
+              contact_email: form.contact_email,
+              contact_phone: form.contact_phone,
+              reason: finalLocation.error,
+            })
+            setError(finalLocation.error)
+            setSubmitting(false)
+            return
+          }
+        } else {
+          setError(finalLocation.error)
+          setSubmitting(false)
+          return
         }
-
-        setError(finalLocation.error)
-        setSubmitting(false)
-        return
+      } else {
+        resolvedForm = applyResolvedCoordsPreservingLocality(resolvedForm, finalLocation.resolved)
+        geocodeSource = finalLocation.resolved.source || 'address'
       }
-
-      const resolvedForm = applyResolvedCoordsPreservingLocality({ ...form }, finalLocation.resolved)
 
       const payload = {
         name: resolvedForm.name.trim(),
@@ -2725,7 +2780,8 @@ function FacilityForm({ isMobile }) {
         contact_email: resolvedForm.contact_email.trim() || null,
         contact_phone: resolvedForm.contact_phone.trim() || null,
         submission_notes: resolvedForm.submission_notes.trim() || null,
-        approval_status: 'pending',
+        approval_status: geocodeReviewNeeded ? 'geocode_review' : 'pending',
+        geocode_source: geocodeSource,
         source: 'website_form',
         active: true,
       }
@@ -2733,6 +2789,9 @@ function FacilityForm({ isMobile }) {
       const { error: sbError } = await supabase.from('facilities').insert([payload])
       if (sbError) throw sbError
 
+      if (geocodeReviewNeeded) {
+        setSuccessMessage("Your listing was received but we could not verify your exact location automatically. Our team will review and confirm it before it goes live.")
+      }
       setSubmitted(true)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
