@@ -28,9 +28,9 @@ export default function FacilityDesktopRow({
       style={{
         display: 'grid',
         gridTemplateColumns: DESKTOP_ROW_TEMPLATE,
-        gap: 10,
+        gap: 12,
         alignItems: 'center',
-        padding: '10px 14px',
+        padding: '12px 14px',
         cursor: 'pointer',
       }}
     >
@@ -85,9 +85,9 @@ export default function FacilityDesktopRow({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '3px 7px',
+                padding: '4px 8px',
                 borderRadius: 999,
-                fontSize: 9.5,
+                fontSize: 10,
                 fontWeight: 800,
                 fontFamily: 'var(--font-head)',
                 letterSpacing: '0.03em',

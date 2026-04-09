@@ -33,9 +33,9 @@ export default function TeamDesktopRow({
         style={{
           display: 'grid',
           gridTemplateColumns: '110px minmax(0,1.15fr) minmax(0,1fr) 150px 150px 84px',
-          gap: 10,
+          gap: 12,
           alignItems: 'center',
-          padding: '10px 14px',
+          padding: '12px 14px',
           cursor: 'pointer',
         }}
       >

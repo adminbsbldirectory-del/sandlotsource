@@ -22,7 +22,7 @@ export default function TeamCard({
           boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.10)' : '0 2px 10px rgba(0,0,0,0.05)',
         }}
       >
-        <div className="card-body" style={{ padding: '12px 12px 10px' }}>
+        <div className="card-body" style={{ padding: '12px 12px 12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -74,7 +74,7 @@ export default function TeamCard({
                   color: 'white',
                   fontSize: 10,
                   fontWeight: 700,
-                  padding: '2px 7px',
+                  padding: '4px 8px',
                   borderRadius: 20,
                   fontFamily: 'var(--font-head)',
                 }}
@@ -91,7 +91,7 @@ export default function TeamCard({
                   background: '#EFF6FF',
                   color: '#1D4ED8',
                   fontSize: 10,
-                  padding: '2px 7px',
+                  padding: '4px 8px',
                   borderRadius: 20,
                   fontWeight: 700,
                 }}
@@ -101,7 +101,7 @@ export default function TeamCard({
             )}
           </div>
 
-          <div style={{ fontSize: 12, color: 'var(--gray)', marginTop: 8, lineHeight: 1.35 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--gray)', marginTop: 8, lineHeight: 1.35 }}>
             {practiceLabel ? `Practice: ${practiceLabel}` : 'Practice location not listed'}
           </div>
 
@@ -112,10 +112,9 @@ export default function TeamCard({
               gap: 8,
               flexWrap: 'wrap',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
             }}
           >
-            <div style={{ fontSize: 12, color: 'var(--gray)' }}>Open team details</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {team.lat != null && team.lng != null && (
                 <button
@@ -155,7 +154,6 @@ export default function TeamCard({
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: 'var(--font-head)',
-                  letterSpacing: '0.04em',
                 }}
               >
                 View Team Details
@@ -177,7 +175,7 @@ export default function TeamCard({
         boxShadow: selected ? '0 8px 24px rgba(0,0,0,0.10)' : '0 2px 10px rgba(0,0,0,0.05)',
       }}
     >
-      <div className="card-body" style={{ padding: '12px 12px 10px' }}>
+      <div className="card-body" style={{ padding: '12px 12px 12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <div style={{ flex: 1 }}>
             <div
@@ -229,7 +227,7 @@ export default function TeamCard({
                 color: 'white',
                 fontSize: 10,
                 fontWeight: 700,
-                padding: '2px 7px',
+                padding: '4px 8px',
                 borderRadius: 20,
                 fontFamily: 'var(--font-head)',
               }}
@@ -262,7 +260,7 @@ export default function TeamCard({
                 background: '#EFF6FF',
                 color: '#1D4ED8',
                 fontSize: 10,
-                padding: '2px 7px',
+                padding: '4px 8px',
                 borderRadius: 20,
                 fontWeight: 700,
               }}
@@ -291,7 +289,6 @@ export default function TeamCard({
               fontWeight: 700,
               cursor: 'pointer',
               fontFamily: 'var(--font-head)',
-              letterSpacing: '0.04em',
             }}
           >
             View Team Details

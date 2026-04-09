@@ -134,7 +134,7 @@ export default function FacilityPreviewCard({ facility, onClose, detailHref }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '5px 9px',
+                  padding: '4px 8px',
                   borderRadius: 999,
                   fontSize: 10,
                   fontWeight: 800,
@@ -154,7 +154,7 @@ export default function FacilityPreviewCard({ facility, onClose, detailHref }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '5px 9px',
+                  padding: '4px 8px',
                   borderRadius: 999,
                   fontSize: 10,
                   fontWeight: 800,
@@ -175,7 +175,7 @@ export default function FacilityPreviewCard({ facility, onClose, detailHref }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '5px 9px',
+                  padding: '4px 8px',
                   borderRadius: 999,
                   fontSize: 10,
                   fontWeight: 800,
@@ -192,7 +192,7 @@ export default function FacilityPreviewCard({ facility, onClose, detailHref }) {
             )}
           </div>
 
-          <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 800, color: 'var(--navy)', lineHeight: 1.1 }}>
+          <div style={{ fontFamily: 'var(--font-head)', fontSize: 20, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.1 }}>
             {facility.name}
           </div>
 

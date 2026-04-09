@@ -72,8 +72,8 @@ export default function MobileCoachRow({
             color: sportBadge.color,
             border: `1px solid ${sportBadge.border}`,
             borderRadius: 999,
-            padding: "5px 10px",
-            fontSize: 10.5,
+            padding: "4px 8px",
+            fontSize: 10,
             fontWeight: 800,
             fontFamily: "var(--font-head)",
             textTransform: "uppercase",
@@ -101,8 +101,8 @@ export default function MobileCoachRow({
                 background: "#EEF2F7",
                 color: "var(--navy)",
                 borderRadius: 999,
-                padding: "4px 9px",
-                fontSize: 11.5,
+                padding: "4px 8px",
+                fontSize: 10.5,
                 fontWeight: 700,
               }}
             >
@@ -115,7 +115,7 @@ export default function MobileCoachRow({
                   color: "var(--gray)",
                   borderRadius: 999,
                   padding: "4px 8px",
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 600,
                 }}
               >
@@ -157,13 +157,13 @@ export default function MobileCoachRow({
             color: "#fff",
             border: "none",
             borderRadius: 10,
-            padding: "9px 12px",
+            padding: "8px 10px",
             minHeight: 36,
-            fontSize: 11.5,
-            fontWeight: 800,
+            fontSize: 11,
+            fontWeight: 700,
             cursor: "pointer",
             fontFamily: "var(--font-head)",
-            letterSpacing: "0.03em",
+            letterSpacing: "0.02em",
             whiteSpace: "nowrap",
             flexShrink: 0,
           }}

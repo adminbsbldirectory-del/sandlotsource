@@ -34,8 +34,8 @@ export default function CoachRow({
             color: sportBadge.color,
             border: `1px solid ${sportBadge.border}`,
             borderRadius: 999,
-            padding: "4px 10px",
-            fontSize: 11,
+            padding: "4px 8px",
+            fontSize: 10,
             fontWeight: 800,
             fontFamily: "var(--font-head)",
             textTransform: "uppercase",
@@ -50,8 +50,8 @@ export default function CoachRow({
       <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontSize: 13.5,
-            fontWeight: 800,
+            fontSize: 14,
+            fontWeight: 700,
             color: "var(--navy)",
             fontFamily: "var(--font-head)",
             whiteSpace: "nowrap",
@@ -84,7 +84,7 @@ export default function CoachRow({
               ⭐ Featured
             </span>
           )}
-          <span style={{ fontSize: 11.5, color: "var(--gray)" }}>
+          <span style={{ fontSize: 11, color: "var(--gray)" }}>
             {reviewText}
           </span>
         </div>
@@ -93,7 +93,7 @@ export default function CoachRow({
       <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontSize: 12.5,
+            fontSize: 13,
             fontWeight: 700,
             color: "var(--navy)",
             whiteSpace: "nowrap",
@@ -105,7 +105,7 @@ export default function CoachRow({
         </div>
         <div
           style={{
-            fontSize: 11.5,
+            fontSize: 11,
             color: "var(--gray)",
             marginTop: 3,
             whiteSpace: "nowrap",
@@ -120,9 +120,9 @@ export default function CoachRow({
       <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontSize: 12.5,
+            fontSize: 13,
             color: "var(--navy)",
-            fontWeight: 600,
+            fontWeight: 700,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -133,7 +133,7 @@ export default function CoachRow({
         {credentialText && (
           <div
             style={{
-              fontSize: 11.5,
+              fontSize: 11,
               color: "var(--gray)",
               marginTop: 3,
               whiteSpace: "nowrap",
@@ -154,14 +154,14 @@ export default function CoachRow({
             onOpen();
           }}
           style={{
-            minWidth: 76,
+            minWidth: 64,
             background: selected ? "var(--navy)" : "#fff",
             color: selected ? "#fff" : "var(--navy)",
             border: `1.5px solid ${selected ? "var(--navy)" : "#93A0B3"}`,
-            borderRadius: 10,
-            padding: "8px 10px",
-            fontSize: 12,
-            fontWeight: 800,
+            borderRadius: 9,
+            padding: "7px 8px",
+            fontSize: 11,
+            fontWeight: 700,
             fontFamily: "var(--font-head)",
             cursor: "pointer",
           }}
