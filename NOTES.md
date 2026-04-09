@@ -97,22 +97,23 @@ Current phase is bug audit.
 - `src/lib/submit/geocode.js` / `src/components/CoachSubmitForm.jsx` — geocode precision hardening branch remains active and synced. Query coverage was expanded, candidate filtering/scoring was tightened, and facility ZIP fallback remains intentionally disabled for facility creation paths so wrong fallback pins do not save as production behavior. North Glynn testing still indicates a provider/data limitation where a road-address point may be returned instead of the true sports-complex point. A narrow follow-up helper fix was also committed on this branch so pending facility creation consistently uses the passed `facility` payload fields rather than stale form references. Current conclusion remains provider/data limitation for rare edge-case facilities, not a broken submit path.
 - `CoachSubmitForm.jsx` — fixed coach submit `skill_level` payload mismatch by sending selected skill level as a single-item array to match existing `public.coaches.skill_level text[]` schema; issue was reproduced via live `Beginner` submission and confirmed to be submit-path/schema related, not a dropdown UI bug
 - `Header.jsx` — increased desktop header logo sizing so the site mark reads more prominently in the sticky header while keeping the current mobile logo size unchanged
+- `CoachRow.jsx` / `MobileCoachRow.jsx` / `TeamCard.jsx` / `TeamDesktopRow.jsx` / `MobileFacilityRow.jsx` / `FacilityDesktopRow.jsx` / `FacilityPreviewCard.jsx` — improved browse-result visibility and spacing across desktop and mobile so coach, team, and facility result surfaces scan more clearly and feel more visually consistent without changing behavior
 
 ---
 
 ## Per-file status
 
 ### `CoachDirectory.jsx` — BUG-AUDIT ACTIVE
-`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through is fixed. Desktop search-bar / header consistency is fixed. `CoachDetailPanel` is now the alignment source of truth for desktop preview positioning. Remaining work is mostly map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and overall page state flow. Future work should stay narrow and behavior-focused.
+`MapLegend` and `MapMarkers` extractions are complete and merged. Search-results coach click-through is fixed. Desktop search-bar / header consistency is fixed. `CoachDetailPanel` is now the alignment source of truth for desktop preview positioning. Result-surface readability polish is now improved through `CoachRow.jsx` and `MobileCoachRow.jsx`, so current follow-on typography work should remain deferred unless a fresh live inconsistency is still clearly visible. Remaining work is mostly map-state coupling, grouped marker logic, filter/search/ZIP orchestration, mobile/desktop layout branching, and overall page state flow. Future work should stay narrow and behavior-focused.
 
 ### `Facilities.jsx` — BUG-AUDIT ACTIVE
-Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Desktop facility preview alignment polish is fixed via `FacilityPreviewCard` centering. Remaining work is mostly ZIP/filter/map/layout orchestration. Future work should stay narrow and behavior-focused.
+Shared ad-wrapper adoption cleanup is complete and merged. Dead `FacilityCard` cleanup is complete, along with orphaned `normalizeUrl` and `normalizeInstagramHandle`. Desktop facility preview alignment polish is fixed via `FacilityPreviewCard` centering. Browse-result visibility/readability is now improved through `FacilityDesktopRow.jsx`, `MobileFacilityRow.jsx`, and a light `FacilityPreviewCard.jsx` polish. Any further font/color follow-on here should remain optional only if a fresh live inconsistency is still noticeable. Remaining work is mostly ZIP/filter/map/layout orchestration. Future work should stay narrow and behavior-focused.
 
 ### `FacilityProfile.jsx` — BUG-AUDIT ACTIVE
 Mobile hero/header spacing collapse is fixed and merged. The file is no longer oversized, but future work should remain narrow and behavior-focused.
 
 ### `TravelTeams.jsx` — BUG-AUDIT ACTIVE
-`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering to match `CoachDetailPanel`. Duplicate warning coverage now exists through `CoachSubmitForm.jsx` for likely team duplicates once enough identifying detail is present. `MapLegend` remains optional later work only. Remaining work is mostly map/filter/state orchestration, so future changes should stay narrow and behavior-focused.
+`EmptyState` extraction is complete and merged. Radius control presentation mismatch after ZIP search is fixed. Desktop team preview alignment polish is fixed via `TeamPreviewCard` centering to match `CoachDetailPanel`. Duplicate warning coverage now exists through `CoachSubmitForm.jsx` for likely team duplicates once enough identifying detail is present. Result-surface readability is now improved through `TeamCard.jsx` and `TeamDesktopRow.jsx`. `MapLegend` remains optional later work only. Remaining work is mostly map/filter/state orchestration, so future changes should stay narrow and behavior-focused.
 
 ### `HomePage.jsx` — BUG-AUDIT ACTIVE
 All four homepage leaf extractions are complete. Featured coaches and teams now load from Supabase using existing featured fields and link to the correct selected records. Urgent pickup needs now pull live `player_board` and `roster_spots` data with real empty-state fallback. The stats band now sits above `How it works` and uses live Supabase-backed counts. Homepage desktop readability polish is complete, including proper Barlow 700 loading. Remaining work should stay narrow and behavior- or presentation-focused only. Footer logo follow-on remains deferred unless explicitly selected later.
@@ -156,7 +157,7 @@ This branch expanded address query construction, softened locality rejection whe
 4. Confirm whether standalone `PlayerBoard.jsx` still needs a separate anti-spam patch or whether all live public submit traffic now routes only through `CoachSubmitForm.jsx`
 5. Homepage featured cards — consider replacing the current location + `Featured` line treatment with a cleaner homepage-specific display
 6. Work on hidden spam blocking and profile accuracy scoring
-7. Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
+7. Broader page-by-page font/color consistency outside the updated browse-result surfaces remains deferred follow-on work
 8. Optional footer logo follow-on remains deferred unless explicitly selected later
 
 ---
@@ -173,7 +174,7 @@ This branch expanded address query construction, softened locality rejection whe
 - Separate known geocode/address-confidence issue: some edge-case facilities can still resolve to road-address points rather than the true complex/field point, even after query-shaping improvements
 - On AdminPage, include facility / team / coach addresses and other form-driven fields that need update visibility
 - Consider a future follow-on polish for earlier soft team duplicate warnings on exact normalized name before age/city/state are filled, only if it can be done without creating noisy false positives
-- Broader sitewide font/color harmonization remains deferred follow-on work beyond the homepage readability pass and new Ads page baseline
+- Broader page-by-page font/color consistency outside the updated browse-result surfaces remains deferred follow-on work
 - Advertiser inquiry creative upload wiring remains deferred until a narrow storage/policy path is chosen
 - Advertiser inquiry AdminPage surfacing or conversion into managed `advertisers` records remains deferred
 
