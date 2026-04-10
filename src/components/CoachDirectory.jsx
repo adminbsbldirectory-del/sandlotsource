@@ -1941,8 +1941,8 @@ export default function CoachDirectory() {
                           }}
                         >
                           <MapContainer
-                            center={[33.5, -84.2]}
-                            zoom={8}
+                            center={[39.5, -98.35]}
+                            zoom={4}
                             style={{ height: "100%", width: "100%" }}
                           >
                             <TileLayer
