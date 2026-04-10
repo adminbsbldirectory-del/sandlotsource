@@ -1,161 +1,129 @@
-# Sandlot Source Refactor Notes
+# Sandlot Source — Session Handoff Notes
+
+## What this is
+Running context for Sandlot Source development. Paste at the start of a new Cowork or Claude thread.
 
 ---
 
-## ⚠️ MANDATORY CLOSEOUT STEP — DO THIS BEFORE ENDING EVERY THREAD
-Once a branch is merged, Vercel is verified, and the repo is back on `main` with a clean working tree:
-
-1. **Delete this entire file and rewrite it from scratch** using this template.
-2. Update only what changed: add one line to the completed items list, update the affected per-file status block, and update the next branch queue.
-3. **Do not append. Do not preserve old narrative.** Keep the document at this general length and structure.
-4. The thread is not complete until `NOTES.md` is rewritten and committed to `main`.
+## Current repo state
+- Branch: main
+- All changes committed and live on sandlotsource.com
+- Vercel confirmed deployed
 
 ---
 
-## Current phase
-Bug audit / geocoding hardening complete. Google Geocoding API is now the sole geocoding provider. Geocode follow-on work is being continued separately for consistency. Current non-geocode priorities are admin approval email cleanup, AdminPage coordinate editability, ad performance review, and broader live UX consistency issues.
+## What has been completed (all merged to main)
+
+### Geocoding hardening (Sessions 1-17)
+- Null lat/lng records no longer pass proximity filters in CoachDirectory, Facilities, TravelTeams, SearchResults
+- Approval email shows Latitude, Longitude, and Geocode Source before admin clicks Approve
+- Null coordinate guard in api/approve.js blocks one-click email approval of null-coordinate records
+- preResolved wired into CoachForm and TeamForm to avoid double geocoding
+- geocode_review soft fallback added to CoachForm, TeamForm, and FacilityForm — unresolvable addresses enter Supabase with approval_status: geocode_review and geocode_source: zip
+- Admin email gets 📍 GEOCODE REVIEW NEEDED subject prefix for geocode_review submissions
+- approval_status check constraint updated in Supabase to include geocode_review for coaches, facilities, travel_teams
+- geocode_source column added to coaches, facilities, travel_teams tables in Supabase
+- isCompatibleCandidate zip mismatch threshold loosened from 5 to 10 miles
+- Nominatim replaced with Google Geocoding API in api/geocode-address.js
+- GOOGLE_GEOCODING_API_KEY added to Vercel environment variables
+- All sleep delays and skipDelay logic removed from geocode.js — Google has no rate limit requirement
+- consecutiveEmpty early exit preserved at threshold 2
+
+### UI and data fixes (current session)
+- Homepage age group dropdown: added 7U, 9U, 11U — full order now 7U through 18U
+- /submit facility-type dropdown: added Sports Complex (between Training Facility and Travel Team Facility)
+- Facilities page map: Sports Complex added to legend (desktop and mobile), orange pin (#EA580C), distinct from all existing colors
+- CoachDirectory: Facility column removed from coach result rows and header. Column order is now Sport, Team, Age, Tryouts, View. Age falls back to "All ages" if no age_groups set. gridTemplateColumns updated from 5 to 4 columns.
+- TravelTeams directory: column header renamed from AGE / LEVEL to AGE. Column order is now Sport, Team, Age, Facility, Tryouts, View. TeamDesktopRow.jsx updated to render age_group before facility_name.
+- CoachDirectory default map: both MapContainer instances updated from [33.5, -84.2] zoom 8 (Atlanta) to [39.5, -98.35] zoom 4 (continental US)
+- Facilities default map: both MapContainer instances updated from [33.5, -84.4] zoom 7 to [39.5, -98.35] zoom 4
+- TravelTeams default map: was already correct, no change needed
+- Players Needed & Available default map: was already correct in PlayerBoardBrowseContent.jsx, no change needed
+- Admin email coord rows: removed Latitude, Longitude, Geocode Source from coachEmail, teamEmail, and facilityEmail in lib/emailTemplates.js — injectCoordRows in notify-admin.js is now the sole injector
 
 ---
 
-## Repo / workflow
-- **Desktop:** `C:\GitHub\sandlotsource` — pull before any new branch when returning from laptop work
-- **Laptop:** `C:\Users\sshap\Documents\GitHub\sandlotsource`
-- Confirm active device and repo path at the start of every execution thread
-- Local workflow only: VS Code + terminal + GitHub Desktop
-- One branch per change
-- No edits on `main`
-- Test locally before merge
-- Verify Vercel after every merge
+## What still needs to be done
+
+### Priority 1 — Form submission speed (30-35 seconds, must fix)
+**Problem:** geocode.js still uses a multi-variant query loop designed for Nominatim. Google handles abbreviations natively. The loop runs all variants before completing because consecutiveEmpty never fires — Google returns a result for every variant.
+**Fix needed:** Replace the entire variant loop with a single query: `{address}, {city}, {state} {zip}`. buildStreetVariants is no longer needed and can be removed.
+**File:** src/lib/submit/geocode.js
+
+### Priority 2 — lat/lng not editable in admin UI
+**Problem:** When a record comes in with geocode_review status, admin must correct coordinates in Supabase directly. lat and lng are not editable in the admin panel.
+**Fix needed:** Add lat and lng as editable fields in AdminPage for Coaches, Facilities, and Travel Teams, following the same pattern as address and zip_code.
+**File:** src/components/AdminPage.jsx
+
+### Priority 3 — Admin email coord rows still duplicating (deferred, cosmetic)
+**Problem:** Lat/Lng/Geocode Source still appears twice in admin approval emails. The emailTemplates.js rows are confirmed removed. The bug is in injectCoordRows — its detection check (`html.includes('>Latitude<')`) is not matching correctly, so it injects a second set regardless.
+**Fix needed:** Improve the detection logic in injectCoordRows so it reliably identifies existing coord rows before injecting. Admin-only, nothing breaks, low urgency.
+**File:** api/notify-admin.js
+
+### Priority 4 — Homepage search result close behavior drops ZIP context
+**Problem:** When a user performs a ZIP-based search on the homepage and selects a result card, closing that card resets to a fresh/empty state instead of returning to the prior result set.
+**Fix needed:** Preserve the ZIP result set in state when a card is opened. Closing should only clear the selected card, not the results array.
+**File:** src/components/Homepage.jsx
+
+### Priority 5 — Ad slots loading slowly (performance regression)
+**Problem:** Ad slots appear to be loading slowly across pages.
+**Fix needed:** Inspect ad fetch and render behavior. Look for blocking fetches, missing lazy/deferred loading, waterfalling ad calls that should be parallel, or a recently added synchronous dependency in the ad render path.
+**Files:** Ad slot component(s) and shared fetch/render utilities.
+
+### Priority 6 — Deferred cleanup (low priority)
+- SearchResults.jsx has local copies of distanceMiles and geocodeZip that should import from canonical geocode.js
+- zippopotam.us fallback in geocodeZip may no longer be needed now that Google is primary — evaluate removing
+- buildStreetVariants removable once geocode.js query loop is simplified (see Priority 1)
+- Server-side re-geocode endpoint for admin use on legacy and seeded records with bad coordinates
 
 ---
 
-## Completed extractions (41 total)
-(unchanged — see previous NOTES.md)
+## Key files reference
 
-## Completed cleanup items
-(all previous items retained, plus the following added)
-
-- **Geocoding hardening — Sessions 1-15** — Full geocoding and mapping audit completed. Fixed: null lat/lng proximity filter pass-through in CoachDirectory, Facilities, TravelTeams, SearchResults; approval email now shows lat/lng and geocode_source; null coordinate guard added to email approval path; Nominatim rate limit delay added then later removed; preResolved wired into CoachForm and TeamForm; missing street suffix variants added to buildStreetVariants; geocode_review soft fallback added to CoachForm, TeamForm, and FacilityForm so unresolvable addresses enter Supabase for manual review instead of hard blocking; isCompatibleCandidate zip mismatch threshold loosened from 5 to 10 miles; admin email 📍 prefix and coordinate rows working for geocode_review submissions; zip centroid precision improved via Nominatim zip query; approval_status check constraint updated in Supabase to include geocode_review for coaches, facilities, and travel_teams; geocode_source column added to all three tables; AdminPage zip field key corrected from zip_code to zip for coaches table; truncation and null byte corruption fixed in CoachDirectory, CoachSubmitForm, TravelTeams, Facilities, AdminPage, and geocode.js.
-- **Session 16 — Google Geocoding API swap** — Replaced Nominatim with Google Geocoding API in api/geocode-address.js. Response shape mapped to match existing geocode.js field expectations exactly. GOOGLE_GEOCODING_API_KEY environment variable added to Vercel. Geocoding API enabled in Google Cloud Console. Addresses not in OSM data now resolve correctly with address-level precision.
-- **Session 17 — Remove sleep delays and skipDelay logic** — Removed sleep helper, all await sleep calls, skipDelay parameter, firstQuery flag, and associated rate-limiting comments from geocode.js. consecutiveEmpty early exit threshold reverted to clean constant 2. No other logic changed.
-
----
-
-## Per-file status
-
-### `api/geocode-address.js` — UPDATED
-Nominatim proxy replaced with Google Geocoding API. Accepts same `?q=` parameter. Returns same flat array shape that `geocode.js` expects. All Nominatim-specific headers and rate limiting removed. `GOOGLE_GEOCODING_API_KEY` read from `process.env`.
-
-### `src/lib/submit/geocode.js` — BUG-AUDIT ACTIVE
-Geocoding hardening complete through Sessions 1-17. sleep helper and all delay logic removed. skipDelay and firstQuery removed. buildStreetVariants extended with 14 suffix pairs. isCompatibleCandidate zip mismatch threshold at 10 miles. consecutiveEmpty early exit at threshold 2 preserved. geocode_review fallback path preserved in finalizeListingLocation. geocodeZip still uses Nominatim zip query as primary with zippopotam.us fallback. Remaining known issue: submit-time loop still runs multiple variants before early exit, causing slow form submissions. Root cause is that Google returns results for all variants so consecutiveEmpty never reaches 2. Query-loop simplification remains future follow-on work in the geocode thread.
-
-### `src/components/CoachSubmitForm.jsx` — BUG-AUDIT ACTIVE
-geocode_review soft fallback added to CoachForm, TeamForm, and FacilityForm. preResolved wired into CoachForm and TeamForm. All three forms now share identical soft-fallback behavior. Facility submit follow-on now needed for facility-type dropdown expansion to include `Sports Complex`.
-
-### `api/notify-admin.js` — BUG-AUDIT ACTIVE
-📍 GEOCODE REVIEW NEEDED subject prefix working. needsGeocodeReview uses two synchronous conditions: `approval_status === 'geocode_review'` OR `geocode_source === 'zip'`, both gated on `address != null`. injectCoordRows runs unconditionally using `lastIndexOf` to target correct table. Known cosmetic issue: coordinate rows appear twice in email because template already includes them and injectCoordRows adds a second set. Fix still pending.
-
-### `lib/emailTemplates.js` — BUG-AUDIT ACTIVE
-Latitude, Longitude, and Geocode Source rows added to coachEmail, teamEmail, and facilityEmail. Duplicate rows appearing due to interaction with injectCoordRows in notify-admin.js. Fix still pending.
-
-### `api/approve.js` — BUG-AUDIT ACTIVE
-Null coordinate guard added. Records with null lat and lng are blocked from one-click email approval and redirected to warning page. Reject path and non-geo tables unaffected.
-
-### `src/components/CoachDirectory.jsx` — BUG-AUDIT ACTIVE
-Null lat/lng proximity filter fixed. Records without coordinates now return false in distance filter when geo search is active. Additional follow-on issue now identified: fresh-load empty/default map view is not aligned with Facilities, Teams, and Players Needed & Available. Default map start should be standardized across these pages.
-
-### `src/components/Facilities.jsx` — BUG-AUDIT ACTIVE
-Null lat/lng proximity filter fixed. Same pattern as CoachDirectory. Fresh-load default map view currently differs from other browse pages and should be standardized. Facility map legend/location-type follow-on now needed to support `Sports Complex`, likely by replacing the current `Other` category on the Facilities page legend/pins.
-
-### `src/components/TravelTeams.jsx` — BUG-AUDIT ACTIVE
-Null lat/lng proximity filter fixed. Same pattern as CoachDirectory. Fresh-load default map view currently differs from Coaches, Facilities, and Players Needed & Available and should be standardized.
-
-### `src/components/SearchResults.jsx` — BUG-AUDIT ACTIVE
-Null lat/lng proximity filter fixed in `matchesRadius`. Local `distanceMiles` and `geocodeZip` copies still present — deferred cleanup. Homepage search result flow follow-on now identified: selecting a result correctly opens the popup card, but closing the popup drops the user onto a fresh results page instead of preserving the prior ZIP-based result set.
-
-### `src/components/AdminPage.jsx` — BUG-AUDIT ACTIVE
-zip field key corrected from `zip_code` to `zip` in `COACH_FIELDS`. Truncation fixed. Editable `address` and `zip_code` columns added for Coaches, Travel Teams, and Facilities. `lat` and `lng` not yet editable through admin UI — manual Supabase edits still required for geocode_review coordinate corrections.
-
-### All other per-file statuses — unchanged from previous NOTES.md
+| File | Role |
+|---|---|
+| api/geocode-address.js | Google Geocoding API proxy |
+| src/lib/submit/geocode.js | Core geocoding logic — needs query loop simplification |
+| src/components/CoachSubmitForm.jsx | Coach, Team, and Facility submit forms |
+| api/notify-admin.js | Admin email notification and coord row injection |
+| lib/emailTemplates.js | Email HTML templates |
+| api/approve.js | Email approval handler — null coordinate guard |
+| src/components/AdminPage.jsx | Admin panel — needs lat/lng editable fields |
+| src/components/Homepage.jsx | Homepage search bar and result state |
+| src/components/CoachDirectory.jsx | Coach directory, result rows, map |
+| src/components/coaches/CoachRow.jsx | Coach result row layout |
+| src/components/Facilities.jsx | Facilities directory, map, legend |
+| src/components/TravelTeams.jsx | Teams directory, map, column headers |
+| src/components/teams/TeamDesktopRow.jsx | Team result row layout |
+| src/components/PlayerBoardBrowseContent.jsx | Players Needed & Available map and listings |
 
 ---
 
-## Supabase schema changes made this session
-- `coaches`, `facilities`, `travel_teams` — added `geocode_source text` column to all three
-- `coaches`, `facilities`, `travel_teams` — updated `approval_status` check constraint to include `'geocode_review'`
-- Supabase webhooks for notify-admin-coaches, notify-admin-teams, notify-admin-facilities — edited and re-saved to force schema cache refresh and include new columns in webhook payload
+## Google Geocoding API details
+- Provider: Google Geocoding API
+- Endpoint: https://maps.googleapis.com/maps/api/geocode/json?address={encoded}&key={key}
+- Environment variable: GOOGLE_GEOCODING_API_KEY (set in Vercel — Production, Preview, Development)
+- Google Cloud project: Sandlot Source
+- Restriction: Geocoding API only
+- Free tier: $200/month credit (~40,000 calls) — current volume well under limit
+- No rate limiting required — all delays removed
 
 ---
 
-## Next branch queue
-1. Fix duplicate coordinate rows in admin approval email — remove duplicate coordinate rows from emailTemplates.js or make injectCoordRows truly idempotent
-2. Add `lat` and `lng` as editable fields in AdminPage for Coaches, Facilities, and Travel Teams so geocode_review records can be corrected without going into Supabase directly
-3. Investigate slow ad-slot loading across pages and identify whether this is a recent ad fetch/render regression
-4. Add `Sports Complex` to the `/submit` facility-type dropdown and update Facilities page legend/pin handling, likely by replacing the current `Other` category
-5. Standardize fresh-load default map view across Coaches, Facilities, Teams, and Players Needed & Available to the same general U.S. starting position
-6. Update `/coaches` result-row metadata order from `sport, team, facility, age/level, tryouts, view` to `sport, team, age, tryouts, view`, removing the word `level`
-7. Fix homepage search result close behavior so closing a selected popup card preserves the prior ZIP-based result set instead of dropping to a fresh results page
-8. Remove duplicate `distanceMiles` and `geocodeZip` definitions from SearchResults.jsx — import from canonical geocode.js
-9. Confirm whether standalone PlayerBoard.jsx still needs a separate anti-spam patch
-10. Resume broader bug audit backlog
+## geocode_review workflow
+1. User submits with an address Google cannot resolve
+2. geocodeZip fires as fallback using submitted zip
+3. Record saves to Supabase with approval_status: geocode_review and geocode_source: zip
+4. Submitter sees: "Your listing was received but we could not verify your exact location automatically. Our team will review and confirm it before it goes live."
+5. Admin receives email with 📍 GEOCODE REVIEW NEEDED in subject line
+6. Admin finds record in /admin filtered by Geocode Review status
+7. Admin looks up correct coordinates in Google Maps, edits lat/lng directly in Supabase (or admin panel once Priority 2 is complete), then changes approval_status to approved
+8. The null coordinate guard in approve.js does NOT block geocode_review records — they have zip centroid coordinates, not null — so one-click email approval will go through. Admin should correct coordinates before clicking Approve.
 
 ---
 
-## Bug audit backlog
-- Duplicate coordinate rows in admin approval email — cosmetic but confusing
-- `lat` / `lng` not editable in admin UI — requires Supabase direct edit for geocode_review corrections
-- Slow ad-slot loading across pages — possible recent regression, needs inspection
-- Homepage search-bar age filter options are missing `7U`, `9U`, and `11U`
-- `/submit` facility-type dropdown needs `Sports Complex`; Facilities page legend/pin handling should be updated accordingly, likely replacing `Other`
-- `/coaches` result-row metadata order should change to `sport, team, age, tryouts, view`; remove `facility` from this sequence and remove the word `level`
-- Homepage search result popup close action should preserve the prior ZIP-based result set instead of resetting to a fresh results page
-- Fresh-load default map view is inconsistent across Coaches, Facilities, Teams, and Players Needed & Available and should be standardized
-- Legacy and seeded records may have null, stale, or zip-centroid coordinates — no backfill tool exists yet
-- geocode_review records: TeamForm and FacilityForm now use soft fallback but notify-admin subject prefix detection relies on geocode_source field being present in webhook payload — verify this works for team and facility submissions
-- SearchResults.jsx has local copies of distanceMiles and geocodeZip — deferred cleanup
-- Homepage featured cards — consider replacing location + Featured line treatment
-- Evaluate geo-aware homepage featured listings and urgent-needs localization
-- Work on hidden spam blocking and profile accuracy scoring
-- Add tournament pages with state-sorted links to known organizers
-- Determine whether teams should auto-expire after about 14 months
-- Broader page-by-page font/color consistency remains deferred
-- Advertiser inquiry creative upload wiring remains deferred
-- Advertiser inquiry AdminPage surfacing remains deferred
-
----
-
-## Rules
-- One branch, one file, one type of change
-- Inspect before creating any branch and confirm the target is live-rendered
-- List all dependencies before writing code
-- No giant rewrites
-- No scope creep mid-branch
-- If a file is blocked, state exactly why
-- If deferred, state exactly why
-- Prefer the narrowest safe extraction only when it materially improves the edit surface
-- Bug audit work should focus on actual behavior, regressions, edge cases, validation gaps, geocode/search failure handling, mobile layout issues, and Supabase/data-state problems — not forced line-count reduction
-
-## Inspection checklist — required before every extraction
-1. Find the candidate component/function
-2. Confirm it is actually rendered in the live UI
-3. Identify the exact line range
-4. List all dependencies (state, handlers, refs, helpers, imports)
-5. Only then open a branch and write code
-
-## Execution reminders
-- Provide full paste-ready file contents for any new component file
-- Provide the exact import line and clearly state what block to remove
-- Check sibling files in the target folder for naming and prop-pattern consistency
-- Confirm repo path and device before creating any branch
-
-## Thread closeout checklist
-- [x] Last completed item recorded in completed items
-- [x] Affected per-file status block updated
-- [x] Next branch queue updated
-- [x] Repo state confirmed: `main` / clean / synced
-- [ ] `NOTES.md` rewritten (not appended) and committed
-
----
-
-## Bug audit
-Active phase. Start from current merged `main`. Google Geocoding API is now live, but geocode-specific follow-on work is being handled separately for consistency. Prioritize non-geocode bug-audit items that are live-rendered, narrow in scope, and easy to validate locally.
+## Branch strategy
+- Always branch from main
+- One session per branch
+- Push to branch, create PR, test on Vercel preview URL before merging
+- After merge: git checkout main && git pull origin main && git branch -d {branch-name}
