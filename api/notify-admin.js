@@ -19,11 +19,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const ADMIN_EMAIL = 'admin.bsbldirectory@gmail.com';
 
 // Injects Latitude / Longitude / Geocode Source rows before the last </table> in the
-// email HTML. Always runs for geo-table emails — no early-return guard — so the rows
-// are reliably present even when the deployed emailTemplates.js predates Session 3.
+// email HTML. Guard at the top ensures this is a true no-op when the rows are already
+// present (detects the exact closing-tag pattern that makeRow produces).
 // Using lastIndexOf guarantees we target the main data table, not any header/banner table.
 function injectCoordRows(html, record) {
-  if (html.includes('>Latitude<')) return html;
+  if (html.includes('>Latitude</td>')) return html;
   const cell = (content, extra = '') =>
     `<td style="padding:8px 12px;${extra}border-bottom:1px solid #f3f4f6;">${content}</td>`;
   const makeRow = (label, value) =>
