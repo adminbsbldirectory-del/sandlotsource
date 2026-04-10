@@ -166,17 +166,26 @@ export default function AdSlot({ slotKey, style = {}, className = '' }) {
           />
         </a>
       ) : (
-        <img
-          src={ad.imageUrl}
-          alt={ad.altText}
+        <a
+          href="/advertise"
+          aria-label="Advertise on Sandlot Source"
           style={{
             display: 'block',
-            width: '100%',
-            height: 'auto',
-            objectFit: 'contain',
-            background: '#fff',
+            textDecoration: 'none',
           }}
-        />
+        >
+          <img
+            src={ad.imageUrl}
+            alt={ad.altText}
+            style={{
+              display: 'block',
+              width: '100%',
+              height: 'auto',
+              objectFit: 'contain',
+              background: '#fff',
+            }}
+          />
+        </a>
       )}
     </div>
   )
