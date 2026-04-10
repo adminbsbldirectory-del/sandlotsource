@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
@@ -270,6 +270,7 @@ function buildMarkerGroups(coaches) {
 
 export default function CoachDirectory() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [coaches, setCoaches] = useState([]);
   const [facilities, setFacilities] = useState([]);
@@ -724,7 +725,10 @@ export default function CoachDirectory() {
       {!isMobile && !profileCoach && sel && (
         <CoachDetailPanel
           coach={sel}
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            if (selectedFromUrl) navigate(-1);
+            else setSelected(null);
+          }}
           onViewProfile={(coach) => {
             setSelected(null);
             setProfileCoach(coach);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
@@ -261,6 +261,7 @@ function MapLegend({ hasPins }) {
 export default function TravelTeams() {
   const rowRefs = useRef({})
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const popupRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
@@ -268,7 +269,8 @@ export default function TravelTeams() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [profileTeam, setProfileTeam] = useState(null)
-  const [selectedTeamId, setSelectedTeamId] = useState(() => searchParams.get('select') || null)
+  const selectedTeamIdFromUrl = searchParams.get('select') || null
+  const [selectedTeamId, setSelectedTeamId] = useState(() => selectedTeamIdFromUrl)
 
   const closeAllPopups = () => {
     Object.values(popupRefs.current).forEach((popup) => {
@@ -1185,7 +1187,10 @@ export default function TravelTeams() {
     {selectedTeam && (
   <TeamPreviewCard
     team={selectedTeam}
-    onClose={() => setSelectedTeamId(null)}
+    onClose={() => {
+      if (selectedTeamIdFromUrl) navigate(-1);
+      else setSelectedTeamId(null);
+    }}
     onOpenFull={() => {
       const current = selectedTeam
       setSelectedTeamId(null)

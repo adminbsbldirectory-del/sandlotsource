@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { MapContainer, Marker, TileLayer } from 'react-leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
 import { supabase } from '../supabase.js'
@@ -343,6 +343,7 @@ function TeamCard({ team, mobile = false }) {
 export default function FacilityProfile() {
   const { id } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const [facility, setFacility] = useState(null)
   const [coaches, setCoaches] = useState([])
   const [teams, setTeams] = useState([])
@@ -466,9 +467,9 @@ export default function FacilityProfile() {
           <div style={{ fontFamily: 'var(--font-head)', fontSize: 22, fontWeight: 800, color: 'var(--navy)' }}>Facility not found</div>
           <div style={{ fontSize: 14, color: 'var(--gray)', marginTop: 8 }}>{error || 'This facility may have been removed or is no longer active.'}</div>
           <div style={{ marginTop: 16 }}>
-            <Link to={backHref} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700 }}>
+            <a href={backHref} onClick={(e) => { e.preventDefault(); navigate(-1); }} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, cursor: 'pointer' }}>
               ← Back to Facilities
-            </Link>
+            </a>
           </div>
         </div>
       </div>
@@ -478,9 +479,9 @@ export default function FacilityProfile() {
   return (
     <div className="page-shell" style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: isMobile ? '14px 10px 26px' : '24px 16px 40px', overflowX: 'hidden', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: 18 }}>
-        <Link to={backHref} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13 }}>
+        <a href={backHref} onClick={(e) => { e.preventDefault(); navigate(-1); }} style={{ color: '#1D4ED8', textDecoration: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
           ← Back to Facilities
-        </Link>
+        </a>
       </div>
 
       <div
