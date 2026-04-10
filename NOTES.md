@@ -29,7 +29,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - All sleep delays and skipDelay logic removed from geocode.js — Google has no rate limit requirement
 - consecutiveEmpty early exit preserved at threshold 2
 
-### UI and data fixes (current session)
+### UI and data fixes
 - Homepage age group dropdown: added 7U, 9U, 11U — full order now 7U through 18U
 - /submit facility-type dropdown: added Sports Complex (between Training Facility and Travel Team Facility)
 - Facilities page map: Sports Complex added to legend (desktop and mobile), orange pin (#EA580C), distinct from all existing colors
@@ -41,39 +41,28 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Players Needed & Available default map: was already correct in PlayerBoardBrowseContent.jsx, no change needed
 - Admin email coord rows: removed Latitude, Longitude, Geocode Source from coachEmail, teamEmail, and facilityEmail in lib/emailTemplates.js — injectCoordRows in notify-admin.js is now the sole injector
 
+### Geocoding speed, admin edits, email dedup (current session)
+- Form submission speed: replaced multi-variant Nominatim loop in geocode.js with a single Google query — `{address}, {city}, {state} {zip}`. buildStreetVariants removed. Submission time dropped from 30-35 seconds to under 3 seconds. Only one call goes out to /api/geocode-address per submission.
+- lat/lng editable in admin panel: added Lat and Lng as editable numeric fields in AdminPage.jsx for Coaches, Facilities, and Travel Teams. Fields show inline, save on blur, and persist on reload. Admin no longer needs to go into Supabase directly to correct geocode_review coordinates.
+- Admin email coord row duplication fixed: injectCoordRows detection logic in notify-admin.js corrected — Latitude, Longitude, and Geocode Source now appear exactly once in every admin approval email.
+
 ---
 
 ## What still needs to be done
 
-### Priority 1 — Form submission speed (30-35 seconds, must fix)
-**Problem:** geocode.js still uses a multi-variant query loop designed for Nominatim. Google handles abbreviations natively. The loop runs all variants before completing because consecutiveEmpty never fires — Google returns a result for every variant.
-**Fix needed:** Replace the entire variant loop with a single query: `{address}, {city}, {state} {zip}`. buildStreetVariants is no longer needed and can be removed.
-**File:** src/lib/submit/geocode.js
-
-### Priority 2 — lat/lng not editable in admin UI
-**Problem:** When a record comes in with geocode_review status, admin must correct coordinates in Supabase directly. lat and lng are not editable in the admin panel.
-**Fix needed:** Add lat and lng as editable fields in AdminPage for Coaches, Facilities, and Travel Teams, following the same pattern as address and zip_code.
-**File:** src/components/AdminPage.jsx
-
-### Priority 3 — Admin email coord rows still duplicating (deferred, cosmetic)
-**Problem:** Lat/Lng/Geocode Source still appears twice in admin approval emails. The emailTemplates.js rows are confirmed removed. The bug is in injectCoordRows — its detection check (`html.includes('>Latitude<')`) is not matching correctly, so it injects a second set regardless.
-**Fix needed:** Improve the detection logic in injectCoordRows so it reliably identifies existing coord rows before injecting. Admin-only, nothing breaks, low urgency.
-**File:** api/notify-admin.js
-
-### Priority 4 — Homepage search result close behavior drops ZIP context
+### Priority 1 — Homepage search result close behavior drops ZIP context
 **Problem:** When a user performs a ZIP-based search on the homepage and selects a result card, closing that card resets to a fresh/empty state instead of returning to the prior result set.
 **Fix needed:** Preserve the ZIP result set in state when a card is opened. Closing should only clear the selected card, not the results array.
 **File:** src/components/Homepage.jsx
 
-### Priority 5 — Ad slots loading slowly (performance regression)
+### Priority 2 — Ad slots loading slowly (performance regression)
 **Problem:** Ad slots appear to be loading slowly across pages.
 **Fix needed:** Inspect ad fetch and render behavior. Look for blocking fetches, missing lazy/deferred loading, waterfalling ad calls that should be parallel, or a recently added synchronous dependency in the ad render path.
 **Files:** Ad slot component(s) and shared fetch/render utilities.
 
-### Priority 6 — Deferred cleanup (low priority)
+### Priority 3 — Deferred cleanup (low priority)
 - SearchResults.jsx has local copies of distanceMiles and geocodeZip that should import from canonical geocode.js
 - zippopotam.us fallback in geocodeZip may no longer be needed now that Google is primary — evaluate removing
-- buildStreetVariants removable once geocode.js query loop is simplified (see Priority 1)
 - Server-side re-geocode endpoint for admin use on legacy and seeded records with bad coordinates
 
 ---
@@ -83,12 +72,12 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 | File | Role |
 |---|---|
 | api/geocode-address.js | Google Geocoding API proxy |
-| src/lib/submit/geocode.js | Core geocoding logic — needs query loop simplification |
+| src/lib/submit/geocode.js | Core geocoding logic — simplified to single Google query |
 | src/components/CoachSubmitForm.jsx | Coach, Team, and Facility submit forms |
 | api/notify-admin.js | Admin email notification and coord row injection |
 | lib/emailTemplates.js | Email HTML templates |
 | api/approve.js | Email approval handler — null coordinate guard |
-| src/components/AdminPage.jsx | Admin panel — needs lat/lng editable fields |
+| src/components/AdminPage.jsx | Admin panel — lat/lng now editable |
 | src/components/Homepage.jsx | Homepage search bar and result state |
 | src/components/CoachDirectory.jsx | Coach directory, result rows, map |
 | src/components/coaches/CoachRow.jsx | Coach result row layout |
@@ -117,7 +106,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 4. Submitter sees: "Your listing was received but we could not verify your exact location automatically. Our team will review and confirm it before it goes live."
 5. Admin receives email with 📍 GEOCODE REVIEW NEEDED in subject line
 6. Admin finds record in /admin filtered by Geocode Review status
-7. Admin looks up correct coordinates in Google Maps, edits lat/lng directly in Supabase (or admin panel once Priority 2 is complete), then changes approval_status to approved
+7. Admin corrects lat/lng using the editable Lat and Lng fields in the admin panel, then changes approval_status to approved
 8. The null coordinate guard in approve.js does NOT block geocode_review records — they have zip centroid coordinates, not null — so one-click email approval will go through. Admin should correct coordinates before clicking Approve.
 
 ---
