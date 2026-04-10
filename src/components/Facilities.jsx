@@ -23,6 +23,7 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All Location Types' },
   { value: 'park_field', label: 'Park / Rec Field' },
   { value: 'training_facility', label: 'Indoor Training Facility' },
+  { value: 'sports_complex', label: 'Sports Complex' },
   { value: 'private_facility', label: 'Private Facility' },
   { value: 'travel_team_facility', label: 'Team Facility' },
   { value: 'school_field', label: 'School Field' },
@@ -40,6 +41,7 @@ function getFacilityTypeLabel(value) {
   const map = {
     park_field: 'Park / Rec Field',
     training_facility: 'Indoor Training Facility',
+    sports_complex: 'Sports Complex',
     private_facility: 'Private Facility',
     travel_team_facility: 'Team Facility',
     school_field: 'School Field',
@@ -51,6 +53,7 @@ function getFacilityTypeLabel(value) {
 function getFacilityTypeColor(value) {
   if (value === 'park_field') return '#16A34A'
   if (value === 'training_facility') return '#D42B2B'
+  if (value === 'sports_complex') return '#EA580C'
   if (value === 'private_facility') return '#8B5CF6'
   if (value === 'travel_team_facility') return '#1D4ED8'
   if (value === 'school_field') return '#6B7280'
@@ -835,7 +838,7 @@ export default function Facilities() {
                   }}
                 >
                   <div style={{ height: 320, overflow: 'hidden', borderRadius: 14 }}>
-                    <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
+                    <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
                       <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -876,6 +879,7 @@ export default function Facilities() {
                     {[
                       ['Park / Rec Field', '#16A34A'],
                       ['Indoor Training Facility', '#D42B2B'],
+                      ['Sports Complex', '#EA580C'],
                       ['Private Facility', '#8B5CF6'],
                       ['Team Facility', '#1D4ED8'],
                       ['School Field', '#6B7280'],
@@ -1238,7 +1242,7 @@ export default function Facilities() {
                                 border: '1px solid rgba(15,23,42,0.06)',
                               }}
                             >
-                              <MapContainer center={[33.5, -84.4]} zoom={7} style={{ height: '100%', width: '100%' }}>
+                              <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
                                 <TileLayer
                                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -1296,6 +1300,7 @@ export default function Facilities() {
                               {[
                                 ['Park / Rec Field', '#16A34A'],
                                 ['Indoor Training Facility', '#D42B2B'],
+                                ['Sports Complex', '#EA580C'],
                                 ['Private Facility', '#8B5CF6'],
                                 ['Team Facility', '#1D4ED8'],
                                 ['School Field', '#6B7280'],
