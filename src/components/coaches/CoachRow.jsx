@@ -15,7 +15,7 @@ export default function CoachRow({
       style={{
         display: "grid",
         gridTemplateColumns:
-          "120px minmax(220px, 1.1fr) minmax(250px, 1.15fr) minmax(240px, 1.1fr) 96px",
+          "120px minmax(220px, 1.1fr) minmax(240px, 1.1fr) 96px",
         gap: 12,
         alignItems: "center",
         padding: "10px 14px",
@@ -94,33 +94,6 @@ export default function CoachRow({
         <div
           style={{
             fontSize: 13,
-            fontWeight: 700,
-            color: "var(--navy)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {coach.facility_name || "Independent / Private Lessons"}
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: "var(--gray)",
-            marginTop: 3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {location || "Location not listed"}
-        </div>
-      </div>
-
-      <div style={{ minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 13,
             color: "var(--navy)",
             fontWeight: 700,
             whiteSpace: "nowrap",
@@ -128,22 +101,10 @@ export default function CoachRow({
             textOverflow: "ellipsis",
           }}
         >
-          {specialization}
+          {Array.isArray(coach.age_groups) && coach.age_groups.length > 0
+            ? coach.age_groups.join(", ")
+            : "All ages"}
         </div>
-        {credentialText && (
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--gray)",
-              marginTop: 3,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {credentialText}
-          </div>
-        )}
       </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end" }}>

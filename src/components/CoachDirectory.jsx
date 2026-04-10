@@ -1374,8 +1374,8 @@ export default function CoachDirectory() {
                   >
                     <div style={{ height: 360, overflow: "hidden" }}>
                       <MapContainer
-                        center={[33.5, -84.2]}
-                        zoom={8}
+                        center={[39.5, -98.35]}
+                        zoom={4}
                         style={{ height: "100%", width: "100%" }}
                       >
                         <TileLayer
@@ -2081,18 +2081,7 @@ export default function CoachDirectory() {
                               textTransform: "uppercase",
                             }}
                           >
-                            Facility
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 10.5,
-                              fontWeight: 900,
-                              color: "#516172",
-                              letterSpacing: "0.1em",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Specialization
+                            Age
                           </div>
                           <div
                             style={{
