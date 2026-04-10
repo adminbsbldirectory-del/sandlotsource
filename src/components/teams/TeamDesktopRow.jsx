@@ -92,6 +92,24 @@ export default function TeamDesktopRow({
         </div>
 
         <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
+            {team.age_group || '—'}
+          </div>
+          <div
+            style={{
+              marginTop: 3,
+              fontSize: 11,
+              color: 'var(--gray)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {team.classification || team.org_affiliation || 'Level not listed'}
+          </div>
+        </div>
+
+        <div style={{ minWidth: 0 }}>
           <div
             style={{
               fontSize: 13,
@@ -118,24 +136,6 @@ export default function TeamDesktopRow({
             title={practiceLine}
           >
             {practiceLine || 'Practice area not listed'}
-          </div>
-        </div>
-
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy)', lineHeight: 1.2 }}>
-            {team.age_group || '—'}
-          </div>
-          <div
-            style={{
-              marginTop: 3,
-              fontSize: 11,
-              color: 'var(--gray)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {team.classification || team.org_affiliation || 'Level not listed'}
           </div>
         </div>
 

@@ -1127,8 +1127,8 @@ export default function TravelTeams() {
       >
         <div style={desktopHeaderCellStyle}>Sport</div>
         <div style={desktopHeaderCellStyle}>Team</div>
+        <div style={desktopHeaderCellStyle}>Age</div>
         <div style={desktopHeaderCellStyle}>Facility</div>
-        <div style={desktopHeaderCellStyle}>Age / Level</div>
         <div style={desktopHeaderCellStyle}>Tryouts</div>
         <div style={{ ...desktopHeaderCellStyle, textAlign: 'right' }}>View</div>
       </div>

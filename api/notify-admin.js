@@ -23,6 +23,7 @@ const ADMIN_EMAIL = 'admin.bsbldirectory@gmail.com';
 // are reliably present even when the deployed emailTemplates.js predates Session 3.
 // Using lastIndexOf guarantees we target the main data table, not any header/banner table.
 function injectCoordRows(html, record) {
+  if (html.includes('>Latitude<')) return html;
   const cell = (content, extra = '') =>
     `<td style="padding:8px 12px;${extra}border-bottom:1px solid #f3f4f6;">${content}</td>`;
   const makeRow = (label, value) =>
