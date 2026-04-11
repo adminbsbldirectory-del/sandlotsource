@@ -41,24 +41,45 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Players Needed & Available default map: was already correct in PlayerBoardBrowseContent.jsx, no change needed
 - Admin email coord rows: removed Latitude, Longitude, Geocode Source from coachEmail, teamEmail, and facilityEmail in lib/emailTemplates.js — injectCoordRows in notify-admin.js is now the sole injector
 
-### Geocoding speed, admin edits, email dedup (current session)
-- Form submission speed: replaced multi-variant Nominatim loop in geocode.js with a single Google query — `{address}, {city}, {state} {zip}`. buildStreetVariants removed. Submission time dropped from 30-35 seconds to under 3 seconds. Only one call goes out to /api/geocode-address per submission.
-- lat/lng editable in admin panel: added Lat and Lng as editable numeric fields in AdminPage.jsx for Coaches, Facilities, and Travel Teams. Fields show inline, save on blur, and persist on reload. Admin no longer needs to go into Supabase directly to correct geocode_review coordinates.
+### Geocoding speed, admin edits, email dedup
+- Form submission speed: replaced multi-variant Nominatim loop in geocode.js with a single Google query — `{address}, {city}, {state} {zip}`. buildStreetVariants removed. Submission time dropped from 30-35 seconds to under 3 seconds.
+- lat/lng editable in admin panel: added Lat and Lng as editable numeric fields in AdminPage.jsx for Coaches, Facilities, and Travel Teams. Fields show inline, save on blur, and persist on reload.
 - Admin email coord row duplication fixed: injectCoordRows detection logic in notify-admin.js corrected — Latitude, Longitude, and Geocode Source now appear exactly once in every admin approval email.
+
+### Search close / back navigation
+- When a user searches from homepage and clicks a result card, closing the card now returns to /search?... via navigate(-1) instead of dropping to a bare directory page.
+- Fixed in CoachDirectory.jsx, TravelTeams.jsx, and FacilityProfile.jsx.
+
+### Ad slot fixes
+- House ads (no target_url set) now wrap in <a href="/advertise"> instead of rendering as unclickable images — fixed in AdSlot.jsx.
+- All non-homepage house ad records in Supabase updated: target_url changed from page-self-referential URLs to https://www.sandlotsource.com/advertise (26 records updated via SQL).
+- Ad slot multiple fetch waves investigated: root cause is DevTools narrowing viewport below 768px breakpoint (triggers isMobile toggle) and normal SPA navigation remounting components. Not a production bug.
 
 ---
 
 ## What still needs to be done
 
-### Priority 1 — Homepage search result close behavior drops ZIP context
-**Problem:** When a user performs a ZIP-based search on the homepage and selects a result card, closing that card resets to a fresh/empty state instead of returning to the prior result set.
-**Fix needed:** Preserve the ZIP result set in state when a card is opened. Closing should only clear the selected card, not the results array.
-**File:** src/components/Homepage.jsx
+### Priority 1 — SEO location landing pages for Teams (next up)
+**Objective:** Add indexable city/state entry point routes for search engines and shared links, without replacing the ZIP-first browse experience.
+**Scope:** Teams only for v1. Route pattern: `/teams/:state/:city` (e.g. `/teams/fl/jacksonville`, `/teams/ga/atlanta`)
+**Requirements:**
+- Do NOT replace or weaken ZIP-first browse/search experience
+- Read state and city from URL params, normalize as needed
+- Initialize teams results with that location context (prefer direct city/state filtering over ZIP translation)
+- Existing filters still work after landing
+- Reuse current TravelTeams UI and query logic as much as possible — no logic duplication
+- Dynamic page title: `Youth Baseball Teams in Jacksonville, FL | Sandlot Source`
+- H1: `Youth Baseball Teams in Jacksonville, Florida`
+- Short intro text block
+- Helpful empty state if no results
+- Clean enough pattern to reuse later for coaches and facilities
+**Do not:** Add coaches/facilities routes yet, add age-group routes, add sitemap work, rework homepage search, introduce unrelated refactors
+**Files likely involved:** src/App.jsx (new route), src/components/TravelTeams.jsx or new wrapper component
 
-### Priority 2 — Ad slots loading slowly (performance regression)
-**Problem:** Ad slots appear to be loading slowly across pages.
-**Fix needed:** Inspect ad fetch and render behavior. Look for blocking fetches, missing lazy/deferred loading, waterfalling ad calls that should be parallel, or a recently added synchronous dependency in the ad render path.
-**Files:** Ad slot component(s) and shared fetch/render utilities.
+### Priority 2 — AdSlot module-level cache (low priority)
+**Problem:** Every SPA navigation remounts AdSlot components, triggering redundant Supabase fetches. DevTools viewport changes can also cause isMobile toggling and double-fetching.
+**Fix:** Add a module-level Map cache in AdSlot.jsx — check cache before fetching, store result after fetch. Remounts within a session resolve instantly from cache.
+**File:** src/components/AdSlot.jsx
 
 ### Priority 3 — Deferred cleanup (low priority)
 - SearchResults.jsx has local copies of distanceMiles and geocodeZip that should import from canonical geocode.js
@@ -78,13 +99,15 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 | lib/emailTemplates.js | Email HTML templates |
 | api/approve.js | Email approval handler — null coordinate guard |
 | src/components/AdminPage.jsx | Admin panel — lat/lng now editable |
-| src/components/Homepage.jsx | Homepage search bar and result state |
+| src/components/HomePage.jsx | Homepage search bar and result state |
 | src/components/CoachDirectory.jsx | Coach directory, result rows, map |
 | src/components/coaches/CoachRow.jsx | Coach result row layout |
 | src/components/Facilities.jsx | Facilities directory, map, legend |
 | src/components/TravelTeams.jsx | Teams directory, map, column headers |
 | src/components/teams/TeamDesktopRow.jsx | Team result row layout |
 | src/components/PlayerBoardBrowseContent.jsx | Players Needed & Available map and listings |
+| src/components/AdSlot.jsx | Ad slot fetch and render — house ads now link to /advertise |
+| src/components/SearchResults.jsx | Homepage search results page |
 
 ---
 
@@ -116,3 +139,12 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - One session per branch
 - Push to branch, create PR, test on Vercel preview URL before merging
 - After merge: git checkout main && git pull origin main && git branch -d {branch-name}
+
+## Workflow notes
+- Working repo: C:\Users\sshap\Documents\GitHub\sandlotsource
+- Local workflow only: VS Code + terminal + GitHub Desktop
+- Do not use GitHub browser for code edits except tiny text-only changes
+- Production deploys from main
+- Always test locally before merge
+- Always verify Vercel production after merge
+- If HEAD.lock error on git checkout: del .git\HEAD.lock then retry
