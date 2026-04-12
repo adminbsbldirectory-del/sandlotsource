@@ -3,7 +3,7 @@ import CoachResult from './CoachResult'
 import TeamResult from './TeamResult'
 import FacilityResult from './FacilityResult'
 
-const RED = '#e63329'
+const RED = 'var(--navy)'
 const DARK = '#1a1a1a'
 const BORDER = '#eaeae6'
 const MUTED = '#888'
@@ -15,7 +15,7 @@ function ResultCount({ count }) {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: count > 0 ? RED : '#eaeae6',
+        background: count > 0 ? RED : '#eef0f2',
         color: count > 0 ? '#fff' : MUTED,
         fontSize: 11,
         fontWeight: 600,
@@ -40,7 +40,7 @@ function SectionHeader({ title, count, isCollapsed, onToggle }) {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '14px 0 12px',
-        borderBottom: `2px solid ${BORDER}`,
+        borderBottom: '1px solid #eef0f2',
         cursor: 'pointer',
         userSelect: 'none',
         marginBottom: 14,
@@ -167,13 +167,13 @@ export default function SearchResultsContent({
                       <div style={{ marginTop: 14 }}>
                         <div
                           style={{
-                            border: `1px dashed ${BORDER}`,
-                            borderRadius: 12,
+                            border: '1px solid #eef0f2',
+                            borderRadius: 10,
                             padding: '16px 14px',
                             textAlign: 'center',
                             color: MUTED,
                             fontSize: 12,
-                            background: '#fcfcfa',
+                            background: '#f8fafb',
                           }}
                         >
                           Sponsored placement
@@ -228,13 +228,13 @@ export default function SearchResultsContent({
                       <div style={{ marginTop: 14 }}>
                         <div
                           style={{
-                            border: `1px dashed ${BORDER}`,
-                            borderRadius: 12,
+                            border: '1px solid #eef0f2',
+                            borderRadius: 10,
                             padding: '16px 14px',
                             textAlign: 'center',
                             color: MUTED,
                             fontSize: 12,
-                            background: '#fcfcfa',
+                            background: '#f8fafb',
                           }}
                         >
                           Sponsored placement
@@ -317,9 +317,9 @@ export default function SearchResultsContent({
                   <div
                     key={i}
                     style={{
-                      border: '1.5px dashed #d0d0c8',
-                      borderRadius: 8,
-                      background: '#fafaf8',
+                      border: '1px solid #eef0f2',
+                      borderRadius: 10,
+                      background: '#f8fafb',
                       minHeight: slot.minH,
                       display: 'flex',
                       flexDirection: 'column',

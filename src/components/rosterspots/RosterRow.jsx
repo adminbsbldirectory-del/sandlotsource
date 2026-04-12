@@ -82,13 +82,12 @@ export default function RosterRow({ spot, isMobile }) {
 
   return (
     <div
+      className="roster-row"
       style={{
         background: '#fff',
-        border: '1px solid var(--lgray)',
-        borderRadius: 16,
-        padding: isMobile ? '14px 14px 12px' : '16px 18px',
-        boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
-        overflow: 'hidden',
+        borderBottom: '1px solid #eef0f2',
+        padding: isMobile ? '16px 0 14px' : '18px 0',
+        transition: 'background 0.1s',
       }}
     >
       <div
@@ -167,25 +166,15 @@ export default function RosterRow({ spot, isMobile }) {
           )}
 
           {(linkedPracticeLocation || linkedFacilityName) && (
-            <div
-              style={{
-                display: 'grid',
-                gap: 6,
-                marginBottom: 10,
-                padding: '10px 12px',
-                borderRadius: 12,
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-              }}
-            >
+            <div style={{ display: 'grid', gap: 3, marginBottom: 8 }}>
               {linkedPracticeLocation && (
-                <div style={{ fontSize: 12, color: '#334155', wordBreak: 'break-word' }}>
-                  <strong>Practice:</strong> {linkedPracticeLocation}
+                <div style={{ fontSize: 12, color: '#64748B', wordBreak: 'break-word' }}>
+                  <span style={{ fontWeight: 600, color: '#475569' }}>Practice:</span> {linkedPracticeLocation}
                 </div>
               )}
               {linkedFacilityName && (
-                <div style={{ fontSize: 12, color: '#334155', wordBreak: 'break-word' }}>
-                  <strong>Facility:</strong> {linkedFacilityName}
+                <div style={{ fontSize: 12, color: '#64748B', wordBreak: 'break-word' }}>
+                  <span style={{ fontWeight: 600, color: '#475569' }}>Facility:</span> {linkedFacilityName}
                 </div>
               )}
             </div>

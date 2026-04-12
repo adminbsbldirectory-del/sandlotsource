@@ -143,9 +143,9 @@ export default function TeamPreviewCard({
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(240px, 260px)', gap: 14, marginTop: 14 }}>
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(240px, 260px)', gap: 20, marginTop: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <div style={{ paddingBottom: 14, borderBottom: '1px solid #eef0f2', marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Team Details
             </div>
@@ -157,7 +157,7 @@ export default function TeamPreviewCard({
             </div>
           </div>
 
-          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+          <div style={{ paddingBottom: 14, borderBottom: '1px solid #eef0f2', marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Practice Location
             </div>
@@ -177,7 +177,7 @@ export default function TeamPreviewCard({
           </div>
 
           {team.description && (
-            <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+            <div style={{ paddingBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
                 About Team
               </div>
@@ -188,8 +188,8 @@ export default function TeamPreviewCard({
           )}
         </div>
 
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <div style={{ paddingBottom: 14, borderBottom: '1px solid #eef0f2', marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Tryouts
             </div>
@@ -201,7 +201,7 @@ export default function TeamPreviewCard({
             </div>
           </div>
 
-          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+          <div style={{ paddingBottom: 14, borderBottom: '1px solid #eef0f2', marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Primary Facility
             </div>
@@ -232,7 +232,7 @@ export default function TeamPreviewCard({
             </div>
           </div>
 
-          <div style={{ background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: 14, padding: 14 }}>
+          <div style={{ paddingBottom: 14, marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--gray)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               Contact / Details
             </div>

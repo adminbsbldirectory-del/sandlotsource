@@ -523,7 +523,7 @@ export default function TravelTeams() {
     : ''
 
   return (
-    <div style={!isMobile ? { background: 'var(--cream)' } : undefined}>
+    <div style={!isMobile ? { background: '#fff' } : undefined}>
       {profileTeam && (
         <TeamProfile
           team={profileTeam}
@@ -568,12 +568,12 @@ export default function TravelTeams() {
               position: isMobile ? 'static' : 'sticky',
               top: isMobile ? 'auto' : HEADER_H + 12,
               alignSelf: 'start',
-              background: 'var(--white)',
-              borderRight: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+              background: '#f9fafb',
+              borderRight: isMobile ? 'none' : '1px solid #eef0f2',
               zIndex: 4,
             }}
           >
-            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
+            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #eef0f2', background: '#f9fafb' }}>
               <div
                 style={{
                   fontFamily: 'var(--font-head)',
@@ -598,8 +598,8 @@ export default function TravelTeams() {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 10,
-                borderBottom: '1px solid var(--lgray)',
-                background: 'var(--white)',
+                borderBottom: '1px solid #eef0f2',
+                background: '#f9fafb',
               }}
             >
               <div>
@@ -821,7 +821,7 @@ export default function TravelTeams() {
             </div>
 
             {!isMobile && (
-              <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
+              <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#f9fafb' }}>
                 <RailAdSlot slotKey="teams_left_rail_1_desktop" reservedHeight={250} />
               </div>
             )}
@@ -841,7 +841,7 @@ export default function TravelTeams() {
                   style={{
                     position: 'static',
                     zIndex: 0,
-                    background: 'var(--page-bg, #f5f3ef)',
+                    background: 'transparent',
                     paddingTop: isMobile ? 0 : 8,
                     paddingBottom: isMobile ? 6 : 10,
                     overflowX: 'clip',
@@ -865,19 +865,14 @@ export default function TravelTeams() {
                   )}
 
                   {showMap && (
-                    <div
-                      style={{
-                        background: 'var(--white)',
-                        width: '100%',
-                      }}
-                    >
+                    <div style={{ width: '100%' }}>
                       <div
                         style={{
                           height: isMobile ? 260 : 360,
                           width: '100%',
                           overflow: 'hidden',
-                          borderRadius: isMobile ? 0 : 14,
-                          border: isMobile ? 'none' : '1px solid rgba(15,23,42,0.06)',
+                          borderRadius: isMobile ? 0 : 10,
+                          border: isMobile ? 'none' : '1px solid #eef0f2',
                         }}
                       >
                         <MapContainer center={mapCenter} zoom={mapZoom} style={{ height: '100%', width: '100%' }}>
@@ -1106,8 +1101,7 @@ export default function TravelTeams() {
     style={{
       marginTop: 8,
       background: 'var(--white)',
-      border: '1px solid rgba(15,23,42,0.06)',
-      borderRadius: 14,
+      borderTop: '1px solid rgba(15,23,42,0.07)',
       overflow: 'hidden',
       position: 'relative',
     }}

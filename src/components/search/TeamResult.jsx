@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-const RED = '#e63329'
+const RED = 'var(--navy)'
 const DARK = '#1a1a1a'
 const BORDER = '#eaeae6'
 const MUTED = '#888'
@@ -35,12 +35,14 @@ export default function TeamResult({ team, distanceMi, to }) {
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div
+        className='search-result'
         style={{
-          border: `1px solid ${BORDER}`,
-          borderRadius: 12,
+          border: '1px solid #eef0f2',
+          borderRadius: 10,
           padding: '14px 16px',
           background: '#fff',
           cursor: 'pointer',
+          transition: 'background 0.1s',
         }}
       >
         <div
@@ -132,8 +134,8 @@ export default function TeamResult({ team, distanceMi, to }) {
           {team.sport && (
             <span
               style={{
-                background: LIGHT,
-                color: MUTED,
+                background: '#f8fafc',
+                color: '#64748b',
                 fontSize: 11,
                 padding: '2px 8px',
                 borderRadius: 20,
@@ -145,8 +147,8 @@ export default function TeamResult({ team, distanceMi, to }) {
           {team.age_group && (
             <span
               style={{
-                background: LIGHT,
-                color: MUTED,
+                background: '#f8fafc',
+                color: '#64748b',
                 fontSize: 11,
                 padding: '2px 8px',
                 borderRadius: 20,
@@ -162,7 +164,7 @@ export default function TeamResult({ team, distanceMi, to }) {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            borderTop: '1px solid #f2f2ee',
+            borderTop: '1px solid #eef0f2',
             paddingTop: 9,
             marginTop: 4,
           }}

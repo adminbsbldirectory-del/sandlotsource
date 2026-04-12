@@ -15,9 +15,11 @@ export default function TeamDesktopRow({
   return (
     <div
       ref={setRowRef}
+      className="team-row"
       style={{
-        borderBottom: '1px solid rgba(15,23,42,0.06)',
-        background: isSelected ? '#FCFCFD' : 'var(--white)',
+        borderBottom: '1px solid #eef0f2',
+        background: isSelected ? '#f5f8ff' : 'var(--white)',
+        transition: 'background 0.1s',
       }}
     >
       <div

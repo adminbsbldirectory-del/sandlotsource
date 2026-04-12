@@ -1,15 +1,12 @@
-const LIGHT = '#f5f4f0'
-const BORDER = '#e2e0db'
-
 export default function HomePageBand({ children, style }) {
   return (
     <div
       style={{
-        background: LIGHT,
-        borderTop: '1px solid ' + BORDER,
-        borderBottom: '1px solid ' + BORDER,
         padding: '24px 0',
-        marginTop: 24,
+        marginTop: 36,
+        background: '#fafbfc',
+        borderTop: '1px solid #f1f3f5',
+        borderBottom: '1px solid #f1f3f5',
         ...style,
       }}
     >

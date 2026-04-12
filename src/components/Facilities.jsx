@@ -966,7 +966,7 @@ export default function Facilities() {
           </div>
         </div>
       ) : (
-        <div style={{ background: 'var(--cream)' }}>
+        <div style={{ background: '#fff' }}>
           <DirectoryAdBand
             slotKey="facilities_top_1_desktop"
             maxWidth={970}
@@ -982,12 +982,12 @@ export default function Facilities() {
                   position: 'sticky',
                   top: HEADER_H + 12,
                   alignSelf: 'start',
-                  background: 'var(--white)',
-                  borderRight: '1px solid rgba(15,23,42,0.06)',
+                  background: '#f9fafb',
+                  borderRight: '1px solid #eef0f2',
                   zIndex: 2,
                 }}
               >
-                <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid var(--lgray)' }}>
+                <div style={{ padding: '10px 12px 8px', background: '#f9fafb', borderBottom: '1px solid #eef0f2' }}>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>
                     {hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : 'Start with ZIP + radius'}
                   </div>
@@ -998,7 +998,7 @@ export default function Facilities() {
                   </div>
                 </div>
 
-                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid #eef0f2', background: '#f9fafb' }}>
                   <div>
                     <div style={sectionLabel}>ZIP code</div>
                     <input
@@ -1213,7 +1213,7 @@ export default function Facilities() {
                   </div>
                 </div>
 
-                <div style={{ padding: 12, borderTop: '1px solid var(--lgray)', background: 'var(--white)' }}>
+                <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#f9fafb' }}>
                   <RailAdSlot slotKey="facilities_left_rail_1_desktop" reservedHeight={250} />
                 </div>
               </aside>
@@ -1221,25 +1221,25 @@ export default function Facilities() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 24, alignItems: 'start' }}>
                   <main style={{ minWidth: 0 }}>
-                    <div style={{ background: 'var(--page-bg, #f5f3ef)', paddingTop: 8, paddingBottom: 10 }}>
+                    <div style={{ background: '#fff', paddingTop: 8, paddingBottom: 10 }}>
                       {showMap && (
                         <div
                           style={{
                             position: 'sticky',
                             top: HEADER_H + 12,
                             zIndex: 3,
-                            background: 'var(--page-bg, #f5f3ef)',
+                            background: '#fff',
                             paddingBottom: 10,
                           }}
                         >
-                          <div style={{ background: 'var(--white)', width: '100%' }}>
+                          <div style={{ width: '100%' }}>
                             <div
                               style={{
                                 height: 360,
                                 width: '100%',
                                 overflow: 'hidden',
-                                borderRadius: 14,
-                                border: '1px solid rgba(15,23,42,0.06)',
+                                borderRadius: 10,
+                                border: '1px solid #eef0f2',
                               }}
                             >
                               <MapContainer center={[39.5, -98.35]} zoom={4} style={{ height: '100%', width: '100%' }}>
@@ -1329,11 +1329,7 @@ export default function Facilities() {
                       {!showMap && (
                         <div
                           style={{
-                            background: 'var(--white)',
-                            border: '1px solid rgba(15,23,42,0.06)',
-                            borderRadius: 14,
-                            marginTop: 10,
-                            padding: '16px',
+                            padding: '14px 0 4px',
                             color: 'var(--gray)',
                             fontSize: 13,
                             width: '100%',
@@ -1358,9 +1354,8 @@ export default function Facilities() {
                     <div
                       style={{
                         marginTop: 8,
-                        background: 'var(--white)',
-                        border: '1px solid rgba(15,23,42,0.06)',
-                        borderRadius: 14,
+                        background: '#fff',
+                        borderTop: '1px solid #eef0f2',
                         overflow: 'hidden',
                         position: 'relative',
                       }}
@@ -1373,8 +1368,8 @@ export default function Facilities() {
                             gap: 10,
                             alignItems: 'center',
                             padding: '11px 14px',
-                            background: '#EEF3FA',
-                            borderBottom: '1px solid rgba(15,23,42,0.08)',
+                            background: '#f9fafb',
+                            borderBottom: '1px solid #eef0f2',
                             position: 'sticky',
                             top: 0,
                             zIndex: 2,
@@ -1413,9 +1408,11 @@ export default function Facilities() {
                                 if (el) rowRefs.current[f.id] = el
                                 else delete rowRefs.current[f.id]
                               }}
+                              className="facility-row"
                               style={{
-                                borderBottom: '1px solid rgba(15,23,42,0.06)',
-                                background: isSelected ? '#FCFCFD' : 'var(--white)',
+                                borderBottom: '1px solid #eef0f2',
+                                background: isSelected ? '#f5f8ff' : '#fff',
+                                transition: 'background 0.1s',
                               }}
                             >
                               <FacilityDesktopRow

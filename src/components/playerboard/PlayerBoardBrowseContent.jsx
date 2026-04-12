@@ -71,16 +71,16 @@ export default function PlayerBoardBrowseContent({
       >
         <main style={{ minWidth: 0 }}>
           {showBrowseMap && (
-            <div style={{ background: "var(--white)", width: "100%" }}>
+            <div style={{ width: "100%" }}>
               <div
                 style={{
                   height: isMobile ? 260 : 390,
                   width: "100%",
                   overflow: "hidden",
-                  borderRadius: isMobile ? 0 : 14,
+                  borderRadius: isMobile ? 0 : 10,
                   border: isMobile
                     ? "none"
-                    : "1px solid rgba(15,23,42,0.06)",
+                    : "1px solid #eef0f2",
                 }}
               >
                 <MapContainer
@@ -139,8 +139,8 @@ export default function PlayerBoardBrowseContent({
                   flexWrap: "wrap",
                   gap: 12,
                   padding: "6px 10px",
-                  background: "var(--white)",
-                  borderTop: "1px solid var(--lgray)",
+                  background: "#fff",
+                  borderTop: "1px solid #eef0f2",
                   alignItems: "center",
                 }}
               >
@@ -245,9 +245,8 @@ export default function PlayerBoardBrowseContent({
             <div
               style={{
                 marginTop: 8,
-                background: "var(--white)",
-                border: "1px solid rgba(15,23,42,0.06)",
-                borderRadius: 14,
+                background: "#fff",
+                borderTop: "1px solid #eef0f2",
                 overflow: "hidden",
                 position: "relative",
               }}
@@ -265,8 +264,8 @@ export default function PlayerBoardBrowseContent({
                     gap: 10,
                     alignItems: "center",
                     padding: "9px 14px",
-                    background: "#F8FAFC",
-                    borderBottom: "1px solid rgba(15,23,42,0.08)",
+                    background: "#f9fafb",
+                    borderBottom: "1px solid #eef0f2",
                     position: "sticky",
                     top: 0,
                     zIndex: 2,

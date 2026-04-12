@@ -1,8 +1,6 @@
 import AdSlot from '../AdSlot'
 
-const LIGHT = '#f5f4f0'
-const BORDER = '#e2e0db'
-const MUTED = '#888'
+const MUTED = '#aaa'
 
 export default function HomePageAdBand({
   slotKey,
@@ -14,18 +12,17 @@ export default function HomePageAdBand({
   return (
     <div
       style={{
-        background: LIGHT,
-        borderTop: '1px solid ' + BORDER,
-        borderBottom: '1px solid ' + BORDER,
-        padding: isMobile ? '16px 0' : '18px 0',
+        padding: isMobile ? '16px 0' : '20px 0',
         marginTop,
+        borderTop: '1px solid #f1f3f5',
+        borderBottom: '1px solid #f1f3f5',
       }}
     >
       <div style={{ padding: isMobile ? '0 12px' : '0 20px' }}>
         <div style={{ width: '100%', maxWidth, margin: '0 auto' }}>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 600,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
@@ -39,10 +36,8 @@ export default function HomePageAdBand({
           <div
             style={{
               minHeight: reservedHeight,
-              background: '#fff',
-              border: '1px solid ' + BORDER,
-              borderRadius: 12,
               overflow: 'hidden',
+              borderRadius: 10,
             }}
           >
             <AdSlot slotKey={slotKey} />
