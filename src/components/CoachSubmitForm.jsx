@@ -3002,7 +3002,7 @@ export default function CoachSubmitForm() {
         })}
       </div>
 
-      <div style={{ background: 'white', borderRadius: 12, border: '2px solid var(--lgray)', padding: isMobile ? '20px 16px' : '28px 24px' }}>
+      <div style={{ padding: isMobile ? '4px 0 0' : '8px 0 0' }}>
         {activeTab === 'coach' && <CoachForm isMobile={isMobile} />}
         {activeTab === 'team' && <TeamForm isMobile={isMobile} />}
         {activeTab === 'player' && <PlayerForm isMobile={isMobile} />}

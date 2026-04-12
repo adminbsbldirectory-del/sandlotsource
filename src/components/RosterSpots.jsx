@@ -298,9 +298,8 @@ function InlineMobileAdSlot({ slotKey, marginTop = 16 }) {
   return (
     <div
       style={{
-        background: '#F5F4F0',
-        borderTop: '1px solid #E2E0DB',
-        borderBottom: '1px solid #E2E0DB',
+        borderTop: '1px solid #f1f3f5',
+        borderBottom: '1px solid #f1f3f5',
         padding: '16px 0',
         marginTop,
       }}
@@ -309,26 +308,18 @@ function InlineMobileAdSlot({ slotKey, marginTop = 16 }) {
         <div style={{ width: '100%', maxWidth: 320, margin: '0 auto' }}>
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 600,
+              fontSize: 10,
+              fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'var(--gray)',
+              color: '#aaa',
               margin: '0 0 8px 2px',
             }}
           >
             Sponsored
           </div>
 
-          <div
-            style={{
-              minHeight: 100,
-              background: '#fff',
-              border: '1px solid #E2E0DB',
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
-          >
+          <div style={{ minHeight: 100, overflow: 'hidden' }}>
             <AdSlot slotKey={slotKey} />
           </div>
         </div>
@@ -343,10 +334,10 @@ function SkyscraperAdSlot({ slotKey }) {
       <div
         style={{
           fontSize: 10,
-          fontWeight: 800,
+          fontWeight: 700,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          color: 'var(--gray)',
+          color: '#bbb',
           margin: '0 0 8px 2px',
           textAlign: 'left',
         }}
@@ -360,11 +351,7 @@ function SkyscraperAdSlot({ slotKey }) {
           minWidth: 160,
           maxWidth: 160,
           minHeight: 600,
-          background: '#fff',
-          border: '1px solid #E2E0DB',
-          borderRadius: 12,
           overflow: 'hidden',
-          boxShadow: '0 4px 12px rgba(15,23,42,0.04)',
         }}
       >
         <AdSlot slotKey={slotKey} />
@@ -1255,7 +1242,7 @@ export default function RosterSpots() {
 )
 
   return (
-    <div style={{ overflowX: 'clip', background: isMobile ? undefined : 'var(--cream)' }}>
+    <div style={{ overflowX: 'clip', background: isMobile ? undefined : '#fff' }}>
       {isMobile ? (
         browseContent
       ) : (
@@ -1279,7 +1266,7 @@ export default function RosterSpots() {
                 justifySelf: 'start',
               }}
             >
-              <SkyscraperAdSlot slotKey="roster_spots_left_rail_1_desktop" />
+              <SkyscraperAdSlot slotKey='roster_spots_left_rail_1_desktop' />
             </aside>
 
             <main style={{ minWidth: 0 }}>{browseContent}</main>
@@ -1293,7 +1280,7 @@ export default function RosterSpots() {
                 justifySelf: 'end',
               }}
             >
-              <SkyscraperAdSlot slotKey="roster_spots_right_rail_1_desktop" />
+              <SkyscraperAdSlot slotKey='roster_spots_right_rail_1_desktop' />
             </aside>
           </div>
         </div>

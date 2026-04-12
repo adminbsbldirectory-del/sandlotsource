@@ -738,15 +738,14 @@ export default function CoachDirectory() {
       )}
 
       {isMobile ? (
-        <div style={{ background: "var(--cream)", minHeight: "100vh" }}>
+        <div style={{ background: "#fff", minHeight: "100vh" }}>
           <div style={{ padding: "10px 12px 8px" }}>
             <div
               style={{
-                background: "var(--white)",
-                border: "1px solid rgba(15,23,42,0.07)",
-                borderRadius: 18,
+                background: "#fff",
+                border: "1px solid #eef0f2",
+                borderRadius: 14,
                 padding: "14px 14px 12px",
-                boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
               }}
             >
               <div
@@ -1541,7 +1540,7 @@ export default function CoachDirectory() {
           />
         </div>
       ) : (
-        <div style={{ background: "var(--cream)" }}>
+        <div style={{ background: "#fff" }}>
           <DirectoryAdBand
             slotKey="coaches_top_1_desktop"
             maxWidth={970}
@@ -1565,15 +1564,16 @@ export default function CoachDirectory() {
                   position: "sticky",
                   top: HEADER_H + 12,
                   alignSelf: "start",
-                  background: "var(--white)",
-                  borderRight: "1px solid rgba(15,23,42,0.06)",
+                  background: "#f9fafb",
+                  borderRight: "1px solid #eef0f2",
                   zIndex: 2,
                 }}
               >
                 <div
                   style={{
                     padding: "10px 12px 8px",
-                    borderBottom: "1px solid var(--lgray)",
+                    background: "#f9fafb",
+                    borderBottom: "1px solid #eef0f2",
                   }}
                 >
                   <div
@@ -1608,8 +1608,8 @@ export default function CoachDirectory() {
                     display: "flex",
                     flexDirection: "column",
                     gap: 10,
-                    borderBottom: "1px solid var(--lgray)",
-                    background: "var(--white)",
+                    borderBottom: "1px solid #eef0f2",
+                    background: "#f9fafb",
                   }}
                 >
                   {facilityContext && (
@@ -1913,8 +1913,8 @@ export default function CoachDirectory() {
                 <div
                   style={{
                     padding: 12,
-                    borderTop: "1px solid var(--lgray)",
-                    background: "var(--white)",
+                    borderTop: "1px solid #eef0f2",
+                    background: "#f9fafb",
                   }}
                 >
                   <RailAdSlot
@@ -1934,14 +1934,14 @@ export default function CoachDirectory() {
                 >
                   <main style={{ minWidth: 0 }}>
                     {showMap && (
-                      <div style={{ background: "var(--white)", width: "100%" }}>
+                      <div style={{ width: "100%" }}>
                         <div
                           style={{
                             height: 355,
                             width: "100%",
                             overflow: "hidden",
-                            borderRadius: 14,
-                            border: "1px solid rgba(15,23,42,0.06)",
+                            borderRadius: 10,
+                            border: "1px solid #eef0f2",
                           }}
                         >
                           <MapContainer
@@ -1977,17 +1977,13 @@ export default function CoachDirectory() {
                     {!showMap ? (
                       <div
                         style={{
-                          background: "var(--white)",
-                          border: "1px solid rgba(15,23,42,0.06)",
-                          borderRadius: 14,
-                          padding: "16px",
-                          color: "var(--gray)",
+                          padding: '14px 0 4px',
+                          color: 'var(--gray)',
                           fontSize: 13,
-                          width: "100%",
+                          width: '100%',
                         }}
                       >
-                        Map is hidden. Use “Show Map” in the left panel to view
-                        coach locations.
+                        Map is hidden. Use &quot;Show Map&quot; in the left panel to view coach locations.
                       </div>
                     ) : null}
 
@@ -2024,11 +2020,10 @@ export default function CoachDirectory() {
                     <div
                       style={{
                         marginTop: 8,
-                        border: "1px solid #DCE5F0",
-                        borderRadius: 16,
-                        overflow: "hidden",
-                        background: "#fff",
-                        boxShadow: "0 8px 24px rgba(15,23,42,0.04)",
+                        borderTop: '1px solid #eef0f2',
+                        overflow: 'hidden',
+                        background: '#fff',
+                        position: 'relative',
                       }}
                     >
                       <div
@@ -2044,14 +2039,12 @@ export default function CoachDirectory() {
                               "118px minmax(190px, 1fr) minmax(220px, 1.1fr) minmax(240px, 1.2fr) 96px",
                             gap: 14,
                             alignItems: "center",
-                            padding: "13px 14px",
-                            background:
-                              "linear-gradient(180deg, #EEF4FB 0%, #E7EEF8 100%)",
-                            borderBottom: "1px solid #DCE5F0",
+                            padding: "11px 14px",
+                            background: "#f9fafb",
+                            borderBottom: "1px solid #eef0f2",
                             position: "sticky",
                             top: 0,
                             zIndex: 4,
-                            boxShadow: "0 1px 0 #DCE5F0",
                           }}
                         >
                           <div

@@ -29,15 +29,16 @@ export default function PlayerBoardBrowseSidebar({
         position: isMobile ? "static" : "sticky",
         top: isMobile ? "auto" : 76,
         alignSelf: "start",
-        background: "var(--white)",
-        borderRight: isMobile ? "none" : "1px solid rgba(15,23,42,0.06)",
+        background: "#f9fafb",
+        borderRight: isMobile ? "none" : "1px solid #eef0f2",
         zIndex: 2,
       }}
     >
       <div
         style={{
           padding: "10px 12px 8px",
-          borderBottom: "1px solid var(--lgray)",
+          background: "#f9fafb",
+          borderBottom: "1px solid #eef0f2",
         }}
       >
         <div
@@ -70,8 +71,8 @@ export default function PlayerBoardBrowseSidebar({
           display: "flex",
           flexDirection: "column",
           gap: 10,
-          borderBottom: "1px solid var(--lgray)",
-          background: "var(--white)",
+          borderBottom: "1px solid #eef0f2",
+          background: "#f9fafb",
         }}
       >
         <div>
@@ -311,8 +312,8 @@ export default function PlayerBoardBrowseSidebar({
         <div
           style={{
             padding: 12,
-            borderTop: "1px solid var(--lgray)",
-            background: "var(--white)",
+            borderTop: "1px solid #eef0f2",
+            background: "#f9fafb",
           }}
         >
           <RailAdSlot

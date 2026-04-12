@@ -10,22 +10,21 @@ export default function DirectoryAdBand({
   return (
     <div
       style={{
-        background: '#F5F4F0',
-        borderTop: '1px solid #E2E0DB',
-        borderBottom: '1px solid #E2E0DB',
-        padding: isMobile ? '16px 0' : '18px 0',
+        padding: isMobile ? '16px 0' : '20px 0',
         marginTop,
+        borderTop: '1px solid #f1f3f5',
+        borderBottom: '1px solid #f1f3f5',
       }}
     >
       <div style={{ padding: isMobile ? '0 12px' : '0 14px' }}>
         <div style={{ width: '100%', maxWidth, margin: '0 auto' }}>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 600,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'var(--gray)',
+              color: '#bbb',
               margin: '0 0 8px 2px',
             }}
           >
@@ -35,10 +34,8 @@ export default function DirectoryAdBand({
           <div
             style={{
               minHeight: reservedHeight,
-              background: '#fff',
-              border: '1px solid #E2E0DB',
-              borderRadius: 12,
               overflow: 'hidden',
+              borderRadius: 10,
             }}
           >
             <AdSlot slotKey={slotKey} />

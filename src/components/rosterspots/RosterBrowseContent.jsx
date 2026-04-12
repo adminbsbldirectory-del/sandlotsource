@@ -34,13 +34,14 @@ export default function RosterBrowseContent({
   FitBounds,
   makeIcon,
   PIN_COLOR,
+  showFilterHeader = true,
 }) {
   return (
     <div style={{ minWidth: 0 }}>
-      <div
+      {showFilterHeader && <div
         style={{
-          background: 'var(--cream)',
-          borderBottom: '2px solid var(--lgray)',
+          background: '#f9fafb',
+          borderBottom: '1px solid #eef0f2',
           padding: isMobile ? '18px 14px 16px' : '22px 24px 20px',
         }}
       >
@@ -211,11 +212,11 @@ export default function RosterBrowseContent({
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       {showMap && hasLocalSearch && (
         <div style={{ padding: isMobile ? '14px 14px 0' : '18px 24px 0' }}>
-          <div style={{ height: isMobile ? 220 : 320, width: '100%', border: '1px solid var(--lgray)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ height: isMobile ? 220 : 320, width: '100%', overflow: 'hidden', borderRadius: 10, border: '1px solid #eef0f2' }}>
             <MapContainer center={zipGeo ? [zipGeo.lat, zipGeo.lng] : DEFAULT_CENTER} zoom={9} style={{ height: '100%', width: '100%' }}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -255,10 +256,7 @@ export default function RosterBrowseContent({
         {showSearchPrompt && !loading && (
           <div
             style={{
-              background: '#fff',
-              border: '1px solid var(--lgray)',
-              borderRadius: 16,
-              padding: isMobile ? '20px 16px' : '24px 22px',
+              padding: isMobile ? '28px 16px' : '36px 22px',
               textAlign: 'center',
               color: '#475569',
             }}
@@ -275,10 +273,7 @@ export default function RosterBrowseContent({
         {hasNoResults && (
           <div
             style={{
-              background: '#fff',
-              border: '1px solid var(--lgray)',
-              borderRadius: 16,
-              padding: isMobile ? '20px 16px' : '24px 22px',
+              padding: isMobile ? '28px 16px' : '36px 22px',
               textAlign: 'center',
               color: '#475569',
             }}
@@ -310,7 +305,7 @@ export default function RosterBrowseContent({
         )}
 
         {hasLocalSearch && filtered.length > 0 && (
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ borderTop: '1px solid #eef0f2' }}>
             {filtered.map((spot) => (
               <RosterRow key={spot.id} spot={spot} isMobile={isMobile} />
             ))}

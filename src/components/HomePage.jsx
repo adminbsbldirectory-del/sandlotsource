@@ -532,10 +532,8 @@ export default function HomePage() {
           <section
             style={{
               background: '#fff',
-              borderRadius: 14,
               padding: isMobile ? '20px 14px 16px' : '28px 28px 22px',
-              border: '1px solid ' + BORDER,
-              borderLeft: '4px solid ' + NAVY,
+              borderLeft: '3px solid ' + NAVY,
             }}
           >
             <h1
@@ -750,9 +748,9 @@ export default function HomePage() {
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
               gap: 10,
-              background: '#edf2f8',
-              borderRadius: 12,
-              padding: isMobile ? '14px' : '18px 20px',
+              borderTop: '1px solid #f1f3f5',
+              borderBottom: '1px solid #f1f3f5',
+              padding: isMobile ? '16px 0' : '20px 0',
             }}
           >
             {homepageStatsItems.map((s) => (
@@ -786,9 +784,9 @@ export default function HomePage() {
                     gap: 12,
                     padding: isMobile ? '14px 4px' : '15px 13px',
                     borderBottom:
-                      isMobile && idx !== howItWorks.length - 1 ? '1px solid ' + BORDER : 'none',
-                    border: !isMobile ? '1px solid ' + BORDER : 'none',
-                    borderRadius: !isMobile ? 12 : 0,
+                      isMobile && idx !== howItWorks.length - 1 ? '1px solid #eef0f2' : 'none',
+                    border: !isMobile ? '1px solid #eef0f2' : 'none',
+                    borderRadius: !isMobile ? 10 : 0,
                     background: '#fff',
                   }}
                 >
@@ -838,7 +836,8 @@ export default function HomePage() {
           </div>
         </HomePageBand>
 
-        <div style={{ ...col, marginTop: 28 }}>
+        <HomePageBand>
+          <div style={col}>
           <HomePageSectionHeader title="What are you looking for?" />
 
           <div
@@ -853,8 +852,8 @@ export default function HomePage() {
                 key={card.to}
                 to={card.to}
                 style={{
-                  border: '1px solid ' + BORDER,
-                  borderRadius: 14,
+                  border: '1px solid #eef0f2',
+                  borderRadius: 10,
                   padding: isMobile ? '16px 14px' : '18px 16px 14px',
                   background: '#fff',
                   textDecoration: 'none',
@@ -919,7 +918,8 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
-        </div>
+          </div>
+        </HomePageBand>
 
         <HomePageAdBand
           slotKey={isMobile ? 'homepage_inline_1_mobile' : 'homepage_inline_1_desktop'}
@@ -951,7 +951,8 @@ export default function HomePage() {
           </div>
         </HomePageBand>
 
-        <div style={{ ...col, marginTop: 28 }}>
+        <HomePageBand>
+          <div style={col}>
           <HomePageSectionHeader title="Featured teams" linkTo="/teams" linkLabel="View all →" />
 
           <div
@@ -965,7 +966,8 @@ export default function HomePage() {
               <FeaturedCard key={listing.id} listing={listing} isMobile={isMobile} />
             ))}
           </div>
-        </div>
+          </div>
+        </HomePageBand>
 
         <HomePageBand style={{ marginTop: 28 }}>
           <div style={col}>
@@ -989,7 +991,7 @@ export default function HomePage() {
                   to={p.link}
                   style={{
                     border: '1px solid #f5cfc9',
-                    borderRadius: 12,
+                    borderRadius: 10,
                     padding: '13px 14px',
                     background: '#fff',
                     textDecoration: 'none',
@@ -1060,8 +1062,8 @@ export default function HomePage() {
               <div
                 style={{
                   gridColumn: '1 / -1',
-                  border: '1px solid #e2e0db',
-                  borderRadius: 12,
+                  border: '1px solid #eef0f2',
+                  borderRadius: 10,
                   padding: isMobile ? '18px 14px' : '20px 18px',
                   background: '#fff',
                   color: MUTED,

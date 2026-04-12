@@ -21,9 +21,11 @@ export default function PlayerBoardDesktopRow({
 
   return (
     <div
+      className="player-row"
       style={{
-        borderBottom: "1px solid rgba(15,23,42,0.06)",
-        background: isSelected ? "#FCFCFD" : "var(--white)",
+        borderBottom: "1px solid #eef0f2",
+        background: isSelected ? "#f5f8ff" : "#fff",
+        transition: "background 0.1s",
       }}
     >
       <div

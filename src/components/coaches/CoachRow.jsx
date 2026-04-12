@@ -12,6 +12,7 @@ export default function CoachRow({
   return (
     <div
       onClick={onOpen}
+      className="coach-row"
       style={{
         display: "grid",
         gridTemplateColumns:
@@ -19,8 +20,9 @@ export default function CoachRow({
         gap: 12,
         alignItems: "center",
         padding: "10px 14px",
-        borderTop: "1px solid #E7E5E1",
-        background: selected ? "#F9FBFF" : "#fff",
+        borderBottom: "1px solid #eef0f2",
+        background: selected ? "#f5f8ff" : "#fff",
+        transition: "background 0.1s",
         cursor: "pointer",
       }}
     >

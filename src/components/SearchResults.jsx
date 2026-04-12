@@ -37,7 +37,7 @@ async function geocodeZip(zip) {
 }
 
 // ─── Style tokens ─────────────────────────────────────────
-const RED = '#e63329'
+const RED = 'var(--navy)'
 const DARK = '#1a1a1a'
 const BORDER = '#eaeae6'
 const MUTED = '#888'
@@ -247,7 +247,7 @@ export default function SearchResults() {
     alignItems: 'center',
     gap: 8,
     background: '#fff',
-    border: '1px solid #ddddd8',
+    border: '1px solid #eef0f2',
     borderRadius: 10,
     padding: isMobile ? '10px 12px' : '8px 11px',
     fontSize: isMobile ? 14 : 12,
@@ -281,12 +281,11 @@ export default function SearchResults() {
     >
       <section
         style={{
-          background: '#fff',
-          borderRadius: 14,
+          background: '#f9fafb',
+          borderTop: '1px solid #eef0f2',
+          borderBottom: '1px solid #eef0f2',
           padding: isMobile ? '16px 14px 14px' : '20px 24px 16px',
           marginTop: 16,
-          border: `1px solid ${BORDER}`,
-          borderTop: `4px solid ${RED}`,
         }}
       >
         <form
@@ -295,7 +294,7 @@ export default function SearchResults() {
             display: 'flex',
             alignItems: 'center',
             background: '#fff',
-            border: '1.5px solid #d8d8d2',
+            border: '1px solid #eef0f2',
             borderRadius: 10,
             padding: isMobile ? '0 5px 0 10px' : '0 6px 0 12px',
             height: isMobile ? 50 : 46,
