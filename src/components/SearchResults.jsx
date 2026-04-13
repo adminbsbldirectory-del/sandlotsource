@@ -573,7 +573,7 @@ export default function SearchResults() {
               <SkyscraperAdSlot slotKey="search_results_left_rail_1_desktop" />
             </aside>
 
-            <main style={{ minWidth: 0 }}>
+            <main style={{ minWidth: 0, padding: '0 12px' }}>
               {innerContent}
             </main>
 
