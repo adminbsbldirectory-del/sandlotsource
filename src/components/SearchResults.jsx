@@ -40,7 +40,6 @@ async function geocodeZip(zip) {
 // ─── Style tokens ─────────────────────────────────────────
 const RED = 'var(--navy)'
 const DARK = '#1a1a1a'
-const BORDER = '#eaeae6'
 const MUTED = '#888'
 const HEADER_H = 75
 
@@ -98,7 +97,10 @@ export default function SearchResults() {
   const [coachesCollapsed, setCoachesCollapsed] = useState(false)
   const [teamsCollapsed, setTeamsCollapsed] = useState(false)
   const [facilitiesCollapsed, setFacilitiesCollapsed] = useState(false)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  )
+  const [resultView, setResultView] = useState('list')
 
   useEffect(() => {
     function handleResize() {
@@ -134,23 +136,24 @@ export default function SearchResults() {
         setGeoResult(null)
       }
 
-      const [{ data: coachData }, { data: teamData }, { data: facilityData }] = await Promise.all([
-        supabase
-          .from('coaches')
-          .select('*')
-          .eq('active', true)
-          .in('approval_status', ['approved', 'seeded']),
-        supabase
-          .from('travel_teams')
-          .select('*')
-          .eq('active', true)
-          .in('approval_status', ['approved', 'seeded']),
-        supabase
-          .from('facilities')
-          .select('*')
-          .eq('active', true)
-          .in('approval_status', ['approved', 'seeded']),
-      ])
+      const [{ data: coachData }, { data: teamData }, { data: facilityData }] =
+        await Promise.all([
+          supabase
+            .from('coaches')
+            .select('*')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded']),
+          supabase
+            .from('travel_teams')
+            .select('*')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded']),
+          supabase
+            .from('facilities')
+            .select('*')
+            .eq('active', true)
+            .in('approval_status', ['approved', 'seeded']),
+        ])
 
       setCoaches(coachData || [])
       setTeams(teamData || [])
@@ -222,42 +225,63 @@ export default function SearchResults() {
     listingType && listingType !== 'coach'
       ? []
       : sortByDistance(
-          coaches.filter((c) => matchesKeyword(c) && matchesSport(c) && matchesRadius(c))
+          coaches.filter(
+            (c) => matchesKeyword(c) && matchesSport(c) && matchesRadius(c)
+          )
         )
 
   const filteredTeams =
     listingType && listingType !== 'team' && listingType !== 'roster'
       ? []
       : sortByDistance(
-          teams.filter((t) => matchesKeyword(t) && matchesSport(t) && matchesAge(t) && matchesRadius(t))
+          teams.filter(
+            (t) =>
+              matchesKeyword(t) &&
+              matchesSport(t) &&
+              matchesAge(t) &&
+              matchesRadius(t)
+          )
         )
 
   const filteredFacilities =
     listingType && listingType !== 'facility'
       ? []
       : sortByDistance(
-          facilities.filter((f) => matchesKeyword(f) && matchesSport(f) && matchesRadius(f))
+          facilities.filter(
+            (f) => matchesKeyword(f) && matchesSport(f) && matchesRadius(f)
+          )
         )
 
   const totalResults =
     filteredCoaches.length + filteredTeams.length + filteredFacilities.length
 
+  const isSingleTypeMapEligible =
+    listingType === 'coach' ||
+    listingType === 'team' ||
+    listingType === 'facility'
+
+  useEffect(() => {
+    if (!isSingleTypeMapEligible && resultView !== 'list') {
+      setResultView('list')
+    }
+  }, [isSingleTypeMapEligible, resultView])
 
   function buildDirectoryQuery(extra = {}) {
-    const params = new URLSearchParams()
-    if (zip) params.set('zip', zip)
-    if (radius) params.set('radius', String(radius))
-    if (sport) params.set('sport', sport)
-    if (ageGroup) params.set('age', ageGroup)
+  const params = new URLSearchParams()
+  if (query) params.set('q', query)
+  if (zip) params.set('zip', zip)
+  if (radius) params.set('radius', String(radius))
+  if (sport) params.set('sport', sport)
+  if (ageGroup) params.set('age', ageGroup)
 
-    Object.entries(extra).forEach(([key, value]) => {
-      if (value == null || value === '') return
-      params.set(key, String(value))
-    })
+  Object.entries(extra).forEach(([key, value]) => {
+    if (value == null || value === '') return
+    params.set(key, String(value))
+  })
 
-    const queryString = params.toString()
-    return queryString ? `?${queryString}` : ''
-  }
+  const queryString = params.toString()
+  return queryString ? `?${queryString}` : ''
+}
 
   const coachBrowseLink = `/coaches${buildDirectoryQuery()}`
   const teamBrowseLink = `/teams${buildDirectoryQuery()}`
@@ -446,7 +470,7 @@ export default function SearchResults() {
               style={selectStyle}
             >
               <option value="">All ages</option>
-              {['8U', '10U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
+              {['7U', '8U', '9U', '10U', '11U', '12U', '13U', '14U', '15U', '16U', '17U', '18U'].map((a) => (
                 <option key={a} value={a}>
                   {a}
                 </option>
@@ -539,6 +563,12 @@ export default function SearchResults() {
         coachBrowseLink={coachBrowseLink}
         teamBrowseLink={teamBrowseLink}
         facilityBrowseLink={facilityBrowseLink}
+        resultView={resultView}
+        setResultView={setResultView}
+        isSingleTypeMapEligible={isSingleTypeMapEligible}
+        listingType={listingType}
+        zip={zip}
+        geoResult={geoResult}
       />
     </>
   )
