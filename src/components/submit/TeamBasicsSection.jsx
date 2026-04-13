@@ -57,7 +57,7 @@ export default function TeamBasicsSection({
           <input
             value={form.name}
             onChange={(e) => set('name', e.target.value)}
-            placeholder="e.g. Georgia Bombers 12U"
+            placeholder="Enter team name"
             style={inputStyle}
           />
         </div>
@@ -66,7 +66,7 @@ export default function TeamBasicsSection({
           <input
             value={form.org_affiliation}
             onChange={(e) => set('org_affiliation', e.target.value)}
-            placeholder="e.g. Georgia Bombers"
+            placeholder="Enter organization (if applicable)"
             style={inputStyle}
           />
         </div>
