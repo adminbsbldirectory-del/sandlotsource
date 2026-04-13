@@ -122,7 +122,7 @@ export default function TeamFacilitySection({
                   <input
                     value={newFacilityForm.name}
                     onChange={(e) => setNewFacility('name', e.target.value)}
-                    placeholder="e.g. Grand Slam Johns Creek"
+                    placeholder="Enter facility name"
                     style={inputStyle}
                     maxLength={facilityNameMax}
                   />

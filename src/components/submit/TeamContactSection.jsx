@@ -44,7 +44,7 @@ export default function TeamContactSection({
             type="tel"
             value={form.contact_phone}
             onChange={(e) => setField('contact_phone', e.target.value)}
-            placeholder="770-555-0100"
+            placeholder="Enter phone number"
             style={inputStyle}
           />
         </div>
