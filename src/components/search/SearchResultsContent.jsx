@@ -117,7 +117,7 @@ export default function SearchResultsContent({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 200px',
+            gridTemplateColumns: '1fr',
             gap: 22,
             alignItems: 'start',
             marginTop: 8,
@@ -291,72 +291,6 @@ export default function SearchResultsContent({
             )}
           </div>
 
-          {!isMobile && (
-            <aside style={{ width: 200, flexShrink: 0 }}>
-              <div
-                style={{
-                  position: 'sticky',
-                  top: 80,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                }}
-              >
-                {[
-                  {
-                    label: 'Sidebar · 160×300',
-                    example: 'Travel orgs · Academies · County sponsors',
-                    minH: 260,
-                  },
-                  {
-                    label: 'Sidebar · 160×200',
-                    example: 'Local businesses · Equipment shops',
-                    minH: 200,
-                  },
-                ].map((slot, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      border: '1px solid #eef0f2',
-                      borderRadius: 10,
-                      background: '#f8fafb',
-                      minHeight: slot.minH,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 4,
-                      padding: '10px 8px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 500,
-                        letterSpacing: '0.07em',
-                        textTransform: 'uppercase',
-                        color: '#bbb',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {slot.label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: '#ccc',
-                        fontStyle: 'italic',
-                        textAlign: 'center',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {slot.example}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </aside>
-          )}
         </div>
       )}
     </>

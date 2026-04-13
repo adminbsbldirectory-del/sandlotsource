@@ -3,6 +3,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase.js'
 import { SEARCH_RADIUS_OPTIONS } from '../constants/radiusOptions'
 import SearchResultsContent from './search/SearchResultsContent'
+import AdSlot from './AdSlot.jsx'
 
 // ─── Haversine distance (miles) ───────────────────────────
 function distanceMiles(lat1, lng1, lat2, lng2) {
@@ -41,7 +42,39 @@ const RED = 'var(--navy)'
 const DARK = '#1a1a1a'
 const BORDER = '#eaeae6'
 const MUTED = '#888'
+const HEADER_H = 75
 
+// ─── Skyscraper ad rail ───────────────────────────────────
+function SkyscraperAdSlot({ slotKey }) {
+  return (
+    <div style={{ width: 160, maxWidth: 160 }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: '#bbb',
+          margin: '0 0 8px 2px',
+          textAlign: 'left',
+        }}
+      >
+        Sponsored
+      </div>
+      <div
+        style={{
+          width: 160,
+          minWidth: 160,
+          maxWidth: 160,
+          minHeight: 600,
+          overflow: 'hidden',
+        }}
+      >
+        <AdSlot slotKey={slotKey} />
+      </div>
+    </div>
+  )
+}
 
 // ─── Main component ───────────────────────────────────────
 export default function SearchResults() {
@@ -268,17 +301,8 @@ export default function SearchResults() {
     minWidth: 0,
   }
 
-  return (
-    <div
-      style={{
-        maxWidth: 1200,
-        margin: '0 auto',
-        padding: isMobile ? '0 12px 96px' : '0 20px 48px',
-        background: '#fff',
-        color: DARK,
-        overflowX: 'clip',
-      }}
-    >
+  const innerContent = (
+    <>
       <section
         style={{
           background: '#f9fafb',
@@ -515,7 +539,58 @@ export default function SearchResults() {
         coachBrowseLink={coachBrowseLink}
         teamBrowseLink={teamBrowseLink}
         facilityBrowseLink={facilityBrowseLink}
-      /> 
+      />
+    </>
+  )
+
+  return (
+    <div style={{ overflowX: 'clip', background: '#fff', color: DARK }}>
+      {isMobile ? (
+        <div style={{ padding: '0 12px 96px' }}>
+          {innerContent}
+        </div>
+      ) : (
+        <div style={{ padding: '12px 14px 48px' }}>
+          <div
+            style={{
+              maxWidth: 1440,
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: '160px minmax(0, 1fr) 160px',
+              gap: 18,
+              alignItems: 'start',
+            }}
+          >
+            <aside
+              style={{
+                position: 'sticky',
+                top: HEADER_H + 12,
+                alignSelf: 'start',
+                width: 160,
+                justifySelf: 'start',
+              }}
+            >
+              <SkyscraperAdSlot slotKey="search_results_left_rail_1_desktop" />
+            </aside>
+
+            <main style={{ minWidth: 0 }}>
+              {innerContent}
+            </main>
+
+            <aside
+              style={{
+                position: 'sticky',
+                top: HEADER_H + 12,
+                alignSelf: 'start',
+                width: 160,
+                justifySelf: 'end',
+              }}
+            >
+              <SkyscraperAdSlot slotKey="search_results_right_rail_1_desktop" />
+            </aside>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
