@@ -57,7 +57,7 @@ export default function CoachContactSocialSection({
             type="tel"
             value={form.phone}
             onChange={(e) => setField('phone', e.target.value)}
-            placeholder="e.g. 770-555-0100"
+            placeholder="Enter phone number"
             style={inputStyle}
           />
         </div>

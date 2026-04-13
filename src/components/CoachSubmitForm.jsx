@@ -2276,7 +2276,7 @@ function PlayerForm({ isMobile }) {
             </div>
             <div>
               <label style={labelStyle}>Team Name</label>
-              <input value={form.team_name} onChange={(e) => set('team_name', e.target.value)} placeholder="e.g. Cherokee Nationals" style={inputStyle} />
+              <input value={form.team_name} onChange={(e) => set('team_name', e.target.value)} placeholder="Enter team name" style={inputStyle} />
             </div>
           </div>
 
@@ -2311,7 +2311,7 @@ function PlayerForm({ isMobile }) {
             <input
               value={form.venue_name}
               onChange={(e) => set('venue_name', e.target.value)}
-              placeholder="e.g. Wills Park"
+              placeholder="Enter the park, school, or facility name"
               style={inputStyle}
             />
             <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
@@ -2331,7 +2331,7 @@ function PlayerForm({ isMobile }) {
               value={form.location_address}
               onChange={(e) => set('location_address', e.target.value)}
               onBlur={handleNeededAddressBlur}
-              placeholder="e.g. 11925 Wills Rd"
+              placeholder="Enter the full street address"
               style={inputStyle}
             />
           </div>
@@ -2343,7 +2343,7 @@ function PlayerForm({ isMobile }) {
                 onChange={(v) => set('zip_code', v)}
                 onGeocode={handleGeocode}
                 required
-                hint="Used to auto-fill city and state"
+                hint="Enter zip first to auto-fill city and state"
               />
             </div>
             <div>

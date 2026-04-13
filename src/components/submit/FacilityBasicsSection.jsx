@@ -60,12 +60,12 @@ export default function FacilityBasicsSection({
           <input
             value={form.name}
             onChange={(e) => setField('name', e.target.value)}
-            placeholder="e.g. Grit Academy Athletics"
+            placeholder="Enter facility name"
             style={inputStyle}
             maxLength={facilityNameMax}
           />
           <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-            We will suggest an existing facility when the name or address looks close to one already on the site.
+            We will suggest an existing facility if the name or address looks like a match.
           </div>
           <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
             {(form.name || '').length} / {facilityNameMax}
@@ -118,12 +118,12 @@ export default function FacilityBasicsSection({
           value={form.address}
           onChange={(e) => setField('address', e.target.value)}
           onBlur={handleAddressBlur}
-          placeholder="e.g. 5735 North Commerce Court"
+          placeholder="Enter the full street address"
           style={inputStyle}
           maxLength={addressMax}
         />
         <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-          Enter the full street address for the most accurate facility pin possible.
+          Use the full street address for the most accurate facility pin.
         </div>
         <div style={{ fontSize: 11, color: '#888', marginTop: 4, textAlign: 'right' }}>
           {(form.address || '').length} / {addressMax}

@@ -61,15 +61,15 @@ export default function CoachBasicsSection({
           />
         </div>
         <div>
-          <label style={labelStyle}>Facility / Business Name</label>
+          <label style={labelStyle}>Facility / Business Name (Optional)</label>
           <input
             value={form.facility_name}
             onChange={(e) => setField('facility_name', e.target.value)}
-            placeholder="Optional — e.g. El Dojo, GrandSlam"
+            placeholder="Enter your business or facility name"
             style={inputStyle}
           />
           <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>
-            Optional. Enter your business or home facility name and we will suggest an existing facility if one looks like a match.
+            Use this if you coach through a business or work primarily out of one facility.
           </div>
         </div>
       </div>

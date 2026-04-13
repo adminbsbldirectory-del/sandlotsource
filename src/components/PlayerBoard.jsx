@@ -417,7 +417,7 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={handleBlur}
-        placeholder="e.g. 30009"
+        placeholder="Enter zip code"
         style={inputStyle}
       />
       <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
@@ -488,7 +488,7 @@ function AddressGeoField({ value, onChange, onGeocode, city, zip }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={handleBlur}
-        placeholder="e.g. 11925 Wills Rd, Alpharetta, GA 30009"
+        placeholder="Enter the full street address"
         style={inputStyle}
       />
       <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>
@@ -725,7 +725,7 @@ function ContactFields({ form, setForm }) {
           onChange={(e) =>
             setForm((f) => ({ ...f, contact_phone: e.target.value }))
           }
-          placeholder="678-555-0100"
+          placeholder="phone number"
           style={inputStyle}
         />
       )}
