@@ -53,7 +53,7 @@ function getFacilityTypeLabel(value) {
 function getFacilityTypeColor(value) {
   if (value === 'park_field') return '#16A34A'
   if (value === 'training_facility') return '#D42B2B'
-  if (value === 'sports_complex') return '#EA580C'
+  if (value === 'sports_complex') return '#fd5b03'
   if (value === 'private_facility') return '#8B5CF6'
   if (value === 'travel_team_facility') return '#1D4ED8'
   if (value === 'school_field') return '#6B7280'
@@ -879,7 +879,7 @@ export default function Facilities() {
                     {[
                       ['Park / Rec Field', '#16A34A'],
                       ['Indoor Training Facility', '#D42B2B'],
-                      ['Sports Complex', '#EA580C'],
+                      ['Sports Complex', '#fd5b03'],
                       ['Private Facility', '#8B5CF6'],
                       ['Team Facility', '#1D4ED8'],
                       ['School Field', '#6B7280'],
@@ -1300,7 +1300,7 @@ export default function Facilities() {
                               {[
                                 ['Park / Rec Field', '#16A34A'],
                                 ['Indoor Training Facility', '#D42B2B'],
-                                ['Sports Complex', '#EA580C'],
+                                ['Sports Complex', '#fd5b03'],
                                 ['Private Facility', '#8B5CF6'],
                                 ['Team Facility', '#1D4ED8'],
                                 ['School Field', '#6B7280'],
