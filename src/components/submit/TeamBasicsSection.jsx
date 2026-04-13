@@ -74,22 +74,6 @@ export default function TeamBasicsSection({
 
       <div style={{ display: 'grid', gridTemplateColumns: g2, gap: 12, marginBottom: 14 }}>
         <div>
-          <label style={labelStyle}>Classification</label>
-          <select
-            value={form.classification}
-            onChange={(e) => set('classification', e.target.value)}
-            style={selectStyle}
-          >
-            <option value="">Select</option>
-            {classificationOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
           <label style={labelStyle}>Age Group <RequiredMark /></label>
           <select
             value={form.age_group}
@@ -98,6 +82,22 @@ export default function TeamBasicsSection({
           >
             <option value="">Select</option>
             {TEAM_AGE_GROUP_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label style={labelStyle}>Classification</label>
+          <select
+            value={form.classification}
+            onChange={(e) => set('classification', e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">Select</option>
+            {classificationOptions.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
