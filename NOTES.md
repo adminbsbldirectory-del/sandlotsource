@@ -7,7 +7,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 
 ## Current repo state
 - Branch: `main`
-- All recent UI polish changes are merged to `main`
+- All recent search UX and facilities map color updates are merged to `main`
 - Live site is updated on `sandlotsource.com`
 - Vercel production deploy confirmed
 - Local repo should be synced to `main`
@@ -71,8 +71,10 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 
 ### UI and data fixes
 - Homepage age group dropdown: added `7U`, `9U`, and `11U` — full order now `7U` through `18U`
+- Search Results age group dropdown: also updated to full `7U` through `18U` order
 - `/submit` facility-type dropdown: added `Sports Complex` (between `Training Facility` and `Travel Team Facility`)
-- Facilities page map: `Sports Complex` added to legend (desktop and mobile), orange pin (`#EA580C`), distinct from all existing colors
+- Facilities page map: `Sports Complex` added to legend on desktop and mobile
+- Facilities page map: `Sports Complex` pin color adjusted from bright orange (`#EA580C`) to darker amber-brown (`#B45309`) for clearer separation from red `Indoor Training Facility`
 - CoachDirectory: Facility column removed from coach result rows and header. Column order is now `Sport`, `Team`, `Age`, `Tryouts`, `View`
 - CoachDirectory age falls back to `All ages` if no `age_groups` are set
 - TravelTeams directory: column header renamed from `AGE / LEVEL` to `AGE`
@@ -95,6 +97,23 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 ### Search close / back navigation
 - When a user searches from homepage and clicks a result card, closing the card now returns to `/search?...` via `navigate(-1)` instead of dropping to a bare directory page
 - Fixed in `CoachDirectory.jsx`, `TravelTeams.jsx`, and `FacilityProfile.jsx`
+
+### Search results map / browse UX
+- `/search` mixed-type results remain list-only by default
+- Added conditional `List / Map` toggle only when results are narrowed to a single type: `coach`, `team`, or `facility`
+- For single-type searches, `Map` view now acts as a controlled handoff into the corresponding directory page instead of trying to render a new embedded mixed search map
+- If a user selects `Map` without a valid ZIP/geocode context, `/search` now shows a clear message that ZIP is required to open nearby map results
+- If a user selects `Map` with a valid ZIP/geocode context, the handoff link opens the matching directory map page
+- Search-to-directory handoff now preserves:
+  - keyword query `q`
+  - ZIP
+  - radius
+  - sport
+  - age
+- This fixes the prior bug where `/search` could show a narrowed keyword result count, but clicking through to the directory map would expand to all nearby records because `q` was not being passed through
+- Confirmed working for Facilities:
+  - `/search` result count stays aligned with `/facilities`
+  - example case: narrowed results remained `14` on both pages after handoff instead of expanding to `94`
 
 ### Ad slot fixes
 - House ads with no `target_url` now wrap in `<a href="/advertise">` instead of rendering as unclickable images — fixed in `AdSlot.jsx`
@@ -147,11 +166,6 @@ Full visual consistency pass across directory and content pages. No logic, data,
 ## Ongoing backlog / items still to work out
 
 This is a living list and should be updated after each item is completed, deferred, clarified, or replaced.
-
-### Search / browse UX
-- Homepage `/search` results: do **not** show a map by default when results include mixed types
-- Explore a conditional **List / Map** view only after the user narrows results by type (`coach`, `team`, or `facility`)
-- Mixed-type map view is likely too noisy; single-type map view may be viable, especially for facilities and possibly teams
 
 ### Travel teams data model / relationships
 - Determine how the `organization` / `affiliation` field should work on the Travel Teams page
@@ -216,7 +230,7 @@ Items already identified:
 | `src/components/home/HomePageBand.jsx` | Section band wrapper |
 | `src/components/CoachDirectory.jsx` | Coach directory, result rows, map |
 | `src/components/coaches/CoachRow.jsx` | Coach result row layout |
-| `src/components/Facilities.jsx` | Facilities directory, map, legend |
+| `src/components/Facilities.jsx` | Facilities directory, map, legend, facility type colors |
 | `src/components/TravelTeams.jsx` | Teams directory, map, column headers |
 | `src/components/teams/TeamDesktopRow.jsx` | Team result row layout |
 | `src/components/PlayerBoard.jsx` | Players Needed & Available page |
@@ -229,8 +243,8 @@ Items already identified:
 | `src/components/ads/RailAdSlot.jsx` | Shared sidebar rail ad slot |
 | `src/components/ads/DirectoryAdBand.jsx` | Directory inline ad band |
 | `src/components/home/HomePageAdBand.jsx` | Homepage ad band |
-| `src/components/SearchResults.jsx` | Search results page |
-| `src/components/search/SearchResultsContent.jsx` | Search results content grid and section headers |
+| `src/components/SearchResults.jsx` | Search results page, single-type map handoff logic |
+| `src/components/search/SearchResultsContent.jsx` | Search results content grid, toggle, ZIP-needed map messaging |
 | `src/components/search/CoachResult.jsx` | Coach search result card |
 | `src/components/search/TeamResult.jsx` | Team search result card |
 | `src/components/search/FacilityResult.jsx` | Facility search result card |
