@@ -557,7 +557,7 @@ export default function SearchResults() {
               margin: '0 auto',
               display: 'grid',
               gridTemplateColumns: '160px minmax(0, 1fr) 160px',
-              gap: 18,
+              gap: 28,
               alignItems: 'start',
             }}
           >
