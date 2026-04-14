@@ -68,6 +68,18 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - All sleep delays and `skipDelay` logic removed from `geocode.js`
 - `consecutiveEmpty` early exit preserved at threshold 2
 
+### Admin re-geocode tooling
+- Added admin-only facility re-geocode action in `AdminPage.jsx`
+- Facilities admin table now includes `Geo Source` and row-level `Re-geocode` action
+- Added server-side `api/admin-regeocode.js` endpoint for one-record-at-a-time facility coordinate refresh
+- Re-geocode updates `lat`, `lng`, and `geocode_source`
+- Existing manual `Lat` / `Lng` editing remains intact
+- Phase 1 is facilities-only and one-record-at-a-time
+- Preview and production testing confirmed admin re-geocode works end-to-end
+- Public facility map pins now reflect saved re-geocoded coordinates
+- No schema changes were introduced
+- No public UI changes were introduced beyond the existing admin surface
+
 ### Search / browse / map behavior
 - `/search` mixed-type results remain list-only by default
 - Added conditional `List / Map` toggle only when results are narrowed to a single type: `coach`, `team`, or `facility`
@@ -221,6 +233,8 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Ad slot module cache should remain in place unless a later ad system redesign replaces it
 - Current shared spam-protection behavior should remain in place across public submit surfaces unless intentionally redesigned
 - Shared duplicate matcher logic in `src/lib/duplicateMatchers.js` should remain the source of truth for coach/team/facility duplicate detection unless intentionally redesigned
+- Admin facility re-geocode should remain admin-only, facilities-only, and one-record-at-a-time unless intentionally expanded later
+- Existing manual facility `Lat` / `Lng` editing should remain intact alongside re-geocode tooling
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
 - Do not replace the current claim ownership model unless a future implementation clearly requires it
 - If claimed-owner self-serve edits are added later, build on top of existing `listing_ownerships` rather than inventing a new ownership structure
@@ -285,7 +299,10 @@ This is a living list and should be updated after each item is completed, merged
   - route pattern `/teams/:state/:city`
   - reuse current `TravelTeams` UI / query logic
   - do not weaken ZIP-first browse / search
-- Add server-side re-geocode endpoint for admin use on legacy and seeded records with bad coordinates
+- If desired later, expand admin re-geocode beyond facilities:
+  - keep admin-only access
+  - keep one-record-at-a-time first unless a clear bulk need is demonstrated
+  - do not treat re-geocode as a replacement for manual precision edits on large multi-field complexes
 - If desired later, do a deeper `SearchResults.jsx` separation pass:
   - keep current behavior intact
   - avoid reopening stable map/list handoff logic
@@ -303,11 +320,12 @@ This is a living list and should be updated after each item is completed, merged
 - Current claim/admin review flow is sufficient at this stage and should remain in place
 - Anti-spam restoration should no longer be the default next-task recommendation because the shared honeypot + fast-submit protection is already active on the main public forms
 - Duplicate matching / duplicate-warning behavior is now materially improved and should not be reopened immediately unless a real regression or high-value false-negative case is found
+- Admin facility re-geocode tooling is now complete for Phase 1 and should not be immediately expanded unless a specific follow-up need is chosen
 - Recent small placeholder and copy-consistency cleanup passes are complete, so the next task should move back to remaining backlog items outside wording polish
-- The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam and recent copy cleanup, likely either:
+- The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam, duplicate follow-up, and recent copy cleanup, likely either:
   - another small production-safe maintenance task from backlog that does not reopen stable browse/map behavior, or
-  - a clearly selected larger backlog thread such as SEO route expansion or admin re-geocode tooling
-- Continue deferring larger SEO route expansion or server-side re-geocode admin work until a thread explicitly selects one of those workstreams
+  - a clearly selected larger backlog thread such as SEO route expansion
+- Continue deferring larger claimed-owner account work unless a thread explicitly selects that workstream
 
 ---
 
@@ -330,11 +348,14 @@ This is a living list and should be updated after each item is completed, merged
 | `src/lib/duplicateMatchers.js` | Shared coach / team / facility duplicate matching logic |
 | `lib/duplicateCheck.js` | Server-side duplicate check wrapper used by admin email flow |
 | `api/geocode-address.js` | Google Geocoding API proxy |
+| `api/admin-regeocode.js` | Admin-only facility re-geocode endpoint |
 | `src/lib/submit/geocode.js` | Core geocoding logic |
 | `api/notify-admin.js` | Admin email notification and coord row injection |
 | `lib/emailTemplates.js` | Email HTML templates |
 | `api/approve.js` | Email approval handler |
 | `src/components/AdminPage.jsx` | Admin panel |
+| `src/components/admin/GenericAdminTableContent.jsx` | Generic admin table layout with optional row actions |
+| `src/components/admin/AdminCell.jsx` | Generic admin inline cell editor |
 | `src/components/HomePage.jsx` | Homepage search and featured sections |
 | `src/components/CoachDirectory.jsx` | Coach directory |
 | `src/components/Facilities.jsx` | Facilities directory |
@@ -357,10 +378,15 @@ This is a living list and should be updated after each item is completed, merged
 - Environment variable: `GOOGLE_GEOCODING_API_KEY`
 - Set in Vercel for Production, Preview, and Development
 - Google Cloud project: Sandlot Source
-- Restriction: Geocoding API only
 - Free tier: `$200/month` credit (`~40,000` calls)
 - Current volume is well under limit
 - No rate limiting required
+
+### Related Vercel env notes
+- Admin re-geocode tooling relies on server-side Supabase access in Vercel
+- `SUPABASE_URL` must be available for Preview and Production
+- `SUPABASE_SERVICE_KEY` must be available for Preview and Production
+- Do not expose the Supabase service key through browser-side `VITE_*` variables
 
 ---
 
