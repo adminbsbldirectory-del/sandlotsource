@@ -534,7 +534,7 @@ export default function Facilities() {
                   <input
                     type="text"
                     inputMode="numeric"
-                    placeholder="e.g. 30350"
+                    placeholder="Enter zip code"
                     maxLength={5}
                     value={zip}
                     onChange={(e) => {
@@ -1004,7 +1004,7 @@ export default function Facilities() {
                     <input
                       type="text"
                       inputMode="numeric"
-                      placeholder="e.g. 30350"
+                      placeholder="Enter zip code"
                       maxLength={5}
                       value={zip}
                       onChange={(e) => {
