@@ -365,7 +365,7 @@ export default function ClaimListing() {
             }}
           >
             Claims and update requests must begin from a specific coach, team, or facility listing.
-            That keeps the request tied to the correct record and prevents orphaned claim submissions.
+            That helps us review the correct listing and process your request accurately.
           </div>
 
           <div
@@ -380,8 +380,8 @@ export default function ClaimListing() {
               marginBottom: 18,
             }}
           >
-            Browse to the coach, team, or facility you want, open that listing, and use the claim or
-            update button from there.
+            Browse to the coach, team, or facility listing you want, open it, and use the claim or
+            update button there.
           </div>
 
           <div
@@ -689,8 +689,8 @@ export default function ClaimListing() {
                 lineHeight: 1.5,
               }}
             >
-              This will be submitted as a true ownership claim only.
-              If you need to correct info, contact details, tryout status, or availability, switch to{' '}
+              This will be submitted as an ownership claim only.
+              If you need to correct listing details, contact information, tryout status, or availability, switch to{' '}
               <strong>Request an update</strong>.
             </div>
           ) : (
