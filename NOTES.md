@@ -71,12 +71,15 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 ### Admin re-geocode tooling
 - Added admin-only facility re-geocode action in `AdminPage.jsx`
 - Facilities admin table now includes `Geo Source` and row-level `Re-geocode` action
-- Added server-side `api/admin-regeocode.js` endpoint for one-record-at-a-time facility coordinate refresh
+- Added server-side `api/admin-regeocode.js` endpoint for one-record-at-a-time coordinate refresh
+- Re-geocode now supports Facilities, Coaches, and Travel Teams
+- Coaches admin table now includes `Geo Source` and row-level `Re-geocode`
+- Travel Teams admin table now includes `Geo Source` and row-level `Re-geocode`
 - Re-geocode updates `lat`, `lng`, and `geocode_source`
 - Existing manual `Lat` / `Lng` editing remains intact
-- Phase 1 is facilities-only and one-record-at-a-time
+- Admin re-geocode remains admin-only and one-record-at-a-time
 - Preview and production testing confirmed admin re-geocode works end-to-end
-- Public facility map pins now reflect saved re-geocoded coordinates
+- Public map pins reflect saved re-geocoded coordinates after admin refresh
 - No schema changes were introduced
 - No public UI changes were introduced beyond the existing admin surface
 
@@ -299,10 +302,10 @@ This is a living list and should be updated after each item is completed, merged
   - route pattern `/teams/:state/:city`
   - reuse current `TravelTeams` UI / query logic
   - do not weaken ZIP-first browse / search
-- If desired later, expand admin re-geocode beyond facilities:
-  - keep admin-only access
-  - keep one-record-at-a-time first unless a clear bulk need is demonstrated
-  - do not treat re-geocode as a replacement for manual precision edits on large multi-field complexes
+- Admin re-geocode phase 2 is now complete for Facilities, Coaches, and Travel Teams
+- If desired later, expand admin re-geocode only if there is a clear need beyond the current one-record-at-a-time admin workflow
+- Keep admin-only access
+- Do not treat re-geocode as a replacement for manual precision edits on large multi-field complexes
 - If desired later, do a deeper `SearchResults.jsx` separation pass:
   - keep current behavior intact
   - avoid reopening stable map/list handoff logic
