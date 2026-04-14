@@ -53,6 +53,23 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 
 ## What has been completed and merged to main
 
+### Homepage visual polish pass (ui/track-a-polish)
+- Ad band repositioned: desktop sponsored band now renders below the search/filter row and above the stats bar (was above the hero)
+- Stats bar: numbers larger (28px desktop / 24px mobile), bold weight (700), dark navy `#0d1b2e`, warm taupe dividers between each stat
+- Search section: left bar removed, replaced with gold `#c9a84c` top border accent
+- Nav CTAs unified to one brand family: "Add a Listing" = solid `#0d1b2e` primary with gold active underline; "Roster Spots" = ghost/outline in same navy via inset box-shadow
+- Category tiles: replaced per-card emoji icons with Lucide icons (Target, Building2, Shield, Handshake), consistent icon container, 60px min tap target on mobile, subtle resting shadow, gold border on hover
+- "View profile / View team" links in `FeaturedCard.jsx`: changed from red to dark navy `#0d1b2e`
+- "View all →" links in `HomePageSectionHeader.jsx`: changed from red to dark navy `#0d1b2e`
+- Category card arrow indicators: changed from red to dark navy `#0d1b2e`
+- Urgent pickup needs card border: softened from pink `#f5cfc9` to neutral `#eef0f2`; "Need player" badge still carries urgency signal
+- "Are you a coach or team?" CTA section: background updated to `#0d1b2e`, "Add a listing" button changed from red to gold `#c9a84c` with dark navy text
+- `HomePageBand` background warmed from cold `#fafbfc` to `#F7F5F1`; borders warmed from `#f1f3f5` to `#ede9e3`
+- Stats bar outer borders: `#f1f3f5` → `#ede9e3`; inner dividers: `#e2e8f0` → `#e8e4dd`
+- `.home-category-card:hover` CSS rule added to `src/index.css` (scoped, no broad global changes)
+- No logic, routing, schema, geocoding, or data-fetch changes introduced
+- Files changed: `src/components/HomePage.jsx`, `src/components/Header.jsx`, `src/index.css`, `src/components/home/FeaturedCard.jsx`, `src/components/home/HomePageBand.jsx`, `src/components/home/HomePageSectionHeader.jsx`
+
 ### Geocoding hardening
 - Null lat/lng records no longer pass proximity filters in `CoachDirectory`, `Facilities`, `TravelTeams`, and `SearchResults`
 - Approval email shows Latitude, Longitude, and Geocode Source before admin clicks Approve
@@ -223,6 +240,30 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 
 ---
 
+## Established brand tokens (do not drift from these)
+These were locked in during the `ui/track-a-polish` homepage pass and must carry forward to all directory and content page harmonization work.
+
+| Token | Value | Usage |
+|---|---|---|
+| Primary navy | `#0d1b2e` | Action links, icon color, solid CTA buttons, stat numbers |
+| Gold accent | `#c9a84c` | Section accents, hover borders, active underlines, CTA button fills |
+| Warm band background | `#F7F5F1` | Alternating section band backgrounds (`HomePageBand`) |
+| Warm border / divider | `#ede9e3` | Section outer borders, stats bar top/bottom |
+| Warm inner divider | `#e8e4dd` | Stats bar column dividers, inner card separators |
+| Card border | `#eef0f2` | Default card and tile borders |
+| Muted text | `#6B7280` | Secondary / label text |
+
+### Nav CTA pattern (locked)
+- "Add a Listing" = always solid `#0d1b2e` fill, white text, gold active underline
+- "Roster Spots" = ghost/outline via `inset 0 0 0 1.5px #0d1b2e` box-shadow, navy text, solid fill when active
+- Do not revert to red/green CTA treatment
+
+### Action link color (locked)
+- All "View profile", "View team", "View all →", and card arrow indicators must use `#0d1b2e`
+- Do not reintroduce red on non-CTA action links
+
+---
+
 ## Important completed behavior to preserve
 - Mixed-type `/search` results remain list-only by default
 - Single-type `/search` results (`coach`, `team`, `facility`) can show List / Map toggle
@@ -236,17 +277,32 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Ad slot module cache should remain in place unless a later ad system redesign replaces it
 - Current shared spam-protection behavior should remain in place across public submit surfaces unless intentionally redesigned
 - Shared duplicate matcher logic in `src/lib/duplicateMatchers.js` should remain the source of truth for coach/team/facility duplicate detection unless intentionally redesigned
-- Admin facility re-geocode should remain admin-only, facilities-only, and one-record-at-a-time unless intentionally expanded later
+- Admin facility re-geocode should remain admin-only and one-record-at-a-time unless intentionally expanded later
 - Existing manual facility `Lat` / `Lng` editing should remain intact alongside re-geocode tooling
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
 - Do not replace the current claim ownership model unless a future implementation clearly requires it
 - If claimed-owner self-serve edits are added later, build on top of existing `listing_ownerships` rather than inventing a new ownership structure
+- Homepage visual token decisions from `ui/track-a-polish` must not be reverted — see established brand tokens table above
 
 ---
 
 ## Ongoing backlog / items still to work out
 
 This is a living list and should be updated after each item is completed, merged, deferred, clarified, or replaced.
+
+### Directory pages visual harmonization (next visual task)
+- Homepage polish pass is complete and merged
+- The following pages still use cold blue-gray neutrals, stray red action links, and pre-polish color values and should be harmonized to match the homepage token system in a future session:
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/Facilities.jsx`
+  - `src/components/TravelTeams.jsx`
+  - `src/components/SearchResults.jsx`
+  - `src/components/RosterSpots.jsx`
+  - `src/components/PlayerBoard.jsx`
+- Work is expected to be mostly mechanical: swap cold grays for warm equivalents, replace stray red on non-CTA links, align any action buttons to the new nav CTA pattern
+- Do not change logic, routing, data-fetch behavior, or map behavior during this pass
+- Use established brand tokens table as the source of truth — do not introduce new color values
+- Category card section on homepage is noted as still partially unfinished — not a flat-out regression, but the card structure could benefit from a later layout pass to feel more like "sports discovery feature cards" rather than "clean admin UI cards". Defer to the larger homepage refresh.
 
 ### Travel teams data model / relationships
 - Reviewed current `organization / affiliation` behavior across submit, browse, and profile surfaces
@@ -315,19 +371,17 @@ This is a living list and should be updated after each item is completed, merged
 - Recent small wording and placeholder passes are now complete across the most obvious public-facing surfaces
 - If any future wording cleanup happens, keep it very tightly scoped and wording-only
 - Do not reopen copy-only cleanup unless a clearly visible straggler is found
+- Homepage category card section noted as needing a future layout pass for more "feature card" presence — defer to larger homepage refresh session
 
 ---
 
 ## Recommended next task
-- Claimed-owner self-serve editing remains intentionally deferred for now
-- Current claim/admin review flow is sufficient at this stage and should remain in place
-- Anti-spam restoration should no longer be the default next-task recommendation because the shared honeypot + fast-submit protection is already active on the main public forms
-- Duplicate matching / duplicate-warning behavior is now materially improved and should not be reopened immediately unless a real regression or high-value false-negative case is found
-- Admin facility re-geocode tooling is now complete for Phase 1 and should not be immediately expanded unless a specific follow-up need is chosen
-- Recent small placeholder and copy-consistency cleanup passes are complete, so the next task should move back to remaining backlog items outside wording polish
-- The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam, duplicate follow-up, and recent copy cleanup, likely either:
-  - another small production-safe maintenance task from backlog that does not reopen stable browse/map behavior, or
-  - a clearly selected larger backlog thread such as SEO route expansion
+- Directory pages visual harmonization is the clearest next visual task — apply the homepage brand token system to Coach, Facilities, Teams, Search Results, Roster Spots, and Player Board pages
+- This work is style-only and should not touch logic, routing, or data behavior
+- Claimed-owner self-serve editing remains intentionally deferred
+- Anti-spam restoration should no longer be the default next-task recommendation
+- Duplicate matching behavior should not be reopened unless a real regression is found
+- Admin re-geocode tooling is complete and should not be expanded unless a specific need is chosen
 - Continue deferring larger claimed-owner account work unless a thread explicitly selects that workstream
 
 ---
@@ -360,6 +414,10 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/admin/GenericAdminTableContent.jsx` | Generic admin table layout with optional row actions |
 | `src/components/admin/AdminCell.jsx` | Generic admin inline cell editor |
 | `src/components/HomePage.jsx` | Homepage search and featured sections |
+| `src/components/home/FeaturedCard.jsx` | Featured coach and team cards on homepage |
+| `src/components/home/HomePageBand.jsx` | Alternating warm-background section wrapper |
+| `src/components/home/HomePageSectionHeader.jsx` | Section title and View all link |
+| `src/components/home/HomePageAdBand.jsx` | Homepage sponsored ad band wrapper |
 | `src/components/CoachDirectory.jsx` | Coach directory |
 | `src/components/Facilities.jsx` | Facilities directory |
 | `src/components/TravelTeams.jsx` | Teams directory |
@@ -413,3 +471,4 @@ This is a living list and should be updated after each item is completed, merged
 - Always confirm branch before editing
 - Always prefer local testing before merge
 - If `HEAD.lock` error appears on checkout: `del .git\HEAD.lock` then retry
+- If `index.lock` error appears during `git add` or `git commit`: `del .git\index.lock` then retry
