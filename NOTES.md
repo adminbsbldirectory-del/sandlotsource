@@ -154,6 +154,20 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - real verified / claimed status handling
   - but no confirmed owner-edit experience after approval yet
 
+### Anti-spam / quality controls
+- Shared submit anti-spam helper exists in `src/utils/formSpamProtection`
+- Hidden honeypot field `companyFax` and minimum submit-time guard are currently wired into active public forms
+- Confirmed active on:
+  - `src/components/CoachSubmitForm.jsx` for Coach, Team, Player Board, and Facility submit surfaces
+  - `src/components/ClaimListing.jsx`
+  - `src/components/AdvertisePage.jsx`
+  - `src/components/RosterSpots.jsx`
+- `HelpPage.jsx` is informational only and does not contain a public form
+- Current conclusion:
+  - hidden spam-blocking work is already restored on the main public-input surfaces
+  - this backlog item should no longer be treated as the best next implementation candidate
+- Separate profile-accuracy scoring work, if it existed previously, was not confirmed in this audit and remains unresolved
+
 ### Technical cleanup
 - Confirmed `src/components/rosterspots/RosterBrowseSidebar.jsx` was orphaned / unused and removed safely from `main`
 - No runtime behavior or roster spots UI behavior was intentionally changed as part of this cleanup
@@ -171,6 +185,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - `organization / affiliation` remains display-only text
 - `facility_id` remains the only structured linked relationship for teams
 - Ad slot module cache should remain in place unless a later ad system redesign replaces it
+- Current shared spam-protection behavior should remain in place across public submit surfaces unless intentionally redesigned
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
 - Do not replace the current claim ownership model unless a future implementation clearly requires it
 - If claimed-owner self-serve edits are added later, build on top of existing `listing_ownerships` rather than inventing a new ownership structure
@@ -217,9 +232,10 @@ This is a living list and should be updated after each item is completed, merged
   - avoid ownership-model redesign unless clearly required
   - treat it as part of a broader profile / account / media-management product decision, not as an isolated quick feature
 
-### Anti-spam / quality controls
-- Restore hidden spam-blocking work that was previously removed or deferred
-- Restore profile accuracy scoring work that was previously removed or deferred
+### Quality controls
+- Hidden spam-blocking is already present on the main public forms
+- Do not open a speculative spam-restoration branch unless a specific unprotected public form is found
+- Separate profile-accuracy scoring work may still be worth revisiting later only if prior behavior is clearly identifiable in the existing codebase or recent history
 
 ### Advertising work
 - Revisit unfinished advertising work that was previously identified
@@ -248,8 +264,10 @@ This is a living list and should be updated after each item is completed, merged
 - Claimed-owner self-serve editing remains intentionally deferred for now
 - Current claim/admin review flow is sufficient at this stage and should remain in place
 - Near-term next-task selection should stay focused on smaller production-safe work that does not pull the site into a broader account-system build
-- With the unused `RosterBrowseSidebar.jsx` cleanup now complete, the best next candidate from current main is likely a small anti-spam / quality-control restoration pass only if the prior removed behavior is clearly known and can be restored safely
-- If that prior behavior is not clearly recoverable from the existing codebase, defer anti-spam restoration and do not force a speculative rebuild
+- Anti-spam restoration should no longer be the default next-task recommendation because the shared honeypot + fast-submit protection is already active on the main public forms
+- The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam, likely either:
+  - a tightly scoped quality-control follow-up only if prior profile-accuracy behavior is clearly recoverable, or
+  - another small production-safe maintenance task from backlog that does not reopen stable browse/map behavior
 - Continue deferring larger SEO route expansion or server-side re-geocode admin work until a thread explicitly selects one of those workstreams
 
 ---
@@ -264,6 +282,9 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/CoachSubmitForm.jsx` | Shared submit form wrapper for Coach, Team, Facility, and Player Board surfaces |
 | `src/components/ClaimListing.jsx` | Claim / update request intake form |
 | `src/components/RosterSpots.jsx` | Roster spots page and inline ZIP placeholder cleanup |
+| `src/components/AdvertisePage.jsx` | Advertiser inquiry page and form |
+| `src/components/HelpPage.jsx` | Support / FAQ informational page |
+| `src/utils/formSpamProtection.js` | Shared honeypot + submit-timing spam protection helper |
 | `api/geocode-address.js` | Google Geocoding API proxy |
 | `src/lib/submit/geocode.js` | Core geocoding logic |
 | `api/notify-admin.js` | Admin email notification and coord row injection |
