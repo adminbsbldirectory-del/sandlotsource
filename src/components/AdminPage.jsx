@@ -32,6 +32,7 @@ const COACH_FIELDS = [
   { key: 'zip', label: 'ZIP', type: 'text' },
   { key: 'lat', label: 'Lat', type: 'number' },
   { key: 'lng', label: 'Lng', type: 'number' },
+  { key: 'geocode_source', label: 'Geo Source', type: 'readonly' },
   { key: 'facility_name', label: 'Facility', type: 'text' },
   { key: 'phone', label: 'Phone', type: 'text' },
   { key: 'email', label: 'Email', type: 'text' },
@@ -55,6 +56,7 @@ const TEAM_FIELDS = [
   { key: 'zip_code', label: 'ZIP', type: 'text' },
   { key: 'lat', label: 'Lat', type: 'number' },
   { key: 'lng', label: 'Lng', type: 'number' },
+  { key: 'geocode_source', label: 'Geo Source', type: 'readonly' },
   { key: 'contact_name', label: 'Contact', type: 'text' },
   { key: 'contact_email', label: 'Email', type: 'text' },
   { key: 'contact_phone', label: 'Phone', type: 'text' },
@@ -674,8 +676,34 @@ function GenericAdminTable({ tabName }) {
     }
   }
 
-  async function handleFacilityRegeocode(record) {
-    if (tabName !== 'Facilities') return
+  function getRegeocodeConfig(record) {
+    if (tabName === 'Coaches') {
+      return {
+        tableName: 'coaches',
+        zip: record.zip || '',
+      }
+    }
+
+    if (tabName === 'Travel Teams') {
+      return {
+        tableName: 'travel_teams',
+        zip: record.zip_code || '',
+      }
+    }
+
+    if (tabName === 'Facilities') {
+      return {
+        tableName: 'facilities',
+        zip: record.zip_code || '',
+      }
+    }
+
+    return null
+  }
+
+  async function handleRegeocode(record) {
+    const actionConfig = getRegeocodeConfig(record)
+    if (!actionConfig) return
 
     setRowActionBusyId(record.id)
     setRowActionStatusById((prev) => ({
@@ -688,12 +716,12 @@ function GenericAdminTable({ tabName }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tableName: 'facilities',
+          tableName: actionConfig.tableName,
           recordId: record.id,
           address: record.address || '',
           city: record.city || '',
           state: record.state || '',
-          zip: record.zip_code || '',
+          zip: actionConfig.zip,
         }),
       })
 
@@ -739,7 +767,7 @@ function GenericAdminTable({ tabName }) {
         }))
       }, 2000)
     } catch (error) {
-      console.error('Facility re-geocode error:', error)
+      console.error('Re-geocode error:', error)
       setRowActionStatusById((prev) => ({
         ...prev,
         [record.id]: 'Request failed',
@@ -770,7 +798,8 @@ function GenericAdminTable({ tabName }) {
     return sortRows(result, sortKey, sortDir, cfg.fields)
   }, [cfg.fields, filterValues, filters, rows, search, sortDir, sortKey])
 
-  const showFacilityActions = tabName === 'Facilities'
+  const showRowActions =
+    tabName === 'Coaches' || tabName === 'Travel Teams' || tabName === 'Facilities'
 
   return (
     <GenericAdminTableContent
@@ -799,7 +828,7 @@ function GenericAdminTable({ tabName }) {
       formatFilterOption={formatFilterOption}
       rowActionsHeaderLabel="Actions"
       renderRowActions={
-        showFacilityActions
+        showRowActions
           ? (record) => {
               const isBusy = rowActionBusyId === record.id
               const status = rowActionStatusById[record.id] || ''
@@ -808,7 +837,7 @@ function GenericAdminTable({ tabName }) {
                 <div style={{ display: 'grid', gap: 6 }}>
                   <button
                     type="button"
-                    onClick={() => handleFacilityRegeocode(record)}
+                    onClick={() => handleRegeocode(record)}
                     disabled={isBusy}
                     style={{
                       ...s.actionButton('neutral'),

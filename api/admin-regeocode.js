@@ -9,6 +9,21 @@ const supabaseAdmin =
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     : null
 
+const SUPPORTED_TABLES = {
+  coaches: {
+    label: 'coach',
+    table: 'coaches',
+  },
+  travel_teams: {
+    label: 'travel team',
+    table: 'travel_teams',
+  },
+  facilities: {
+    label: 'facility',
+    table: 'facilities',
+  },
+}
+
 function normalizeZipCode(value) {
   const match = String(value || '').match(/\b\d{5}\b/)
   return match ? match[0] : ''
@@ -147,17 +162,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const {
-      tableName,
-      recordId,
-      address,
-      city,
-      state,
-      zip,
-    } = req.body || {}
+    const { tableName, recordId, address, city, state, zip } = req.body || {}
+    const tableConfig = SUPPORTED_TABLES[tableName]
 
-    if (tableName !== 'facilities') {
-      return res.status(400).json({ error: 'Phase 1 only supports facilities.' })
+    if (!tableConfig) {
+      return res.status(400).json({ error: 'Unsupported tableName.' })
     }
 
     if (!recordId) {
@@ -170,14 +179,18 @@ export default async function handler(req, res) {
     const cleanZip = normalizeZipCode(zip)
 
     if (!cleanAddress) {
-      return res.status(400).json({ error: 'A street address is required to re-geocode this facility.' })
+      return res.status(400).json({
+        error: `A street address is required to re-geocode this ${tableConfig.label}.`,
+      })
     }
 
     const query = [cleanAddress, cleanCity, cleanState, cleanZip].filter(Boolean).join(', ')
     const resolved = await geocodeAddress(query, apiKey)
 
     if (!resolved) {
-      return res.status(422).json({ error: 'No confident geocode result was found for this facility.' })
+      return res.status(422).json({
+        error: `No confident geocode result was found for this ${tableConfig.label}.`,
+      })
     }
 
     const update = {
@@ -187,7 +200,7 @@ export default async function handler(req, res) {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('facilities')
+      .from(tableConfig.table)
       .update(update)
       .eq('id', recordId)
       .select('id, lat, lng, geocode_source')
@@ -195,7 +208,9 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('admin-regeocode supabase update error:', error)
-      return res.status(500).json({ error: 'Failed to update facility coordinates.' })
+      return res.status(500).json({
+        error: `Failed to update ${tableConfig.label} coordinates.`,
+      })
     }
 
     return res.status(200).json({
