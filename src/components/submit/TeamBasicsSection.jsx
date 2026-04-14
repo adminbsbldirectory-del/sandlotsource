@@ -61,14 +61,17 @@ export default function TeamBasicsSection({
             style={inputStyle}
           />
         </div>
-        <div>
+                <div>
           <label style={labelStyle}>Organization / Affiliation</label>
           <input
             value={form.org_affiliation}
             onChange={(e) => set('org_affiliation', e.target.value)}
-            placeholder="Enter organization (if applicable)"
+            placeholder="Team brand, program, or parent organization (optional)"
             style={inputStyle}
           />
+          <div style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.4 }}>
+            Use this for the team brand, program, or parent organization. This does not link the team to a facility.
+          </div>
         </div>
       </div>
 

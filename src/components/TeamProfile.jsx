@@ -197,6 +197,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                   padding: '3px 8px',
                   borderRadius: 20,
                 }}
+                title="Organization / Affiliation"
               >
                 {team.org_affiliation}
               </span>
@@ -266,7 +267,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             </div>
           )}
 
-          {(team.classification || team.sanctioning_body) && (
+          {(team.org_affiliation || team.classification || team.sanctioning_body) && (
             <div
               style={{
                 background: 'var(--cream)',
@@ -287,6 +288,12 @@ export default function TeamProfile({ team, onClose, onClaim }) {
               >
                 Team Details
               </div>
+
+              {team.org_affiliation && (
+                <div style={{ fontSize: 14, color: 'var(--navy)' }}>
+                  <strong>Organization / Affiliation:</strong> {team.org_affiliation}
+                </div>
+              )}
 
               {team.classification && (
                 <div style={{ fontSize: 14, color: 'var(--navy)' }}>
