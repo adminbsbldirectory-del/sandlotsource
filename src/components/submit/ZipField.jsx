@@ -127,7 +127,7 @@ export default function ZipField({ value, onChange, onGeocode, label, hint, requ
           updateZip(e.clipboardData.getData('text'))
         }}
         onBlur={handleBlur}
-        placeholder="e.g. 30076"
+        placeholder="Enter zip code"
         style={inputStyle}
       />
 

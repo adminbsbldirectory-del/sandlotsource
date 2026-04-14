@@ -399,7 +399,7 @@ function ZipFieldInline({ value, onChange, onGeocode, required }) {
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 5))}
         onBlur={handleBlur}
-        placeholder="e.g. 30114"
+        placeholder="Enter zip code"
         style={inputStyle}
       />
       <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Used to place a map pin</div>
@@ -673,7 +673,7 @@ function RosterForm({ onSubmitted, isMobile }) {
           <input
             value={form.team_name}
             onChange={(e) => handleLookupFieldChange('team_name', e.target.value)}
-            placeholder="e.g. Cherokee Nationals"
+            placeholder="Enter team name"
             style={inputStyle}
           />
           <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, lineHeight: 1.45 }}>
@@ -685,7 +685,7 @@ function RosterForm({ onSubmitted, isMobile }) {
           <input
             value={form.org_affiliation}
             onChange={(e) => handleLookupFieldChange('org_affiliation', e.target.value)}
-            placeholder="e.g. USSSA, PGF, Perfect Game"
+            placeholder="Optional - Enter Organization or Facility Name"
             style={inputStyle}
           />
         </div>
@@ -905,7 +905,7 @@ function RosterForm({ onSubmitted, isMobile }) {
         </div>
         <div>
           <label style={labelStyle}>City</label>
-          <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Canton" style={inputStyle} />
+          <input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Enter city" style={inputStyle} />
         </div>
       </div>
 
