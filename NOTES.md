@@ -135,6 +135,23 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Search Results, Roster Spots, Homepage, and browse shells were normalized to the current design token system
 - No logic, data, or routing changes were introduced as part of the visual lock pass
 
+### Claimed listing audit findings
+- Claim/update intake already exists in `src/components/ClaimListing.jsx`
+- Claim requests are stored in `claim_requests`
+- Admin claim queue backend exists for loading and resolving claim requests
+- Admin claim queue UI exists, including filtering, notes, and actions for `Approve`, `Reject`, `Set Pending`, and `Set New`
+- Approved true claims create active records in `listing_ownerships`
+- Approved true claims update listing verification status
+- Travel team approvals also retain backward-compat support for `claimed` and `claimed_at`
+- Update requests can be approved/resolved administratively, but no self-serve owner edit path was confirmed from this audit
+- `listing_ownerships` appears to be used in claim review backend only, not in a reusable owner-facing access flow
+- No completed magic-link, owner session, manage-listing page, or secure claimed-owner self-serve edit workflow was found
+- Current claim system should be understood as:
+  - real claim intake
+  - real admin review / ownership recording
+  - real verified / claimed status handling
+  - but no confirmed owner-edit experience after approval yet
+
 ---
 
 ## Important completed behavior to preserve
@@ -148,6 +165,8 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - `facility_id` remains the only structured linked relationship for teams
 - Ad slot module cache should remain in place unless a later ad system redesign replaces it
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
+- Do not replace the current claim ownership model unless a future implementation clearly requires it
+- If claimed-owner self-serve edits are added later, build on top of existing `listing_ownerships` rather than inventing a new ownership structure
 
 ---
 
@@ -169,9 +188,21 @@ This is a living list and should be updated after each item is completed, merged
   - organization-to-facility relationships beyond plain display text
 
 ### Claimed listing edit flow
-- Confirm whether claimed coaches, teams, and facilities already have a magic-link flow for making future profile updates
-- If not, scope a secure self-serve update flow for claimed listings
-- Keep this as an audit / diagnosis thread first before any implementation
+- Claim flow audit completed
+- Current main includes:
+  - listing-linked claim/update intake
+  - admin claim queue UI
+  - approve/reject/pending/new workflow
+  - approved true claims create active `listing_ownerships`
+  - approved true claims mark listings verified / claimed
+- No completed magic-link or secure self-serve owner edit flow was confirmed
+- Current ownership appears to function as a review / verification record, not a reusable owner-access system
+- Lightest future path is to build claimed-owner edit access on top of existing `listing_ownerships`
+- Keep future work tightly scoped:
+  - no schema redesign unless absolutely necessary
+  - no unrelated claim-system expansion
+  - no combining with anti-spam, ad work, or other backlog items
+- Next implementation thread, if chosen, should scope only the smallest safe owner-edit path
 
 ### Anti-spam / quality controls
 - Restore hidden spam-blocking work that was previously removed or deferred
@@ -201,12 +232,11 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Claimed listing edit flow audit
-- Keep it as an audit / decision thread first
-- Confirm whether claimed coaches, teams, and facilities already have any secure self-serve update path
-- If not, define the lightest safe path forward before touching implementation
-- Do not combine it with anti-spam restoration, ad work, or schema changes
-- Goal: determine whether the current claim flow ends at request intake only, or whether any real post-claim update workflow already exists
+- Decide whether to pursue claimed-owner self-serve editing now or defer it
+- If pursued, keep it as a tightly scoped implementation thread only
+- Reuse existing `listing_ownerships` as the authorization backbone
+- Do not combine it with anti-spam restoration, ad work, or schema changes unless clearly required
+- Goal: implement the lightest safe post-claim owner edit path, not a broader ownership-system redesign
 
 ---
 
@@ -237,6 +267,9 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/SearchResults.jsx` | Search results page |
 | `src/components/search/SearchResultsContent.jsx` | Search results content grid and map handoff UI |
 | `src/index.css` | Global styles and design tokens |
+| `api/admin-claim-requests.js` | Admin claim queue load endpoint |
+| `api/review-claim.js` | Admin claim resolution endpoint, ownership creation, verified / claimed updates |
+| `src/components/...ClaimRequests...` | Admin claim queue UI pieces for filtering and row actions |
 
 ---
 
