@@ -171,8 +171,8 @@ export default function HelpPage() {
             <h2 style={headingStyle}>Disputes, former admins, and edge cases</h2>
             <p style={paragraphStyle}>
               If someone else claimed your listing, your organization changed admins, or a former
-              coach/manager is still attached, contact support directly instead of submitting a second
-              claim from scratch.
+              coach/manager is still attached, contact support directly instead of submitting a new
+              claim request.
             </p>
             <div
               style={{
@@ -225,7 +225,7 @@ export default function HelpPage() {
               <div style={faqItemStyle}>
                 <div style={questionStyle}>What does Verified mean?</div>
                 <p style={paragraphStyle}>
-                  Verified means ownership has been reviewed and approved by admin. It does not mean
+                  Verified means ownership has been reviewed and approved by the Sandlot Source team. It does not mean
                   endorsement, ranking, or background screening.
                 </p>
               </div>
