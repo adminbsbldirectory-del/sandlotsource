@@ -872,6 +872,7 @@ export default function HomePage() {
                   justifyContent: 'space-between',
                   gap: 14,
                   minHeight: isMobile ? 60 : 'auto',
+                  boxShadow: '0 1px 6px rgba(13,27,46,0.07)',
                   transition: 'box-shadow 0.18s, border-color 0.18s',
                 }}
               >
@@ -1000,7 +1001,7 @@ export default function HomePage() {
                   key={p.id}
                   to={p.link}
                   style={{
-                    border: '1px solid #f5cfc9',
+                    border: '1px solid #eef0f2',
                     borderRadius: 10,
                     padding: '13px 14px',
                     background: '#fff',
@@ -1091,7 +1092,7 @@ export default function HomePage() {
         <div style={{ ...col, marginTop: 24, paddingBottom: 8 }}>
           <section
             style={{
-              background: NAVY,
+              background: '#0d1b2e',
               borderRadius: 14,
               padding: isMobile ? '22px 18px' : '26px 28px',
               display: 'flex',
@@ -1137,12 +1138,12 @@ export default function HomePage() {
               <Link
                 to="/submit"
                 style={{
-                  background: RED,
-                  color: '#fff',
+                  background: '#c9a84c',
+                  color: '#0d1b2e',
                   borderRadius: 10,
                   padding: isMobile ? '13px 18px' : '9px 20px',
                   fontSize: isMobile ? 16 : 14,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                   textAlign: 'center',

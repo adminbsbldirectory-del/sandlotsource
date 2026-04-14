@@ -114,7 +114,7 @@ export default function FeaturedCard({ listing, isMobile }) {
           paddingTop: 8,
         }}
       >
-        <span style={{ fontSize: isMobile ? 13 : 13, fontWeight: 600, color: RED }}>
+        <span style={{ fontSize: isMobile ? 13 : 13, fontWeight: 600, color: '#0d1b2e' }}>
           {listing.type === 'coach' ? 'View profile' : 'View team'} &rarr;
         </span>
         <span style={{ fontSize: isMobile ? 12 : 12, color: MUTED }}>
