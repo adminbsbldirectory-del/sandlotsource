@@ -34,8 +34,8 @@ export default function TeamFacilitySection({
       <div className="form-section-title">2. Primary / Home Facility</div>
 
       <div style={{ fontSize: 13, color: 'var(--gray)', lineHeight: 1.5, marginBottom: 14 }}>
-        Does this team train or operate out of a dedicated facility? (e.g. Georgia Bombers → Grand Slam Johns Creek)
-        If not, leave this unchecked — independent teams that use parks or rotate fields do not need one.
+        Does this team primarily train or operate out of a dedicated facility? 
+        If not, leave this unchecked — independent teams that use parks or rotate fields do not need a linked primary facility.
       </div>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 14 }}>
@@ -65,7 +65,7 @@ export default function TeamFacilitySection({
           style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--navy)' }}
         />
         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--navy)' }}>
-          This team is associated with a facility
+          This team has a primary / home facility
         </span>
       </label>
 

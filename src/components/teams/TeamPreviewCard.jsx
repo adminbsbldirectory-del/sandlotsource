@@ -150,7 +150,7 @@ export default function TeamPreviewCard({
               Team Details
             </div>
             <div style={{ fontSize: 14, color: 'var(--navy)', lineHeight: 1.6 }}>
-              {team.org_affiliation && <div><strong>Organization:</strong> {team.org_affiliation}</div>}
+              {team.org_affiliation && <div><strong>Organization / Affiliation:</strong> {team.org_affiliation}</div>}
               {team.classification && <div><strong>Classification:</strong> {team.classification}</div>}
               {team.sanctioning_body && <div><strong>Sanctioning:</strong> {team.sanctioning_body}</div>}
               {!team.org_affiliation && !team.classification && !team.sanctioning_body && <div>Team details not listed.</div>}
