@@ -154,6 +154,10 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - real verified / claimed status handling
   - but no confirmed owner-edit experience after approval yet
 
+### Technical cleanup
+- Confirmed `src/components/rosterspots/RosterBrowseSidebar.jsx` was orphaned / unused and removed safely from `main`
+- No runtime behavior or roster spots UI behavior was intentionally changed as part of this cleanup
+
 ---
 
 ## Important completed behavior to preserve
@@ -229,7 +233,6 @@ This is a living list and should be updated after each item is completed, merged
   - reuse current `TravelTeams` UI / query logic
   - do not weaken ZIP-first browse / search
 - Add server-side re-geocode endpoint for admin use on legacy and seeded records with bad coordinates
-- Delete `src/components/rosterspots/RosterBrowseSidebar.jsx` if confirmed unused
 - If desired later, do a deeper `SearchResults.jsx` separation pass:
   - keep current behavior intact
   - avoid reopening stable map/list handoff logic
@@ -242,17 +245,12 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Claimed-owner self-serve editing is deferred for now
+- Claimed-owner self-serve editing remains intentionally deferred for now
 - Current claim/admin review flow is sufficient at this stage and should remain in place
-- The claimed-owner path should be revisited later only if the product intentionally moves toward:
-  - login/account-based listing management
-  - richer individual listing/profile ownership
-  - owner-managed media such as profile photos, team logos, or facility images
 - Near-term next-task selection should stay focused on smaller production-safe work that does not pull the site into a broader account-system build
-- Best next candidate from current main is likely one of:
-  - confirm whether `src/components/rosterspots/RosterBrowseSidebar.jsx` is unused and delete it if safe
-  - scope a small anti-spam / quality-control restoration pass only if the prior removed behavior is clearly known and can be restored safely
-  - defer larger SEO or geocode-admin work until a thread explicitly selects it
+- With the unused `RosterBrowseSidebar.jsx` cleanup now complete, the best next candidate from current main is likely a small anti-spam / quality-control restoration pass only if the prior removed behavior is clearly known and can be restored safely
+- If that prior behavior is not clearly recoverable from the existing codebase, defer anti-spam restoration and do not force a speculative rebuild
+- Continue deferring larger SEO route expansion or server-side re-geocode admin work until a thread explicitly selects one of those workstreams
 
 ---
 
