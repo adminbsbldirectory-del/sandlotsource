@@ -189,6 +189,12 @@ input:focus, select:focus, textarea:focus {
   font-weight: 500;
 }
 
+/* ── Homepage category cards ─────────────────────────── */
+.home-category-card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: #CBD5E1 !important;
+}
+
 /* ── Row hover states ────────────────────────────────── */
 .team-row:hover { background: #f9fafb !important; }
 .roster-row:hover { background: #f9fafb; }
@@ -309,11 +315,4 @@ input:focus, select:focus, textarea:focus {
     border-bottom: 2px solid var(--lgray) !important;
   }
   .card-grid { grid-template-columns: 1fr !important; }
-  button { min-height: 44px; }
-  .header-tagline { display: none; }
-  .filter-bar { position: static; }   /* unstick filter bar on mobile to save screen space */
-}
-
-@media (max-width: 480px) {
-  .page-content { padding: 20px 12px !important; }
-}
+  button { min-height: 44px
