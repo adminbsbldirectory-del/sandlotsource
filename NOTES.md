@@ -8,11 +8,10 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 ## Current repo state
 - Working repo: `C:\GitHub\sandlotsource`
 - Do not use: `C:\Users\sshap\Documents\GitHub\sandlotsource`
-- Active branch for current work: `bugfix/travel-team-submit-age-order`
-- Branch was created from `main`
-- Localhost test passed for current branch
-- Current branch change is not live until merged to `main` and deployed by Vercel
-- Latest production baseline remains live on `sandlotsource.com`
+- Current working baseline should now be `main`
+- Local `main` should be synced to `origin/main`
+- Latest merged work is live only after Vercel production deploy is confirmed
+- Keep `refactor/submit-form-modular` for now as a backup branch
 
 ---
 
@@ -69,7 +68,24 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - All sleep delays and `skipDelay` logic removed from `geocode.js`
 - `consecutiveEmpty` early exit preserved at threshold 2
 
-### UI and data fixes
+### Search / browse / map behavior
+- `/search` mixed-type results remain list-only by default
+- Added conditional `List / Map` toggle only when results are narrowed to a single type: `coach`, `team`, or `facility`
+- For single-type searches, `Map` view now hands off into the corresponding directory page
+- If a user selects `Map` without valid ZIP/geocode context, `/search` now shows a clear ZIP-needed message
+- Search-to-directory handoff now preserves:
+  - keyword query `q`
+  - ZIP
+  - radius
+  - sport
+  - age
+- Facility search handoff bug is fixed:
+  - narrowed `/search` results now stay aligned with `/facilities`
+  - keyword filter is preserved during handoff
+- When a user searches from homepage and clicks a result card, closing the card now returns to `/search?...` via `navigate(-1)` instead of dropping to a bare directory page
+- Fixed in `CoachDirectory.jsx`, `TravelTeams.jsx`, and `FacilityProfile.jsx`
+
+### Directory / map / UI fixes
 - Homepage age group dropdown: added `7U`, `9U`, and `11U` — full order now `7U` through `18U`
 - Search Results age group dropdown: also updated to full `7U` through `18U` order
 - `/submit` facility-type dropdown: added `Sports Complex` between `Training Facility` and `Travel Team Facility`
@@ -84,7 +100,13 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Facilities default map updated to continental US default
 - TravelTeams default map was already correct
 - Players Needed & Available default map was already correct
-- Admin email coord rows removed from `lib/emailTemplates.js` so `injectCoordRows` in `notify-admin.js` is the sole injector
+
+### Submit form / wording cleanup
+- Travel Team submit form: `Age Group` now renders before `Classification`
+- Travel Team submit wording and placeholder cleanup is merged
+- Cross-form wording / helper / placeholder consistency pass is merged across submit-related surfaces
+- Shared submit ZIP placeholder example text was replaced with neutral instructional wording
+- Roster Spots ZIP placeholder example text was also replaced with neutral instructional wording
 
 ### Geocoding speed, admin edits, email dedup
 - Form submission speed: replaced the multi-variant Nominatim loop in `geocode.js` with a single Google query — `{address}, {city}, {state} {zip}`
@@ -92,25 +114,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Submission time dropped from ~30–35 seconds to under 3 seconds
 - `Lat` and `Lng` are editable in `AdminPage.jsx` for Coaches, Facilities, and Travel Teams
 - Coord row duplication fixed in admin approval emails
-
-### Search close / back navigation
-- When a user searches from homepage and clicks a result card, closing the card now returns to `/search?...` via `navigate(-1)` instead of dropping to a bare directory page
-- Fixed in `CoachDirectory.jsx`, `TravelTeams.jsx`, and `FacilityProfile.jsx`
-
-### Search results map / browse UX
-- `/search` mixed-type results remain list-only by default
-- Added conditional `List / Map` toggle only when results are narrowed to a single type: `coach`, `team`, or `facility`
-- For single-type searches, `Map` view now hands off into the corresponding directory page
-- If a user selects `Map` without valid ZIP/geocode context, `/search` now shows a clear ZIP-needed message
-- Search-to-directory handoff now preserves:
-  - keyword query `q`
-  - ZIP
-  - radius
-  - sport
-  - age
-- Facility search handoff bug is fixed:
-  - narrowed `/search` results now stay aligned with `/facilities`
-  - keyword filter is preserved during handoff
+- Admin email coord rows removed from `lib/emailTemplates.js` so `injectCoordRows` in `notify-admin.js` is the sole injector
 
 ### Ad slot fixes
 - House ads with no `target_url` now wrap to `/advertise` instead of rendering as unclickable images
@@ -124,23 +128,13 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 
 ---
 
-## Current branch work in progress
-
-### Travel Team submit form field order
-- Branch: `bugfix/travel-team-submit-age-order`
-- File changed: `src/components/submit/TeamBasicsSection.jsx`
-- Localhost verified
-- `Age Group` now renders before `Classification` on the Travel Team submit form
-- This is currently a branch-level change only and is not yet production live until PR merge and Vercel deploy
-
----
-
 ## Important completed behavior to preserve
 - Mixed-type `/search` results remain list-only by default
 - Single-type `/search` results (`coach`, `team`, `facility`) can show List / Map toggle
 - Search results map handoff preserves `q`, `zip`, `radius`, `sport`, and `age`
 - `/search` map view shows a ZIP-needed message when valid map context does not exist
 - Facility search handoff must continue to preserve narrowed result counts and keyword filtering
+- Travel Team submit `Age Group` must remain before `Classification`
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
 
 ---
@@ -148,17 +142,6 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 ## Ongoing backlog / items still to work out
 
 This is a living list and should be updated after each item is completed, merged, deferred, clarified, or replaced.
-
-### Copy / placeholder / field wording cleanup
-Standardize inconsistent helper text, placeholder text, and field wording across forms and profile pages.
-
-Items already identified:
-- ZIP code helper / placeholder wording varies across pages and should be standardized
-- Coach profile: clean up `Facility / Business Name` wording
-- Travel Teams page / submit flow: clean up `Team Name` and `Organization / Affiliation` wording
-- Player Board / Player Needed: clean up `Team Name` wording
-- Facility form: replace placeholder examples such as `e.g. Grit Academy` with cleaner, more consistent wording
-- Street address helper / placeholder wording should also be reviewed and standardized across forms
 
 ### Travel teams data model / relationships
 - Determine how the `organization` / `affiliation` field should work on the Travel Teams page
@@ -179,27 +162,30 @@ Items already identified:
 ### Advertising work
 - Revisit unfinished advertising work that was previously identified
 - Review prior advertising to-do items and decide what is still relevant versus obsolete
+- Add module-level cache in `AdSlot.jsx` to reduce redundant fetches on SPA remounts
 
 ### Technical / deferred backlog
 - Add SEO location landing pages for Teams:
   - route pattern `/teams/:state/:city`
   - reuse current `TravelTeams` UI / query logic
   - do not weaken ZIP-first browse / search
-- Add module-level cache in `AdSlot.jsx` to reduce redundant fetches on SPA remounts
 - Evaluate cleanup in `SearchResults.jsx`:
   - import canonical `distanceMiles` / `geocodeZip`
   - reassess whether `zippopotam.us` fallback is still needed
 - Add server-side re-geocode endpoint for admin use on legacy and seeded records with bad coordinates
 - Delete `src/components/rosterspots/RosterBrowseSidebar.jsx` if confirmed unused
 
+### Minor future polish
+- If needed later, do a tiny final wording pass for any leftover one-off copy inconsistencies that were missed in the recent cleanup
+- If that happens, keep it tightly scoped and wording-only
+
 ---
 
-## Recommended next task after current branch
-- Travel Team copy / placeholder / field wording cleanup
-- Keep it tightly scoped to the Travel Team submit surface first
-- Do not combine this with relationship logic or claimed-listing work
-- Likely target file: `src/components/submit/TeamBasicsSection.jsx`
-- Goal: improve wording for `Team Name`, `Organization / Affiliation`, and any Travel Team-specific placeholder/helper text without changing submit logic or schema
+## Recommended next task
+- Travel Teams organization / affiliation behavior review
+- Keep it as an audit / decision thread first
+- Do not combine it with schema changes, facility linking implementation, or claimed-listing work yet
+- Goal: decide whether `organization / affiliation` remains display-only or should later support a clearer organization-to-facility relationship
 
 ---
 
@@ -208,7 +194,10 @@ Items already identified:
 | File | Role |
 |---|---|
 | `src/components/submit/TeamBasicsSection.jsx` | Travel Team basics section inside submit flow |
-| `src/components/CoachSubmitForm.jsx` | Shared submit form wrapper for Coach, Team, and Facility flows |
+| `src/components/submit/TeamFacilitySection.jsx` | Team-to-facility submit section |
+| `src/components/submit/ZipField.jsx` | Shared submit ZIP input |
+| `src/components/CoachSubmitForm.jsx` | Shared submit form wrapper for Coach, Team, Facility, and Player Board surfaces |
+| `src/components/RosterSpots.jsx` | Roster spots page and inline ZIP placeholder cleanup |
 | `api/geocode-address.js` | Google Geocoding API proxy |
 | `src/lib/submit/geocode.js` | Core geocoding logic |
 | `api/notify-admin.js` | Admin email notification and coord row injection |
@@ -249,7 +238,8 @@ Items already identified:
 - After merge:
   - `git checkout main`
   - `git pull origin main`
-  - `git branch -d {branch-name}`
+  - delete the local feature branch
+- If GitHub merge history or force-push/amend history prevents normal local delete, use `git branch -D {branch-name}` after confirming `main` is up to date
 
 ---
 
