@@ -25,18 +25,21 @@ function getActiveTab(pathname) {
 
 function getTabStyles(tabId, isActive) {
   if (tabId === 'submit') {
+    // Solid primary — always dark navy fill, gold active underline
     return {
-      background: isActive ? RED : 'rgba(230,51,41,0.07)',
-      color: isActive ? '#fff' : RED,
-      borderBottom: isActive ? `3px solid ${RED}` : '3px solid transparent',
+      background: '#0d1b2e',
+      color: '#fff',
+      borderBottom: isActive ? '3px solid #c9a84c' : '3px solid transparent',
     }
   }
 
   if (tabId === 'roster') {
+    // Ghost / outline — navy border via inset box-shadow, navy fill when active
     return {
-      background: isActive ? '#15803d' : 'rgba(22,163,74,0.1)',
-      color: isActive ? '#fff' : '#15803d',
-      borderBottom: isActive ? '3px solid #15803d' : '3px solid transparent',
+      background: isActive ? '#0d1b2e' : 'transparent',
+      color: isActive ? '#fff' : '#0d1b2e',
+      borderBottom: isActive ? '3px solid #0d1b2e' : '3px solid transparent',
+      boxShadow: 'inset 0 0 0 1.5px #0d1b2e',
     }
   }
 
@@ -73,6 +76,7 @@ function NavButton({ tab, isActive, onClick, mobile = false }) {
               transition: 'all 0.15s',
               background: styles.background,
               color: styles.color,
+              boxShadow: styles.boxShadow || undefined,
             }
           : {
               padding: '8px 14px',
@@ -89,6 +93,7 @@ function NavButton({ tab, isActive, onClick, mobile = false }) {
               background: styles.background,
               color: styles.color,
               borderBottom: styles.borderBottom,
+              boxShadow: styles.boxShadow || undefined,
               flexShrink: 0,
             }
       }

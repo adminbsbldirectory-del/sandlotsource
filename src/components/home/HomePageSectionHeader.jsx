@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 
-const RED = '#e63329'
-const NAVY = '#1b3a5c'
+const NAVY = '#0d1b2e'
 
 export default function HomePageSectionHeader({ title, linkTo, linkLabel }) {
   return (
@@ -32,7 +31,7 @@ export default function HomePageSectionHeader({ title, linkTo, linkLabel }) {
           style={{
             fontSize: 12,
             fontWeight: 500,
-            color: RED,
+            color: NAVY,
             textDecoration: 'none',
             whiteSpace: 'nowrap',
           }}

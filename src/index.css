@@ -189,6 +189,12 @@ input:focus, select:focus, textarea:focus {
   font-weight: 500;
 }
 
+/* ── Homepage category cards ─────────────────────────── */
+.home-category-card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: #c9a84c !important;
+}
+
 /* ── Row hover states ────────────────────────────────── */
 .team-row:hover { background: #f9fafb !important; }
 .roster-row:hover { background: #f9fafb; }

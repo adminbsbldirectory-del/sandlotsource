@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Target, Building2, Shield, Handshake } from 'lucide-react'
 import FeaturedCard from './home/FeaturedCard'
 import HomePageAdBand from './home/HomePageAdBand'
 import HomePageSectionHeader from './home/HomePageSectionHeader'
@@ -437,29 +438,25 @@ export default function HomePage() {
   const actionRows = [
     {
       to: '/coaches',
-      iconBg: '#fef0ee',
-      iconEmoji: String.fromCodePoint(0x1f3af),
+      Icon: Target,
       title: 'Find Instruction',
       body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.',
     },
     {
       to: '/facilities',
-      iconBg: '#e8f4ff',
-      iconEmoji: String.fromCodePoint(0x1f3df),
+      Icon: Building2,
       title: 'Find a Facility',
       body: 'Training facilities, batting cages, indoor complexes, and practice venues near you.',
     },
     {
       to: '/teams',
-      iconBg: '#eaf3de',
-      iconEmoji: String.fromCodePoint(0x1f3c6),
+      Icon: Shield,
       title: 'Find a Team',
       body: 'Travel teams, open rosters, and tryout opportunities by age group and area.',
     },
     {
       to: '/find',
-      iconBg: '#fef9ee',
-      iconEmoji: String.fromCodePoint(0x26a1),
+      Icon: Handshake,
       title: 'Pickup Help / Looking to Play',
       body: 'Need a player, a team, or a game? Browse or post urgent needs fast.',
     },
@@ -517,23 +514,14 @@ export default function HomePage() {
 
   return (
     <div style={pageShell}>
-      {!isMobile && (
-        <HomePageAdBand
-          slotKey="homepage_top_1_desktop"
-          maxWidth={970}
-          reservedHeight={90}
-          isMobile={isMobile}
-          marginTop={16}
-        />
-      )}
-
       <div style={{ marginTop: 16 }}>
         <div style={col}>
           <section
             style={{
               background: '#fff',
               padding: isMobile ? '20px 14px 16px' : '28px 28px 22px',
-              borderLeft: '3px solid ' + NAVY,
+              borderTop: '4px solid #c9a84c',
+              borderRadius: '0 0 4px 4px',
             }}
           >
             <h1
@@ -742,21 +730,42 @@ export default function HomePage() {
           </section>
         </div>
 
-        <div style={{ ...col, marginTop: 28 }}>
+        {!isMobile && (
+          <HomePageAdBand
+            slotKey="homepage_top_1_desktop"
+            maxWidth={970}
+            reservedHeight={90}
+            isMobile={isMobile}
+            marginTop={20}
+          />
+        )}
+
+        <div style={{ ...col, marginTop: isMobile ? 28 : 20 }}>
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
               gap: 10,
-              borderTop: '1px solid #f1f3f5',
-              borderBottom: '1px solid #f1f3f5',
+              borderTop: '1px solid #ede9e3',
+              borderBottom: '1px solid #ede9e3',
               padding: isMobile ? '16px 0' : '20px 0',
             }}
           >
-            {homepageStatsItems.map((s) => (
-              <div key={s.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 600, color: NAVY }}>{s.num}</div>
-                <div style={{ fontSize: isMobile ? 13 : 12, color: MUTED, marginTop: 3 }}>
+            {homepageStatsItems.map((s, idx) => (
+              <div
+                key={s.label}
+                style={{
+                  textAlign: 'center',
+                  padding: isMobile ? '4px 6px' : '4px 12px',
+                  borderRight: isMobile
+                    ? (idx % 2 === 0 ? '1px solid #e8e4dd' : 'none')
+                    : (idx < homepageStatsItems.length - 1 ? '1px solid #e8e4dd' : 'none'),
+                }}
+              >
+                <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: '#0d1b2e', lineHeight: 1.1 }}>
+                  {s.num}
+                </div>
+                <div style={{ fontSize: isMobile ? 13 : 12, color: MUTED, marginTop: 4 }}>
                   {s.label}
                 </div>
               </div>
@@ -851,6 +860,7 @@ export default function HomePage() {
               <Link
                 key={card.to}
                 to={card.to}
+                className="home-category-card"
                 style={{
                   border: '1px solid #eef0f2',
                   borderRadius: 10,
@@ -862,23 +872,25 @@ export default function HomePage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 14,
+                  minHeight: isMobile ? 60 : 'auto',
+                  boxShadow: '0 1px 6px rgba(13,27,46,0.07)',
+                  transition: 'box-shadow 0.18s, border-color 0.18s',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
                   <div
                     style={{
-                      width: isMobile ? 44 : 38,
-                      height: isMobile ? 44 : 38,
+                      width: isMobile ? 48 : 44,
+                      height: isMobile ? 48 : 44,
                       borderRadius: 12,
-                      background: card.iconBg,
+                      background: '#f0f4f8',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: isMobile ? 22 : 17,
                       flexShrink: 0,
                     }}
                   >
-                    {card.iconEmoji}
+                    <card.Icon size={32} color="#0d1b2e" strokeWidth={1.75} />
                   </div>
 
                   <div style={{ minWidth: 0 }}>
@@ -895,7 +907,7 @@ export default function HomePage() {
 
                     <p
                       style={{
-                       fontSize: isMobile ? 13 : 14,
+                        fontSize: isMobile ? 13 : 14,
                         color: MUTED,
                         lineHeight: 1.5,
                         margin: 0,
@@ -909,7 +921,7 @@ export default function HomePage() {
                 <span
                   style={{
                     fontSize: isMobile ? 22 : 14,
-                    color: RED,
+                    color: '#0d1b2e',
                     flexShrink: 0,
                   }}
                 >
@@ -990,7 +1002,7 @@ export default function HomePage() {
                   key={p.id}
                   to={p.link}
                   style={{
-                    border: '1px solid #f5cfc9',
+                    border: '1px solid #eef0f2',
                     borderRadius: 10,
                     padding: '13px 14px',
                     background: '#fff',
@@ -1081,7 +1093,7 @@ export default function HomePage() {
         <div style={{ ...col, marginTop: 24, paddingBottom: 8 }}>
           <section
             style={{
-              background: NAVY,
+              background: '#0d1b2e',
               borderRadius: 14,
               padding: isMobile ? '22px 18px' : '26px 28px',
               display: 'flex',
@@ -1127,12 +1139,12 @@ export default function HomePage() {
               <Link
                 to="/submit"
                 style={{
-                  background: RED,
-                  color: '#fff',
+                  background: '#c9a84c',
+                  color: '#0d1b2e',
                   borderRadius: 10,
                   padding: isMobile ? '13px 18px' : '9px 20px',
                   fontSize: isMobile ? 16 : 14,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
