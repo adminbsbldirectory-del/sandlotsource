@@ -197,12 +197,18 @@ This is a living list and should be updated after each item is completed, merged
   - approved true claims mark listings verified / claimed
 - No completed magic-link or secure self-serve owner edit flow was confirmed
 - Current ownership appears to function as a review / verification record, not a reusable owner-access system
-- Lightest future path is to build claimed-owner edit access on top of existing `listing_ownerships`
-- Keep future work tightly scoped:
-  - no schema redesign unless absolutely necessary
-  - no unrelated claim-system expansion
-  - no combining with anti-spam, ad work, or other backlog items
-- Next implementation thread, if chosen, should scope only the smallest safe owner-edit path
+- Product direction decision after audit:
+  - current admin-reviewed claim structure is sufficient for the site at this stage
+  - a robust claimed-owner self-serve edit flow would likely pull the product toward account-based listing management
+  - that broader direction likely belongs in a future v2 / v3 evolution after stronger traction, not in the current main roadmap
+- For now:
+  - defer self-serve claimed-owner editing
+  - keep the current claim/admin review model in place
+  - preserve `listing_ownerships` as the future ownership backbone if owner accounts or profile management are added later
+- If revisited later:
+  - build on top of existing `listing_ownerships`
+  - avoid ownership-model redesign unless clearly required
+  - treat it as part of a broader profile / account / media-management product decision, not as an isolated quick feature
 
 ### Anti-spam / quality controls
 - Restore hidden spam-blocking work that was previously removed or deferred
@@ -232,12 +238,13 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Decide whether to pursue claimed-owner self-serve editing now or defer it
-- If pursued, keep it as a tightly scoped implementation thread only
-- Reuse existing `listing_ownerships` as the authorization backbone
-- Do not combine it with anti-spam restoration, ad work, or schema changes unless clearly required
-- Goal: implement the lightest safe post-claim owner edit path, not a broader ownership-system redesign
-
+- Claimed-owner self-serve editing is deferred for now
+- Current claim/admin review flow is sufficient at this stage and should remain in place
+- The claimed-owner path should be revisited later only if the product intentionally moves toward:
+  - login/account-based listing management
+  - richer individual listing/profile ownership
+  - owner-managed media such as profile photos, team logos, or facility images
+- Near-term next-task selection should stay focused on smaller production-safe work that does not pull the site into a broader account-system build
 ---
 
 ## Key files reference
