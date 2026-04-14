@@ -17,7 +17,11 @@ export default function GenericAdminTableContent({
   CellComponent,
   styles,
   formatFilterOption,
+  renderRowActions,
+  rowActionsHeaderLabel = 'Actions',
 }) {
+  const showRowActions = typeof renderRowActions === 'function'
+
   return (
     <div style={styles.card}>
       <div style={styles.toolbar}>
@@ -69,8 +73,15 @@ export default function GenericAdminTableContent({
                     {sortKey === field.key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
                   </th>
                 ))}
+
+                {showRowActions ? (
+                  <th style={isFeaturedTab ? styles.featuredTh : styles.th}>
+                    {rowActionsHeaderLabel}
+                  </th>
+                ) : null}
               </tr>
             </thead>
+
             <tbody>
               {displayed.map((record) => (
                 <tr key={record.id}>
@@ -86,6 +97,12 @@ export default function GenericAdminTableContent({
                       formatFilterOption={formatFilterOption}
                     />
                   ))}
+
+                  {showRowActions ? (
+                    <td style={isFeaturedTab ? styles.featuredTd : styles.td}>
+                      {renderRowActions(record)}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
