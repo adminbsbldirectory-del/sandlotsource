@@ -1163,4 +1163,23 @@ export default function HomePage() {
                   fontWeight: 600,
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
-         
+                  textAlign: 'center',
+                }}
+              >
+                Claim a listing
+              </Link>
+            </div>
+          </section>
+        </div>
+
+        <HomePageAdBand
+          slotKey={isMobile ? 'homepage_footer_1_mobile' : 'homepage_footer_1_desktop'}
+          maxWidth={isMobile ? 320 : 970}
+          reservedHeight={isMobile ? 100 : 90}
+          isMobile={isMobile}
+          marginTop={20}
+        />
+      </div>
+    </div>
+  )
+}

@@ -315,4 +315,11 @@ input:focus, select:focus, textarea:focus {
     border-bottom: 2px solid var(--lgray) !important;
   }
   .card-grid { grid-template-columns: 1fr !important; }
-  button { min-height: 44px
+  button { min-height: 44px; }
+  .header-tagline { display: none; }
+  .filter-bar { position: static; }   /* unstick filter bar on mobile to save screen space */
+}
+
+@media (max-width: 480px) {
+  .page-content { padding: 20px 12px !important; }
+}

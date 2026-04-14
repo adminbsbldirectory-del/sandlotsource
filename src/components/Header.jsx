@@ -266,4 +266,16 @@ export default function Header() {
               {NAV_TABS.map((tab) => (
                 <NavButton
                   key={tab.id}
-                  tab={tab}
+                  tab={tab}
+                  isActive={activeTab === tab.id}
+                  onClick={() => handleNavigate(tab.path)}
+                  mobile
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  )
+}
