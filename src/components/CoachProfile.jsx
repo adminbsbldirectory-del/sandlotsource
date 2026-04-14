@@ -630,10 +630,10 @@ const formStartedAtRef = useRef(Date.now())
                     marginBottom: 6,
                   }}
                 >
-                  ✓ This coaching listing is already verified
+                  ✓ This listing is already verified
                 </div>
                 <div style={{ fontSize: 12, color: '#4B5563', lineHeight: 1.6 }}>
-                  For ownership issues, admin changes, or disputes, please use{' '}
+                  For ownership questions, staff changes, or disputes, please use{' '}
                   <a href="/help" style={{ color: '#1D4ED8', fontWeight: 700, textDecoration: 'none' }}>
                     Help / FAQ
                   </a>{' '}
@@ -650,7 +650,7 @@ const formStartedAtRef = useRef(Date.now())
             ) : (
               <>
                 <div style={{ fontSize: 12, color: '#888', textAlign: 'center' }}>
-                  Is this your coaching listing? Claim it to request contact, bio, facility, and profile updates.
+                  Is this your coaching listing? Claim it to request updates to contact information, bio, facility, and profile details.
                 </div>
 
                 <button
