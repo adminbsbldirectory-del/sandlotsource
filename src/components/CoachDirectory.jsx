@@ -872,7 +872,7 @@ export default function CoachDirectory() {
                     <input
                       type="text"
                       inputMode="numeric"
-                      placeholder="e.g. 30350"
+                      placeholder="Enter zip code"
                       maxLength={5}
                       value={zip}
                       onChange={(e) => {
@@ -1670,7 +1670,7 @@ export default function CoachDirectory() {
                         <input
                           type="text"
                           inputMode="numeric"
-                          placeholder="e.g. 30350"
+                          placeholder="Enter zip code"
                           maxLength={5}
                           value={zip}
                           onChange={(e) => {
