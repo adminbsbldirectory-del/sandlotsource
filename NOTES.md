@@ -172,6 +172,24 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Confirmed `src/components/rosterspots/RosterBrowseSidebar.jsx` was orphaned / unused and removed safely from `main`
 - No runtime behavior or roster spots UI behavior was intentionally changed as part of this cleanup
 
+### Small production-safe maintenance passes
+- Remaining user-facing ZIP placeholders were standardized from example ZIP text to neutral instructional wording
+- This ZIP placeholder cleanup was completed in:
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/Facilities.jsx`
+- Final public copy consistency pass is merged across:
+  - `src/components/HelpPage.jsx`
+  - `src/components/ClaimListing.jsx`
+- Profile claim / verified wording consistency pass is also merged across:
+  - `src/components/TeamProfile.jsx`
+  - `src/components/CoachProfile.jsx`
+  - `src/components/FacilityProfile.jsx`
+- These were wording-only maintenance passes with:
+  - no logic changes
+  - no schema changes
+  - no routing changes
+  - no browse/map behavior changes
+
 ---
 
 ## Important completed behavior to preserve
@@ -255,17 +273,18 @@ This is a living list and should be updated after each item is completed, merged
   - consider separating fetch/filter logic from page-shell UI only if there is a clear maintenance need
 
 ### Minor future polish
-- If needed later, do a tiny final wording pass for any leftover one-off copy inconsistencies that were missed in the recent cleanup
-- If that happens, keep it tightly scoped and wording-only
+- Recent small wording and placeholder passes are now complete across the most obvious public-facing surfaces
+- If any future wording cleanup happens, keep it very tightly scoped and wording-only
+- Do not reopen copy-only cleanup unless a clearly visible straggler is found
 
 ---
 
 ## Recommended next task
 - Claimed-owner self-serve editing remains intentionally deferred for now
 - Current claim/admin review flow is sufficient at this stage and should remain in place
-- Near-term next-task selection should stay focused on smaller production-safe work that does not pull the site into a broader account-system build
 - Anti-spam restoration should no longer be the default next-task recommendation because the shared honeypot + fast-submit protection is already active on the main public forms
-- The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam, likely either:
+- Recent small placeholder and copy-consistency cleanup passes are complete, so the next task should move back to remaining backlog items outside wording polish
+- The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam and recent copy cleanup, likely either:
   - a tightly scoped quality-control follow-up only if prior profile-accuracy behavior is clearly recoverable, or
   - another small production-safe maintenance task from backlog that does not reopen stable browse/map behavior
 - Continue deferring larger SEO route expansion or server-side re-geocode admin work until a thread explicitly selects one of those workstreams
@@ -284,6 +303,9 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/RosterSpots.jsx` | Roster spots page and inline ZIP placeholder cleanup |
 | `src/components/AdvertisePage.jsx` | Advertiser inquiry page and form |
 | `src/components/HelpPage.jsx` | Support / FAQ informational page |
+| `src/components/TeamProfile.jsx` | Full team profile modal |
+| `src/components/CoachProfile.jsx` | Full coach profile modal |
+| `src/components/FacilityProfile.jsx` | Full facility profile page |
 | `src/utils/formSpamProtection.js` | Shared honeypot + submit-timing spam protection helper |
 | `api/geocode-address.js` | Google Geocoding API proxy |
 | `src/lib/submit/geocode.js` | Core geocoding logic |
@@ -297,7 +319,6 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/TravelTeams.jsx` | Teams directory |
 | `src/components/teams/TeamDesktopRow.jsx` | Team result row layout |
 | `src/components/teams/TeamPreviewCard.jsx` | Team preview modal card |
-| `src/components/TeamProfile.jsx` | Full team profile modal |
 | `src/components/AdSlot.jsx` | Ad slot fetch and render with module-level cache |
 | `src/components/SearchResults.jsx` | Search results page |
 | `src/components/search/SearchResultsContent.jsx` | Search results content grid and map handoff UI |
