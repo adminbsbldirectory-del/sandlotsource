@@ -75,6 +75,7 @@ const FACILITY_FIELDS = [
   { key: 'zip_code', label: 'ZIP', type: 'text' },
   { key: 'lat', label: 'Lat', type: 'number' },
   { key: 'lng', label: 'Lng', type: 'number' },
+  { key: 'geocode_source', label: 'Geo Source', type: 'readonly' },
   { key: 'phone', label: 'Phone', type: 'text' },
   { key: 'email', label: 'Email', type: 'text' },
   { key: 'website', label: 'Website', type: 'text' },
@@ -615,6 +616,8 @@ function GenericAdminTable({ tabName }) {
   const [filterValues, setFilterValues] = useState(
     Object.fromEntries(filters.map((filter) => [filter.key, '']))
   )
+  const [rowActionBusyId, setRowActionBusyId] = useState(null)
+  const [rowActionStatusById, setRowActionStatusById] = useState({})
 
   useEffect(() => {
     let ignore = false
@@ -671,6 +674,80 @@ function GenericAdminTable({ tabName }) {
     }
   }
 
+  async function handleFacilityRegeocode(record) {
+    if (tabName !== 'Facilities') return
+
+    setRowActionBusyId(record.id)
+    setRowActionStatusById((prev) => ({
+      ...prev,
+      [record.id]: 'Updating…',
+    }))
+
+    try {
+      const response = await fetch('/api/admin-regeocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableName: 'facilities',
+          recordId: record.id,
+          address: record.address || '',
+          city: record.city || '',
+          state: record.state || '',
+          zip: record.zip_code || '',
+        }),
+      })
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const errorMessage = payload?.error || 'Re-geocode failed.'
+        setRowActionStatusById((prev) => ({
+          ...prev,
+          [record.id]: errorMessage,
+        }))
+        setRowActionBusyId(null)
+        return
+      }
+
+      const updated = payload?.record || null
+
+      if (updated) {
+        setRows((prev) =>
+          prev.map((row) =>
+            row.id === record.id
+              ? {
+                  ...row,
+                  lat: updated.lat,
+                  lng: updated.lng,
+                  geocode_source: updated.geocode_source,
+                }
+              : row
+          )
+        )
+      }
+
+      setRowActionStatusById((prev) => ({
+        ...prev,
+        [record.id]: 'Updated',
+      }))
+      setRowActionBusyId(null)
+
+      setTimeout(() => {
+        setRowActionStatusById((prev) => ({
+          ...prev,
+          [record.id]: '',
+        }))
+      }, 2000)
+    } catch (error) {
+      console.error('Facility re-geocode error:', error)
+      setRowActionStatusById((prev) => ({
+        ...prev,
+        [record.id]: 'Request failed',
+      }))
+      setRowActionBusyId(null)
+    }
+  }
+
   const displayed = useMemo(() => {
     const q = search.trim().toLowerCase()
 
@@ -692,6 +769,8 @@ function GenericAdminTable({ tabName }) {
 
     return sortRows(result, sortKey, sortDir, cfg.fields)
   }, [cfg.fields, filterValues, filters, rows, search, sortDir, sortKey])
+
+  const showFacilityActions = tabName === 'Facilities'
 
   return (
     <GenericAdminTableContent
@@ -718,6 +797,34 @@ function GenericAdminTable({ tabName }) {
       CellComponent={AdminCell}
       styles={s}
       formatFilterOption={formatFilterOption}
+      rowActionsHeaderLabel="Actions"
+      renderRowActions={
+        showFacilityActions
+          ? (record) => {
+              const isBusy = rowActionBusyId === record.id
+              const status = rowActionStatusById[record.id] || ''
+
+              return (
+                <div style={{ display: 'grid', gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleFacilityRegeocode(record)}
+                    disabled={isBusy}
+                    style={{
+                      ...s.actionButton('neutral'),
+                      opacity: isBusy ? 0.65 : 1,
+                      cursor: isBusy ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isBusy ? 'Updating…' : 'Re-geocode'}
+                  </button>
+
+                  {status ? <div style={s.smallStatus}>{status}</div> : null}
+                </div>
+              )
+            }
+          : undefined
+      }
     />
   )
 }
@@ -746,7 +853,7 @@ function ClaimRequestsTable() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-    async function loadRows() {
+  async function loadRows() {
     setLoading(true)
     setLoadError('')
 
