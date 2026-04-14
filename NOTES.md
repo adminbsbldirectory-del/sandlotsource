@@ -168,6 +168,22 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - this backlog item should no longer be treated as the best next implementation candidate
 - Separate profile-accuracy scoring work, if it existed previously, was not confirmed in this audit and remains unresolved
 
+### Duplicate matching / submission quality control
+- Shared duplicate matcher logic is now extracted into `src/lib/duplicateMatchers.js`
+- `src/components/CoachSubmitForm.jsx` now uses shared duplicate search helpers for coaches, teams, and facilities instead of maintaining separate in-file duplicate scoring logic
+- `lib/duplicateCheck.js` now reuses the stronger shared duplicate matching logic for server-side/admin-email duplicate checks
+- Team duplicate candidate retrieval was broadened so likely duplicate warnings surface earlier during submit-flow entry
+- Team duplicate testing confirmed useful warnings for:
+  - exact and close team-name matches
+  - shortened naming variants
+  - lowercase input
+  - broader entries such as `Georgia Bombers` paired with age group
+- Coach duplicate warning and facility duplicate warning behavior were also revalidated after the shared matcher extraction
+- Current conclusion:
+  - duplicate detection is meaningfully improved and consistent enough to keep
+  - this work should be treated as completed for now
+  - admin-only duplicate review helper remains deferred as a separate possible follow-up, not part of the merged work
+
 ### Technical cleanup
 - Confirmed `src/components/rosterspots/RosterBrowseSidebar.jsx` was orphaned / unused and removed safely from `main`
 - No runtime behavior or roster spots UI behavior was intentionally changed as part of this cleanup
@@ -204,6 +220,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - `facility_id` remains the only structured linked relationship for teams
 - Ad slot module cache should remain in place unless a later ad system redesign replaces it
 - Current shared spam-protection behavior should remain in place across public submit surfaces unless intentionally redesigned
+- Shared duplicate matcher logic in `src/lib/duplicateMatchers.js` should remain the source of truth for coach/team/facility duplicate detection unless intentionally redesigned
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
 - Do not replace the current claim ownership model unless a future implementation clearly requires it
 - If claimed-owner self-serve edits are added later, build on top of existing `listing_ownerships` rather than inventing a new ownership structure
@@ -252,8 +269,10 @@ This is a living list and should be updated after each item is completed, merged
 
 ### Quality controls
 - Hidden spam-blocking is already present on the main public forms
-- Do not open a speculative spam-restoration branch unless a specific unprotected public form is found
+- Shared duplicate matcher extraction and submission duplicate detection improvements are now merged
+- Do not open a speculative spam-restoration or duplicate-restoration branch unless a specific regression is found
 - Separate profile-accuracy scoring work may still be worth revisiting later only if prior behavior is clearly identifiable in the existing codebase or recent history
+- Admin-only duplicate review helper can be revisited later as a separate small maintenance task if needed, but it is not the current default recommendation
 
 ### Advertising work
 - Revisit unfinished advertising work that was previously identified
@@ -283,10 +302,11 @@ This is a living list and should be updated after each item is completed, merged
 - Claimed-owner self-serve editing remains intentionally deferred for now
 - Current claim/admin review flow is sufficient at this stage and should remain in place
 - Anti-spam restoration should no longer be the default next-task recommendation because the shared honeypot + fast-submit protection is already active on the main public forms
+- Duplicate matching / duplicate-warning behavior is now materially improved and should not be reopened immediately unless a real regression or high-value false-negative case is found
 - Recent small placeholder and copy-consistency cleanup passes are complete, so the next task should move back to remaining backlog items outside wording polish
 - The best next candidate from current main should now come from the remaining smaller backlog items outside anti-spam and recent copy cleanup, likely either:
-  - a tightly scoped quality-control follow-up only if prior profile-accuracy behavior is clearly recoverable, or
-  - another small production-safe maintenance task from backlog that does not reopen stable browse/map behavior
+  - another small production-safe maintenance task from backlog that does not reopen stable browse/map behavior, or
+  - a clearly selected larger backlog thread such as SEO route expansion or admin re-geocode tooling
 - Continue deferring larger SEO route expansion or server-side re-geocode admin work until a thread explicitly selects one of those workstreams
 
 ---
@@ -307,6 +327,8 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/CoachProfile.jsx` | Full coach profile modal |
 | `src/components/FacilityProfile.jsx` | Full facility profile page |
 | `src/utils/formSpamProtection.js` | Shared honeypot + submit-timing spam protection helper |
+| `src/lib/duplicateMatchers.js` | Shared coach / team / facility duplicate matching logic |
+| `lib/duplicateCheck.js` | Server-side duplicate check wrapper used by admin email flow |
 | `api/geocode-address.js` | Google Geocoding API proxy |
 | `src/lib/submit/geocode.js` | Core geocoding logic |
 | `api/notify-admin.js` | Admin email notification and coord row injection |
