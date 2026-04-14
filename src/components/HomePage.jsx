@@ -520,7 +520,8 @@ export default function HomePage() {
             style={{
               background: '#fff',
               padding: isMobile ? '20px 14px 16px' : '28px 28px 22px',
-              borderLeft: '3px solid ' + NAVY,
+              borderTop: '4px solid #c9a84c',
+              borderRadius: '0 0 4px 4px',
             }}
           >
             <h1
@@ -745,8 +746,8 @@ export default function HomePage() {
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
               gap: 10,
-              borderTop: '1px solid #f1f3f5',
-              borderBottom: '1px solid #f1f3f5',
+              borderTop: '1px solid #ede9e3',
+              borderBottom: '1px solid #ede9e3',
               padding: isMobile ? '16px 0' : '20px 0',
             }}
           >
@@ -757,8 +758,8 @@ export default function HomePage() {
                   textAlign: 'center',
                   padding: isMobile ? '4px 6px' : '4px 12px',
                   borderRight: isMobile
-                    ? (idx % 2 === 0 ? '1px solid #e2e8f0' : 'none')
-                    : (idx < homepageStatsItems.length - 1 ? '1px solid #e2e8f0' : 'none'),
+                    ? (idx % 2 === 0 ? '1px solid #e8e4dd' : 'none')
+                    : (idx < homepageStatsItems.length - 1 ? '1px solid #e8e4dd' : 'none'),
                 }}
               >
                 <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: '#0d1b2e', lineHeight: 1.1 }}>
@@ -920,7 +921,7 @@ export default function HomePage() {
                 <span
                   style={{
                     fontSize: isMobile ? 22 : 14,
-                    color: RED,
+                    color: '#0d1b2e',
                     flexShrink: 0,
                   }}
                 >
