@@ -19,6 +19,11 @@ import { COACH_SPECIALTIES } from '../constants/coachSpecialties'
 import { COACH_AGE_GROUPS } from '../constants/coachAgeGroups'
 import { POSITIONS_BB, POSITIONS_SB } from '../constants/positionOptions'
 import { US_STATE_ABBRS } from '../constants/usStates'
+import {
+  searchCoachCandidates,
+  searchFacilityCandidates,
+  searchTeamCandidates,
+} from '../lib/duplicateMatchers'
 
 import {
   applyResolvedCoordsPreservingLocality,
@@ -58,180 +63,15 @@ async function notifyBlockedGeocodeSubmit(payload) {
   }
 }
 
-function normalizeFacilityName(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/\bhs\b/g, ' high school ')
-    .replace(/\bh\.?s\.?\b/g, ' high school ')
-    .replace(/\bms\b/g, ' middle school ')
-    .replace(/\brec\b/g, ' recreation ')
-    .replace(/\bctr\b/g, ' center ')
-    .replace(/\bath\b/g, ' athletics ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function normalizeAddress(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/\bst\b/g, ' street ')
-    .replace(/\brd\b/g, ' road ')
-    .replace(/\bave\b/g, ' avenue ')
-    .replace(/\bdr\b/g, ' drive ')
-    .replace(/\bln\b/g, ' lane ')
-    .replace(/\bblvd\b/g, ' boulevard ')
-    .replace(/\bct\b/g, ' court ')
-    .replace(/\bcir\b/g, ' circle ')
-    .replace(/\bpkwy\b/g, ' parkway ')
-    .replace(/\bhwy\b/g, ' highway ')
-    .replace(/\s+/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function normalizedTokens(value) {
-  return Array.from(new Set(String(value || '').split(' ').filter(Boolean)))
-}
-
-function tokenSimilarity(a, b) {
-  const aTokens = normalizedTokens(a)
-  const bTokens = normalizedTokens(b)
-  if (!aTokens.length || !bTokens.length) return 0
-
-  const bSet = new Set(bTokens)
-  const overlap = aTokens.filter((token) => bSet.has(token)).length
-  return overlap / Math.max(aTokens.length, bTokens.length)
-}
-
-function scoreFacilityCandidate(input, row) {
-  const inputName = normalizeFacilityName(input.facilityName)
-  const rowName = normalizeFacilityName(row.name)
-  const inputAddress = normalizeAddress(input.address)
-  const rowAddress = normalizeAddress(row.address)
-  const inputCity = String(input.city || '').trim().toLowerCase()
-  const rowCity = String(row.city || '').trim().toLowerCase()
-  const inputState = String(input.state || '').trim().toLowerCase()
-  const rowState = String(row.state || '').trim().toLowerCase()
-  const inputZip = String(input.zipCode || '').trim()
-  const rowZip = String(row.zip_code || '').trim()
-
-  const exactAddress = !!inputAddress && !!rowAddress && inputAddress === rowAddress
-  const sameCity = !!inputCity && !!rowCity && inputCity === rowCity
-  const sameState = !!inputState && !!rowState && inputState === rowState
-  const sameCityState = sameCity && sameState
-  const sameZip = !!inputZip && !!rowZip && inputZip === rowZip
-  const exactName = !!inputName && !!rowName && inputName === rowName
-  const containsName =
-    !!inputName &&
-    !!rowName &&
-    (inputName.includes(rowName) || rowName.includes(inputName))
-  const nameSimilarity = inputName && rowName ? Math.max(tokenSimilarity(inputName, rowName), containsName ? 0.92 : 0) : 0
-
-  let score = nameSimilarity
-  if (exactAddress) score = Math.max(score, 0.99)
-  if (exactName && sameZip) score = Math.max(score, 0.96)
-  if (nameSimilarity >= 0.82 && sameZip) score = Math.max(score, 0.93)
-  if (nameSimilarity >= 0.72 && sameCityState) score = Math.max(score, 0.82)
-
-  let matchType = null
-  if (exactAddress || (exactName && sameZip) || (nameSimilarity >= 0.82 && sameZip)) {
-    matchType = 'strong'
-  } else if (nameSimilarity >= 0.72 && sameCityState) {
-    matchType = 'soft'
-  }
-
-  if (!matchType) return null
-
-  const reasons = []
-  if (exactAddress) reasons.push('same address')
-  if (sameZip) reasons.push('same zip')
-  if (sameCityState) reasons.push('same city/state')
-  if (exactName) reasons.push('same normalized name')
-  else if (nameSimilarity >= 0.72) reasons.push('similar name')
-
-  return {
-    ...row,
-    score,
-    matchType,
-    reasons,
-    address: row.address || null,
-  }
-}
-
-async function searchFacilityCandidates({ facilityName, address, city, state, zipCode }) {
-  const trimmedName = String(facilityName || '').trim()
-  const trimmedAddress = String(address || '').trim()
-  const trimmedCity = String(city || '').trim()
-  const trimmedState = String(state || '').trim()
-  const trimmedZip = String(zipCode || '').trim()
-
-  if (!trimmedName && !trimmedAddress) return []
-
-  const map = new Map()
-  const addRows = (rows) => {
-    for (const row of rows || []) {
-      if (row?.id && !map.has(row.id)) map.set(row.id, row)
-    }
-  }
-
-  if (trimmedZip) {
-    const { data, error } = await supabase
-      .from('facilities')
-      .select('id, name, address, city, state, zip_code, lat, lng')
-      .eq('zip_code', trimmedZip)
-      .limit(25)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  if (trimmedCity && trimmedState) {
-    const { data, error } = await supabase
-      .from('facilities')
-      .select('id, name, address, city, state, zip_code, lat, lng')
-      .ilike('city', trimmedCity)
-      .eq('state', trimmedState)
-      .limit(40)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  if (trimmedName) {
-    const firstToken = normalizeFacilityName(trimmedName).split(' ')[0]
-    if (firstToken) {
-      const { data, error } = await supabase
-        .from('facilities')
-        .select('id, name, address, city, state, zip_code, lat, lng')
-        .ilike('name', `%${firstToken}%`)
-        .limit(40)
-
-      if (error) throw error
-      addRows(data)
-    }
-  }
-
-  const scored = Array.from(map.values())
-    .map((row) => scoreFacilityCandidate({
-      facilityName: trimmedName,
-      address: trimmedAddress,
-      city: trimmedCity,
-      state: trimmedState,
-      zipCode: trimmedZip,
-    }, row))
-    .filter(Boolean)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-
-  return scored
-}
-
 async function findMatchingFacility({ facilityName, address, city, state, zipCode }) {
-  const matches = await searchFacilityCandidates({ facilityName, address, city, state, zipCode })
+  const matches = await searchFacilityCandidates({
+    supabaseClient: supabase,
+    facilityName,
+    address,
+    city,
+    state,
+    zipCode,
+  })
   return matches.find((match) => match.matchType === 'strong') || null
 }
 
@@ -259,7 +99,14 @@ function useFacilityDuplicateCheck({ facilityName, address, city, state, zipCode
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
-        const nextMatches = await searchFacilityCandidates({ facilityName, address, city, state, zipCode })
+        const nextMatches = await searchFacilityCandidates({
+          supabaseClient: supabase,
+          facilityName,
+          address,
+          city,
+          state,
+          zipCode,
+        })
         if (!cancelled) setMatches(nextMatches)
       } catch (err) {
         console.error('Facility duplicate lookup error', err)
@@ -278,157 +125,6 @@ function useFacilityDuplicateCheck({ facilityName, address, city, state, zipCode
   return { matches, loading }
 }
 
-function normalizePhoneDigits(value) {
-  return String(value || '').replace(/\D/g, '')
-}
-
-function normalizeCoachName(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/\bcoach\b/g, ' ')
-    .replace(/\btrainer\b/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function scoreCoachCandidate(input, row) {
-  const inputName = normalizeCoachName(input.name)
-  const rowName = normalizeCoachName(row.name)
-  const inputCity = String(input.city || '').trim().toLowerCase()
-  const rowCity = String(row.city || '').trim().toLowerCase()
-  const inputState = String(input.state || '').trim().toLowerCase()
-  const rowState = String(row.state || '').trim().toLowerCase()
-  const inputEmail = String(input.email || '').trim().toLowerCase()
-  const rowEmail = String(row.email || '').trim().toLowerCase()
-  const inputPhone = normalizePhoneDigits(input.phone)
-  const rowPhone = normalizePhoneDigits(row.phone)
-
-  const exactName = !!inputName && !!rowName && inputName === rowName
-  const nameSimilarity =
-    inputName && rowName
-      ? Math.max(
-          tokenSimilarity(inputName, rowName),
-          inputName.includes(rowName) || rowName.includes(inputName) ? 0.92 : 0
-        )
-      : 0
-
-  const sameCity = !!inputCity && !!rowCity && inputCity === rowCity
-  const sameState = !!inputState && !!rowState && inputState === rowState
-  const sameCityState = sameCity && sameState
-  const sameEmail = !!inputEmail && !!rowEmail && inputEmail === rowEmail
-  const samePhone = !!inputPhone && !!rowPhone && inputPhone === rowPhone
-
-  let score = nameSimilarity
-  if (exactName && sameCityState) score = Math.max(score, 0.97)
-  else if (exactName) score = Math.max(score, 0.9)
-  else if (nameSimilarity >= 0.76 && sameCityState) score = Math.max(score, 0.84)
-
-  if ((sameEmail || samePhone) && (exactName || nameSimilarity >= 0.6 || sameCityState)) {
-    score = Math.max(score, sameEmail ? 0.95 : 0.9)
-  }
-
-  let matchType = null
-  if (
-    (exactName && sameCityState) ||
-    (sameEmail && (exactName || nameSimilarity >= 0.6 || sameCityState)) ||
-    (samePhone && (exactName || nameSimilarity >= 0.6 || sameCityState))
-  ) {
-    matchType = 'strong'
-  } else if (exactName || (nameSimilarity >= 0.76 && sameCityState)) {
-    matchType = 'soft'
-  }
-
-  if (!matchType) return null
-
-  const reasons = []
-  if (exactName) reasons.push('same normalized name')
-  else if (nameSimilarity >= 0.76) reasons.push('similar name')
-  if (sameCityState) reasons.push('same city/state')
-  if (sameEmail) reasons.push('same email')
-  if (samePhone) reasons.push('same phone')
-
-  return {
-    ...row,
-    score,
-    matchType,
-    reasons: [...new Set(reasons)],
-  }
-}
-
-async function searchCoachCandidates({ name, city, state, email, phone }) {
-  const trimmedName = String(name || '').trim()
-  const trimmedCity = String(city || '').trim()
-  const trimmedState = String(state || '').trim()
-  const trimmedEmail = String(email || '').trim().toLowerCase()
-  const trimmedPhone = normalizePhoneDigits(phone)
-
-  if (!trimmedName && !trimmedEmail && !trimmedPhone) return []
-
-  const map = new Map()
-  const addRows = (rows) => {
-    for (const row of rows || []) {
-      if (row?.id && !map.has(row.id)) map.set(row.id, row)
-    }
-  }
-
-  if (trimmedEmail) {
-    const { data, error } = await supabase
-      .from('coaches')
-      .select('id, name, city, state, phone, email, facility_name')
-      .eq('email', trimmedEmail)
-      .limit(10)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  if (trimmedCity && trimmedState) {
-    const { data, error } = await supabase
-      .from('coaches')
-      .select('id, name, city, state, phone, email, facility_name')
-      .ilike('city', trimmedCity)
-      .eq('state', trimmedState)
-      .limit(40)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  if (trimmedName) {
-    const firstToken = normalizeCoachName(trimmedName).split(' ')[0]
-    if (firstToken) {
-      const { data, error } = await supabase
-        .from('coaches')
-        .select('id, name, city, state, phone, email, facility_name')
-        .ilike('name', `%${firstToken}%`)
-        .limit(40)
-
-      if (error) throw error
-      addRows(data)
-    }
-  }
-
-  const scored = Array.from(map.values())
-    .map((row) =>
-      scoreCoachCandidate(
-        {
-          name: trimmedName,
-          city: trimmedCity,
-          state: trimmedState,
-          email: trimmedEmail,
-          phone: trimmedPhone,
-        },
-        row
-      )
-    )
-    .filter(Boolean)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-
-  return scored
-}
 
 function useCoachDuplicateCheck({ name, city, state, email, phone, enabled = true }) {
   const [matches, setMatches] = useState([])
@@ -451,7 +147,14 @@ function useCoachDuplicateCheck({ name, city, state, email, phone, enabled = tru
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
-        const nextMatches = await searchCoachCandidates({ name, city, state, email, phone })
+        const nextMatches = await searchCoachCandidates({
+          supabaseClient: supabase,
+          name,
+          city,
+          state,
+          email,
+          phone,
+        })
         if (!cancelled) setMatches(nextMatches)
       } catch (err) {
         console.error('Coach duplicate lookup error', err)
@@ -470,172 +173,6 @@ function useCoachDuplicateCheck({ name, city, state, email, phone, enabled = tru
   return { matches, loading }
 }
 
-function normalizeTeamIdentity(name, orgAffiliation) {
-  return String(`${orgAffiliation || ''} ${name || ''}`)
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/\bga\b/g, ' georgia ')
-    .replace(/\b(\d{1,2})u\b/g, ' ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function normalizeAgeGroup(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .trim()
-}
-
-function scoreTeamCandidate(input, row) {
-  const inputIdentity = normalizeTeamIdentity(input.name, input.org_affiliation)
-  const rowIdentity = normalizeTeamIdentity(row.name, row.org_affiliation)
-  const inputAge = normalizeAgeGroup(input.age_group)
-  const rowAge = normalizeAgeGroup(row.age_group)
-  const inputCity = String(input.city || '').trim().toLowerCase()
-  const rowCity = String(row.city || '').trim().toLowerCase()
-  const inputState = String(input.state || '').trim().toLowerCase()
-  const rowState = String(row.state || '').trim().toLowerCase()
-  const inputEmail = String(input.contact_email || '').trim().toLowerCase()
-  const rowEmail = String(row.contact_email || '').trim().toLowerCase()
-
-  const exactIdentity = !!inputIdentity && !!rowIdentity && inputIdentity === rowIdentity
-  const identitySimilarity =
-    inputIdentity && rowIdentity
-      ? Math.max(
-          tokenSimilarity(inputIdentity, rowIdentity),
-          inputIdentity.includes(rowIdentity) || rowIdentity.includes(inputIdentity) ? 0.92 : 0
-        )
-      : 0
-
-  const sameAge = !!inputAge && !!rowAge && inputAge === rowAge
-  const sameCity = !!inputCity && !!rowCity && inputCity === rowCity
-  const sameState = !!inputState && !!rowState && inputState === rowState
-  const sameCityState = sameCity && sameState
-  const sameEmail = !!inputEmail && !!rowEmail && inputEmail === rowEmail
-
-  let score = identitySimilarity
-  if (exactIdentity && sameAge) score = Math.max(score, 0.97)
-  else if (exactIdentity && sameCityState) score = Math.max(score, 0.94)
-  else if (exactIdentity) score = Math.max(score, 0.82)
-  else if (identitySimilarity >= 0.76 && sameAge && sameCityState) score = Math.max(score, 0.88)
-
-  if (sameEmail && (exactIdentity || identitySimilarity >= 0.65 || sameAge)) {
-    score = Math.max(score, 0.9)
-  }
-
-  let matchType = null
-  if (
-    (exactIdentity && sameAge) ||
-    (exactIdentity && sameCityState) ||
-    (sameEmail && (exactIdentity || identitySimilarity >= 0.65 || sameAge))
-  ) {
-    matchType = 'strong'
-  } else if (
-    exactIdentity ||
-    (identitySimilarity >= 0.76 && sameAge) ||
-    (identitySimilarity >= 0.76 && sameCityState)
-  ) {
-    matchType = 'soft'
-  }
-
-  if (!matchType) return null
-
-  const reasons = []
-  if (exactIdentity) reasons.push('same normalized team/org name')
-  else if (identitySimilarity >= 0.76) reasons.push('similar team/org name')
-  if (sameAge) reasons.push('same age group')
-  if (sameCityState) reasons.push('same city/state')
-  if (sameEmail) reasons.push('same contact email')
-
-  return {
-    ...row,
-    score,
-    matchType,
-    reasons: [...new Set(reasons)],
-  }
-}
-
-async function searchTeamCandidates({
-  name,
-  org_affiliation,
-  age_group,
-  city,
-  state,
-  contact_email,
-}) {
-  const trimmedName = String(name || '').trim()
-  const trimmedOrg = String(org_affiliation || '').trim()
-  const trimmedAge = String(age_group || '').trim()
-  const trimmedCity = String(city || '').trim()
-  const trimmedState = String(state || '').trim()
-  const trimmedEmail = String(contact_email || '').trim().toLowerCase()
-
-  if (!trimmedName && !trimmedOrg && !trimmedEmail) return []
-
-  const map = new Map()
-  const addRows = (rows) => {
-    for (const row of rows || []) {
-      if (row?.id && !map.has(row.id)) map.set(row.id, row)
-    }
-  }
-
-  if (trimmedEmail) {
-    const { data, error } = await supabase
-      .from('travel_teams')
-      .select('id, name, org_affiliation, age_group, city, state, contact_email')
-      .eq('contact_email', trimmedEmail)
-      .limit(20)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  if (trimmedCity && trimmedState) {
-    const { data, error } = await supabase
-      .from('travel_teams')
-      .select('id, name, org_affiliation, age_group, city, state, contact_email')
-      .ilike('city', trimmedCity)
-      .eq('state', trimmedState)
-      .limit(40)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  const firstToken = normalizeTeamIdentity(trimmedName, trimmedOrg).split(' ')[0]
-  if (firstToken) {
-    const { data, error } = await supabase
-      .from('travel_teams')
-      .select('id, name, org_affiliation, age_group, city, state, contact_email')
-      .or(`name.ilike.%${firstToken}%,org_affiliation.ilike.%${firstToken}%`)
-      .limit(40)
-
-    if (error) throw error
-    addRows(data)
-  }
-
-  const scored = Array.from(map.values())
-    .map((row) =>
-      scoreTeamCandidate(
-        {
-          name: trimmedName,
-          org_affiliation: trimmedOrg,
-          age_group: trimmedAge,
-          city: trimmedCity,
-          state: trimmedState,
-          contact_email: trimmedEmail,
-        },
-        row
-      )
-    )
-    .filter(Boolean)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-
-  return scored
-}
 
 function useTeamDuplicateCheck({
   name,
@@ -671,6 +208,7 @@ function useTeamDuplicateCheck({
       setLoading(true)
       try {
         const nextMatches = await searchTeamCandidates({
+          supabaseClient: supabase,
           name,
           org_affiliation,
           age_group,
