@@ -144,12 +144,21 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 This is a living list and should be updated after each item is completed, merged, deferred, clarified, or replaced.
 
 ### Travel teams data model / relationships
-- Determine how the `organization` / `affiliation` field should work on the Travel Teams page
-- Confirm whether it already drives any useful behavior or should be connected to a facility / home field relationship
-- Example cases to evaluate:
-  - Sandy Springs Storm is affiliated with Sandy Springs Youth Sports with home facility Morgan Falls Athletics Complex
-  - Georgia Bombers is affiliated with Georgia Bombers with home facility Grand Slam Johns Creek
-- Decide whether this should remain display-only, link to a facility profile, or support a stronger organization → facility relationship later
+- Reviewed current `organization / affiliation` behavior across submit, browse, and profile surfaces
+- Current decision: keep `organization / affiliation` as display-only text for now
+- Current decision: keep `facility_id` / linked facility as the only structured relationship
+- `organization / affiliation` is still useful for team identity, branding, and duplicate detection
+- Do not auto-link organization / affiliation to a facility
+- Do not infer organization → facility relationships automatically from team text fields
+- Do not introduce schema changes for organization entities at this stage
+- If needed later, revisit only when there is a clear product need for:
+  - multi-team organization pages
+  - structured organization records
+  - organization-to-facility relationships beyond plain display text
+- Future low-risk cleanup option:
+  - clarify submit-field wording so users understand:
+    - `Organization / Affiliation` = team brand, program, or parent organization
+    - `Primary / Home Facility` = where the team mainly trains or operates
 
 ### Claimed listing edit flow
 - Confirm whether claimed coaches, teams, and facilities already have a magic-link flow for making future profile updates
@@ -182,10 +191,15 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Travel Teams organization / affiliation behavior review
-- Keep it as an audit / decision thread first
-- Do not combine it with schema changes, facility linking implementation, or claimed-listing work yet
-- Goal: decide whether `organization / affiliation` remains display-only or should later support a clearer organization-to-facility relationship
+- Small wording-only clarification pass for Travel Teams submit/profile copy
+- Keep scope limited to copy and field-label clarity only
+- Goal: make the distinction between \Organization / Affiliation` and `Primary / Home Facility` clearer for submitters and site visitors`
+- Preserve current behavior:
+  - `organization / affiliation` remains display-only text
+  - `facility_id` remains the only structured linked relationship
+- Do not introduce schema changes
+- Do not auto-link organization text to a facility
+- Do not infer organization → facility relationships from team text fields
 
 ---
 
