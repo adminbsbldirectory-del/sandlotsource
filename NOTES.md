@@ -84,6 +84,8 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - keyword filter is preserved during handoff
 - When a user searches from homepage and clicks a result card, closing the card now returns to `/search?...` via `navigate(-1)` instead of dropping to a bare directory page
 - Fixed in `CoachDirectory.jsx`, `TravelTeams.jsx`, and `FacilityProfile.jsx`
+- `SearchResults.jsx` now imports shared `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js` instead of maintaining duplicated local helper logic
+- Search Results now aligns with the shared geocoding utility path used elsewhere, including the Google-first ZIP lookup behavior with fallback retained in shared code
 
 ### Directory / map / UI fixes
 - Homepage age group dropdown: added `7U`, `9U`, and `11U` — full order now `7U` through `18U`
@@ -160,6 +162,7 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Search results map handoff preserves `q`, `zip`, `radius`, `sport`, and `age`
 - `/search` map view shows a ZIP-needed message when valid map context does not exist
 - Facility search handoff must continue to preserve narrowed result counts and keyword filtering
+- Search Results should continue to use shared `geocodeZip` / `distanceMiles` utilities instead of reintroducing local duplicates
 - Travel Team submit `Age Group` must remain before `Classification`
 - `organization / affiliation` remains display-only text
 - `facility_id` remains the only structured linked relationship for teams
@@ -225,11 +228,12 @@ This is a living list and should be updated after each item is completed, merged
   - route pattern `/teams/:state/:city`
   - reuse current `TravelTeams` UI / query logic
   - do not weaken ZIP-first browse / search
-- Evaluate cleanup in `SearchResults.jsx`:
-  - import canonical `distanceMiles` / `geocodeZip`
-  - reassess whether `zippopotam.us` fallback is still needed
 - Add server-side re-geocode endpoint for admin use on legacy and seeded records with bad coordinates
 - Delete `src/components/rosterspots/RosterBrowseSidebar.jsx` if confirmed unused
+- If desired later, do a deeper `SearchResults.jsx` separation pass:
+  - keep current behavior intact
+  - avoid reopening stable map/list handoff logic
+  - consider separating fetch/filter logic from page-shell UI only if there is a clear maintenance need
 
 ### Minor future polish
 - If needed later, do a tiny final wording pass for any leftover one-off copy inconsistencies that were missed in the recent cleanup
@@ -245,6 +249,11 @@ This is a living list and should be updated after each item is completed, merged
   - richer individual listing/profile ownership
   - owner-managed media such as profile photos, team logos, or facility images
 - Near-term next-task selection should stay focused on smaller production-safe work that does not pull the site into a broader account-system build
+- Best next candidate from current main is likely one of:
+  - confirm whether `src/components/rosterspots/RosterBrowseSidebar.jsx` is unused and delete it if safe
+  - scope a small anti-spam / quality-control restoration pass only if the prior removed behavior is clearly known and can be restored safely
+  - defer larger SEO or geocode-admin work until a thread explicitly selects it
+
 ---
 
 ## Key files reference
