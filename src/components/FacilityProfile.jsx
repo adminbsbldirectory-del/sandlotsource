@@ -693,7 +693,7 @@ export default function FacilityProfile() {
             {facility.verified_status ? (
               <>
                 <div style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 14 }}>
-                  This facility listing is already verified. For ownership issues, admin changes, or disputes, please use Help / FAQ or contact support.
+                  This listing is already verified. For ownership issues, staff changes, or disputes, please use Help / FAQ or contact support.
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>

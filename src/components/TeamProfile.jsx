@@ -573,7 +573,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
                     maxWidth: 460,
                   }}
                 >
-                  Need a correction or ownership help? Visit Help / FAQ for next steps.
+                  Need a correction or help with ownership? Visit Help / FAQ for next steps.
                 </div>
 
                 <a
@@ -598,7 +598,7 @@ export default function TeamProfile({ team, onClose, onClaim }) {
             ) : (
               <>
                 <div style={{ fontSize: 12, color: '#888', textAlign: 'center' }}>
-                  Is this your team? Claim this listing to update contact info, tryout dates, and more.
+                  Is this your team? Claim this listing to request updates to contact information, tryout details, and more.
                 </div>
 
                 <button
