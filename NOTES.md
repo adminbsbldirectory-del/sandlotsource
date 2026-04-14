@@ -107,6 +107,9 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Cross-form wording / helper / placeholder consistency pass is merged across submit-related surfaces
 - Shared submit ZIP placeholder example text was replaced with neutral instructional wording
 - Roster Spots ZIP placeholder example text was also replaced with neutral instructional wording
+- Travel Teams wording-only clarification pass is merged across submit and profile surfaces
+- `Organization / Affiliation` vs `Primary / Home Facility` distinction is now clearer for submitters and site visitors
+- This was wording-only and did not change schema or linking behavior
 
 ### Geocoding speed, admin edits, email dedup
 - Form submission speed: replaced the multi-variant Nominatim loop in `geocode.js` with a single Google query — `{address}, {city}, {state} {zip}`
@@ -120,6 +123,12 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - House ads with no `target_url` now wrap to `/advertise` instead of rendering as unclickable images
 - Non-homepage house ad records in Supabase were updated to point to `https://www.sandlotsource.com/advertise`
 - Multiple AdSlot fetch waves were investigated and determined to be DevTools/mobile-breakpoint behavior plus normal SPA remounting, not a production bug
+- `AdSlot.jsx` now uses module-level cache by `slotKey`
+- Added in-flight promise caching to reduce duplicate concurrent requests for the same slot
+- Current expected behavior:
+  - different homepage and directory slot keys still fetch separately
+  - same-slot SPA remounts should reuse cached results during the session
+- No ad targeting, schema, or UI behavior was changed as part of this cache pass
 
 ### Visual system lock
 - Full visual consistency pass across directory and content pages is merged
@@ -135,6 +144,9 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - `/search` map view shows a ZIP-needed message when valid map context does not exist
 - Facility search handoff must continue to preserve narrowed result counts and keyword filtering
 - Travel Team submit `Age Group` must remain before `Classification`
+- `organization / affiliation` remains display-only text
+- `facility_id` remains the only structured linked relationship for teams
+- Ad slot module cache should remain in place unless a later ad system redesign replaces it
 - Do not reopen or regress current stable browse/map behavior unless directly required by the chosen task
 
 ---
@@ -144,16 +156,22 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 This is a living list and should be updated after each item is completed, merged, deferred, clarified, or replaced.
 
 ### Travel teams data model / relationships
-- Determine how the `organization` / `affiliation` field should work on the Travel Teams page
-- Confirm whether it already drives any useful behavior or should be connected to a facility / home field relationship
-- Example cases to evaluate:
-  - Sandy Springs Storm is affiliated with Sandy Springs Youth Sports with home facility Morgan Falls Athletics Complex
-  - Georgia Bombers is affiliated with Georgia Bombers with home facility Grand Slam Johns Creek
-- Decide whether this should remain display-only, link to a facility profile, or support a stronger organization → facility relationship later
+- Reviewed current `organization / affiliation` behavior across submit, browse, and profile surfaces
+- Current decision: keep `organization / affiliation` as display-only text for now
+- Current decision: keep `facility_id` / linked facility as the only structured relationship
+- `organization / affiliation` is still useful for team identity, branding, and duplicate detection
+- Do not auto-link organization / affiliation to a facility
+- Do not infer organization → facility relationships automatically from team text fields
+- Do not introduce schema changes for organization entities at this stage
+- If needed later, revisit only when there is a clear product need for:
+  - multi-team organization pages
+  - structured organization records
+  - organization-to-facility relationships beyond plain display text
 
 ### Claimed listing edit flow
 - Confirm whether claimed coaches, teams, and facilities already have a magic-link flow for making future profile updates
 - If not, scope a secure self-serve update flow for claimed listings
+- Keep this as an audit / diagnosis thread first before any implementation
 
 ### Anti-spam / quality controls
 - Restore hidden spam-blocking work that was previously removed or deferred
@@ -162,7 +180,8 @@ This is a living list and should be updated after each item is completed, merged
 ### Advertising work
 - Revisit unfinished advertising work that was previously identified
 - Review prior advertising to-do items and decide what is still relevant versus obsolete
-- Add module-level cache in `AdSlot.jsx` to reduce redundant fetches on SPA remounts
+- If future ad performance work is needed, evaluate whether cache duration/invalidation needs tightening
+- Do not reopen recent AdSlot cache work unless there is a reproducible production issue
 
 ### Technical / deferred backlog
 - Add SEO location landing pages for Teams:
@@ -182,10 +201,12 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Travel Teams organization / affiliation behavior review
+- Claimed listing edit flow audit
 - Keep it as an audit / decision thread first
-- Do not combine it with schema changes, facility linking implementation, or claimed-listing work yet
-- Goal: decide whether `organization / affiliation` remains display-only or should later support a clearer organization-to-facility relationship
+- Confirm whether claimed coaches, teams, and facilities already have any secure self-serve update path
+- If not, define the lightest safe path forward before touching implementation
+- Do not combine it with anti-spam restoration, ad work, or schema changes
+- Goal: determine whether the current claim flow ends at request intake only, or whether any real post-claim update workflow already exists
 
 ---
 
@@ -197,6 +218,7 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/submit/TeamFacilitySection.jsx` | Team-to-facility submit section |
 | `src/components/submit/ZipField.jsx` | Shared submit ZIP input |
 | `src/components/CoachSubmitForm.jsx` | Shared submit form wrapper for Coach, Team, Facility, and Player Board surfaces |
+| `src/components/ClaimListing.jsx` | Claim / update request intake form |
 | `src/components/RosterSpots.jsx` | Roster spots page and inline ZIP placeholder cleanup |
 | `api/geocode-address.js` | Google Geocoding API proxy |
 | `src/lib/submit/geocode.js` | Core geocoding logic |
@@ -209,9 +231,11 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/Facilities.jsx` | Facilities directory |
 | `src/components/TravelTeams.jsx` | Teams directory |
 | `src/components/teams/TeamDesktopRow.jsx` | Team result row layout |
+| `src/components/teams/TeamPreviewCard.jsx` | Team preview modal card |
+| `src/components/TeamProfile.jsx` | Full team profile modal |
+| `src/components/AdSlot.jsx` | Ad slot fetch and render with module-level cache |
 | `src/components/SearchResults.jsx` | Search results page |
 | `src/components/search/SearchResultsContent.jsx` | Search results content grid and map handoff UI |
-| `src/components/AdSlot.jsx` | Ad slot fetch and render |
 | `src/index.css` | Global styles and design tokens |
 
 ---
