@@ -701,6 +701,21 @@ export default function CoachDirectory() {
     setSelected(coach.id);
   };
 
+    const clearSelectedFromUrl = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("select");
+
+    const nextSearch = nextParams.toString();
+
+    navigate(
+      {
+        pathname: "/coaches",
+        search: nextSearch ? `?${nextSearch}` : "",
+      },
+      { replace: true }
+    );
+  };
+
   return (
     <>
       {profileCoach && (
@@ -726,7 +741,7 @@ export default function CoachDirectory() {
         <CoachDetailPanel
           coach={sel}
           onClose={() => {
-            if (selectedFromUrl) navigate(-1);
+            if (selectedFromUrl) clearSelectedFromUrl();
             else setSelected(null);
           }}
           onViewProfile={(coach) => {
