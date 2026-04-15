@@ -516,11 +516,29 @@ export default function TravelTeams() {
     : ''
   const previewFacilityWebsite = selectedTeam ? normalizeUrl(selectedTeam.facility_website) : null
   const previewTeamWebsite = selectedTeam ? normalizeUrl(selectedTeam.website) : null
-  const previewTryoutDate = selectedTeam ? formatTryoutDate(selectedTeam.tryout_date) : null
+    const previewTryoutDate = selectedTeam ? formatTryoutDate(selectedTeam.tryout_date) : null
   const previewPracticeMapQuery = encodeURIComponent(previewPracticeLocation || '')
   const previewSportLabel = selectedTeam
     ? (normalizeSportValue(selectedTeam.sport) === 'both' ? 'Baseball & Softball' : selectedTeam.sport)
     : ''
+  useEffect(() => {
+    setSelectedTeamId(selectedTeamIdFromUrl)
+  }, [selectedTeamIdFromUrl])
+
+  const clearSelectedFromUrl = () => {
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('select')
+
+    const nextSearch = nextParams.toString()
+
+    navigate(
+      {
+        pathname: '/teams',
+        search: nextSearch ? `?${nextSearch}` : '',
+      },
+      { replace: true }
+    )
+  }
 
   return (
     <div style={!isMobile ? { background: '#fff' } : undefined}>
@@ -1183,9 +1201,13 @@ export default function TravelTeams() {
     {selectedTeam && (
   <TeamPreviewCard
     team={selectedTeam}
-    onClose={() => {
-      if (selectedTeamIdFromUrl) navigate(-1);
-      else setSelectedTeamId(null);
+        onClose={() => {
+      if (selectedTeamIdFromUrl) {
+        setSelectedTeamId(null)
+        clearSelectedFromUrl()
+      } else {
+        setSelectedTeamId(null)
+      }
     }}
     onOpenFull={() => {
       const current = selectedTeam

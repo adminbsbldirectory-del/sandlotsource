@@ -548,20 +548,20 @@ export default function HomePage() {
               rosters, and pickup help all in one place.
             </p>
 
-            <form
-              onSubmit={handleSearch}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: '#fff',
-                border: '1.5px solid #d8d8d2',
-                borderRadius: 10,
-                padding: isMobile ? '0 5px 0 10px' : '0 6px 0 14px',
-                height: isMobile ? 50 : 48,
-                gap: 8,
-                marginBottom: 12,
-              }}
-            >
+            <form onSubmit={handleSearch}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#fff',
+                  border: '1.5px solid #d8d8d2',
+                  borderRadius: 10,
+                  padding: isMobile ? '0 5px 0 10px' : '0 6px 0 14px',
+                  height: isMobile ? 50 : 48,
+                  gap: 8,
+                  marginBottom: 12,
+                }}
+              >
               <svg
                 width="15"
                 height="15"
@@ -606,7 +606,7 @@ export default function HomePage() {
               >
                 Search
               </button>
-            </form>
+            </div>
 
             <div
               style={{
@@ -727,8 +727,10 @@ export default function HomePage() {
               Start with ZIP + distance for the cleanest nearby results. Keyword search is
               optional.
             </div>
+             </form>
           </section>
         </div>
+        
 
         {!isMobile && (
           <HomePageAdBand
