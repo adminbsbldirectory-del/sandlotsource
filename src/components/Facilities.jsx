@@ -22,9 +22,8 @@ const HEADER_H = 75
 const FACILITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All Location Types' },
   { value: 'park_field', label: 'Park / Rec Field' },
-  { value: 'training_facility', label: 'Indoor Training Facility' },
+  { value: 'training_facility', label: 'Training Facility' },
   { value: 'sports_complex', label: 'Sports Complex' },
-  { value: 'private_facility', label: 'Private Facility' },
   { value: 'travel_team_facility', label: 'Team Facility' },
   { value: 'school_field', label: 'School Field' },
   { value: 'other', label: 'Other' },
@@ -40,9 +39,8 @@ function getFacilitySport(facility) {
 function getFacilityTypeLabel(value) {
   const map = {
     park_field: 'Park / Rec Field',
-    training_facility: 'Indoor Training Facility',
+    training_facility: 'Training Facility',
     sports_complex: 'Sports Complex',
-    private_facility: 'Private Facility',
     travel_team_facility: 'Team Facility',
     school_field: 'School Field',
     other: 'Other',
@@ -878,9 +876,8 @@ export default function Facilities() {
                     </span>
                     {[
                       ['Park / Rec Field', '#16A34A'],
-                      ['Indoor Training Facility', '#D42B2B'],
+                      ['Training Facility', '#D42B2B'],
                       ['Sports Complex', '#fd5b03'],
-                      ['Private Facility', '#8B5CF6'],
                       ['Team Facility', '#1D4ED8'],
                       ['School Field', '#6B7280'],
                       ['Other', '#9A6B2F'],
@@ -1299,9 +1296,8 @@ export default function Facilities() {
                               </span>
                               {[
                                 ['Park / Rec Field', '#16A34A'],
-                                ['Indoor Training Facility', '#D42B2B'],
+                                ['Training Facility', '#D42B2B'],
                                 ['Sports Complex', '#fd5b03'],
-                                ['Private Facility', '#8B5CF6'],
                                 ['Team Facility', '#1D4ED8'],
                                 ['School Field', '#6B7280'],
                                 ['Other', '#9A6B2F'],
