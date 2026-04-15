@@ -490,11 +490,12 @@ export default function Facilities() {
                 </div>
                 <a
                   href="/submit"
+                  className="add-cta"
                   style={{
                     textDecoration: 'none',
                     borderRadius: 'var(--btn-radius)',
                     background: '#FFFBF0',
-                    border: '1.5px solid #c9a84c',
+                    border: '2px solid #c9a84c',
                     color: '#0d1b2e',
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -1189,6 +1190,7 @@ export default function Facilities() {
 
                     <a
                       href="/submit"
+                      className="add-cta"
                       style={{
                         flex: 1,
                         textAlign: 'center',
@@ -1196,7 +1198,7 @@ export default function Facilities() {
                         padding: '9px 10px',
                         borderRadius: 'var(--btn-radius)',
                         background: '#FFFBF0',
-                    border: '1.5px solid #c9a84c',
+                    border: '2px solid #c9a84c',
                         color: '#0d1b2e',
                         fontSize: 12,
                         fontWeight: 700,

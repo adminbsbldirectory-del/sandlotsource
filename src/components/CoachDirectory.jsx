@@ -783,10 +783,11 @@ export default function CoachDirectory() {
                 </div>
                 <a
                   href="/submit"
+                  className="add-cta"
                   style={{
                     borderRadius: 'var(--btn-radius)',
                     background: "#FFFBF0",
-                    border: "1.5px solid #c9a84c",
+                    border: "2px solid #c9a84c",
                     color: "#0d1b2e",
                     textDecoration: "none",
                     display: "inline-flex",
@@ -1890,6 +1891,7 @@ export default function CoachDirectory() {
                     </button>
                     <a
                       href="/submit"
+                      className="add-cta"
                       style={{
                         flex: 1,
                         textAlign: "center",
@@ -1897,7 +1899,7 @@ export default function CoachDirectory() {
                         padding: "9px 10px",
                         borderRadius: "var(--btn-radius)",
                         background: "#FFFBF0",
-                        border: "1.5px solid #c9a84c",
+                        border: "2px solid #c9a84c",
                         color: "#0d1b2e",
                         fontSize: 13,
                         fontWeight: 800,

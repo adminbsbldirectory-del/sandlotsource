@@ -154,12 +154,13 @@ export default function RosterBrowseContent({
             <button
               type="button"
               onClick={() => setView('post')}
+              className="add-cta"
               style={{
                 height: 42,
                 padding: '0 16px',
                 borderRadius: 'var(--btn-radius)',
                 background: '#FFFBF0',
-                border: '1.5px solid #c9a84c',
+                border: '2px solid #c9a84c',
                 color: '#0d1b2e',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
@@ -287,9 +288,10 @@ export default function RosterBrowseContent({
             <button
               type="button"
               onClick={() => setView('post')}
+              className="add-cta"
               style={{
                 background: '#FFFBF0',
-                border: '1.5px solid #c9a84c',
+                border: '2px solid #c9a84c',
                 color: '#0d1b2e',
                 borderRadius: 10,
                 padding: '10px 16px',
