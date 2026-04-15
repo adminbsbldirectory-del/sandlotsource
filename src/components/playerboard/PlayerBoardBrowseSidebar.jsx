@@ -294,7 +294,7 @@ export default function PlayerBoardBrowseSidebar({
               width: "100%",
               minHeight: 40,
               borderRadius: "var(--btn-radius)",
-              background: "#fff",
+              background: "#FFFBF0",
               border: "1.5px solid #c9a84c",
               color: "#0d1b2e",
               fontWeight: 800,
