@@ -70,7 +70,6 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - No logic, routing, schema, geocoding, or data-fetch changes introduced
 - Files changed: `src/components/HomePage.jsx`, `src/components/Header.jsx`, `src/index.css`, `src/components/home/FeaturedCard.jsx`, `src/components/home/HomePageBand.jsx`, `src/components/home/HomePageSectionHeader.jsx`
 
-
 ### Directory pages visual harmonization (ui/directory-harmonize)
 - All six directory / browse pages harmonized to match the homepage visual token system
 - Filter sidebar and filter header backgrounds warmed from cold `#f9fafb` to `#F7F5F1` across:
@@ -109,6 +108,20 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - `src/components/CoachProfile.jsx`
   - `src/components/FacilityProfile.jsx`
   - `src/components/TeamProfile.jsx`
+
+### Homepage Enter search + preview close behavior (bugfix/home-search-enter-and-search-preview-close)
+- Homepage search now submits correctly on Enter across the full homepage search area, not just the keyword field
+- `HomePage.jsx` search controls were unified into one shared form submit flow so ZIP/filter usage no longer bypasses submit behavior
+- Coach preview close behavior now clears only the `select` query param instead of using history back navigation
+- Team preview close behavior now clears only the `select` query param instead of using history back navigation
+- Team preview close behavior also now clears reliably on the first click
+- `TravelTeams.jsx` now syncs local selected-team state with URL selection state so URL-driven close behavior does not require a second click
+- Existing search context is preserved when closing previews, including current ZIP / radius / sport / age / query params already in the URL
+- This bugfix was intentionally narrow and did not change broader search/map handoff behavior outside these specific fixes
+- Files changed:
+  - `src/components/HomePage.jsx`
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/TravelTeams.jsx`
 
 ### Geocoding hardening
 - Null lat/lng records no longer pass proximity filters in `CoachDirectory`, `Facilities`, `TravelTeams`, and `SearchResults`
@@ -154,10 +167,8 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - Facility search handoff bug is fixed:
   - narrowed `/search` results now stay aligned with `/facilities`
   - keyword filter is preserved during handoff
-- When a user searches from homepage and clicks a result card, closing the card now returns to `/search?...` via `navigate(-1)` instead of dropping to a bare directory page
-- Fixed in `CoachDirectory.jsx`, `TravelTeams.jsx`, and `FacilityProfile.jsx`
-- `SearchResults.jsx` now imports shared `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js` instead of maintaining duplicated local helper logic
 - Search Results now aligns with the shared geocoding utility path used elsewhere, including the Google-first ZIP lookup behavior with fallback retained in shared code
+- `SearchResults.jsx` now imports shared `geocodeZip` and `distanceMiles` from `src/lib/submit/geocode.js` instead of maintaining duplicated local helper logic
 
 ### Directory / map / UI fixes
 - Homepage age group dropdown: added `7U`, `9U`, and `11U` — full order now `7U` through `18U`
@@ -317,6 +328,9 @@ These were locked in during the `ui/track-a-polish` homepage pass and must carry
 - `/search` map view shows a ZIP-needed message when valid map context does not exist
 - Facility search handoff must continue to preserve narrowed result counts and keyword filtering
 - Search Results should continue to use shared `geocodeZip` / `distanceMiles` utilities instead of reintroducing local duplicates
+- Homepage search Enter behavior should continue to submit from the full homepage search area
+- Closing coach/team preview cards from search-driven handoff should clear only `select` and preserve the rest of the directory query context
+- Team preview close should continue to close on first click
 - Travel Team submit `Age Group` must remain before `Classification`
 - `organization / affiliation` remains display-only text
 - `facility_id` remains the only structured linked relationship for teams
@@ -341,7 +355,6 @@ This is a living list and should be updated after each item is completed, merged
 - All six directory and browse pages now match the homepage visual token system
 - See completed section above for full file list and change details
 - Homepage category card layout is noted as “good enough for now” — a later visual pass could make cards feel more like feature / discovery cards. Defer to a future homepage refresh session.
-
 
 ### Travel teams data model / relationships
 - Reviewed current `organization / affiliation` behavior across submit, browse, and profile surfaces
@@ -415,7 +428,7 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Directory pages visual harmonization is now complete and merged
+- Homepage Enter search and preview close behavior is now complete and should not be reopened unless a regression is found
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
 - Alternatively: SEO location landing pages for Teams (`/teams/:state/:city`) — low logic risk, reuses existing directory UI
 - Claimed-owner self-serve editing remains intentionally deferred
