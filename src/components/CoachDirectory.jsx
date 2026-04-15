@@ -784,7 +784,7 @@ export default function CoachDirectory() {
                 <a
                   href="/submit"
                   style={{
-                    borderRadius: 999,
+                    borderRadius: 'var(--btn-radius)',
                     background: "#c9a84c",
                     color: "#0d1b2e",
                     textDecoration: "none",

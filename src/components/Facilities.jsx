@@ -492,7 +492,7 @@ export default function Facilities() {
                   href="/submit"
                   style={{
                     textDecoration: 'none',
-                    borderRadius: 999,
+                    borderRadius: 'var(--btn-radius)',
                     background: '#c9a84c',
                     color: '#0d1b2e',
                     display: 'inline-flex',
