@@ -297,7 +297,7 @@ export default function PlayerBoardBrowseSidebar({
               border: "none",
               background: "#c9a84c",
               color: "#0d1b2e",
-              fontWeight: 700,
+              fontWeight: 800,
               fontFamily: "var(--font-head)",
               fontSize: 13,
               cursor: "pointer",

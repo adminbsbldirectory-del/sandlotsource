@@ -1898,7 +1898,7 @@ export default function CoachDirectory() {
                         background: "#c9a84c",
                         color: "#0d1b2e",
                         fontSize: 13,
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontFamily: "var(--font-head)",
                         minHeight: 40,
                         display: "flex",

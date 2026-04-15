@@ -164,7 +164,7 @@ export default function RosterBrowseContent({
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 800,
                 letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
                 width: isMobile ? '100%' : 'auto',
@@ -295,7 +295,7 @@ export default function RosterBrowseContent({
                 padding: '10px 16px',
                 fontFamily: 'var(--font-head)',
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 800,
                 cursor: 'pointer',
               }}
             >

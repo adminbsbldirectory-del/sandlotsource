@@ -806,7 +806,7 @@ export default function TravelTeams() {
                     background: '#c9a84c',
                     color: '#0d1b2e',
                     fontSize: 13,
-                    fontWeight: 700,
+                    fontWeight: 800,
                     letterSpacing: '0.01em',
                     fontFamily: 'var(--font-head)',
                     minHeight: 40,
