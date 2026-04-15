@@ -464,8 +464,8 @@ const formStartedAtRef = useRef(Date.now())
               style={{
                 width:'100%',
                 padding:'12px',
-                background:'var(--red)',
-                color:'white',
+                background:'#c9a84c',
+                color:'#0d1b2e',
                 border:'none',
                 borderRadius:8,
                 fontSize:15,
@@ -662,8 +662,8 @@ const formStartedAtRef = useRef(Date.now())
                   style={{
                     width: '100%',
                     padding: '12px',
-                    background: 'var(--red)',
-                    color: 'white',
+                    background: '#c9a84c',
+                    color: '#0d1b2e',
                     border: 'none',
                     borderRadius: 8,
                     fontSize: 15,

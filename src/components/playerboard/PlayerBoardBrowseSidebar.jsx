@@ -276,7 +276,7 @@ export default function PlayerBoardBrowseSidebar({
               color: "var(--navy)",
               fontWeight: 700,
               fontFamily: "var(--font-head)",
-              fontSize: 12,
+              fontSize: 13,
               cursor: "pointer",
             }}
           >
@@ -299,7 +299,7 @@ export default function PlayerBoardBrowseSidebar({
               color: "#0d1b2e",
               fontWeight: 700,
               fontFamily: "var(--font-head)",
-              fontSize: 12,
+              fontSize: 13,
               cursor: "pointer",
             }}
           >
