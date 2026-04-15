@@ -1177,7 +1177,7 @@ export default function Facilities() {
                         border: '1.5px solid var(--navy)',
                         background: showMap ? 'var(--navy)' : 'var(--white)',
                         color: showMap ? 'var(--white)' : 'var(--navy)',
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: 700,
                         fontFamily: 'var(--font-head)',
                         minHeight: 40,

@@ -212,7 +212,7 @@ export default function PlayerBoardBrowseSidebar({
               border: "1.5px solid var(--navy)",
               background: showMap ? "var(--navy)" : "var(--white)",
               color: showMap ? "var(--white)" : "var(--navy)",
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
               fontFamily: "var(--font-head)",
