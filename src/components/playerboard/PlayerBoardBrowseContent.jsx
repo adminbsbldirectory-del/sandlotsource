@@ -264,7 +264,7 @@ export default function PlayerBoardBrowseContent({
                     gap: 10,
                     alignItems: "center",
                     padding: "9px 14px",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                     borderBottom: "1px solid #eef0f2",
                     position: "sticky",
                     top: 0,

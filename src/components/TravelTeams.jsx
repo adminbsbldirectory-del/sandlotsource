@@ -568,12 +568,12 @@ export default function TravelTeams() {
               position: isMobile ? 'static' : 'sticky',
               top: isMobile ? 'auto' : HEADER_H + 12,
               alignSelf: 'start',
-              background: '#f9fafb',
+              background: '#F7F5F1',
               borderRight: isMobile ? 'none' : '1px solid #eef0f2',
               zIndex: 4,
             }}
           >
-            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #eef0f2', background: '#f9fafb' }}>
+            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #eef0f2', background: '#F7F5F1' }}>
               <div
                 style={{
                   fontFamily: 'var(--font-head)',
@@ -599,7 +599,7 @@ export default function TravelTeams() {
                 flexDirection: 'column',
                 gap: 10,
                 borderBottom: '1px solid #eef0f2',
-                background: '#f9fafb',
+                background: '#F7F5F1',
               }}
             >
               <div>
@@ -785,7 +785,7 @@ export default function TravelTeams() {
                     border: '1.5px solid var(--navy)',
                     background: showMap ? 'var(--navy)' : 'var(--white)',
                     color: showMap ? 'var(--white)' : 'var(--navy)',
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 700,
                     cursor: 'pointer',
                     fontFamily: 'var(--font-head)',
@@ -797,16 +797,18 @@ export default function TravelTeams() {
 
                 <a
                   href="/submit"
+                  className="add-cta"
                   style={{
                     flex: 1,
                     textAlign: 'center',
                     textDecoration: 'none',
                     padding: '9px 10px',
                     borderRadius: 'var(--btn-radius)',
-                    background: 'var(--red)',
-                    color: 'white',
+                    background: '#FFFBF0',
+                    border: '2px solid #c9a84c',
+                    color: '#0d1b2e',
                     fontSize: 13,
-                    fontWeight: 700,
+                    fontWeight: 800,
                     letterSpacing: '0.01em',
                     fontFamily: 'var(--font-head)',
                     minHeight: 40,
@@ -821,7 +823,7 @@ export default function TravelTeams() {
             </div>
 
             {!isMobile && (
-              <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#f9fafb' }}>
+              <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#F7F5F1' }}>
                 <RailAdSlot slotKey="teams_left_rail_1_desktop" reservedHeight={250} />
               </div>
             )}

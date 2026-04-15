@@ -783,16 +783,18 @@ export default function CoachDirectory() {
                 </div>
                 <a
                   href="/submit"
+                  className="add-cta"
                   style={{
-                    borderRadius: 999,
-                    background: "var(--red)",
-                    color: "#fff",
+                    borderRadius: 'var(--btn-radius)',
+                    background: "#FFFBF0",
+                    border: "2px solid #c9a84c",
+                    color: "#0d1b2e",
                     textDecoration: "none",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "9px 12px",
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 800,
                     fontFamily: "var(--font-head)",
                     whiteSpace: "nowrap",
@@ -1564,7 +1566,7 @@ export default function CoachDirectory() {
                   position: "sticky",
                   top: HEADER_H + 12,
                   alignSelf: "start",
-                  background: "#f9fafb",
+                  background: "#F7F5F1",
                   borderRight: "1px solid #eef0f2",
                   zIndex: 2,
                 }}
@@ -1572,7 +1574,7 @@ export default function CoachDirectory() {
                 <div
                   style={{
                     padding: "10px 12px 8px",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                     borderBottom: "1px solid #eef0f2",
                   }}
                 >
@@ -1609,7 +1611,7 @@ export default function CoachDirectory() {
                     flexDirection: "column",
                     gap: 10,
                     borderBottom: "1px solid #eef0f2",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                   }}
                 >
                   {facilityContext && (
@@ -1879,7 +1881,7 @@ export default function CoachDirectory() {
                         border: "1.5px solid var(--navy)",
                         background: showMap ? "var(--navy)" : "var(--white)",
                         color: showMap ? "var(--white)" : "var(--navy)",
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: 700,
                         fontFamily: "var(--font-head)",
                         minHeight: 40,
@@ -1889,16 +1891,18 @@ export default function CoachDirectory() {
                     </button>
                     <a
                       href="/submit"
+                      className="add-cta"
                       style={{
                         flex: 1,
                         textAlign: "center",
                         textDecoration: "none",
                         padding: "9px 10px",
                         borderRadius: "var(--btn-radius)",
-                        background: "var(--red)",
-                        color: "white",
-                        fontSize: 12,
-                        fontWeight: 700,
+                        background: "#FFFBF0",
+                        border: "2px solid #c9a84c",
+                        color: "#0d1b2e",
+                        fontSize: 13,
+                        fontWeight: 800,
                         fontFamily: "var(--font-head)",
                         minHeight: 40,
                         display: "flex",
@@ -1914,7 +1918,7 @@ export default function CoachDirectory() {
                   style={{
                     padding: 12,
                     borderTop: "1px solid #eef0f2",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                   }}
                 >
                   <RailAdSlot
@@ -2040,7 +2044,7 @@ export default function CoachDirectory() {
                             gap: 14,
                             alignItems: "center",
                             padding: "11px 14px",
-                            background: "#f9fafb",
+                            background: "#F7F5F1",
                             borderBottom: "1px solid #eef0f2",
                             position: "sticky",
                             top: 0,

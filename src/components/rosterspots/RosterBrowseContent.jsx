@@ -40,7 +40,7 @@ export default function RosterBrowseContent({
     <div style={{ minWidth: 0 }}>
       {showFilterHeader && <div
         style={{
-          background: '#f9fafb',
+          background: '#F7F5F1',
           borderBottom: '1px solid #eef0f2',
           padding: isMobile ? '18px 14px 16px' : '22px 24px 20px',
         }}
@@ -154,17 +154,18 @@ export default function RosterBrowseContent({
             <button
               type="button"
               onClick={() => setView('post')}
+              className="add-cta"
               style={{
                 height: 42,
                 padding: '0 16px',
                 borderRadius: 'var(--btn-radius)',
-                background: 'var(--red)',
-                color: 'white',
-                border: 'none',
+                background: '#FFFBF0',
+                border: '2px solid #c9a84c',
+                color: '#0d1b2e',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 800,
                 letterSpacing: '0.04em',
                 whiteSpace: 'nowrap',
                 width: isMobile ? '100%' : 'auto',
@@ -287,15 +288,16 @@ export default function RosterBrowseContent({
             <button
               type="button"
               onClick={() => setView('post')}
+              className="add-cta"
               style={{
-                background: 'var(--red)',
-                color: 'white',
-                border: 'none',
+                background: '#FFFBF0',
+                border: '2px solid #c9a84c',
+                color: '#0d1b2e',
                 borderRadius: 10,
                 padding: '10px 16px',
                 fontFamily: 'var(--font-head)',
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 800,
                 cursor: 'pointer',
               }}
             >
