@@ -70,6 +70,46 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 - No logic, routing, schema, geocoding, or data-fetch changes introduced
 - Files changed: `src/components/HomePage.jsx`, `src/components/Header.jsx`, `src/index.css`, `src/components/home/FeaturedCard.jsx`, `src/components/home/HomePageBand.jsx`, `src/components/home/HomePageSectionHeader.jsx`
 
+
+### Directory pages visual harmonization (ui/directory-harmonize)
+- All six directory / browse pages harmonized to match the homepage visual token system
+- Filter sidebar and filter header backgrounds warmed from cold `#f9fafb` to `#F7F5F1` across:
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/Facilities.jsx`
+  - `src/components/TravelTeams.jsx`
+  - `src/components/SearchResults.jsx`
+  - `src/components/rosterspots/RosterBrowseContent.jsx`
+  - `src/components/playerboard/PlayerBoardBrowseContent.jsx`
+  - `src/components/playerboard/PlayerBoardBrowseSidebar.jsx`
+- `MobileFacilityRow.jsx` distance indicator color changed from `var(--red)` to `var(--gray)` — distance is informational, not urgent
+- All directory "add / contribute" CTA buttons (sidebar and filter bar) converted to white + gold border pattern:
+  - `background: #FFFBF0` (warm gold tint at rest)
+  - `border: 2px solid #c9a84c`
+  - `color: #0d1b2e`
+  - `fontWeight: 800`
+  - `borderRadius: var(--btn-radius)`
+  - `fontSize: 13`
+  - Hover: `background: #FEF3C7`, `border-color: #b8941f` via `.add-cta` CSS class in `index.css`
+- Submit and profile page primary action buttons (CoachSubmitForm, RosterSpots, CoachProfile, FacilityProfile, TeamProfile) converted from red to solid gold `#c9a84c` with navy text
+- All sidebar button font sizes normalized to 13px
+- All gold CTA buttons bumped to `fontWeight: 800` to match visual weight against navy buttons
+- No logic, routing, data-fetch, or map behavior changes introduced
+- Files changed:
+  - `src/index.css` (added `.add-cta` hover rule)
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/Facilities.jsx`
+  - `src/components/TravelTeams.jsx`
+  - `src/components/SearchResults.jsx`
+  - `src/components/rosterspots/RosterBrowseContent.jsx`
+  - `src/components/playerboard/PlayerBoardBrowseContent.jsx`
+  - `src/components/playerboard/PlayerBoardBrowseSidebar.jsx`
+  - `src/components/facilities/MobileFacilityRow.jsx`
+  - `src/components/CoachSubmitForm.jsx`
+  - `src/components/RosterSpots.jsx`
+  - `src/components/CoachProfile.jsx`
+  - `src/components/FacilityProfile.jsx`
+  - `src/components/TeamProfile.jsx`
+
 ### Geocoding hardening
 - Null lat/lng records no longer pass proximity filters in `CoachDirectory`, `Facilities`, `TravelTeams`, and `SearchResults`
 - Approval email shows Latitude, Longitude, and Geocode Source before admin clicks Approve
@@ -253,6 +293,12 @@ These were locked in during the `ui/track-a-polish` homepage pass and must carry
 | Card border | `#eef0f2` | Default card and tile borders |
 | Muted text | `#6B7280` | Secondary / label text |
 
+### Add CTA button pattern (directory sidebar and filter bar)
+- Rest: `background: #FFFBF0`, `border: 2px solid #c9a84c`, `color: #0d1b2e`, `fontWeight: 800`, `fontSize: 13`, `borderRadius: var(--btn-radius)`
+- Hover: `background: #FEF3C7`, `border-color: #b8941f` — applied via `.add-cta` CSS class in `src/index.css`
+- Submit / profile primary action buttons remain solid gold fill `#c9a84c` with navy text (different surface, heavier treatment appropriate)
+- Do not revert add-CTA buttons to solid gold fill or plain white
+
 ### Nav CTA pattern (locked)
 - "Add a Listing" = always solid `#0d1b2e` fill, white text, gold active underline
 - "Roster Spots" = ghost/outline via `inset 0 0 0 1.5px #0d1b2e` box-shadow, navy text, solid fill when active
@@ -290,19 +336,12 @@ These were locked in during the `ui/track-a-polish` homepage pass and must carry
 
 This is a living list and should be updated after each item is completed, merged, deferred, clarified, or replaced.
 
-### Directory pages visual harmonization (next visual task)
-- Homepage polish pass is complete and merged
-- The following pages still use cold blue-gray neutrals, stray red action links, and pre-polish color values and should be harmonized to match the homepage token system in a future session:
-  - `src/components/CoachDirectory.jsx`
-  - `src/components/Facilities.jsx`
-  - `src/components/TravelTeams.jsx`
-  - `src/components/SearchResults.jsx`
-  - `src/components/RosterSpots.jsx`
-  - `src/components/PlayerBoard.jsx`
-- Work is expected to be mostly mechanical: swap cold grays for warm equivalents, replace stray red on non-CTA links, align any action buttons to the new nav CTA pattern
-- Do not change logic, routing, data-fetch behavior, or map behavior during this pass
-- Use established brand tokens table as the source of truth — do not introduce new color values
-- Category card section on homepage is noted as still partially unfinished — not a flat-out regression, but the card structure could benefit from a later layout pass to feel more like "sports discovery feature cards" rather than "clean admin UI cards". Defer to the larger homepage refresh.
+### Directory pages visual harmonization — COMPLETED
+- Merged via `ui/directory-harmonize`
+- All six directory and browse pages now match the homepage visual token system
+- See completed section above for full file list and change details
+- Homepage category card layout is noted as “good enough for now” — a later visual pass could make cards feel more like feature / discovery cards. Defer to a future homepage refresh session.
+
 
 ### Travel teams data model / relationships
 - Reviewed current `organization / affiliation` behavior across submit, browse, and profile surfaces
@@ -376,8 +415,9 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Directory pages visual harmonization is the clearest next visual task — apply the homepage brand token system to Coach, Facilities, Teams, Search Results, Roster Spots, and Player Board pages
-- This work is style-only and should not touch logic, routing, or data behavior
+- Directory pages visual harmonization is now complete and merged
+- Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
+- Alternatively: SEO location landing pages for Teams (`/teams/:state/:city`) — low logic risk, reuses existing directory UI
 - Claimed-owner self-serve editing remains intentionally deferred
 - Anti-spam restoration should no longer be the default next-task recommendation
 - Duplicate matching behavior should not be reopened unless a real regression is found

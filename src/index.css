@@ -323,3 +323,12 @@ input:focus, select:focus, textarea:focus {
 @media (max-width: 480px) {
   .page-content { padding: 20px 12px !important; }
 }
+
+/* ── Add CTA buttons (directory sidebar / roster) ────dings */
+.add-cta {
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+.add-cta:hover {
+  background: #FEF3C7 !important;
+  border-color: #b8941f !important;
+}

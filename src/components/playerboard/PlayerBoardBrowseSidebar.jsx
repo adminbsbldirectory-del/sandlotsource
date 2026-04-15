@@ -29,7 +29,7 @@ export default function PlayerBoardBrowseSidebar({
         position: isMobile ? "static" : "sticky",
         top: isMobile ? "auto" : 76,
         alignSelf: "start",
-        background: "#f9fafb",
+        background: "#F7F5F1",
         borderRight: isMobile ? "none" : "1px solid #eef0f2",
         zIndex: 2,
       }}
@@ -37,7 +37,7 @@ export default function PlayerBoardBrowseSidebar({
       <div
         style={{
           padding: "10px 12px 8px",
-          background: "#f9fafb",
+          background: "#F7F5F1",
           borderBottom: "1px solid #eef0f2",
         }}
       >
@@ -72,7 +72,7 @@ export default function PlayerBoardBrowseSidebar({
           flexDirection: "column",
           gap: 10,
           borderBottom: "1px solid #eef0f2",
-          background: "#f9fafb",
+          background: "#F7F5F1",
         }}
       >
         <div>
@@ -212,7 +212,7 @@ export default function PlayerBoardBrowseSidebar({
               border: "1.5px solid var(--navy)",
               background: showMap ? "var(--navy)" : "var(--white)",
               color: showMap ? "var(--white)" : "var(--navy)",
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
               fontFamily: "var(--font-head)",
@@ -276,7 +276,7 @@ export default function PlayerBoardBrowseSidebar({
               color: "var(--navy)",
               fontWeight: 700,
               fontFamily: "var(--font-head)",
-              fontSize: 12,
+              fontSize: 13,
               cursor: "pointer",
             }}
           >
@@ -290,16 +290,17 @@ export default function PlayerBoardBrowseSidebar({
                 window.location.href = "/submit";
               }
             }}
+            className="add-cta"
             style={{
               width: "100%",
               minHeight: 40,
               borderRadius: "var(--btn-radius)",
-              border: "none",
-              background: "var(--red)",
-              color: "white",
-              fontWeight: 700,
+              background: "#FFFBF0",
+              border: "2px solid #c9a84c",
+              color: "#0d1b2e",
+              fontWeight: 800,
               fontFamily: "var(--font-head)",
-              fontSize: 12,
+              fontSize: 13,
               cursor: "pointer",
             }}
           >
@@ -313,7 +314,7 @@ export default function PlayerBoardBrowseSidebar({
           style={{
             padding: 12,
             borderTop: "1px solid #eef0f2",
-            background: "#f9fafb",
+            background: "#F7F5F1",
           }}
         >
           <RailAdSlot

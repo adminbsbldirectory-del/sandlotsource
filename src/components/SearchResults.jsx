@@ -299,9 +299,9 @@ export default function SearchResults() {
     <>
       <section
         style={{
-          background: '#f9fafb',
-          borderTop: '1px solid #eef0f2',
-          borderBottom: '1px solid #eef0f2',
+          background: '#F7F5F1',
+          borderTop: '1px solid #ede9e3',
+          borderBottom: '1px solid #ede9e3',
           padding: isMobile ? '16px 14px 14px' : '20px 24px 16px',
           marginTop: 16,
         }}

@@ -939,8 +939,8 @@ function CoachForm({ isMobile }) {
         onClick={handleSubmit}
         disabled={submitting}
         style={{
-          background: 'var(--red)',
-          color: 'white',
+          background: '#c9a84c',
+          color: '#0d1b2e',
           border: 'none',
           borderRadius: 8,
           padding: '12px 32px',
@@ -1463,8 +1463,8 @@ function TeamForm({ isMobile }) {
         onClick={handleSubmit}
         disabled={submitting}
         style={{
-          background: 'var(--red)',
-          color: 'white',
+          background: '#c9a84c',
+          color: '#0d1b2e',
           border: 'none',
           borderRadius: 8,
           padding: '12px 32px',
@@ -2051,8 +2051,8 @@ function PlayerForm({ isMobile }) {
         onClick={handleSubmit}
         disabled={submitting}
         style={{
-          background: 'var(--red)',
-          color: 'white',
+          background: '#c9a84c',
+          color: '#0d1b2e',
           border: 'none',
           borderRadius: 8,
           padding: '12px 32px',
@@ -2453,8 +2453,8 @@ function FacilityForm({ isMobile }) {
         onClick={handleSubmit}
         disabled={submitting}
         style={{
-          background: 'var(--red)',
-          color: 'white',
+          background: '#c9a84c',
+          color: '#0d1b2e',
           border: 'none',
           borderRadius: 8,
           padding: '12px 32px',

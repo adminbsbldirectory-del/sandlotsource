@@ -490,16 +490,18 @@ export default function Facilities() {
                 </div>
                 <a
                   href="/submit"
+                  className="add-cta"
                   style={{
                     textDecoration: 'none',
-                    borderRadius: 999,
-                    background: 'var(--red)',
-                    color: '#fff',
+                    borderRadius: 'var(--btn-radius)',
+                    background: '#FFFBF0',
+                    border: '2px solid #c9a84c',
+                    color: '#0d1b2e',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '9px 12px',
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 800,
                     fontFamily: 'var(--font-head)',
                     whiteSpace: 'nowrap',
@@ -979,12 +981,12 @@ export default function Facilities() {
                   position: 'sticky',
                   top: HEADER_H + 12,
                   alignSelf: 'start',
-                  background: '#f9fafb',
+                  background: '#F7F5F1',
                   borderRight: '1px solid #eef0f2',
                   zIndex: 2,
                 }}
               >
-                <div style={{ padding: '10px 12px 8px', background: '#f9fafb', borderBottom: '1px solid #eef0f2' }}>
+                <div style={{ padding: '10px 12px 8px', background: '#F7F5F1', borderBottom: '1px solid #eef0f2' }}>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>
                     {hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : 'Start with ZIP + radius'}
                   </div>
@@ -995,7 +997,7 @@ export default function Facilities() {
                   </div>
                 </div>
 
-                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid #eef0f2', background: '#f9fafb' }}>
+                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid #eef0f2', background: '#F7F5F1' }}>
                   <div>
                     <div style={sectionLabel}>ZIP code</div>
                     <input
@@ -1177,7 +1179,7 @@ export default function Facilities() {
                         border: '1.5px solid var(--navy)',
                         background: showMap ? 'var(--navy)' : 'var(--white)',
                         color: showMap ? 'var(--white)' : 'var(--navy)',
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: 700,
                         fontFamily: 'var(--font-head)',
                         minHeight: 40,
@@ -1188,14 +1190,16 @@ export default function Facilities() {
 
                     <a
                       href="/submit"
+                      className="add-cta"
                       style={{
                         flex: 1,
                         textAlign: 'center',
                         textDecoration: 'none',
                         padding: '9px 10px',
                         borderRadius: 'var(--btn-radius)',
-                        background: 'var(--red)',
-                        color: 'white',
+                        background: '#FFFBF0',
+                    border: '2px solid #c9a84c',
+                        color: '#0d1b2e',
                         fontSize: 12,
                         fontWeight: 700,
                         fontFamily: 'var(--font-head)',
@@ -1210,7 +1214,7 @@ export default function Facilities() {
                   </div>
                 </div>
 
-                <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#f9fafb' }}>
+                <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#F7F5F1' }}>
                   <RailAdSlot slotKey="facilities_left_rail_1_desktop" reservedHeight={250} />
                 </div>
               </aside>
@@ -1364,7 +1368,7 @@ export default function Facilities() {
                             gap: 10,
                             alignItems: 'center',
                             padding: '11px 14px',
-                            background: '#f9fafb',
+                            background: '#F7F5F1',
                             borderBottom: '1px solid #eef0f2',
                             position: 'sticky',
                             top: 0,
