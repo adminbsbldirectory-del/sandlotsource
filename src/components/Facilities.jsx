@@ -499,7 +499,7 @@ export default function Facilities() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     padding: '9px 12px',
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 800,
                     fontFamily: 'var(--font-head)',
                     whiteSpace: 'nowrap',
