@@ -568,12 +568,12 @@ export default function TravelTeams() {
               position: isMobile ? 'static' : 'sticky',
               top: isMobile ? 'auto' : HEADER_H + 12,
               alignSelf: 'start',
-              background: '#f9fafb',
+              background: '#F7F5F1',
               borderRight: isMobile ? 'none' : '1px solid #eef0f2',
               zIndex: 4,
             }}
           >
-            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #eef0f2', background: '#f9fafb' }}>
+            <div style={{ padding: '10px 12px 8px', borderBottom: '1px solid #eef0f2', background: '#F7F5F1' }}>
               <div
                 style={{
                   fontFamily: 'var(--font-head)',
@@ -599,7 +599,7 @@ export default function TravelTeams() {
                 flexDirection: 'column',
                 gap: 10,
                 borderBottom: '1px solid #eef0f2',
-                background: '#f9fafb',
+                background: '#F7F5F1',
               }}
             >
               <div>
@@ -821,7 +821,7 @@ export default function TravelTeams() {
             </div>
 
             {!isMobile && (
-              <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#f9fafb' }}>
+              <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#F7F5F1' }}>
                 <RailAdSlot slotKey="teams_left_rail_1_desktop" reservedHeight={250} />
               </div>
             )}

@@ -979,12 +979,12 @@ export default function Facilities() {
                   position: 'sticky',
                   top: HEADER_H + 12,
                   alignSelf: 'start',
-                  background: '#f9fafb',
+                  background: '#F7F5F1',
                   borderRight: '1px solid #eef0f2',
                   zIndex: 2,
                 }}
               >
-                <div style={{ padding: '10px 12px 8px', background: '#f9fafb', borderBottom: '1px solid #eef0f2' }}>
+                <div style={{ padding: '10px 12px 8px', background: '#F7F5F1', borderBottom: '1px solid #eef0f2' }}>
                   <div style={{ fontFamily: 'var(--font-head)', fontSize: 16, fontWeight: 700, color: 'var(--navy)', marginBottom: 2, lineHeight: 1.1 }}>
                     {hasLocationSearch ? `${filtered.length} facilit${filtered.length !== 1 ? 'ies' : 'y'} near you` : 'Start with ZIP + radius'}
                   </div>
@@ -995,7 +995,7 @@ export default function Facilities() {
                   </div>
                 </div>
 
-                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid #eef0f2', background: '#f9fafb' }}>
+                <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, borderBottom: '1px solid #eef0f2', background: '#F7F5F1' }}>
                   <div>
                     <div style={sectionLabel}>ZIP code</div>
                     <input
@@ -1210,7 +1210,7 @@ export default function Facilities() {
                   </div>
                 </div>
 
-                <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#f9fafb' }}>
+                <div style={{ padding: 12, borderTop: '1px solid #eef0f2', background: '#F7F5F1' }}>
                   <RailAdSlot slotKey="facilities_left_rail_1_desktop" reservedHeight={250} />
                 </div>
               </aside>
@@ -1364,7 +1364,7 @@ export default function Facilities() {
                             gap: 10,
                             alignItems: 'center',
                             padding: '11px 14px',
-                            background: '#f9fafb',
+                            background: '#F7F5F1',
                             borderBottom: '1px solid #eef0f2',
                             position: 'sticky',
                             top: 0,
@@ -1462,4 +1462,4 @@ export default function Facilities() {
       )}
     </>
   )
-}
+}                                                                                                                                                                                                                                                              

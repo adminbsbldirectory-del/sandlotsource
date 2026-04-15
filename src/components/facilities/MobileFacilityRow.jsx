@@ -66,7 +66,7 @@ export default function MobileFacilityRow({
           </div>
 
           {distanceMi != null ? (
-            <div style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: 'var(--red)', whiteSpace: 'nowrap' }}>
+            <div style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 800, color: 'var(--gray)', whiteSpace: 'nowrap' }}>
               {Math.round(distanceMi)} mi
             </div>
           ) : null}
@@ -183,4 +183,3 @@ export default function MobileFacilityRow({
       </div>
     </Link>
   )
-}

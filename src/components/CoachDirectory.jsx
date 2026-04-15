@@ -1564,7 +1564,7 @@ export default function CoachDirectory() {
                   position: "sticky",
                   top: HEADER_H + 12,
                   alignSelf: "start",
-                  background: "#f9fafb",
+                  background: "#F7F5F1",
                   borderRight: "1px solid #eef0f2",
                   zIndex: 2,
                 }}
@@ -1572,7 +1572,7 @@ export default function CoachDirectory() {
                 <div
                   style={{
                     padding: "10px 12px 8px",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                     borderBottom: "1px solid #eef0f2",
                   }}
                 >
@@ -1609,7 +1609,7 @@ export default function CoachDirectory() {
                     flexDirection: "column",
                     gap: 10,
                     borderBottom: "1px solid #eef0f2",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                   }}
                 >
                   {facilityContext && (
@@ -1914,7 +1914,7 @@ export default function CoachDirectory() {
                   style={{
                     padding: 12,
                     borderTop: "1px solid #eef0f2",
-                    background: "#f9fafb",
+                    background: "#F7F5F1",
                   }}
                 >
                   <RailAdSlot
@@ -2040,7 +2040,7 @@ export default function CoachDirectory() {
                             gap: 14,
                             alignItems: "center",
                             padding: "11px 14px",
-                            background: "#f9fafb",
+                            background: "#F7F5F1",
                             borderBottom: "1px solid #eef0f2",
                             position: "sticky",
                             top: 0,

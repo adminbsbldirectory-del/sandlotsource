@@ -40,7 +40,7 @@ export default function RosterBrowseContent({
     <div style={{ minWidth: 0 }}>
       {showFilterHeader && <div
         style={{
-          background: '#f9fafb',
+          background: '#F7F5F1',
           borderBottom: '1px solid #eef0f2',
           padding: isMobile ? '18px 14px 16px' : '22px 24px 20px',
         }}

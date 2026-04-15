@@ -29,7 +29,7 @@ export default function PlayerBoardBrowseSidebar({
         position: isMobile ? "static" : "sticky",
         top: isMobile ? "auto" : 76,
         alignSelf: "start",
-        background: "#f9fafb",
+        background: "#F7F5F1",
         borderRight: isMobile ? "none" : "1px solid #eef0f2",
         zIndex: 2,
       }}
@@ -37,7 +37,7 @@ export default function PlayerBoardBrowseSidebar({
       <div
         style={{
           padding: "10px 12px 8px",
-          background: "#f9fafb",
+          background: "#F7F5F1",
           borderBottom: "1px solid #eef0f2",
         }}
       >
@@ -72,7 +72,7 @@ export default function PlayerBoardBrowseSidebar({
           flexDirection: "column",
           gap: 10,
           borderBottom: "1px solid #eef0f2",
-          background: "#f9fafb",
+          background: "#F7F5F1",
         }}
       >
         <div>
@@ -313,7 +313,7 @@ export default function PlayerBoardBrowseSidebar({
           style={{
             padding: 12,
             borderTop: "1px solid #eef0f2",
-            background: "#f9fafb",
+            background: "#F7F5F1",
           }}
         >
           <RailAdSlot
