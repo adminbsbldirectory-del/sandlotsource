@@ -785,7 +785,8 @@ export default function CoachDirectory() {
                   href="/submit"
                   style={{
                     borderRadius: 'var(--btn-radius)',
-                    background: "#c9a84c",
+                    background: "#fff",
+                    border: "1.5px solid #c9a84c",
                     color: "#0d1b2e",
                     textDecoration: "none",
                     display: "inline-flex",
@@ -1895,7 +1896,8 @@ export default function CoachDirectory() {
                         textDecoration: "none",
                         padding: "9px 10px",
                         borderRadius: "var(--btn-radius)",
-                        background: "#c9a84c",
+                        background: "#fff",
+                        border: "1.5px solid #c9a84c",
                         color: "#0d1b2e",
                         fontSize: 13,
                         fontWeight: 800,
