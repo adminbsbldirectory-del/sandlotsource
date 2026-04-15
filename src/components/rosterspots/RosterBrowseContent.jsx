@@ -158,8 +158,8 @@ export default function RosterBrowseContent({
                 height: 42,
                 padding: '0 16px',
                 borderRadius: 'var(--btn-radius)',
-                background: 'var(--red)',
-                color: 'white',
+                background: '#c9a84c',
+                color: '#0d1b2e',
                 border: 'none',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-head)',
@@ -288,8 +288,8 @@ export default function RosterBrowseContent({
               type="button"
               onClick={() => setView('post')}
               style={{
-                background: 'var(--red)',
-                color: 'white',
+                background: '#c9a84c',
+                color: '#0d1b2e',
                 border: 'none',
                 borderRadius: 10,
                 padding: '10px 16px',
@@ -314,4 +314,4 @@ export default function RosterBrowseContent({
       </div>
     </div>
   )
-}
+}  

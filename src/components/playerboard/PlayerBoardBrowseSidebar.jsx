@@ -295,8 +295,8 @@ export default function PlayerBoardBrowseSidebar({
               minHeight: 40,
               borderRadius: "var(--btn-radius)",
               border: "none",
-              background: "var(--red)",
-              color: "white",
+              background: "#c9a84c",
+              color: "#0d1b2e",
               fontWeight: 700,
               fontFamily: "var(--font-head)",
               fontSize: 12,
@@ -324,4 +324,4 @@ export default function PlayerBoardBrowseSidebar({
       )}
     </aside>
   );
-}
+} 

@@ -493,8 +493,8 @@ export default function Facilities() {
                   style={{
                     textDecoration: 'none',
                     borderRadius: 999,
-                    background: 'var(--red)',
-                    color: '#fff',
+                    background: '#c9a84c',
+                    color: '#0d1b2e',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1194,8 +1194,8 @@ export default function Facilities() {
                         textDecoration: 'none',
                         padding: '9px 10px',
                         borderRadius: 'var(--btn-radius)',
-                        background: 'var(--red)',
-                        color: 'white',
+                        background: '#c9a84c',
+                        color: '#0d1b2e',
                         fontSize: 12,
                         fontWeight: 700,
                         fontFamily: 'var(--font-head)',
@@ -1462,4 +1462,4 @@ export default function Facilities() {
       )}
     </>
   )
-}
+} 

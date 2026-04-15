@@ -803,8 +803,8 @@ export default function TravelTeams() {
                     textDecoration: 'none',
                     padding: '9px 10px',
                     borderRadius: 'var(--btn-radius)',
-                    background: 'var(--red)',
-                    color: 'white',
+                    background: '#c9a84c',
+                    color: '#0d1b2e',
                     fontSize: 13,
                     fontWeight: 700,
                     letterSpacing: '0.01em',
@@ -1239,4 +1239,4 @@ export default function TravelTeams() {
       </div>
     </div>
   )
-}
+} 
