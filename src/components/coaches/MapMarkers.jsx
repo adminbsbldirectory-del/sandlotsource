@@ -11,14 +11,20 @@ function sportPinBackground(value) {
   return "#2563EB";
 }
 
-function makePinIcon(background, selected = false) {
+// border: gold when selected, gray when approximate (not selected), white otherwise
+// star badge: rendered outside the rotated pin shape so it appears upright
+function makePinIcon(background, selected = false, isApproximate = false, hasFeatured = false) {
   const size = selected ? 38 : 30;
   const inner = selected ? 30 : 22;
-  const border = selected ? "#F0A500" : "#FFFFFF";
+  const border = selected ? "#F0A500" : isApproximate ? "#9CA3AF" : "#FFFFFF";
+
+  const starBadge = hasFeatured
+    ? `<div style="position:absolute;top:-4px;right:-4px;width:13px;height:13px;background:#c9a84c;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#7c5800;font-weight:900;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3);">&#9733;</div>`
+    : "";
 
   return L.divIcon({
     className: "",
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${background};border:4px solid ${border};transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.32);display:flex;align-items:center;justify-content:center;"><div style="width:${inner}px;height:${inner}px;border-radius:50%;background:rgba(255,255,255,0.18);"></div></div>`,
+    html: `<div style="position:relative;display:inline-block;"><div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${background};border:4px solid ${border};transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.32);display:flex;align-items:center;justify-content:center;"><div style="width:${inner}px;height:${inner}px;border-radius:50%;background:rgba(255,255,255,0.18);"></div></div>${starBadge}</div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
     popupAnchor: [0, -size + 8],
@@ -42,7 +48,12 @@ export default function MapMarkers({
       <Marker
         key={group.key}
         position={[group.lat, group.lng]}
-        icon={makePinIcon(sportPinBackground(group.sport), isSelected)}
+        icon={makePinIcon(
+          sportPinBackground(group.sport),
+          isSelected,
+          group.isApproximate || false,
+          group.hasFeatured || false,
+        )}
         zIndexOffset={isSelected ? 1000 : 0}
         eventHandlers={{ click: () => setSelected(primaryCoach.id) }}
       >
@@ -56,6 +67,12 @@ export default function MapMarkers({
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 📍 {locationLine}
                 {group.zip ? ` ${group.zip}` : ""}
+              </div>
+            )}
+
+            {group.isApproximate && (
+              <div style={{ fontSize: 11, marginTop: 3, color: "#6B7280", fontStyle: "italic" }}>
+                General area — exact address not shown
               </div>
             )}
 
