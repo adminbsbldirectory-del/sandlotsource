@@ -66,14 +66,32 @@ function getFacilityRingBackground(facility) {
   return '#ffffff'
 }
 
-const makeIcon = (facility, selected) =>
-  L.divIcon({
+const makeIcon = (facility, selected) => {
+  const size = selected ? 38 : 30
+  const innerSize = selected ? 30 : 24
+  const isFeatured = !!facility.featured_status
+  const isApproximate = !selected && ['zip', 'approximate', 'city'].includes(
+    (facility.geocode_source || '').toLowerCase()
+  )
+  // Ring: gold when selected, gray when approximate (not selected), sport-based otherwise
+  const ringBg = selected
+    ? '#f0a500'
+    : isApproximate
+    ? '#9CA3AF'
+    : getFacilityRingBackground(facility)
+  // Gold star badge for featured, rendered outside the rotated shape so it appears upright
+  const starBadge = isFeatured
+    ? `<div style="position:absolute;top:-4px;right:-4px;width:13px;height:13px;background:#c9a84c;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#7c5800;font-weight:900;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,0.3);">&#9733;</div>`
+    : ''
+
+  return L.divIcon({
     className: '',
-    html: `<div style="width:${selected ? 38 : 30}px;height:${selected ? 38 : 30}px;display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;background:${selected ? '#f0a500' : getFacilityRingBackground(facility)};transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35);"><div style="width:${selected ? 30 : 24}px;height:${selected ? 30 : 24}px;border-radius:50% 50% 50% 0;background:${getFacilityTypeColor(facility.facility_type)};"></div></div>`,
-    iconSize: [selected ? 38 : 30, selected ? 38 : 30],
+    html: `<div style="position:relative;display:inline-block;"><div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;background:${ringBg};transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,0.35);"><div style="width:${innerSize}px;height:${innerSize}px;border-radius:50% 50% 50% 0;background:${getFacilityTypeColor(facility.facility_type)};"></div></div>${starBadge}</div>`,
+    iconSize: [size, size],
     iconAnchor: [selected ? 19 : 15, selected ? 38 : 30],
     popupAnchor: [0, -30],
   })
+}
 
 function getFacilityZip(facility) {
   return facility.zip_code || facility.zip || ''
@@ -899,6 +917,45 @@ export default function Facilities() {
                         <span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span>
                       </div>
                     ))}
+                    {/* Approximate location: gray outer ring instead of white/sport ring */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div
+                        style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50% 50% 50% 0',
+                          transform: 'rotate(-45deg)',
+                          background: '#9CA3AF',
+                          border: '2px solid rgba(255,255,255,0.9)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                        }}
+                      />
+                      <span style={{ fontSize: 11, color: 'var(--gray)' }}>Approximate Location</span>
+                    </div>
+                    {/* Featured: gold star badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div
+                        style={{
+                          width: 13,
+                          height: 13,
+                          borderRadius: '50%',
+                          background: '#c9a84c',
+                          border: '1.5px solid #fff',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 8,
+                          color: '#7c5800',
+                          fontWeight: 900,
+                          lineHeight: 1,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ★
+                      </div>
+                      <span style={{ fontSize: 11, color: 'var(--gray)' }}>Featured</span>
+                    </div>
                   </div>
 
                   <div style={{ marginTop: 8, fontSize: 12, color: 'var(--gray)' }}>
@@ -1321,6 +1378,45 @@ export default function Facilities() {
                                   <span style={{ fontSize: 11, color: 'var(--gray)' }}>{label}</span>
                                 </div>
                               ))}
+                              {/* Approximate location: gray outer ring */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div
+                                  style={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: '50% 50% 50% 0',
+                                    transform: 'rotate(-45deg)',
+                                    background: '#9CA3AF',
+                                    border: '2px solid rgba(255,255,255,0.9)',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                                  }}
+                                />
+                                <span style={{ fontSize: 11, color: 'var(--gray)' }}>Approximate Location</span>
+                              </div>
+                              {/* Featured: gold star badge */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div
+                                  style={{
+                                    width: 13,
+                                    height: 13,
+                                    borderRadius: '50%',
+                                    background: '#c9a84c',
+                                    border: '1.5px solid #fff',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: 8,
+                                    color: '#7c5800',
+                                    fontWeight: 900,
+                                    lineHeight: 1,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  ★
+                                </div>
+                                <span style={{ fontSize: 11, color: 'var(--gray)' }}>Featured</span>
+                              </div>
                             </div>
                           </div>
                         </div>

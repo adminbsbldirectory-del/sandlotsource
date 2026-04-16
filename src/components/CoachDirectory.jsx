@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -262,10 +262,24 @@ function buildMarkerGroups(coaches) {
     map.get(key).coaches.push(coach);
   }
 
-  return Array.from(map.values()).map((group) => ({
-    ...group,
-    sport: aggregateSportValue(group.coaches),
-  }));
+  return Array.from(map.values()).map((group) => {
+    const sport = aggregateSportValue(group.coaches);
+
+    // Approximate if any non-facility-linked coach at this location has ZIP/city-level geocoding.
+    // Facility-linked groups use the facility's coordinates — treat as non-approximate.
+    let isApproximate = false;
+    if (!group.facility_id) {
+      isApproximate = group.coaches.some((c) => {
+        const src = (c.geocode_source || "").toLowerCase();
+        return src === "zip" || src === "approximate" || src === "city";
+      });
+    }
+
+    // Featured if any coach at this location is featured
+    const hasFeatured = group.coaches.some((c) => !!c.featured_status);
+
+    return { ...group, sport, isApproximate, hasFeatured };
+  });
 }
 
 export default function CoachDirectory() {
@@ -304,6 +318,10 @@ export default function CoachDirectory() {
     !!zipFromUrl && zipFromUrl.length === 5,
   );
 
+  // Prevents the URL hydration effect from clearing geoCenter when the
+  // close-card handler sets it explicitly from the coach's own coordinates.
+  const skipGeoResetRef = useRef(false);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
@@ -326,7 +344,14 @@ export default function CoachDirectory() {
   setState("All States");
 
   if (zipFromUrl && zipFromUrl.length === 5) {
+    // ZIP is present — geocoding effect will set geoCenter; don't clear it.
     setIsHydratingFromUrl(true);
+    skipGeoResetRef.current = false;
+  } else if (skipGeoResetRef.current) {
+    // Close-card explicitly set geoCenter from the coach's coordinates.
+    // Preserve it so nearby coaches remain visible instead of dropping to empty state.
+    skipGeoResetRef.current = false;
+    setIsHydratingFromUrl(false);
   } else {
     setGeoCenter(null);
     setZipStatus("");
@@ -704,6 +729,22 @@ export default function CoachDirectory() {
     const clearSelectedFromUrl = () => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete("select");
+
+    // If the selected coach has usable coordinates, preserve location context
+    // so the map stays centered and nearby coaches remain visible after close.
+    // Without this, the page falls back to the empty "Start with ZIP" state.
+    if (sel?.lat != null && sel?.lng != null) {
+      skipGeoResetRef.current = true;
+      setGeoCenter({ lat: sel.lat, lng: sel.lng });
+
+      // Also inject the coach's ZIP into the URL so the sidebar helper text
+      // shows something sensible and the hydration effect re-geocodes cleanly.
+      const coachZip = getCoachZip(sel);
+      if (coachZip && coachZip.length === 5) {
+        nextParams.set("zip", coachZip);
+        if (!nextParams.has("radius")) nextParams.set("radius", String(radius));
+      }
+    }
 
     const nextSearch = nextParams.toString();
 
