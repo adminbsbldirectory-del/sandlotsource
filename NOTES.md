@@ -289,6 +289,31 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - no routing changes
   - no browse/map behavior changes
 
+### Coach map pin persistence + approximate/featured pin styling (feature/coach-map-pin-context)
+- Coach close-state fix: closing a coach detail card no longer drops the page into the empty "Start with ZIP code" state
+  - `clearSelectedFromUrl` now sets `geoCenter` directly from the selected coach's lat/lng before navigating
+  - A `skipGeoResetRef` (useRef) prevents the URL hydration effect from clearing that geoCenter on the subsequent re-render
+  - If the coach has a valid 5-digit ZIP, it is also injected into the outgoing URL so the sidebar shows correct context and the geocoding effect re-syncs cleanly in the background
+  - Only returns to the true empty state if there is no valid coach location and no existing search context
+- Approximate pin styling: coaches with `geocode_source: "zip"`, `"approximate"`, or `"city"` now show a gray border ring (`#9CA3AF`) on their map pin instead of the default white border
+  - Sport fill color (blue / yellow / split) is unchanged — approximate status is communicated only through the border
+  - Selected state still overrides to gold border regardless of approximate status
+  - Facility-linked coach groups are always treated as non-approximate (coordinates come from the facility)
+  - Popup adds an italic "General area — exact address not shown" note for approximate groups
+- Featured pin styling: coaches and facilities with `featured_status` set now display a small gold star badge (`★`) at the top-right of their map pin
+  - Badge is rendered outside the rotated diamond shape so it appears upright
+  - Sport color and approximate/exact border are both preserved alongside the star — all three signals can coexist on one pin
+- `buildMarkerGroups` in `CoachDirectory.jsx` now computes `isApproximate` and `hasFeatured` per marker group and passes them through to `MapMarkers`
+- `makeIcon` in `Facilities.jsx` updated with the same featured star badge and approximate gray-ring logic
+- Coach map legend updated to include "Approximate / General Area" (blue pin with gray border) and "Featured" (gold star circle) entries
+- Facility map legend updated on both mobile and desktop views to include "Approximate Location" and "Featured" entries
+- No changes to search behavior, card-open behavior, profile behavior, or nearby results logic beyond the close-state fix
+- Files changed:
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/Facilities.jsx`
+  - `src/components/coaches/MapMarkers.jsx`
+  - `src/components/coaches/MapLegend.jsx`
+
 ---
 
 ## Established brand tokens (do not drift from these)
@@ -343,6 +368,11 @@ These were locked in during the `ui/track-a-polish` homepage pass and must carry
 - Do not replace the current claim ownership model unless a future implementation clearly requires it
 - If claimed-owner self-serve edits are added later, build on top of existing `listing_ownerships` rather than inventing a new ownership structure
 - Homepage visual token decisions from `ui/track-a-polish` must not be reverted — see established brand tokens table above
+- Coach close-card must preserve location context (geoCenter) from the coach's own coordinates — do not revert to the empty ZIP state behavior
+- Approximate pin border (gray `#9CA3AF`) and featured star badge must be preserved across any future pin icon refactors
+- `buildMarkerGroups` must continue to compute `isApproximate` and `hasFeatured` per group
+- Coach and facility map legends must continue to include "Approximate / General Area" and "Featured" entries
+- `makeIcon` in Facilities.jsx must continue to support `isFeatured` and `isApproximate` — do not simplify back to the one-liner arrow function
 
 ---
 
@@ -428,7 +458,7 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Homepage Enter search and preview close behavior is now complete and should not be reopened unless a regression is found
+- Coach map pin persistence + approximate/featured pin styling is now complete and should not be reopened unless a regression is found
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
 - Alternatively: SEO location landing pages for Teams (`/teams/:state/:city`) — low logic risk, reuses existing directory UI
 - Claimed-owner self-serve editing remains intentionally deferred
