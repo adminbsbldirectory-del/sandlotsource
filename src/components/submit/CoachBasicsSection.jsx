@@ -58,6 +58,7 @@ export default function CoachBasicsSection({
             onChange={(e) => setField('name', e.target.value)}
             placeholder="Full name"
             style={inputStyle}
+            maxLength={80}
           />
         </div>
         <div>
