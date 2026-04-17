@@ -379,9 +379,6 @@ export default function CoachDirectory() {
     if (geo) {
       setGeoCenter(geo);
       setZipStatus("ok");
-      setState((prev) =>
-        prev === "All States" && geo.state ? geo.state : prev
-      );
     } else {
       setGeoCenter(null);
       setZipStatus("error");
@@ -423,9 +420,6 @@ export default function CoachDirectory() {
     if (geo) {
       setGeoCenter(geo);
       setZipStatus("ok");
-      if (state === "All States" && geo.state) {
-        setState(geo.state);
-      }
       setSelected(null);
       if (isMobile) {
         setMobileView("list");
