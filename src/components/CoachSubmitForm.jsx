@@ -397,10 +397,12 @@ const labelStyle = {
 
 const inputStyle = {
   width: '100%',
+  // fontSize 16 is required on iOS to prevent Safari from auto-zooming on input focus.
+  // Do not reduce this below 16 -- any smaller value triggers viewport zoom on iPhone.
   padding: '9px 12px',
   borderRadius: 8,
   border: '2px solid var(--lgray)',
-  fontSize: 14,
+  fontSize: 16,
   fontFamily: 'var(--font-body)',
   outline: 'none',
   boxSizing: 'border-box',
@@ -891,6 +893,19 @@ function CoachForm({ isMobile }) {
           setError('')
         }}
       />
+
+      <div style={{
+        fontSize: 13,
+        color: 'var(--gray)',
+        marginBottom: 20,
+        padding: '10px 14px',
+        background: '#F7F5F1',
+        borderRadius: 8,
+        borderLeft: '3px solid #c9a84c',
+        lineHeight: 1.55,
+      }}>
+        Takes about 3-5 minutes to complete. We review and publish new listings within a few days.
+      </div>
 
       <CoachBasicsSection
         form={form}
@@ -1391,6 +1406,19 @@ function TeamForm({ isMobile }) {
           value={form.companyFax}
           onChange={(e) => set('companyFax', e.target.value)}
         />
+      </div>
+
+      <div style={{
+        fontSize: 13,
+        color: 'var(--gray)',
+        marginBottom: 20,
+        padding: '10px 14px',
+        background: '#F7F5F1',
+        borderRadius: 8,
+        borderLeft: '3px solid #c9a84c',
+        lineHeight: 1.55,
+      }}>
+        Takes about 3-5 minutes to complete. We review and publish new listings within a few days.
       </div>
 
       <TeamBasicsSection
@@ -2392,6 +2420,19 @@ function FacilityForm({ isMobile }) {
           setError('')
         }}
       />
+
+      <div style={{
+        fontSize: 13,
+        color: 'var(--gray)',
+        marginBottom: 20,
+        padding: '10px 14px',
+        background: '#F7F5F1',
+        borderRadius: 8,
+        borderLeft: '3px solid #c9a84c',
+        lineHeight: 1.55,
+      }}>
+        Takes about 3-5 minutes to complete. We review and publish new listings within a few days.
+      </div>
 
       <FacilityBasicsSection
         form={form}

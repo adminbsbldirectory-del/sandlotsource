@@ -775,6 +775,90 @@ export default function HomePage() {
           </div>
         </div>
 
+        <div style={{ ...col, marginTop: 16, paddingBottom: 0 }}>
+          <section
+            style={{
+              background: '#0d1b2e',
+              borderRadius: 14,
+              padding: isMobile ? '22px 18px' : '26px 28px',
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'space-between',
+              alignItems: isMobile ? 'stretch' : 'center',
+              gap: isMobile ? 18 : 24,
+            }}
+          >
+            <div style={{ maxWidth: isMobile ? '100%' : 420 }}>
+              <h2
+                style={{
+                  fontSize: isMobile ? 22 : 18,
+                  fontWeight: 600,
+                  color: '#fff',
+                  margin: '0 0 8px',
+                  lineHeight: 1.2,
+                }}
+              >
+                Are you a coach or team?
+              </h2>
+
+              <p
+                style={{
+                  fontSize: isMobile ? 15 : 14,
+                  color: 'rgba(255,255,255,0.65)',
+                  lineHeight: 1.55,
+                  margin: 0,
+                }}
+              >
+                Add a free listing or claim an existing one to manage your profile.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: 10,
+                flexShrink: 0,
+              }}
+            >
+              <Link
+                to="/submit"
+                style={{
+                  background: '#c9a84c',
+                  color: '#0d1b2e',
+                  borderRadius: 10,
+                  padding: isMobile ? '13px 18px' : '9px 20px',
+                  fontSize: isMobile ? 16 : 14,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }}
+              >
+                Add a listing
+              </Link>
+
+              <Link
+                to="/claim"
+                style={{
+                  background: 'transparent',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: 10,
+                  padding: isMobile ? '13px 18px' : '9px 20px',
+                  fontSize: isMobile ? 16 : 14,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }}
+              >
+                Claim a listing
+              </Link>
+            </div>
+          </section>
+        </div>
+
         <HomePageBand>
           <div style={col}>
             <HomePageSectionHeader title="How it works" />
@@ -1091,90 +1175,6 @@ export default function HomePage() {
             </div>
           </div>
         </HomePageBand>
-
-        <div style={{ ...col, marginTop: 24, paddingBottom: 8 }}>
-          <section
-            style={{
-              background: '#0d1b2e',
-              borderRadius: 14,
-              padding: isMobile ? '22px 18px' : '26px 28px',
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              justifyContent: 'space-between',
-              alignItems: isMobile ? 'stretch' : 'center',
-              gap: isMobile ? 18 : 24,
-            }}
-          >
-            <div style={{ maxWidth: isMobile ? '100%' : 420 }}>
-              <h2
-                style={{
-                  fontSize: isMobile ? 22 : 18,
-                  fontWeight: 600,
-                  color: '#fff',
-                  margin: '0 0 8px',
-                  lineHeight: 1.2,
-                }}
-              >
-                Are you a coach or team?
-              </h2>
-
-              <p
-                style={{
-                  fontSize: isMobile ? 15 : 14,
-                  color: 'rgba(255,255,255,0.65)',
-                  lineHeight: 1.55,
-                  margin: 0,
-                }}
-              >
-                Add a free listing or claim an existing one to manage your profile.
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                gap: 10,
-                flexShrink: 0,
-              }}
-            >
-              <Link
-                to="/submit"
-                style={{
-                  background: '#c9a84c',
-                  color: '#0d1b2e',
-                  borderRadius: 10,
-                  padding: isMobile ? '13px 18px' : '9px 20px',
-                  fontSize: isMobile ? 16 : 14,
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                  textAlign: 'center',
-                }}
-              >
-                Add a listing
-              </Link>
-
-              <Link
-                to="/claim"
-                style={{
-                  background: 'transparent',
-                  color: '#fff',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  borderRadius: 10,
-                  padding: isMobile ? '13px 18px' : '9px 20px',
-                  fontSize: isMobile ? 16 : 14,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                  textAlign: 'center',
-                }}
-              >
-                Claim a listing
-              </Link>
-            </div>
-          </section>
-        </div>
 
         <HomePageAdBand
           slotKey={isMobile ? 'homepage_footer_1_mobile' : 'homepage_footer_1_desktop'}
