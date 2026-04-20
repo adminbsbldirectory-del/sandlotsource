@@ -289,6 +289,26 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
   - no routing changes
   - no browse/map behavior changes
 
+### Mobile conversion pass — Phase 1 (mobile/phase1-conversion-pass)
+- iOS Safari auto-zoom fix: `inputStyle.fontSize` bumped from `14` to `16` in `CoachSubmitForm.jsx`
+  - `selectStyle` and `textareaStyle` both spread from `inputStyle`, so all form controls in all four tabs (Coach, Team, Facility, Player Board) receive the fix from one change
+  - A comment was added above the fontSize value: do not reduce below 16 — any smaller value triggers viewport zoom on iPhone
+- Form expectation blurb added before the first section in Coach, Team, and Facility submit flows
+  - Warm `#F7F5F1` background, gold `#c9a84c` left border, 13px muted text
+  - Text: "Takes about 3-5 minutes to complete. We review and publish new listings within a few days."
+  - Inserted immediately above `<CoachBasicsSection`, `<TeamBasicsSection`, and `<FacilityBasicsSection` in `CoachSubmitForm.jsx`
+- Supply-side CTA ("Are you a coach or team?") moved higher on the homepage
+  - Section was cut from near the bottom of the page and reinserted immediately after the stats bar, before the category tile bands
+  - Uses `marginTop: 16` at new position (was `24` in original location)
+  - Files changed: `src/components/HomePage.jsx`
+- Removed broken "Sponsored placement" placeholder boxes from mobile search results
+  - Both `{isMobile && <div>Sponsored placement</div>}` blocks were deleted from the coach and team result sections in `SearchResultsContent.jsx`
+  - No ad logic, ad slot, or real ad behavior was changed
+- Mobile "Get Listed" CTAs on `/coaches` and `/teams` were already implemented (no change needed)
+  - `CoachDirectory.jsx`: `+ Add Coach` button in `{isMobile ? (...)}` branch with `.add-cta` class
+  - `TravelTeams.jsx`: `+ Add a Team` button in always-visible filter sidebar with `.add-cta` class
+- Files changed: `src/components/CoachSubmitForm.jsx`, `src/components/HomePage.jsx`, `src/components/search/SearchResultsContent.jsx`
+
 ### Coach map pin persistence + approximate/featured pin styling (feature/coach-map-pin-context)
 - Coach close-state fix: closing a coach detail card no longer drops the page into the empty "Start with ZIP code" state
   - `clearSelectedFromUrl` now sets `geoCenter` directly from the selected coach's lat/lng before navigating
@@ -458,7 +478,8 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Coach map pin persistence + approximate/featured pin styling is now complete and should not be reopened unless a regression is found
+- Phase 1 mobile conversion pass is now complete and deployed — do not reopen unless a regression is found
+- Next clearest mobile task: Phase 2 conversion pass — review analytics after 1-2 weeks of live traffic data to identify next friction points
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
 - Alternatively: SEO location landing pages for Teams (`/teams/:state/:city`) — low logic risk, reuses existing directory UI
 - Claimed-owner self-serve editing remains intentionally deferred
