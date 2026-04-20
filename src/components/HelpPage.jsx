@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 const sectionStyle = {
   background: '#fff',
-  border: '1px solid #e5e7eb',
+  border: '1px solid #eef0f2',
   borderRadius: 16,
   padding: '18px 18px',
 }
@@ -32,8 +32,8 @@ const paragraphStyle = {
 }
 
 const faqItemStyle = {
-  background: '#f8fafc',
-  border: '1px solid #e2e8f0',
+  background: '#F7F5F1',
+  border: '1px solid #ede9e3',
   borderRadius: 14,
   padding: '14px 14px',
 }
@@ -44,7 +44,7 @@ export default function HelpPage() {
       <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 14px 40px' }}>
         <div
           style={{
-            background: 'linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%)',
+            background: '#0d1b2e',
             color: '#fff',
             borderRadius: 18,
             padding: '22px 20px',
@@ -192,7 +192,7 @@ export default function HelpPage() {
             <div style={{ marginTop: 14 }}>
               <a
                 href="mailto:admin@sandlotsource.com"
-                style={buttonStyle('red')}
+                style={buttonStyle('gold')}
               >
                 Email Support
               </a>
@@ -265,8 +265,8 @@ function buttonStyle(variant = 'navy') {
     fontFamily: 'var(--font-head)',
     letterSpacing: '0.03em',
     border: 'none',
-    background: variant === 'red' ? 'var(--red)' : 'var(--navy)',
-    color: '#fff',
+    background: variant === 'gold' ? '#c9a84c' : 'var(--navy)',
+    color: variant === 'gold' ? '#0d1b2e' : '#fff',
   }
 }
 
