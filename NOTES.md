@@ -28,21 +28,48 @@ Running context for Sandlot Source development. Paste at the start of a new Cowo
 
 ### Standard workflow
 1. Open `C:\GitHub\sandlotsource` in VS Code
-2. Create or use a feature branch for meaningful changes
-3. Make changes locally in VS Code
-4. Test on localhost with `npm run dev`
-5. Check `git status`
-6. Commit changes
-7. Push branch
-8. Open Pull Request into `main`
-9. Merge PR
-10. Wait for Vercel production deploy
-11. Test `sandlotsource.com` live
+2. Confirm you are on `main`: `git branch`
+3. Create a feature branch: `git checkout -b feature/your-branch-name`
+4. Make changes locally in VS Code
+5. Test on localhost with `npm run dev`
+6. Check `git status`
+7. Stage only the files you intentionally changed: `git add <file1> <file2>`
+8. Commit: `git commit -m "description"`
+9. Push branch: `git push origin feature/your-branch-name`
+10. Open Pull Request into `main` on GitHub
+11. Merge PR on GitHub
+12. **Immediately after merge — post-merge checklist (see below)**
+13. Wait for Vercel production deploy
+14. Test `sandlotsource.com` live
+
+### Post-merge checklist (run these every time after merging a PR)
+```
+git checkout main
+git pull origin main
+git branch -d feature/your-branch-name
+```
+- You are still on the feature branch after a GitHub merge — always switch to main explicitly
+- Never commit or push while still on the feature branch after the PR is closed
+- Verify Vercel production deploy before calling the work done
+
+### Avoiding git pollution
+- Never run `npm install` or `npm run build` from the Cowork / Claude sandbox — only run these from your local Windows terminal
+- The sandbox runs Linux npm, which writes Linux-specific `libc` fields into `package-lock.json` and creates `dist/` artifacts — these should not be committed
+- `dist/` and `vite.config.js.timestamp*` are now in `.gitignore` — if other build artifacts appear, add them there too
+- If `package-lock.json` shows changes you didn't make, discard them: right-click in GitHub Desktop → Discard changes
+- Only stage files you explicitly changed — use `git add <specific file>` not `git add .`
+
+### Fixing common git errors
+- **`index.lock` error during `git add` or `git commit`**: `del .git\index.lock` then retry
+- **`HEAD.lock` error during `git checkout`**: `del .git\HEAD.lock` then retry
+- **Push rejected (non-fast-forward)**: you are behind origin — run `git fetch origin` then `git rebase origin/main`, then push
+- **Cannot rebase: unstaged changes**: run `git stash`, then rebase, then `git stash pop`
+- **Accidentally committed on feature branch instead of main**: commit the file on the feature branch, switch to main, pull, then `git cherry-pick <commit-hash>` to apply it to main
 
 ### Tool roles
 - VS Code = code editing
 - Terminal = source of truth for git status / branch / local testing
-- GitHub Desktop = visual check for changes, history, branch switching, pushing
+- GitHub Desktop = visual check for staged changes before committing; use it to confirm only the right files are checked
 - Vercel = preview vs production deployment check
 
 ### Safe branch setup
