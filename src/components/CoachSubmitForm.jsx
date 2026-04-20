@@ -2553,9 +2553,9 @@ export default function CoachSubmitForm() {
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
             border: 'none',
-            borderBottom: activeTab === tab.id ? '3px solid var(--red)' : '3px solid transparent',
+            borderBottom: activeTab === tab.id ? '3px solid #c9a84c' : '3px solid transparent',
             background: 'transparent',
-            color: activeTab === tab.id ? 'var(--red)' : 'var(--gray)',
+            color: activeTab === tab.id ? 'var(--navy)' : 'var(--gray)',
             cursor: 'pointer',
             marginBottom: -2,
           }

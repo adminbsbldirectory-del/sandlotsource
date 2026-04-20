@@ -2,12 +2,12 @@ import { useRef, useState } from 'react'
 import { isSpamSubmission, withSpamProtection } from '../utils/formSpamProtection'
 import { supabase } from '../supabase'
 
-const BORDER = '#eaeae6'
-const RED = '#D42B2B'
-const DARK = '#1a1a1a'
-const MUTED = '#666'
-const LIGHT = '#fafaf8'
-const NAVY = '#0B1F3A'
+const BORDER = '#eef0f2'
+const GOLD = '#c9a84c'
+const DARK = '#0d1b2e'
+const MUTED = '#6B7280'
+const LIGHT = '#F7F5F1'
+const NAVY = '#0d1b2e'
 
 function SectionCard({ title, children }) {
   return (
@@ -72,7 +72,7 @@ function SpecCard({ title, size, details }) {
           fontWeight: 700,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          color: RED,
+          color: NAVY,
           marginBottom: 8,
         }}
       >
@@ -291,7 +291,7 @@ export default function AdvertisePage() {
         style={{
           background: '#fff',
           border: `1px solid ${BORDER}`,
-          borderTop: `4px solid ${RED}`,
+          borderTop: `4px solid ${GOLD}`,
           borderRadius: 14,
           padding: '24px',
           marginBottom: 18,
@@ -303,7 +303,7 @@ export default function AdvertisePage() {
             fontWeight: 700,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            color: RED,
+            color: GOLD,
             marginBottom: 8,
           }}
         >
@@ -652,8 +652,8 @@ export default function AdvertisePage() {
                 padding: '10px 16px',
                 borderRadius: 10,
                 border: 'none',
-                background: submitting ? '#cc6b6b' : RED,
-                color: '#fff',
+                background: submitting ? '#b8941f' : GOLD,
+                color: '#0d1b2e',
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: submitting ? 'default' : 'pointer',
