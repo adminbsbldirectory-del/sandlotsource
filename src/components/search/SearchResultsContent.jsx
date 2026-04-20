@@ -355,23 +355,6 @@ export default function SearchResultsContent({
                           View all coaches →
                         </Link>
                       </div>
-                      {isMobile && (
-                        <div style={{ marginTop: 14 }}>
-                          <div
-                            style={{
-                              border: '1px solid #eef0f2',
-                              borderRadius: 10,
-                              padding: '16px 14px',
-                              textAlign: 'center',
-                              color: MUTED,
-                              fontSize: 12,
-                              background: '#f8fafb',
-                            }}
-                          >
-                            Sponsored placement
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
@@ -416,23 +399,6 @@ export default function SearchResultsContent({
                           View all teams →
                         </Link>
                       </div>
-                      {isMobile && (
-                        <div style={{ marginTop: 14 }}>
-                          <div
-                            style={{
-                              border: '1px solid #eef0f2',
-                              borderRadius: 10,
-                              padding: '16px 14px',
-                              textAlign: 'center',
-                              color: MUTED,
-                              fontSize: 12,
-                              background: '#f8fafb',
-                            }}
-                          >
-                            Sponsored placement
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
