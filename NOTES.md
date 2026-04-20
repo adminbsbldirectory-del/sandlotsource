@@ -316,6 +316,13 @@ git branch -d feature/your-branch-name
   - no routing changes
   - no browse/map behavior changes
 
+### Content page visual harmonization (ui/content-page-harmonize)
+- `AdvertisePage.jsx`: updated constants to brand tokens — `DARK` → `#0d1b2e`, `LIGHT` → `#F7F5F1`, `BORDER` → `#eef0f2`, `MUTED` → `#6B7280`, `NAVY` → `#0d1b2e`; removed `RED` constant entirely; hero card top border changed from red to gold `#c9a84c`; eyebrow "Sandlot Source" label changed from red to gold; SpecCard category label changed from red to navy; submit button changed from red to gold fill with dark navy text
+- `HelpPage.jsx`: hero section changed from blue gradient (`#1e3a8a`) to solid navy `#0d1b2e`; `sectionStyle` border warmed from `#e5e7eb` to `#eef0f2`; `faqItemStyle` background warmed from cold `#f8fafc` to `#F7F5F1`, border from `#e2e8f0` to `#ede9e3`; "Email Support" button changed from red to gold fill with dark navy text
+- `CoachSubmitForm.jsx` tab shell: active tab underline changed from `var(--red)` to gold `#c9a84c`; active tab text changed from `var(--red)` to `var(--navy)`; required field asterisks intentionally kept red (standard form UX)
+- Visual-only pass — no logic, routing, schema, or data-fetch changes
+- Files changed: `src/components/AdvertisePage.jsx`, `src/components/HelpPage.jsx`, `src/components/CoachSubmitForm.jsx`
+
 ### Mobile conversion pass — Phase 1 (mobile/phase1-conversion-pass)
 - iOS Safari auto-zoom fix: `inputStyle.fontSize` bumped from `14` to `16` in `CoachSubmitForm.jsx`
   - `selectStyle` and `textareaStyle` both spread from `inputStyle`, so all form controls in all four tabs (Coach, Team, Facility, Player Board) receive the fix from one change
@@ -507,6 +514,7 @@ This is a living list and should be updated after each item is completed, merged
 ## Recommended next task
 - Phase 1 mobile conversion pass is now complete and deployed — do not reopen unless a regression is found
 - Next clearest mobile task: Phase 2 conversion pass — review analytics after 1-2 weeks of live traffic data to identify next friction points
+- Content page harmonization (AdvertisePage, HelpPage, submit tab shell) is complete — do not reopen unless a regression is found
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
 - Alternatively: SEO location landing pages for Teams (`/teams/:state/:city`) — low logic risk, reuses existing directory UI
 - Claimed-owner self-serve editing remains intentionally deferred
