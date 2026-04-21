@@ -395,6 +395,20 @@ git branch -d feature/your-branch-name
   - `api/sitemap.js` (new)
   - `public/robots.txt` (new)
 
+### Homepage category card refresh (ui/homepage-category-card-refresh)
+- Category card section redesigned from horizontal navigation tiles to vertical discovery cards
+- Icon treatment changed: navy `#0d1b2e` container with gold `#c9a84c` icon (was light gray container with navy icon)
+- Card layout switched from horizontal flex row (icon + text + arrow) to vertical flex column (icon → title → body → CTA)
+- Card padding increased: `24px 22px 20px` desktop / `20px 18px 16px` mobile; border-radius bumped to `12`
+- Title hierarchy strengthened: `17px / fontWeight 700` desktop, `18px` mobile (was `15px / 600`)
+- Body copy improved per card with actionable filter/search guidance cues
+- Explicit CTA row added at bottom of each card: "Browse coaches →", "Browse facilities →", "Browse teams →", "View open needs →"
+- Section subtitle added below section header: "Start here — browse coaches, teams, facilities, and open roster spots in your area."
+- Grid gap bumped from `12` to `14`
+- Existing `.home-category-card:hover` CSS rule in `index.css` unchanged — still applies correctly
+- No routing, search, data logic, schema, or surrounding section changes
+- Files changed: `src/components/HomePage.jsx` only
+
 ### Coach map pin persistence + approximate/featured pin styling (feature/coach-map-pin-context)
 - Coach close-state fix: closing a coach detail card no longer drops the page into the empty "Start with ZIP code" state
   - `clearSelectedFromUrl` now sets `geoCenter` directly from the selected coach's lat/lng before navigating
@@ -490,7 +504,6 @@ This is a living list and should be updated after each item is completed, merged
 - Merged via `ui/directory-harmonize`
 - All six directory and browse pages now match the homepage visual token system
 - See completed section above for full file list and change details
-- Homepage category card layout is noted as “good enough for now” — a later visual pass could make cards feel more like feature / discovery cards. Defer to a future homepage refresh session.
 
 ### Travel teams data model / relationships
 - Reviewed current `organization / affiliation` behavior across submit, browse, and profile surfaces
@@ -556,7 +569,6 @@ This is a living list and should be updated after each item is completed, merged
 - Recent small wording and placeholder passes are now complete across the most obvious public-facing surfaces
 - If any future wording cleanup happens, keep it very tightly scoped and wording-only
 - Do not reopen copy-only cleanup unless a clearly visible straggler is found
-- Homepage category card section noted as needing a future layout pass for more "feature card" presence — defer to larger homepage refresh session
 
 ---
 
@@ -567,8 +579,9 @@ This is a living list and should be updated after each item is completed, merged
 - Phase 1 mobile conversion pass is complete and deployed — do not reopen unless a regression is found
 - Next clearest mobile task: Phase 2 conversion pass — review analytics after 1-2 weeks of live traffic data to identify next friction points
 - Content page harmonization (AdvertisePage, HelpPage, submit tab shell) is complete — do not reopen unless a regression is found
-- Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
-- SEO location landing pages are complete — submit sitemap to Google Search Console (`https://www.sandlotsource.com/api/sitemap`) to accelerate indexing
+- Homepage category card layout pass is complete and deployed — do not reopen unless a regression is found
+- Next clearest visual task: revisit advertising backlog — audit what is still relevant vs. obsolete before reopening any ad work
+- SEO location landing pages are complete — submit sitemap to Google Search Console (`https://www.sandlotsource.com/api/sitemap`) to accelerate indexing (quick win, no code required)
 - Claimed-owner self-serve editing remains intentionally deferred
 - Anti-spam restoration should no longer be the default next-task recommendation
 - Duplicate matching behavior should not be reopened unless a real regression is found
