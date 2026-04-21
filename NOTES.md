@@ -367,6 +367,19 @@ git branch -d feature/your-branch-name
 - All changes committed directly to `main` (no feature branch — acceptable for this session)
 - Files changed: `index.html`, `public/favicon.ico`, `public/favicon-16x16.png`, `public/favicon-32x32.png`, `public/apple-touch-icon.png`, `public/android-chrome-192x192.png`, `public/android-chrome-512x512.png`, `public/site.webmanifest`, `public/logo2.png`, `public/logo2.svg`, `src/components/Header.jsx`
 
+### Mobile ?select= auto-open + geoCenter seed (bugfix/mobile-select-auto-open)
+- Fixed two mobile bugs triggered when arriving at a directory page via `?select=<id>` with no `?zip=` param (e.g. clicking "View Profile" from homepage search results)
+- **Bug 1 — card doesn't auto-open on mobile**: On `CoachDirectory` mobile, arriving with `?select=` showed a "SELECTED COACH" banner requiring a second "View" tap. On desktop the `CoachDetailPanel` opens immediately. Fix: added a `useEffect` (`hasAutoOpenedRef` guard) that calls `setProfileCoach(sel)` once on mobile when `selectedFromUrl` is set and data has loaded. Same fix applied to `TravelTeams` — calls `setProfileTeam(selectedTeam)` on mobile arrival.
+- **Bug 2 — map shows empty / "Start with ZIP"**: Without a `?zip=` param, `geoCenter` was null and `hasLocationSearch` was false, so the mobile map and coach list showed nothing. Fix: added a `useEffect` (`hasAutoSeededGeoRef` guard) that seeds `geoCenter` directly from the selected item's lat/lng after data loads, making `hasLocationSearch` true and populating the map and list. ZIP input field is also populated from the coach's own ZIP so sidebar helper text reads correctly.
+- Same geoCenter-seed fix applied to `Facilities.jsx` — uses `initialSelectParamRef` (captured at mount) so it is stable even as `setSearchParams` rewrites the URL during normal browse interactions; also sets `zipStatus = 'ok'` since Facilities requires both for `hasLocationSearch`.
+- **Important implementation note**: The geoCenter-seed effect in `CoachDirectory` references `resolvedCoaches` in its dependency array. It must be declared **after** the `resolvedCoaches` useMemo in the file — React evaluates the dependency array immediately when `useEffect()` is called, so declaring the effect before `resolvedCoaches` causes a TDZ (`ReferenceError: Cannot access before initialization`) crash. Both effects are placed after the `sel` useMemo and selection-guard effect (~line 680+).
+- Desktop behavior unchanged — `CoachDetailPanel` still opens automatically via JSX conditional, `TeamPreviewCard` still opens on desktop row click.
+- No changes to search/map handoff logic, ZIP geocoding flow, close-card behavior, or any other existing behavior.
+- Files changed:
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/TravelTeams.jsx`
+  - `src/components/Facilities.jsx`
+
 ### Coach map pin persistence + approximate/featured pin styling (feature/coach-map-pin-context)
 - Coach close-state fix: closing a coach detail card no longer drops the page into the empty "Start with ZIP code" state
   - `clearSelectedFromUrl` now sets `geoCenter` directly from the selected coach's lat/lng before navigating
@@ -451,6 +464,8 @@ These were locked in during the `ui/track-a-polish` homepage pass and must carry
 - `buildMarkerGroups` must continue to compute `isApproximate` and `hasFeatured` per group
 - Coach and facility map legends must continue to include "Approximate / General Area" and "Featured" entries
 - `makeIcon` in Facilities.jsx must continue to support `isFeatured` and `isApproximate` — do not simplify back to the one-liner arrow function
+- Mobile `?select=` auto-open effects (`hasAutoOpenedRef`) and geoCenter-seed effects (`hasAutoSeededGeoRef`) in `CoachDirectory`, `TravelTeams`, and `Facilities` must remain in place — they fix the two-tap and empty-map mobile bugs
+- The geoCenter-seed effect in `CoachDirectory` must remain declared **after** the `resolvedCoaches` useMemo — moving it earlier causes a TDZ crash
 
 ---
 
@@ -540,6 +555,7 @@ This is a living list and should be updated after each item is completed, merged
 - Header logo is replaced with new horizontal lockup — do not reopen unless a visual issue is found
 - Safari Favorites tile behavior is a known Safari limitation for new sites — not a code bug; revisit only if Safari changes its behavior
 - Phase 1 mobile conversion pass is complete and deployed — do not reopen unless a regression is found
+- Mobile `?select=` auto-open and geoCenter-seed fix is complete — do not reopen unless a regression is found
 - Next clearest mobile task: Phase 2 conversion pass — review analytics after 1-2 weeks of live traffic data to identify next friction points
 - Content page harmonization (AdvertisePage, HelpPage, submit tab shell) is complete — do not reopen unless a regression is found
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
