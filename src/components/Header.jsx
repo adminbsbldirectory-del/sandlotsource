@@ -152,9 +152,9 @@ export default function Header() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            padding: isMobile ? '7px 0' : '10px 0',
+            padding: isMobile ? '8px 0' : '10px 0',
             gap: 16,
-            minHeight: isMobile ? 58 : 84,
+            minHeight: isMobile ? 68 : 84,
           }}
         >
           <button
@@ -172,10 +172,10 @@ export default function Header() {
             }}
           >
             <img
-              src="/logo.png"
+              src="/logo2.svg"
               alt="Sandlot Source"
               style={{
-                height: isMobile ? 42 : 84,
+                height: isMobile ? 52 : 84,
                 width: 'auto',
                 display: 'block',
                 objectFit: 'contain',
