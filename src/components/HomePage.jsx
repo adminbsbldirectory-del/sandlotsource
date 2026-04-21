@@ -439,26 +439,30 @@ export default function HomePage() {
     {
       to: '/coaches',
       Icon: Target,
-      title: 'Find Instruction',
-      body: 'Private coaches, hitting labs, pitching specialists, catching coaches, and strength trainers.',
+      title: 'Find a Coach',
+      body: 'Private coaches, hitting specialists, pitching instructors, catching coaches, and strength trainers. Filter by sport, age group, and distance.',
+      cta: 'Browse coaches',
     },
     {
       to: '/facilities',
       Icon: Building2,
       title: 'Find a Facility',
-      body: 'Training facilities, batting cages, indoor complexes, and practice venues near you.',
+      body: 'Training facilities, batting cages, indoor complexes, and practice venues. Filter by sport, facility type, and location.',
+      cta: 'Browse facilities',
     },
     {
       to: '/teams',
       Icon: Shield,
       title: 'Find a Team',
-      body: 'Travel teams, open rosters, and tryout opportunities by age group and area.',
+      body: 'Travel teams with open tryouts, year-round programs, and available roster spots. Search by age group and area.',
+      cta: 'Browse teams',
     },
     {
       to: '/find',
       Icon: Handshake,
-      title: 'Pickup Help / Looking to Play',
-      body: 'Need a player, a team, or a game? Browse or post urgent needs fast.',
+      title: 'Pickup & Open Spots',
+      body: 'Need a player or looking for a game? Browse and post urgent roster needs and pickup opportunities — updated in real time.',
+      cta: 'View open needs',
     },
   ]
 
@@ -935,11 +939,22 @@ export default function HomePage() {
           <div style={col}>
           <HomePageSectionHeader title="What are you looking for?" />
 
+          <p
+            style={{
+              fontSize: isMobile ? 14 : 13,
+              color: MUTED,
+              margin: '-2px 0 16px',
+              lineHeight: 1.5,
+            }}
+          >
+            Start here — browse coaches, teams, facilities, and open roster spots in your area.
+          </p>
+
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-              gap: 12,
+              gap: 14,
             }}
           >
             {actionRows.map((card) => (
@@ -949,70 +964,72 @@ export default function HomePage() {
                 className="home-category-card"
                 style={{
                   border: '1px solid #eef0f2',
-                  borderRadius: 10,
-                  padding: isMobile ? '16px 14px' : '18px 16px 14px',
+                  borderRadius: 12,
+                  padding: isMobile ? '20px 18px 16px' : '24px 22px 20px',
                   background: '#fff',
                   textDecoration: 'none',
                   color: 'inherit',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 14,
-                  minHeight: isMobile ? 60 : 'auto',
+                  flexDirection: 'column',
                   boxShadow: '0 1px 6px rgba(13,27,46,0.07)',
                   transition: 'box-shadow 0.18s, border-color 0.18s',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-                  <div
-                    style={{
-                      width: isMobile ? 48 : 44,
-                      height: isMobile ? 48 : 44,
-                      borderRadius: 12,
-                      background: '#f0f4f8',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <card.Icon size={32} color="#0d1b2e" strokeWidth={1.75} />
-                  </div>
-
-                  <div style={{ minWidth: 0 }}>
-                    <h3
-                      style={{
-                        fontSize: isMobile ? 18 : 15,
-                        fontWeight: 600,
-                        color: DARK,
-                        margin: '0 0 4px',
-                      }}
-                    >
-                      {card.title}
-                    </h3>
-
-                    <p
-                      style={{
-                        fontSize: isMobile ? 13 : 14,
-                        color: MUTED,
-                        lineHeight: 1.5,
-                        margin: 0,
-                      }}
-                    >
-                      {card.body}
-                    </p>
-                  </div>
-                </div>
-
-                <span
+                <div
                   style={{
-                    fontSize: isMobile ? 22 : 14,
-                    color: '#0d1b2e',
+                    width: isMobile ? 48 : 52,
+                    height: isMobile ? 48 : 52,
+                    borderRadius: 12,
+                    background: '#0d1b2e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     flexShrink: 0,
+                    marginBottom: 16,
                   }}
                 >
-                  &rarr;
-                </span>
+                  <card.Icon size={24} color="#c9a84c" strokeWidth={1.75} />
+                </div>
+
+                <h3
+                  style={{
+                    fontSize: isMobile ? 18 : 17,
+                    fontWeight: 700,
+                    color: DARK,
+                    margin: '0 0 8px',
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {card.title}
+                </h3>
+
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: MUTED,
+                    lineHeight: 1.55,
+                    margin: 0,
+                    flex: 1,
+                  }}
+                >
+                  {card.body}
+                </p>
+
+                <div
+                  style={{
+                    marginTop: 18,
+                    paddingTop: 14,
+                    borderTop: '1px solid #eef0f2',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#0d1b2e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {card.cta} <span style={{ fontSize: 15 }}>&rarr;</span>
+                </div>
               </Link>
             ))}
           </div>
