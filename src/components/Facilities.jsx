@@ -167,6 +167,11 @@ export default function Facilities() {
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
   const [searchParams, setSearchParams] = useSearchParams()
+  // Capture the ?select= param at mount so the seed effect is stable even
+  // as setSearchParams rewrites the URL during normal browse interactions.
+  const initialSelectParamRef = useRef(String(searchParams.get('select') || ''))
+  // Seed geoCenter once per URL-driven selection with no ZIP.
+  const hasAutoSeededGeoRef = useRef(false)
 
   const initialSport = (() => {
     const raw = String(searchParams.get('sport') || '').trim().toLowerCase()
@@ -274,6 +279,24 @@ export default function Facilities() {
       setMapFocus({ id: String(selected), lat: match.lat, lng: match.lng, nonce: Date.now() })
     }
   }, [selected, facilities])
+
+  // When the page is reached via ?select=<id> with no ?zip=, seed geoCenter
+  // from the selected facility's coordinates so the map and list show results
+  // instead of an empty "Start with ZIP" state. Fires once after data loads.
+  useEffect(() => {
+    const selectId = initialSelectParamRef.current
+    if (!selectId) return
+    if (initialZip.length === 5) return // ZIP already being geocoded
+    if (hasAutoSeededGeoRef.current) return
+    if (facilities.length === 0) return
+
+    const match = facilities.find((f) => f.id === selectId)
+    if (!match || match.lat == null || match.lng == null) return
+
+    hasAutoSeededGeoRef.current = true
+    setGeoCenter({ lat: match.lat, lng: match.lng })
+    setZipStatus('ok')
+  }, [facilities, initialZip])
 
   const browseParamsString = useMemo(() => {
     const params = new URLSearchParams()

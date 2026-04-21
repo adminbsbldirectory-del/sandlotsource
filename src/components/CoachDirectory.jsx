@@ -322,6 +322,14 @@ export default function CoachDirectory() {
   // close-card handler sets it explicitly from the coach's own coordinates.
   const skipGeoResetRef = useRef(false);
 
+  // Used by the geoCenter-seed effect so it only runs once per URL-driven
+  // selection, not on every re-render after coaches load.
+  const hasAutoSeededGeoRef = useRef(false);
+
+  // Used by the mobile auto-open effect so we open the profile card exactly
+  // once per arrival, not every time sel changes.
+  const hasAutoOpenedRef = useRef(false);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
@@ -667,6 +675,52 @@ export default function CoachDirectory() {
   geoCenter,
   facilityFromUrl,
 ]);
+
+  // When the page is reached via ?select=<id> with no ?zip=, seed geoCenter
+  // from the selected coach's coordinates so the map and nearby list are
+  // populated instead of showing an empty "Start with ZIP" state.
+  // Placed here (after resolvedCoaches useMemo) to avoid a TDZ error — the
+  // dependency array is evaluated immediately when useEffect() is called, so
+  // resolvedCoaches must already be declared at this point in the file.
+  useEffect(() => {
+    if (!selectedFromUrl) {
+      hasAutoSeededGeoRef.current = false;
+      return;
+    }
+    // A valid ZIP param is already being geocoded — let that effect win.
+    if (zipFromUrl && zipFromUrl.length === 5) return;
+    if (hasAutoSeededGeoRef.current) return;
+
+    const match = resolvedCoaches.find((c) => c.id === selectedFromUrl);
+    if (!match || match.lat == null || match.lng == null) return;
+
+    hasAutoSeededGeoRef.current = true;
+    setGeoCenter({ lat: match.lat, lng: match.lng });
+    setZipStatus('ok');
+
+    // Populate the ZIP input so the sidebar helper text reads sensibly.
+    const coachZip = getCoachZip(match);
+    if (coachZip && coachZip.length === 5) {
+      setZip(coachZip);
+    }
+  }, [resolvedCoaches, selectedFromUrl, zipFromUrl]);
+
+  // On mobile, immediately open the coach profile card when the page is
+  // reached via ?select=<id> — matches desktop behaviour (CoachDetailPanel
+  // opens instantly) and skips the secondary "View" tap on the banner.
+  useEffect(() => {
+    if (!isMobile) return;
+    if (!selectedFromUrl) {
+      hasAutoOpenedRef.current = false;
+      return;
+    }
+    if (loading) return;
+    if (!sel) return;
+    if (hasAutoOpenedRef.current) return;
+
+    hasAutoOpenedRef.current = true;
+    setProfileCoach(sel);
+  }, [isMobile, selectedFromUrl, loading, sel]);
 
   function getDistance(coach) {
     if (!geoCenter || coach.lat == null || coach.lng == null) return null;

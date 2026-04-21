@@ -265,6 +265,10 @@ export default function TravelTeams() {
   const popupRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
+  // Seed geoCenter once per URL-driven selection (no ZIP provided).
+  const hasAutoSeededGeoRef = useRef(false)
+  // Open team profile once per mobile arrival via ?select=.
+  const hasAutoOpenedRef = useRef(false)
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -393,6 +397,26 @@ export default function TravelTeams() {
       active = false
     }
   }, [zip])
+
+  // When the page is reached via ?select=<id> with no ZIP, seed geoCenter
+  // from the selected team's coordinates so the map has results instead of
+  // showing an empty state. Fires once after teams load.
+  useEffect(() => {
+    if (!selectedTeamIdFromUrl) {
+      hasAutoSeededGeoRef.current = false
+      return
+    }
+    // If the user already entered a ZIP let the zip geocoding effect handle it.
+    if (zip && zip.length === 5) return
+    if (hasAutoSeededGeoRef.current) return
+    if (teams.length === 0) return
+
+    const match = teams.find((t) => t.id === selectedTeamIdFromUrl)
+    if (!match || match.lat == null || match.lng == null) return
+
+    hasAutoSeededGeoRef.current = true
+    setGeoCenter({ lat: match.lat, lng: match.lng })
+  }, [teams, selectedTeamIdFromUrl, zip])
 
   const selectedState = useMemo(
     () => US_STATES.find((s) => s.abbr === state),
@@ -539,6 +563,22 @@ export default function TravelTeams() {
       { replace: true }
     )
   }
+
+  // On mobile, immediately open the team profile when the page is reached via
+  // ?select=<id> — skips the extra tap the user would otherwise need.
+  useEffect(() => {
+    if (!isMobile) return
+    if (!selectedTeamIdFromUrl) {
+      hasAutoOpenedRef.current = false
+      return
+    }
+    if (loading) return
+    if (!selectedTeam) return
+    if (hasAutoOpenedRef.current) return
+
+    hasAutoOpenedRef.current = true
+    setProfileTeam(selectedTeam)
+  }, [isMobile, selectedTeamIdFromUrl, loading, selectedTeam])
 
   return (
     <div style={!isMobile ? { background: '#fff' } : undefined}>
