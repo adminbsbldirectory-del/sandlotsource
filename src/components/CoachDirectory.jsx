@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { ensureLeafletDefaultMarkerIcons } from "../lib/leafletInit";
@@ -78,6 +78,24 @@ const US_STATES = [
   "WI",
   "WY",
 ];
+
+// Maps URL slugs like "georgia" / "new-jersey" to their state abbreviation.
+// Used by location landing pages (/coaches/:state/:city) to pre-seed the state filter.
+const STATE_SLUG_TO_ABBR = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+  'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+  'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new-hampshire': 'NH', 'new-jersey': 'NJ', 'new-mexico': 'NM', 'new-york': 'NY',
+  'north-carolina': 'NC', 'north-dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+  'oregon': 'OR', 'pennsylvania': 'PA', 'rhode-island': 'RI', 'south-carolina': 'SC',
+  'south-dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+  'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west-virginia': 'WV',
+  'wisconsin': 'WI', 'wyoming': 'WY',
+}
 
 function getSportBadgeMeta(value) {
   const sport = normalizeSportValue(value);
@@ -285,6 +303,18 @@ function buildMarkerGroups(coaches) {
 export default function CoachDirectory() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { state: stateParam, city: cityParam } = useParams()
+
+  // Location landing page context — only set when routed via /coaches/:state/:city.
+  // locationState / locationCity are display-formatted (title-cased, spaces restored).
+  // locationStateAbbr is the two-letter abbreviation used by the existing state filter.
+  const locationState = stateParam
+    ? stateParam.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  const locationCity = cityParam
+    ? cityParam.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  const locationStateAbbr = stateParam ? (STATE_SLUG_TO_ABBR[stateParam.toLowerCase()] || '') : ''
 
   const [coaches, setCoaches] = useState([]);
   const [facilities, setFacilities] = useState([]);
@@ -298,9 +328,11 @@ export default function CoachDirectory() {
   const [selected, setSelected] = useState(() => selectedFromUrl);
   const [sport, setSport] = useState(sportFromUrl);
   const [specialty, setSpecialty] = useState("All Specialties");
-  const [state, setState] = useState("All States");
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  // Pre-seed from location URL param when present; otherwise default to "All States".
+  const [state, setState] = useState(locationStateAbbr || "All States");
+  // Pre-seed keyword search from city URL param so the location list auto-filters.
+  const [searchInput, setSearchInput] = useState(locationCity || "");
+  const [search, setSearch] = useState(locationCity || "");
   const [profileCoach, setProfileCoach] = useState(null);
   const [showMap, setShowMap] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 768 : true,
@@ -330,6 +362,21 @@ export default function CoachDirectory() {
   // once per arrival, not every time sel changes.
   const hasAutoOpenedRef = useRef(false);
 
+  // Set dynamic page title and meta description for location landing pages.
+  useEffect(() => {
+    if (locationCity && locationState) {
+      document.title = `Baseball & Softball Coaches in ${locationCity}, ${locationState} — Sandlot Source`
+      const meta = document.querySelector('meta[name="description"]')
+      if (meta) meta.setAttribute('content',
+        `Browse baseball and softball coaches in ${locationCity}, ${locationState}. Find travel coaches, hitting instructors, pitching coaches, and more on Sandlot Source.`)
+    }
+    return () => {
+      if (locationCity && locationState) {
+        document.title = 'Sandlot Source — Baseball & Softball Coaches, Teams & Rosters'
+      }
+    }
+  }, [locationCity, locationState])
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
@@ -349,7 +396,8 @@ export default function CoachDirectory() {
   setZip(zipFromUrl);
   setRadius(radiusFromUrl);
   setSport(sportFromUrl);
-  setState("All States");
+  // On location pages preserve the pre-seeded state; otherwise reset to default.
+  setState(locationStateAbbr || "All States");
 
   if (zipFromUrl && zipFromUrl.length === 5) {
     // ZIP is present — geocoding effect will set geoCenter; don't clear it.
@@ -537,7 +585,9 @@ export default function CoachDirectory() {
   }, [coaches, facilityMap]);
 
   const baseFiltered = useMemo(() => {
-    if (!geoCenter && !facilityFromUrl) return [];
+    // On location landing pages (/coaches/:state/:city) we have no ZIP/geoCenter yet
+    // but still want to show state+city-filtered results for SEO and usability.
+    if (!geoCenter && !facilityFromUrl && !locationStateAbbr) return [];
 
     return resolvedCoaches
       .filter((c) => {
@@ -625,6 +675,7 @@ export default function CoachDirectory() {
     geoCenter,
     radius,
     facilityFromUrl,
+    locationStateAbbr,
   ]);
 
   const filtered = useMemo(() => {
@@ -843,6 +894,16 @@ export default function CoachDirectory() {
 
       {isMobile ? (
         <div style={{ background: "#fff", minHeight: "100vh" }}>
+          {locationCity && locationState && (
+            <div style={{ padding: '16px 12px 0' }}>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0d1b2e', margin: 0, lineHeight: 1.2 }}>
+                Baseball &amp; Softball Coaches in {locationCity}, {locationState}
+              </h1>
+              <p style={{ fontSize: 13, color: '#6B7280', marginTop: 6, marginBottom: 0 }}>
+                Browse verified coaches in your area. Use filters to narrow by sport, age group, and more.
+              </p>
+            </div>
+          )}
           <div style={{ padding: "10px 12px 8px" }}>
             <div
               style={{
@@ -1654,6 +1715,17 @@ export default function CoachDirectory() {
             isMobile={false}
             marginTop={16}
           />
+
+          {locationCity && locationState && (
+            <div style={{ padding: '16px 20px 0', maxWidth: 1200, margin: '0 auto' }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0d1b2e', margin: 0 }}>
+                Baseball &amp; Softball Coaches in {locationCity}, {locationState}
+              </h1>
+              <p style={{ fontSize: 14, color: '#6B7280', marginTop: 6, marginBottom: 0 }}>
+                Browse verified coaches in your area. Use filters to narrow by sport, age group, and more.
+              </p>
+            </div>
+          )}
 
           <div style={{ padding: "16px 14px 20px" }}>
             <div
