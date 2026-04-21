@@ -343,6 +343,30 @@ git branch -d feature/your-branch-name
   - `TravelTeams.jsx`: `+ Add a Team` button in always-visible filter sidebar with `.add-cta` class
 - Files changed: `src/components/CoachSubmitForm.jsx`, `src/components/HomePage.jsx`, `src/components/search/SearchResultsContent.jsx`
 
+### Favicon, icons, and header logo overhaul (direct to main)
+- Replaced all old favicon files (`favicon-s.svg`, `favicon-s-16.png`, `favicon-s-32.png`, `favicon-s-48.png`, `apple-touch-icon-180x180.png`) with proper exports
+- New favicon source: circular S logo (`circular S.png` in Sandlot Source Images folder) — navy S script inside a gold circle with baseball stitching
+- Yellow in source file shifted to brand gold `#c9a84c` via PIL pixel-level channel scaling
+- `favicon-16x16.png`, `favicon-32x32.png`, `favicon.ico` (multi-size 16/32/48) all regenerated from circular S source
+- `apple-touch-icon.png` regenerated at 512×512, white background, circular S with gold-shifted yellow and 10% padding — used for Safari "Add to Home Screen" icon
+- `android-chrome-192x192.png` regenerated at 192×192 (15KB, was 2.3MB)
+- `android-chrome-512x512.png` optimized (62KB, was 4MB)
+- `site.webmanifest` created — was entirely missing and causing a 404 on every page load; now includes proper name, icons, `display: standalone`, `background_color: #0d1b2e`, `theme_color: #0d1b2e`
+- `index.html` updated with PWA meta tags: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`
+- Browser tab favicon: circular S ✅
+- iPhone "Add to Home Screen" icon: circular S, white background, brand gold ✅
+- Safari Favorites tile: still renders as page thumbnail for unknown/new sites — this is a Safari limitation, not a file issue; "Add to Home Screen" is the correct equivalent experience
+- **Header logo replaced**: new horizontal lockup — shield + split baseball/softball + "Sandlot Source" script text
+- New logo files saved to `public/`: `logo2.png` (cropped 1009×357, 220KB) and `logo2.svg`
+- SVG had Canva artboard export issue (full 1500×1500 canvas, logo buried in a small portion) — `logo2.svg` is not usable; switched to `logo2.png`
+- `logo2.png` was also 2000×2000 full canvas; cropped via PIL to tight content bounds (1009×357) before committing
+- **Canva export note**: always resize artboard to fit logo content before exporting, or crop exported PNG before use
+- `Header.jsx` updated: `src` changed from `/logo.png` to `/logo2.png`
+- Mobile logo height bumped: `42 → 52px`
+- Mobile header container `minHeight` bumped: `58 → 68px`
+- All changes committed directly to `main` (no feature branch — acceptable for this session)
+- Files changed: `index.html`, `public/favicon.ico`, `public/favicon-16x16.png`, `public/favicon-32x32.png`, `public/apple-touch-icon.png`, `public/android-chrome-192x192.png`, `public/android-chrome-512x512.png`, `public/site.webmanifest`, `public/logo2.png`, `public/logo2.svg`, `src/components/Header.jsx`
+
 ### Coach map pin persistence + approximate/featured pin styling (feature/coach-map-pin-context)
 - Coach close-state fix: closing a coach detail card no longer drops the page into the empty "Start with ZIP code" state
   - `clearSelectedFromUrl` now sets `geoCenter` directly from the selected coach's lat/lng before navigating
@@ -512,7 +536,10 @@ This is a living list and should be updated after each item is completed, merged
 ---
 
 ## Recommended next task
-- Phase 1 mobile conversion pass is now complete and deployed — do not reopen unless a regression is found
+- Favicon / icon overhaul is complete — do not reopen unless a regression is found
+- Header logo is replaced with new horizontal lockup — do not reopen unless a visual issue is found
+- Safari Favorites tile behavior is a known Safari limitation for new sites — not a code bug; revisit only if Safari changes its behavior
+- Phase 1 mobile conversion pass is complete and deployed — do not reopen unless a regression is found
 - Next clearest mobile task: Phase 2 conversion pass — review analytics after 1-2 weeks of live traffic data to identify next friction points
 - Content page harmonization (AdvertisePage, HelpPage, submit tab shell) is complete — do not reopen unless a regression is found
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
