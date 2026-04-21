@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
@@ -51,6 +51,24 @@ const STATE_CENTERS = {
   SD: [44.4, -100.2], TN: [35.8, -86.4], TX: [31.0, -100.0], UT: [39.3, -111.1],
   VT: [44.1, -72.7], VA: [37.8, -78.2], WA: [47.4, -120.4], WV: [38.6, -80.6],
   WI: [44.3, -89.8], WY: [43.0, -107.6],
+}
+
+// Maps URL slugs like "georgia" / "new-jersey" to their state abbreviation.
+// Used by location landing pages (/teams/:state/:city) to pre-seed the state filter.
+const STATE_SLUG_TO_ABBR = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+  'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+  'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new-hampshire': 'NH', 'new-jersey': 'NJ', 'new-mexico': 'NM', 'new-york': 'NY',
+  'north-carolina': 'NC', 'north-dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+  'oregon': 'OR', 'pennsylvania': 'PA', 'rhode-island': 'RI', 'south-carolina': 'SC',
+  'south-dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+  'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west-virginia': 'WV',
+  'wisconsin': 'WI', 'wyoming': 'WY',
 }
 
 const STATE_NAME_TO_ABBR = Object.fromEntries(
@@ -262,6 +280,16 @@ export default function TravelTeams() {
   const rowRefs = useRef({})
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { state: stateParam, city: cityParam } = useParams()
+
+  // Location landing page context — only set when routed via /teams/:state/:city.
+  const locationState = stateParam
+    ? stateParam.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  const locationCity = cityParam
+    ? cityParam.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  const locationStateAbbr = stateParam ? (STATE_SLUG_TO_ABBR[stateParam.toLowerCase()] || '') : ''
   const popupRefs = useRef({})
   const desktopListRef = useRef(null)
   const mobileListRef = useRef(null)
@@ -293,15 +321,32 @@ export default function TravelTeams() {
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true
   )
   const [sport, setSport] = useState('Both')
-  const [state, setState] = useState('')
+  // Pre-seed from location URL param when present; empty string means "All States".
+  const [state, setState] = useState(locationStateAbbr || '')
   const [zip, setZip] = useState('')
   const [radius, setRadius] = useState(25)
   const [ageGroup, setAgeGroup] = useState('All Ages')
   const [tryoutFilter, setTryoutFilter] = useState('All')
-  const [searchInput, setSearchInput] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
+  // Pre-seed keyword search from city URL param so the location list auto-filters.
+  const [searchInput, setSearchInput] = useState(locationCity || '')
+  const [searchTerm, setSearchTerm] = useState(locationCity ? locationCity.toLowerCase() : '')
   const [geoCenter, setGeoCenter] = useState(null)
   const [zipError, setZipError] = useState('')
+
+  // Set dynamic page title and meta description for location landing pages.
+  useEffect(() => {
+    if (locationCity && locationState) {
+      document.title = `Travel Baseball & Softball Teams in ${locationCity}, ${locationState} — Sandlot Source`
+      const meta = document.querySelector('meta[name="description"]')
+      if (meta) meta.setAttribute('content',
+        `Browse travel baseball and softball teams in ${locationCity}, ${locationState}. Find open tryouts, age groups, and team contacts on Sandlot Source.`)
+    }
+    return () => {
+      if (locationCity && locationState) {
+        document.title = 'Sandlot Source — Baseball & Softball Coaches, Teams & Rosters'
+      }
+    }
+  }, [locationCity, locationState])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -426,7 +471,8 @@ export default function TravelTeams() {
   const hasLocationSearch = !!geoCenter
 
   const filtered = useMemo(() => {
-    if (!hasLocationSearch) {
+    // On location landing pages (/teams/:state/:city) allow browsing without a ZIP.
+    if (!hasLocationSearch && !locationStateAbbr) {
       const selectedSeed = selectedTeamId ? teams.find((team) => team.id === selectedTeamId) : null
       return selectedSeed ? [selectedSeed] : []
     }
@@ -465,7 +511,7 @@ export default function TravelTeams() {
 
       return true
     })
-  }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius, hasLocationSearch, selectedTeamId])
+  }, [teams, sport, state, ageGroup, tryoutFilter, searchTerm, geoCenter, radius, hasLocationSearch, selectedTeamId, locationStateAbbr])
 
   useEffect(() => {
     if (!selectedTeamId) return
@@ -599,6 +645,17 @@ export default function TravelTeams() {
             window.location.href = '/claim?' + params.toString()
           }}
         />
+      )}
+
+      {locationCity && locationState && (
+        <div style={{ padding: isMobile ? '16px 12px 0' : '16px 20px 0', maxWidth: isMobile ? undefined : 1200, margin: isMobile ? undefined : '0 auto' }}>
+          <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: '#0d1b2e', margin: 0, lineHeight: 1.2 }}>
+            Travel Baseball &amp; Softball Teams in {locationCity}, {locationState}
+          </h1>
+          <p style={{ fontSize: isMobile ? 13 : 14, color: '#6B7280', marginTop: 6, marginBottom: 0 }}>
+            Browse travel teams in your area. Use filters to find open tryouts, age groups, and more.
+          </p>
+        </div>
       )}
 
       {!isMobile && (

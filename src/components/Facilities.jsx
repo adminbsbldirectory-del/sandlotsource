@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { ensureLeafletDefaultMarkerIcons } from '../lib/leafletInit'
@@ -28,6 +28,24 @@ const FACILITY_TYPE_OPTIONS = [
   { value: 'school_field', label: 'School Field' },
   { value: 'other', label: 'Other' },
 ]
+
+// Maps URL slugs like "georgia" / "new-jersey" to their state abbreviation.
+// Used by location landing pages (/facilities/:state/:city) to pre-seed the state filter.
+const STATE_SLUG_TO_ABBR = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+  'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+  'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new-hampshire': 'NH', 'new-jersey': 'NJ', 'new-mexico': 'NM', 'new-york': 'NY',
+  'north-carolina': 'NC', 'north-dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+  'oregon': 'OR', 'pennsylvania': 'PA', 'rhode-island': 'RI', 'south-carolina': 'SC',
+  'south-dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+  'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west-virginia': 'WV',
+  'wisconsin': 'WI', 'wyoming': 'WY',
+}
 
 function getFacilitySport(facility) {
   const primary = normalizeSportValue(facility?.sport)
@@ -173,6 +191,17 @@ export default function Facilities() {
   // Seed geoCenter once per URL-driven selection with no ZIP.
   const hasAutoSeededGeoRef = useRef(false)
 
+  const { state: stateParam, city: cityParam } = useParams()
+
+  // Location landing page context — only set when routed via /facilities/:state/:city.
+  const locationState = stateParam
+    ? stateParam.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  const locationCity = cityParam
+    ? cityParam.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  const locationStateAbbr = stateParam ? (STATE_SLUG_TO_ABBR[stateParam.toLowerCase()] || '') : ''
+
   const initialSport = (() => {
     const raw = String(searchParams.get('sport') || '').trim().toLowerCase()
     return ['baseball', 'softball', 'both'].includes(raw) ? raw : ''
@@ -183,7 +212,8 @@ export default function Facilities() {
     return FACILITY_TYPE_OPTIONS.some((option) => option.value === raw) ? raw : 'all'
   })()
 
-  const initialSearch = String(searchParams.get('q') || '').trim()
+  // Pre-seed keyword search from city URL param on location pages; fall back to ?q= param.
+  const initialSearch = locationCity || String(searchParams.get('q') || '').trim()
   const initialZip = String(searchParams.get('zip') || '').replace(/\D/g, '').slice(0, 5)
   const initialRadiusValue = Number(searchParams.get('radius') || 25)
   const initialRadius = DIRECTORY_RADIUS_OPTIONS.some((option) => option.value === initialRadiusValue) ? initialRadiusValue : 25
@@ -216,6 +246,21 @@ export default function Facilities() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Set dynamic page title and meta description for location landing pages.
+  useEffect(() => {
+    if (locationCity && locationState) {
+      document.title = `Baseball & Softball Facilities in ${locationCity}, ${locationState} — Sandlot Source`
+      const meta = document.querySelector('meta[name="description"]')
+      if (meta) meta.setAttribute('content',
+        `Browse baseball and softball facilities, training centers, and complexes in ${locationCity}, ${locationState}. Find parks, indoor training facilities, and sports complexes on Sandlot Source.`)
+    }
+    return () => {
+      if (locationCity && locationState) {
+        document.title = 'Sandlot Source — Baseball & Softball Coaches, Teams & Rosters'
+      }
+    }
+  }, [locationCity, locationState])
 
   const applySearch = () => {
     setSearch(searchInput.trim())
@@ -388,13 +433,17 @@ export default function Facilities() {
   const hasLocationSearch = zipStatus === 'ok' && !!geoCenter
   const hasFilters = !!(sport || search || facilityType !== 'all')
   const filtered = useMemo(() => {
-    if (!hasLocationSearch) return []
+    // On location landing pages (/facilities/:state/:city) allow browsing without a ZIP.
+    if (!hasLocationSearch && !locationStateAbbr) return []
 
     return facilities
       .filter((f) => {
         const facilitySport = getFacilitySport(f)
         if (!matchesSportFilter(facilitySport, sport)) return false
         if (facilityType !== 'all' && (f.facility_type || '') !== facilityType) return false
+
+        // On location pages, filter by state abbreviation (Facilities has no state dropdown).
+        if (locationStateAbbr && (f.state || '').toUpperCase() !== locationStateAbbr) return false
 
         if (search) {
           const q = search.toLowerCase()
@@ -428,7 +477,7 @@ export default function Facilities() {
 
         return (a.name || '').localeCompare(b.name || '')
       })
-  }, [facilities, sport, facilityType, search, geoCenter, radius, hasLocationSearch])
+  }, [facilities, sport, facilityType, search, geoCenter, radius, hasLocationSearch, locationStateAbbr])
 
   useEffect(() => {
     if (!selected) return
@@ -506,6 +555,17 @@ export default function Facilities() {
 
   return (
     <>
+      {locationCity && locationState && (
+        <div style={{ padding: isMobile ? '16px 12px 0' : '16px 20px 0', maxWidth: isMobile ? undefined : 1200, margin: isMobile ? undefined : '0 auto' }}>
+          <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: '#0d1b2e', margin: 0, lineHeight: 1.2 }}>
+            Baseball &amp; Softball Facilities in {locationCity}, {locationState}
+          </h1>
+          <p style={{ fontSize: isMobile ? 13 : 14, color: '#6B7280', marginTop: 6, marginBottom: 0 }}>
+            Browse baseball and softball facilities, training centers, and complexes in your area.
+          </p>
+        </div>
+      )}
+
       {isMobile ? (
         <div style={{ maxWidth: '100%', width: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
           <div style={{ padding: 12, paddingBottom: 28 }}>

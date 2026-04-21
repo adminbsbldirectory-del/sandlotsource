@@ -200,8 +200,11 @@ function AppRoutes() {
           />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/coaches" element={<CoachDirectory />} />
+          <Route path="/coaches/:state/:city" element={<CoachDirectory />} />
           <Route path="/teams" element={<TravelTeams />} />
+          <Route path="/teams/:state/:city" element={<TravelTeams />} />
           <Route path="/facilities" element={<Facilities />} />
+          <Route path="/facilities/:state/:city" element={<Facilities />} />
           <Route path="/facilities/:id" element={<FacilityProfile />} />
           <Route path="/find" element={<PlayerBoard />} />
           <Route path="/roster" element={<RosterSpots />} />
