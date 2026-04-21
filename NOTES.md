@@ -367,6 +367,34 @@ git branch -d feature/your-branch-name
 - All changes committed directly to `main` (no feature branch — acceptable for this session)
 - Files changed: `index.html`, `public/favicon.ico`, `public/favicon-16x16.png`, `public/favicon-32x32.png`, `public/apple-touch-icon.png`, `public/android-chrome-192x192.png`, `public/android-chrome-512x512.png`, `public/site.webmanifest`, `public/logo2.png`, `public/logo2.svg`, `src/components/Header.jsx`
 
+### SEO location landing pages (feature/seo-location-pages)
+- Added three new route patterns: `/coaches/:state/:city`, `/teams/:state/:city`, `/facilities/:state/:city`
+- Routes reuse existing `CoachDirectory`, `TravelTeams`, and `Facilities` components — no new UI components
+- URL slug convention: lowercase, hyphen-separated (`new-jersey`, `los-angeles`)
+- `STATE_SLUG_TO_ABBR` lookup map added at module level in all three directory components (slug → 2-letter abbreviation)
+- Location params derived via `useParams()` at the top of each component: `locationState`, `locationCity`, `locationStateAbbr`
+- State filter and search/city filter pre-seeded from URL params so results populate without a ZIP entry
+- Each directory's empty guard extended: `locationStateAbbr` is now a third bypass condition alongside `geoCenter` and `facilityFromUrl` — prevents blank render when user arrives without a ZIP
+- `CoachDirectory.jsx`: URL hydration effect fixed — was hardcoded to reset state to `"All States"` on any search param change; now preserves `locationStateAbbr` on location page visits
+- `TravelTeams.jsx`: `searchTerm` initialized directly from `locationCity.toLowerCase()` to bypass the 250ms debounce and prevent a blank flash on page load
+- `Facilities.jsx`: has no state dropdown — inline state filter injected directly into `filtered` useMemo, active only when `locationStateAbbr` is set; no UI change
+- `locationStateAbbr` added to `useMemo` dependency arrays in all three components
+- `document.title` useEffect added to each component for dynamic SEO page title; resets to site name on unmount
+- `<h1>` block added in each component showing "Baseball & Softball [Type] in {City}, {State}" with muted subtext — renders only when both location params are set
+- `api/sitemap.js` created: Vercel serverless function (ES module) that queries Supabase for all approved city/state pairs across `coaches`, `travel_teams`, and `facilities` tables; deduplicates URLs; returns valid XML sitemap; 24-hour cache header
+- `STATE_ABBR_TO_SLUG` reverse map added in sitemap (abbreviation → slug) — handles both "GA"-stored and "Georgia"-stored state values in DB
+- `public/robots.txt` created: `Allow: /` with Sitemap pointer to `https://www.sandlotsource.com/api/sitemap`
+- Verified live in production: sitemap returning correct location URLs; all three directory pages rendering at `/georgia/atlanta` with results and correct headings
+- Base `/coaches`, `/teams`, and `/facilities` routes are unchanged — ZIP-first browse / map behavior fully preserved
+- No new packages introduced
+- Files changed:
+  - `src/App.jsx`
+  - `src/components/CoachDirectory.jsx`
+  - `src/components/TravelTeams.jsx`
+  - `src/components/Facilities.jsx`
+  - `api/sitemap.js` (new)
+  - `public/robots.txt` (new)
+
 ### Coach map pin persistence + approximate/featured pin styling (feature/coach-map-pin-context)
 - Coach close-state fix: closing a coach detail card no longer drops the page into the empty "Start with ZIP code" state
   - `clearSelectedFromUrl` now sets `geoCenter` directly from the selected coach's lat/lng before navigating
@@ -514,10 +542,7 @@ This is a living list and should be updated after each item is completed, merged
 - Do not reopen recent AdSlot cache work unless there is a reproducible production issue
 
 ### Technical / deferred backlog
-- Add SEO location landing pages for Teams:
-  - route pattern `/teams/:state/:city`
-  - reuse current `TravelTeams` UI / query logic
-  - do not weaken ZIP-first browse / search
+- SEO location landing pages are complete and live — `/coaches/:state/:city`, `/teams/:state/:city`, `/facilities/:state/:city` all deployed; sitemap at `/api/sitemap`; robots.txt in place; do not reopen unless a regression is found
 - Admin re-geocode phase 2 is now complete for Facilities, Coaches, and Travel Teams
 - If desired later, expand admin re-geocode only if there is a clear need beyond the current one-record-at-a-time admin workflow
 - Keep admin-only access
@@ -543,7 +568,7 @@ This is a living list and should be updated after each item is completed, merged
 - Next clearest mobile task: Phase 2 conversion pass — review analytics after 1-2 weeks of live traffic data to identify next friction points
 - Content page harmonization (AdvertisePage, HelpPage, submit tab shell) is complete — do not reopen unless a regression is found
 - Next clearest visual task: homepage category card layout pass — make cards feel more like “sports discovery feature cards” vs clean admin UI tiles (currently deferred)
-- Alternatively: SEO location landing pages for Teams (`/teams/:state/:city`) — low logic risk, reuses existing directory UI
+- SEO location landing pages are complete — submit sitemap to Google Search Console (`https://www.sandlotsource.com/api/sitemap`) to accelerate indexing
 - Claimed-owner self-serve editing remains intentionally deferred
 - Anti-spam restoration should no longer be the default next-task recommendation
 - Duplicate matching behavior should not be reopened unless a real regression is found
@@ -584,9 +609,11 @@ This is a living list and should be updated after each item is completed, merged
 | `src/components/home/HomePageBand.jsx` | Alternating warm-background section wrapper |
 | `src/components/home/HomePageSectionHeader.jsx` | Section title and View all link |
 | `src/components/home/HomePageAdBand.jsx` | Homepage sponsored ad band wrapper |
-| `src/components/CoachDirectory.jsx` | Coach directory |
-| `src/components/Facilities.jsx` | Facilities directory |
-| `src/components/TravelTeams.jsx` | Teams directory |
+| `src/components/CoachDirectory.jsx` | Coach directory (also serves `/coaches/:state/:city` location pages) |
+| `src/components/Facilities.jsx` | Facilities directory (also serves `/facilities/:state/:city` location pages) |
+| `src/components/TravelTeams.jsx` | Teams directory (also serves `/teams/:state/:city` location pages) |
+| `api/sitemap.js` | Vercel serverless sitemap generator — queries Supabase for approved city/state pairs, returns XML |
+| `public/robots.txt` | Search crawler rules — points to sitemap |
 | `src/components/teams/TeamDesktopRow.jsx` | Team result row layout |
 | `src/components/teams/TeamPreviewCard.jsx` | Team preview modal card |
 | `src/components/AdSlot.jsx` | Ad slot fetch and render with module-level cache |
