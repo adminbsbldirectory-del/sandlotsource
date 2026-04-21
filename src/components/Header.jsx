@@ -172,7 +172,7 @@ export default function Header() {
             }}
           >
             <img
-              src="/logo2.svg"
+              src="/logo2.png"
               alt="Sandlot Source"
               style={{
                 height: isMobile ? 52 : 84,
