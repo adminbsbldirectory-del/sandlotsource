@@ -402,33 +402,6 @@ export default function CoachDirectory() {
   };
   }, [zipFromUrl]);
 
-  // When the page is reached via ?select=<id> with no ?zip=, seed geoCenter
-  // from the selected coach's coordinates so the map and nearby list are
-  // populated instead of showing an empty "Start with ZIP" state.
-  // Fires once after coaches load; does nothing if a ZIP is already geocoding.
-  useEffect(() => {
-    if (!selectedFromUrl) {
-      hasAutoSeededGeoRef.current = false;
-      return;
-    }
-    // A valid ZIP param is already being geocoded — let that effect win.
-    if (zipFromUrl && zipFromUrl.length === 5) return;
-    if (hasAutoSeededGeoRef.current) return;
-
-    const match = resolvedCoaches.find((c) => c.id === selectedFromUrl);
-    if (!match || match.lat == null || match.lng == null) return;
-
-    hasAutoSeededGeoRef.current = true;
-    setGeoCenter({ lat: match.lat, lng: match.lng });
-    setZipStatus('ok');
-
-    // Populate the ZIP input so the sidebar helper text reads sensibly.
-    const coachZip = getCoachZip(match);
-    if (coachZip && coachZip.length === 5) {
-      setZip(coachZip);
-    }
-  }, [resolvedCoaches, selectedFromUrl, zipFromUrl]);
-
   const applySearch = () => {
     setSearch(searchInput.trim());
     if (isMobile) {
@@ -702,6 +675,35 @@ export default function CoachDirectory() {
   geoCenter,
   facilityFromUrl,
 ]);
+
+  // When the page is reached via ?select=<id> with no ?zip=, seed geoCenter
+  // from the selected coach's coordinates so the map and nearby list are
+  // populated instead of showing an empty "Start with ZIP" state.
+  // Placed here (after resolvedCoaches useMemo) to avoid a TDZ error — the
+  // dependency array is evaluated immediately when useEffect() is called, so
+  // resolvedCoaches must already be declared at this point in the file.
+  useEffect(() => {
+    if (!selectedFromUrl) {
+      hasAutoSeededGeoRef.current = false;
+      return;
+    }
+    // A valid ZIP param is already being geocoded — let that effect win.
+    if (zipFromUrl && zipFromUrl.length === 5) return;
+    if (hasAutoSeededGeoRef.current) return;
+
+    const match = resolvedCoaches.find((c) => c.id === selectedFromUrl);
+    if (!match || match.lat == null || match.lng == null) return;
+
+    hasAutoSeededGeoRef.current = true;
+    setGeoCenter({ lat: match.lat, lng: match.lng });
+    setZipStatus('ok');
+
+    // Populate the ZIP input so the sidebar helper text reads sensibly.
+    const coachZip = getCoachZip(match);
+    if (coachZip && coachZip.length === 5) {
+      setZip(coachZip);
+    }
+  }, [resolvedCoaches, selectedFromUrl, zipFromUrl]);
 
   // On mobile, immediately open the coach profile card when the page is
   // reached via ?select=<id> — matches desktop behaviour (CoachDetailPanel
